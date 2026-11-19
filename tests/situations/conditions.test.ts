@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Condition } from '../../src/situations';
+import { evaluateCondition, resolveChoice, selectSituations, type Condition } from '../../src/situations';
 import { applyEffects, contribution, correspondingRating, teamSummary, type Cause, type SimState } from '../../src/sim';
 import { engine, fresh, holds, patch, plain, rated, select } from './fixtures';
 
@@ -328,6 +328,32 @@ describe('history and presented', () => {
     const s = plain('s1');
     s.choices[0]!.availableIf = c({ presented: 's1', is: 1 });
     expect(select(engine(), fresh(), [s]).presented).toHaveLength(1);
+  });
+});
+
+describe('review timing', () => {
+  // @spec SIT-COND-014
+  it('gives review.weeksAway from the context, and no value without it', () => {
+    const sim = fresh();
+    const soon = c({ value: 'review.weeksAway', atMost: 2 });
+    expect(evaluateCondition(soon, { sim, engine: engine(), bindings: {}, weeksToReview: 2 })).toBe(true);
+    expect(evaluateCondition(soon, { sim, engine: engine(), bindings: {}, weeksToReview: 5 })).toBe(false);
+    expect(holds(sim, soon)).toBe(false);
+    expect(holds(sim, c({ value: 'review.weeksAway', isNot: 2 }))).toBe(true);
+
+    const timed = plain('evaluation', { when: soon });
+    expect(select(engine(), sim, [timed]).presented).toEqual([]);
+    expect(selectSituations(engine(), sim, [timed], 'line-manager', 3, { weeksToReview: 1 }).presented).toHaveLength(1);
+
+    const outcome = plain('x').choices[0]!.outcomes[0]!;
+    const guarded = plain('guarded', {
+      choices: [{ id: 'ok', label: 'OK', outcomes: [{ ...outcome, id: 'near', when: soon }, { ...outcome, id: 'far' }] }],
+    });
+    const { engine: eng, presented } = select(engine(), sim, [guarded]);
+    const near = resolveChoice(eng, sim, [guarded], presented[0]!.id, 'ok', { weeksToReview: 1 });
+    const far = resolveChoice(eng, sim, [guarded], presented[0]!.id, 'ok');
+    expect(near.kind === 'resolved' && near.debrief.outcomeId).toBe('near');
+    expect(far.kind === 'resolved' && far.debrief.outcomeId).toBe('far');
   });
 });
 

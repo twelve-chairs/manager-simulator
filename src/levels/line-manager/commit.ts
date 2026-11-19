@@ -74,7 +74,9 @@ function consequence(demand: Demand, scale: number): Effect[] {
 }
 
 /** Why a decision is invalid for its demand, or undefined when it is allowed. */
-function invalidDecision(sim: SimState, demand: Demand, decision: Decision): string | undefined {
+export function invalidDecision(sim: SimState, demand: Demand, decision: Decision): string | undefined {
+  if (typeof decision !== 'object' || decision === null) return `${demand.id}: a decision must be an object`;
+  if (decision.kind === 'delegate' && typeof decision.to !== 'string') return `${demand.id}: a delegation names a person`;
   const intake = demand.type === 'workIntake';
   switch (decision.kind) {
     case 'accept':
@@ -90,6 +92,16 @@ function invalidDecision(sim: SimState, demand: Demand, decision: Decision): str
     default:
       return `${demand.id}: unknown decision`;
   }
+}
+
+/** Hours the week would charge: calendar entries that run with valid targets, and demands handled or accepted. */
+// The commit charges exactly this, so the view's preview and the week's charge cannot disagree.
+export function plannedHours(level: LineState, sim: SimState, decisions: Record<string, Decision>): number {
+  const s = structuredClone(level);
+  reconcileVacancies(s, sim);
+  const entries = s.calendar.filter((e) => runsIn(e, sim.week) && !invalidTarget(s, sim, e.target));
+  const demands = s.inbox.filter((d) => subjectValid(s, sim, d) && ['handle', 'accept'].includes(decisions[d.id]?.kind ?? ''));
+  return entries.reduce((h, e) => h + ACTIONS[e.action].hours, 0) + demands.reduce((h, d) => h + d.hours, 0);
 }
 
 /** Applies the week's plan: calendar entries, demand decisions, overtime and expiries. */
@@ -125,7 +137,6 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
     }
     if (!runsIn(entry, week)) continue;
     ran.add(entry.id);
-    report.hours += ACTIONS[entry.action].hours;
     effects.push(...entryEffects(s, sim, entry));
     if (entry.action === 'line-manager.ceremonies') ceremonies = true;
     if (entry.action === 'line-manager.one-on-one' && entry.target.kind === 'person') {
@@ -164,7 +175,6 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
     if (!decision) continue;
     switch (decision.kind) {
       case 'handle':
-        report.hours += demand.hours;
         decided.add(demand.id);
         break;
       case 'delegate': {
@@ -181,7 +191,6 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
         break;
       }
       case 'accept': {
-        report.hours += demand.hours;
         const started = generateProject(s, projectNames(sim), s.teamId, week, calmRisk(s));
         effects.push({ type: 'startProject', project: started, cause: action(ACCEPT_INTAKE) });
         decided.add(demand.id);
@@ -207,6 +216,7 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
   s.inbox = s.inbox.filter((d) => !decided.has(d.id));
 
   // Overtime
+  report.hours = plannedHours(level, sim, decisions);
   const limit = LINE_TUNING.weeklyHours + LINE_TUNING.overtimeCapHours;
   if (report.hours > limit) return { ok: false, error: `the week needs ${report.hours} hours, more than the ${limit} allowed with overtime` };
   report.overtime = Math.max(0, report.hours - LINE_TUNING.weeklyHours);

@@ -50,6 +50,17 @@ export interface Demand {
 
 export type Decision = { kind: 'handle' } | { kind: 'delegate'; to: string } | { kind: 'accept' } | { kind: 'decline' };
 
+/** The week's pending plan: a decision for each inbox demand the player has decided. */
+export interface LinePlan {
+  decisions: Record<string, Decision>;
+}
+
+/** A planning command: edit the calendar, decide a demand, or clear a decision. */
+export type LinePlanCommand =
+  | { kind: 'calendar'; add?: NewEntry[]; remove?: string[] }
+  | { kind: 'decide'; demandId: string; decision: Decision }
+  | { kind: 'clear'; demandId: string };
+
 export interface Vacancy {
   id: string;
   interviews: number;
@@ -116,6 +127,9 @@ export interface View {
   calendar: CalendarEntry[];
   vacancies: Vacancy[];
   inbox: { id: string; type: DemandType; subject: Demand['subject']; hours: number; lastWeek: number; difficulty: Band }[];
+  /** Hours of the calendar entries that run this week and the demands the plan handles or accepts. */
+  plannedHours: number;
+  overtime: number;
 }
 
 export interface Scorecard {

@@ -38,6 +38,7 @@ The player sees what a manager of this team would see, which is less than the si
 | Project risk and tech debt | A coarse band |
 | Player reputation and stress | A coarse band |
 | Calendar, open vacancies and their interviews | Exactly |
+| This week's planned hours and the overtime they imply | Exactly, from the calendar entries that run this week and the demands the plan handles or accepts |
 | Inbox demands: type, subject, hours, expiry | Exactly |
 | Demand difficulty | A band on the same scale as skill, so the player can compare a demand with a possible delegate |
 
@@ -171,6 +172,12 @@ The level keeps its own serializable state beside the simulation's and the situa
 | `scorecard` | level state, simulation state | the scorecard measures since the last review |
 
 The turn loop calls these in the order of *A Week*; situations are selected and resolved through the situation engine between `arriveDemands` and `commitWeek`.
+
+## Turn Loop Contract
+
+The level provides the turn loop's career level contract through an adapter over the operations above: *begin week* is `arriveDemands`; planning commands either edit the calendar, changing the level state at once, or decide an inbox demand, which is held in the week's plan; *commit* calls `commitWeek` with the decisions in the plan; *after advance*, *scorecard* and *view* are the level's own.
+
+A decision is checked when it enters the plan, with the same checks the commit applies (the demand is in the inbox, the decision suits its type, a delegate is a person and not the requester), so the player hears about a bad decision when they make it; the commit checks again, since situations can change the team in between. A planning command can also clear a demand's decision, leaving it undecided.
 
 ## Decisions & Alternatives
 

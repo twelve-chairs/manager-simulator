@@ -29,11 +29,18 @@ export function createEngine(seed: number): EngineState {
 
 const kindsOf = (situation: Situation): Record<string, RoleKind> => Object.fromEntries(situation.roles.map((r) => [r.name, r.kind]));
 
-const ctxFor = (sim: SimState, engine: EngineState, situation: Situation, bindings: Record<string, string>): EvalContext => ({
+/** What the caller knows about the game's calendar that the engine does not. */
+export interface Timing {
+  /** Weeks until the next performance review; content reads it as `review.weeksAway`. */
+  weeksToReview?: number;
+}
+
+const ctxFor = (sim: SimState, engine: EngineState, situation: Situation, bindings: Record<string, string>, timing: Timing): EvalContext => ({
   sim,
   engine,
   bindings,
   kinds: kindsOf(situation),
+  ...(timing.weeksToReview !== undefined && { weeksToReview: timing.weeksToReview }),
 });
 
 /**
@@ -41,7 +48,7 @@ const ctxFor = (sim: SimState, engine: EngineState, situation: Situation, bindin
  * Returns undefined when no complete binding exists.
  */
 // @spec SIT-SEL-004, SIT-SEL-005, SIT-SEL-014
-function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeople: Set<string>): Record<string, string> | undefined {
+function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeople: Set<string>, timing: Timing): Record<string, string> | undefined {
   const bindings: Record<string, string> = {};
   const used = new Set<string>();
   const step = (i: number): boolean => {
@@ -56,7 +63,7 @@ function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeopl
     );
     for (const id of shuffled(s, candidates)) {
       bindings[role.name] = id;
-      if (role.where && !evaluateCondition(role.where, ctxFor(sim, s, situation, bindings))) continue;
+      if (role.where && !evaluateCondition(role.where, ctxFor(sim, s, situation, bindings, timing))) continue;
       used.add(key(id));
       if (step(i + 1)) return true;
       used.delete(key(id));
@@ -77,15 +84,16 @@ function pickWeighted(s: EngineState, pool: Situation[]): number {
   return pool.length - 1;
 }
 
-function isEligible(s: EngineState, sim: SimState, situation: Situation, level: string): boolean {
+function isEligible(s: EngineState, sim: SimState, situation: Situation, level: string, timing: Timing): boolean {
   if (!situation.levels.includes(level)) return false;
   const last = s.presentations.reduce<number | undefined>((w, p) => (p.situationId === situation.id && (w === undefined || p.week > w) ? p.week : w), undefined);
   if (situation.once && last !== undefined) return false;
   if (last !== undefined && sim.week - last < (situation.cooldownWeeks ?? 0)) return false;
-  return !situation.when || evaluateCondition(situation.when, ctxFor(sim, s, situation, {}));
+  return !situation.when || evaluateCondition(situation.when, ctxFor(sim, s, situation, {}, timing));
 }
 
 /** Selects up to `limit` situations for the career level, closing any still open from an earlier selection as ignored. */
+// @spec SIT-COND-014
 // @spec SIT-SEL-001, SIT-SEL-002, SIT-SEL-003, SIT-SEL-006, SIT-SEL-007, SIT-SEL-008, SIT-SEL-009, SIT-SEL-010, SIT-SEL-012, SIT-SEL-013
 // @spec SIT-STATE-002, SIT-STATE-003, SIT-STATE-005
 export function selectSituations(
@@ -94,6 +102,7 @@ export function selectSituations(
   situations: Situation[],
   level: string,
   limit: number,
+  timing: Timing = {},
 ): { engine: EngineState; presented: Presentation[] } {
   const s = structuredClone(engine);
   for (const o of s.open) s.debriefs.push({ week: o.week, situationId: o.situationId, bindings: o.bindings, status: 'ignored' });
@@ -102,18 +111,18 @@ export function selectSituations(
   const presented: Presentation[] = [];
   if (!(limit > 0)) return { engine: s, presented };
 
-  const eligible = situations.filter((x) => isEligible(s, sim, x, level));
+  const eligible = situations.filter((x) => isEligible(s, sim, x, level, timing));
   const boundPeople = new Set<string>();
   for (const priority of ['urgent', 'normal'] as const) {
     const pool = eligible.filter((x) => x.priority === priority);
     while (pool.length > 0 && presented.length < limit) {
       const [situation] = pool.splice(pickWeighted(s, pool), 1) as [Situation];
-      const bindings = bind(s, sim, situation, boundPeople);
+      const bindings = bind(s, sim, situation, boundPeople, timing);
       if (!bindings) continue;
 
       // Record the presentation before offering choices, so conditions inside it count it as presented.
       s.presentations.push({ situationId: situation.id, week: sim.week });
-      const ctx = ctxFor(sim, s, situation, bindings);
+      const ctx = ctxFor(sim, s, situation, bindings, timing);
       const kinds = kindsOf(situation);
       const choices = situation.choices
         .filter((c) => !c.availableIf || evaluateCondition(c.availableIf, ctx))
@@ -184,6 +193,7 @@ export function resolveChoice(
   situations: Situation[],
   presentationId: string,
   choiceId: string,
+  timing: Timing = {},
 ): ResolveResult {
   const open: OpenPresentation | undefined = engine.open.find((o) => o.id === presentationId);
   if (!open) return error(`presentation ${presentationId} is not open`);
@@ -200,7 +210,7 @@ export function resolveChoice(
     return { kind: 'expired', engine: s, sim, debrief };
   }
 
-  const ctx = ctxFor(sim, engine, situation, open.bindings);
+  const ctx = ctxFor(sim, engine, situation, open.bindings, timing);
   const choice = situation.choices.find((c) => c.id === choiceId);
   if (!choice) return error(`situation ${situation.id} has no choice ${choiceId}`);
   if (choice.availableIf && !evaluateCondition(choice.availableIf, ctx)) return error(`choice ${choiceId} of situation ${situation.id} is not offered`);

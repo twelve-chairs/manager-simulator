@@ -9,3 +9,4 @@ export { arriveDemands } from './inbox';
 export { commitWeek } from './commit';
 export { afterAdvance, scorecard } from './review';
 export { band, view } from './view';
+export { lineManagerLevel } from './contract';

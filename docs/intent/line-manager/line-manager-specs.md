@@ -22,6 +22,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-VIS-006**: The line manager level shall show the player's reputation and stress only as bands.
 - [x] **LINE-VIS-007**: The line manager level shall show the calendar, the open vacancies with their interview counts, and each inbox demand with its type, subject, hours and last week.
 - [x] **LINE-VIS-008**: The line manager level shall show a demand's difficulty only as a band on the same scale as skill.
+- [x] **LINE-VIS-010**: When the player's view is requested with the week's plan, the line manager level shall show the hours of the calendar entries that run this week with valid targets plus the hours of the demands the plan handles or accepts, and the overtime those hours imply.
 - [x] **LINE-VIS-009**: The line manager level shall map every banded value to the same scale of bands over 0–100.
 
 ## Calendar
@@ -86,6 +87,12 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-END-004**: When the scorecard is requested, the line manager level shall report whether promotion is possible, which it is from week 52 (the fourth review) on.
 - [x] **LINE-END-006**: When the simulation has advanced, the line manager level shall record the week in which each of the team's projects became completed.
 - [x] **LINE-END-005**: When the simulation has advanced, if the player's stress has been at or above the burnout threshold for four consecutive weeks, then the line manager level shall report that the player has burned out.
+
+## Turn loop contract
+
+- [x] **LINE-CONTRACT-001**: The line manager level shall provide the turn loop's career level contract, beginning a week by having demands arrive, applying calendar edits to the level state at once, holding demand decisions in the week's plan, and committing the week with the decisions in the plan.
+- [x] **LINE-CONTRACT-002**: When a planning command decides a demand, the line manager level shall reject the decision with an error and leave the plan unchanged if the demand is not in the inbox, the decision does not suit its type, or a delegate is not a person or is the requester.
+- [x] **LINE-CONTRACT-003**: When a planning command clears a demand's decision, the line manager level shall remove it from the plan, leaving the demand undecided.
 
 ## Level state
 

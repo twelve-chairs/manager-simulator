@@ -13,6 +13,8 @@ export interface EvalContext {
   kinds?: Record<string, RoleKind>;
   /** The candidate inside a count. */
   it?: { kind: RoleKind; id: string };
+  /** Weeks until the next performance review, when the caller knows it. */
+  weeksToReview?: number;
 }
 
 const has = (o: object, key: string) => Object.hasOwn(o, key);
@@ -28,6 +30,7 @@ function kindOf(ctx: EvalContext, role: string, id: string): RoleKind | undefine
 /** Resolves a path such as `engineer.motivation`, `player.team`, `it.headcount` or `week`. */
 function resolvePath(ctx: EvalContext, path: string): Value {
   if (path === 'week') return ctx.sim.week;
+  if (path === 'review.weeksAway') return ctx.weeksToReview;
   const dot = path.indexOf('.');
   if (dot < 0) return undefined;
   const subject = path.slice(0, dot);

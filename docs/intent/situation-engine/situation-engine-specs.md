@@ -23,6 +23,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-019**: The situation engine shall treat a situation as invalid if two of its choices share an id, or two outcomes of one choice share an id.
 - [x] **SIT-CONTENT-020**: The situation engine shall treat a situation as invalid if a `history` condition gives an `action` together with a `situation` or `choice`.
 - [x] **SIT-CONTENT-021**: The situation engine shall treat a situation as invalid if a `history` condition's `action` is not in the player action catalogue.
+- [x] **SIT-CONTENT-022**: The situation engine shall treat a situation as invalid if a role is named `player`, `week`, `review` or `it`.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 
@@ -40,6 +41,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-COND-013**: When a `history` condition gives an `action`, the situation engine shall count only the person's history entries caused by that player action.
 - [x] **SIT-COND-009**: When evaluating a `presented` condition, the situation engine shall count the times that situation was presented within the last `withinWeeks` weeks (ever, when it is absent), and compare the count to the operand, including the current presentation when evaluated inside a presented situation's choices or outcomes.
 - [x] **SIT-COND-012**: The situation engine shall give a person, team or project its id as its `id` property, a team led by a person that person's id as its `leader`, and a team led by the player or by no one no `leader` value.
+- [x] **SIT-COND-014**: When selection or resolution is given the weeks until the next review, the situation engine shall give `review.weeksAway` that number, and no value when it is not given.
 - [x] **SIT-COND-010**: The situation engine shall evaluate conditions without changing the simulation or engine state.
 
 ## Selecting situations

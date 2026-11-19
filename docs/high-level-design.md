@@ -86,7 +86,7 @@ flowchart TD
 - **Career level modules**: one per level. Each defines the player's available actions, the time step, what is visible versus aggregated, and the review criteria. Promotion replaces the active module and converts simulation state into the next level's level of detail.
 - **Situation engine**: evaluates authored situations against simulation state, selects which ones fire each turn, presents their choices, and applies effects.
 - **Situation content**: authored situations as data files, each tagged with the career levels it belongs to.
-- **Turn loop**: orders each turn: player actions, situations, simulation advance, review when due.
+- **Turn loop**: orders each turn: situations and player actions, simulation advance, review when due.
 - **Performance review and progression**: scores the player against the active level's criteria and decides promotion, continued play, or the end of the run.
 - **Presentation / UI**: renders the active level's views and situations and collects choices.
 - **Save / load**: persists a run locally.

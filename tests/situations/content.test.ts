@@ -316,6 +316,14 @@ describe('loading and validation', () => {
     valid(roleWhere({ history: 'engineer', action: 'line-manager.delegate', withinWeeks: 8, atLeast: 2 }));
   });
 
+  // @spec SIT-CONTENT-022
+  it('reserves player, week, review and it as names roles cannot take', () => {
+    for (const name of ['player', 'week', 'review', 'it']) {
+      expect(rejectionOf(sit({ roles: [{ name, kind: 'person' }], text: 'x', choices: [{ id: 'c', label: 'c', outcomes: [{ id: 'o', effects: [], aftermath: '', debrief: '' }] }] }))).toMatch(name);
+    }
+    valid(sit({ when: { value: 'review.weeksAway', atMost: 2 } }));
+  });
+
   // @spec SIT-CONTENT-014
   it('rejects effects that rate the player', () => {
     const s = sit();

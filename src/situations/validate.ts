@@ -63,7 +63,7 @@ function oneOf<T extends string>(x: unknown, values: readonly T[], path: string,
 }
 
 const KINDS: readonly RoleKind[] = ['person', 'team', 'project'];
-const RESERVED = ['player', 'week', 'it'];
+const RESERVED = ['player', 'week', 'review', 'it'];
 const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 /** The roles visible at a point in a situation, and the candidate inside a count. */
@@ -82,6 +82,8 @@ function pathType(path: unknown, scope: Scope, where: string): PropertyType {
   if (typeof path !== 'string') fail(where, 'a path must be text');
   const p = path as string;
   if (p === 'week') return WEEK_TYPE;
+  if (p === 'review.weeksAway') return WEEK_TYPE;
+  if (p === 'review' || p.startsWith('review.')) return fail(where, `review has no property ${p.slice('review.'.length) || '(none)'}; it has weeksAway`);
   const dot = p.indexOf('.');
   const subject = dot < 0 ? p : p.slice(0, dot);
   const property = dot < 0 ? '' : p.slice(dot + 1);
@@ -401,7 +403,7 @@ export type ValidationResult = { ok: true; situation: Situation } | { ok: false;
 /** Validates each item of a bundle; results line up with the input. Executes nothing from the content. */
 // @spec SIT-CONTENT-004, SIT-CONTENT-005, SIT-CONTENT-006, SIT-CONTENT-007, SIT-CONTENT-008, SIT-CONTENT-009, SIT-CONTENT-010
 // @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016, SIT-CONTENT-017, SIT-CONTENT-018, SIT-CONTENT-019
-// @spec SIT-CONTENT-020, SIT-CONTENT-021
+// @spec SIT-CONTENT-020, SIT-CONTENT-021, SIT-CONTENT-022
 export function validateBundle(items: unknown[]): ValidationResult[] {
   const seen = new Set<string>();
   return items.map((item, index) => {
