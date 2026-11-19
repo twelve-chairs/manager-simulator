@@ -10,11 +10,11 @@ import {
   type SimState,
 } from './types';
 
-const PERSON_FIELDS = ['skill', 'motivation', 'stress', 'trust'] as const;
-const DETAILED_TEAM_FIELDS = ['skill', 'motivation', 'stress'] as const;
-const AGGREGATE_TEAM_FIELDS = ['headcount', 'skill', 'motivation', 'stress', 'attritionRisk'] as const;
-const PROJECT_FIELDS = ['scope', 'progress', 'risk', 'techDebt', 'deadlineWeek'] as const;
-const PLAYER_FIELDS = ['reputation', 'stress'] as const;
+export const PERSON_FIELDS = ['skill', 'motivation', 'stress', 'trust'] as const;
+export const DETAILED_TEAM_FIELDS = ['skill', 'motivation', 'stress'] as const;
+export const AGGREGATE_TEAM_FIELDS = ['headcount', 'skill', 'motivation', 'stress', 'attritionRisk'] as const;
+export const PROJECT_FIELDS = ['scope', 'progress', 'risk', 'techDebt', 'deadlineWeek'] as const;
+export const PLAYER_FIELDS = ['reputation', 'stress'] as const;
 
 const has = <T extends string>(list: readonly T[], x: string): x is T => (list as readonly string[]).includes(x);
 

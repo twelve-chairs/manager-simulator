@@ -31,7 +31,14 @@ import type {
 
 export * from './types';
 export { TUNING } from './tuning';
-export { applyEffects } from './effects';
+export {
+  applyEffects,
+  AGGREGATE_TEAM_FIELDS,
+  DETAILED_TEAM_FIELDS,
+  PERSON_FIELDS,
+  PLAYER_FIELDS,
+  PROJECT_FIELDS,
+} from './effects';
 export { advance } from './advance';
 
 /** Ids of the advance rules, in the order they apply. Each rule's changes carry its id as the cause. */

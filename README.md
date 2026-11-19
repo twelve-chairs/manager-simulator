@@ -6,7 +6,7 @@ The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
 
-Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. There is no situation engine, career level, UI or playable game yet.
+Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. There is no career level, turn loop, UI or playable game yet.
 
 ## Development
 
@@ -25,6 +25,10 @@ npm run typecheck   # check types
 |---|---|
 | `src/sim/` | Simulation core |
 | `tests/sim/` | Simulation core tests |
+| `src/situations/` | Situation engine |
+| `tests/situations/` | Situation engine tests |
+| `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
+| `scripts/` | Build-time tools, such as the situation content compiler |
 | `docs/high-level-design.md` | Project-level design |
 | `docs/intent/` | Component designs and their requirements (EARS specs) |
 | `docs/decisions/` | Project-level decision records |

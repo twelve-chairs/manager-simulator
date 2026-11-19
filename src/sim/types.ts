@@ -1,7 +1,10 @@
-export type Want = 'growth' | 'recognition' | 'stability' | 'autonomy';
+/** Everything a person can want from the job. */
+export const WANTS = ['growth', 'recognition', 'stability', 'autonomy'] as const;
+export type Want = (typeof WANTS)[number];
 export type Role = 'engineer' | 'manager';
 export type PersonStatus = 'active' | 'departed' | 'aggregated';
-export type DepartureReason = 'quit' | 'fired' | 'transferred';
+export const DEPARTURE_REASONS = ['quit', 'fired', 'transferred'] as const;
+export type DepartureReason = (typeof DEPARTURE_REASONS)[number];
 export type ProjectStatus = 'active' | 'completed' | 'cancelled';
 export type Rating = 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding';
 export type PerformanceLevel = 'unrated' | Rating;
