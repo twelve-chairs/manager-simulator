@@ -5,6 +5,7 @@ import {
   type Cause,
   type ChangeLogEntry,
   type NewPerson,
+  type Rating,
   type SimState,
   type StartingOrganization,
 } from '../../src/sim';
@@ -51,6 +52,15 @@ export function org(): StartingOrganization {
 }
 
 export const fresh = (seed = 1): SimState => create(seed, org());
+
+/** The fixture with starting ratings: e1 exceeds, e2 meets, e3 outstanding, m1 meets, e4 below, e5 partial. */
+export function ratedOrg(): StartingOrganization {
+  const ratings: Record<string, Rating> = { e1: 'exceeds', e2: 'meets', e3: 'outstanding', m1: 'meets', e4: 'below', e5: 'partial' };
+  const o = org();
+  return { ...o, people: o.people.map((p) => ({ ...p, performance: ratings[p.id] })) };
+}
+
+export const rated = (seed = 1): SimState => create(seed, ratedOrg());
 
 /** Returns a modified deep copy of a state; the simulation state is plain data. */
 export function patch(state: SimState, change: (s: SimState) => void): SimState {

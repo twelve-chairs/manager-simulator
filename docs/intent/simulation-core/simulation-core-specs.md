@@ -31,10 +31,10 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-EFFECT-009**: When a value effect tagged as working against a person's want lowers that person's motivation, the simulation core shall apply a larger decrease than the same effect without the tag.
 - [x] **SIM-EFFECT-010**: When a value effect caused by a player action or a situation choice raises a person's motivation, the simulation core shall apply a smaller increase the lower that person's trust is.
 - [x] **SIM-EFFECT-011**: When a hire effect naming a detailed team is applied, the simulation core shall add an active person to that team with the current game week as their join week.
-- [x] **SIM-EFFECT-018**: When a hire effect naming an aggregate team is applied, the simulation core shall increase that team's headcount by one.
+- [x] **SIM-EFFECT-018**: When a hire effect naming an aggregate team is applied, the simulation core shall increase that team's headcount and its `unrated` count by one.
 - [x] **SIM-EFFECT-012**: When a remove effect is applied, the simulation core shall mark the person departed with the current game week and the given reason (`quit`, `fired` or `transferred`), and keep them in the state.
 - [x] **SIM-EFFECT-013**: When a move effect naming a detailed team is applied, the simulation core shall make the person a member of that team.
-- [x] **SIM-EFFECT-020**: When a move effect naming an aggregate team is applied, the simulation core shall mark the person `aggregated` and increase that team's headcount by one.
+- [x] **SIM-EFFECT-020**: When a move effect naming an aggregate team is applied, the simulation core shall mark the person `aggregated` and increase that team's headcount and the count for the person's performance level by one.
 - [x] **SIM-EFFECT-021**: When a move effect is applied to a person who leads a team, the simulation core shall make their former team leaderless.
 - [x] **SIM-EFFECT-022**: If a set-leader effect names a team that already has a leader, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
 - [x] **SIM-EFFECT-023**: If a set-leader effect names a person who already leads a team, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
@@ -54,11 +54,34 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 
 ## Teams
 
-- [x] **SIM-TEAM-001**: When a team is converted to aggregate form, the simulation core shall replace its member list with a headcount, skill, motivation, stress and attrition risk computed from its active members.
+- [x] **SIM-TEAM-001**: When a team is converted to aggregate form, the simulation core shall replace its member list with a headcount, skill, motivation, stress, attrition risk and count of people at each performance level, computed from its active members.
 - [x] **SIM-TEAM-004**: When a team is converted to aggregate form, the simulation core shall mark its active members `aggregated` and leave its leader active.
 - [x] **SIM-TEAM-002**: The simulation core shall not convert an aggregate team back into individual people.
 - [x] **SIM-TEAM-003**: When a person who leads a team departs, the simulation core shall make that team leaderless.
 - [x] **SIM-TEAM-005**: When an effect or rule changes the skill, motivation or stress of a detailed team, the simulation core shall apply the change to each of the team's active members.
+
+## Performance level
+
+- [x] **SIM-PERF-001**: When a simulation is created, the simulation core shall give each person and the player the performance level the starting organization specifies, or `unrated` when it specifies none, and record a specified rating in their history or the player's rating history as given in week 0 with the cause `rule.startingOrganization`.
+- [x] **SIM-PERF-002**: When a hire effect naming a detailed team is applied, the simulation core shall give the new person the performance level `unrated`.
+- [x] **SIM-PERF-003**: If a rate effect gives a rating other than `below`, `partial`, `meets`, `exceeds` or `outstanding`, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
+- [x] **SIM-PERF-004**: When a rate effect for a person that is not a revision is applied, the simulation core shall set that person's performance level to the given rating and append an entry to their history carrying the game week, the cause, the rating and the effect's note if it has one.
+- [x] **SIM-PERF-005**: When a rate effect for the player that is not a revision is applied, the simulation core shall set the player's performance level to the given rating and append an entry to the player's rating history carrying the game week, the rating and the cause.
+- [x] **SIM-PERF-006**: The simulation core shall change a person's or the player's performance level only when applying a rate effect.
+- [x] **SIM-PERF-007**: The simulation core shall report the plan a person or the player is on from the number of consecutive low ratings (`below` or `partial`) ending with their most recent rating: none for zero, a coaching plan for one, a performance improvement plan for two, and a failed performance improvement plan for three or more.
+- [x] **SIM-PERF-008**: When a rate effect gives a person a low rating that leaves them with three consecutive low ratings, the simulation core shall remove that person with departure reason `fired` and the rate effect's cause after applying the rest of the batch.
+- [x] **SIM-PERF-009**: When a rate effect gives the player a low rating that leaves them with three consecutive low ratings, the simulation core shall report a failed performance improvement plan for the player and change nothing else in the player's standing.
+- [x] **SIM-PERF-018**: When a rate effect marked as a revision is applied to a person or the player, the simulation core shall set their performance level to the given rating and replace their latest rating entry's rating with it, keeping the entry's week and recording the revision's cause, or add a new entry when they have no rating yet.
+- [x] **SIM-PERF-019**: The simulation core shall report no plan for a departed or aggregated person.
+- [x] **SIM-PERF-010**: The simulation core shall report an active person's contribution as a value from 0 to 100 that rises with their skill and motivation and falls with their stress.
+- [x] **SIM-PERF-011**: The simulation core shall report the rating an active person's contribution corresponds to by fixed contribution bands, such that a higher contribution never corresponds to a lower rating, and report neither contribution nor rating for a person who is not active.
+- [x] **SIM-PERF-012**: The simulation core shall keep each aggregate team's counts of people at each performance level, including `unrated`, summing to its headcount.
+- [x] **SIM-PERF-013**: When a re-rate effect is applied to an aggregate team, the simulation core shall move the given number of heads from the given performance level to the given rating.
+- [x] **SIM-PERF-014**: If a re-rate effect names a detailed team, a number of heads below one, a target other than one of the five ratings, or more heads than the team holds at the given performance level, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
+- [x] **SIM-PERF-020**: When a simulation is created with a team in aggregate form whose rating counts are not given, the simulation core shall count all its heads as `unrated`; if they are given and do not sum to its headcount, the simulation core shall refuse to create the simulation.
+- [x] **SIM-PERF-015**: When a value effect raises an aggregate team's headcount, the simulation core shall add the new heads to its `unrated` count.
+- [x] **SIM-PERF-016**: When an aggregate team loses headcount by attrition or by a value effect, the simulation core shall take each head lost from a performance level chosen at random, weighted by the number of heads at that level times a per-level weight that is higher for `below` and `outstanding` than for `meets`.
+- [x] **SIM-PERF-017**: When a team summary is queried for a detailed team, the simulation core shall include the count of its active members at each performance level.
 
 ## Advancing time
 
@@ -73,7 +96,7 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-ADV-009**: While more weeks than the drift threshold have passed since a person's want was last served, the simulation core shall lower that person's motivation on each advance.
 - [x] **SIM-ADV-010**: While no more weeks than the drift threshold have passed since a person's want was last served, the simulation core shall raise that person's motivation slowly on each advance.
 - [x] **SIM-ADV-011**: When the simulation is advanced, the simulation core shall give each active person a chance to quit that rises with how long their motivation has been low, how long their stress has been high, and how low their trust is.
-- [x] **SIM-ADV-012**: When the simulation is advanced, the simulation core shall reduce each aggregate team's headcount with a probability that rises with its attrition risk.
+- [x] **SIM-ADV-012**: When the simulation is advanced, the simulation core shall reduce each aggregate team's headcount with a probability that rises with its attrition risk, taking each head lost from a performance level as SIM-PERF-016 describes.
 - [x] **SIM-ADV-013**: When the simulation is advanced, the simulation core shall move the player's reputation up when the projects they are responsible for are on track and down when they are overdue or behind.
 - [x] **SIM-ADV-014**: When the simulation is advanced, the simulation core shall raise the player's stress with the number of teams under them that are leaderless or have overdue or behind-schedule projects, and lower it when there are none.
 - [x] **SIM-ADV-015**: When the simulation is advanced by a step of N weeks, the simulation core shall scale each rule's magnitude with N.
@@ -83,6 +106,6 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-QUERY-004**: The simulation core shall report an active project as overdue when the current game week is past its deadline week.
 - [x] **SIM-QUERY-005**: The simulation core shall report an active, non-overdue project as behind schedule when its progress divided by its scope is less than the weeks elapsed since its start week divided by the weeks from its start week to its deadline week.
 
-- [x] **SIM-QUERY-001**: The simulation core shall provide read-only queries for people matching a condition, a person's history, team summaries, overdue projects, behind-schedule projects, leaderless teams, and the player's standing.
+- [x] **SIM-QUERY-001**: The simulation core shall provide read-only queries for people matching a condition, a person's history, team summaries, a person's contribution and the rating it corresponds to, the plan a person or the player is on, overdue projects, behind-schedule projects, leaderless teams, and the player's standing.
 - [x] **SIM-QUERY-002**: When a team summary is queried for a detailed team, the simulation core shall compute it from the team's active members.
-- [x] **SIM-QUERY-003**: The simulation core shall report the player's reputation and stress without deciding burnout, dismissal or promotion.
+- [x] **SIM-QUERY-003**: The simulation core shall report the player's reputation, stress and performance level without deciding burnout, dismissal or promotion.

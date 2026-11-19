@@ -5,6 +5,8 @@ import {
   depart,
   isBehind,
   isOverdue,
+  loseHeads,
+  outputFactor,
   random,
   record,
   sortedIds,
@@ -31,9 +33,7 @@ function projectWork(ctx: Ctx, weeks: number) {
     const perWeek =
       t.headcount *
       TUNING.workPerPersonPerWeek *
-      (t.skill / 50) *
-      (0.5 + t.motivation / 100) *
-      (1 - t.stress / 200) *
+      outputFactor(t.skill, t.motivation, t.stress) *
       (1 - p.techDebt / 200);
     const before = p.progress;
     p.progress = Math.min(p.scope, before + Math.round(perWeek * weeks));
@@ -103,8 +103,7 @@ function departure(ctx: Ctx, weeks: number) {
     const perHead = chanceOver((agg.attritionRisk / 100) * TUNING.aggregateAttritionPerWeek, weeks);
     let lost = 0;
     for (let i = 0; i < agg.headcount; i++) if (random(ctx) < perHead) lost++;
-    record(ctx, cause, { kind: 'team', id: team.id }, 'headcount', agg.headcount, agg.headcount - lost);
-    agg.headcount -= lost;
+    if (lost > 0) loseHeads(ctx, team, lost, cause);
   }
 }
 

@@ -3,10 +3,13 @@ import {
   advance,
   applyEffects,
   behindScheduleProjects,
+  contribution,
+  correspondingRating,
   leaderlessTeams,
   overdueProjects,
   peopleWhere,
   personHistory,
+  planOf,
   playerStanding,
   teamSummary,
 } from '../../src/sim';
@@ -27,7 +30,11 @@ describe('queries', () => {
     expect(overdueProjects(s)).toEqual([]);
     expect(behindScheduleProjects(s)).toEqual([]);
     expect(leaderlessTeams(s)).toEqual([]);
-    expect(playerStanding(s)).toEqual({ reputation: 50, stress: 30 });
+    expect(playerStanding(s)).toEqual({ reputation: 50, stress: 30, performance: 'unrated' });
+    expect(contribution(s, 'e1')).toEqual(expect.any(Number));
+    expect(correspondingRating(s, 'e1')).toEqual(expect.any(String));
+    expect(planOf(s, { kind: 'person', id: 'e1' })).toBe('none');
+    expect(planOf(s, { kind: 'player' })).toBe('none');
     expect(s).toEqual(snapshot);
   });
 
@@ -47,10 +54,11 @@ describe('queries', () => {
   // @spec SIM-QUERY-003
   it('reports the player’s standing without judging it', () => {
     const s = patch(fresh(), (st) => {
-      st.player = { reputation: 0, stress: 100 };
+      st.player.reputation = 0;
+      st.player.stress = 100;
     });
     const after = advance(s, 4).state;
-    expect(Object.keys(playerStanding(after)).sort()).toEqual(['reputation', 'stress']);
+    expect(Object.keys(playerStanding(after)).sort()).toEqual(['performance', 'reputation', 'stress']);
     expect(Object.keys(after).sort()).toEqual(['people', 'player', 'projects', 'rngState', 'teams', 'week']);
   });
 

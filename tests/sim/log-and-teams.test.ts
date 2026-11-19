@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { advance, aggregateTeam, applyEffects } from '../../src/sim';
-import { ACTION, RULE, SITUATION, entriesFor, expectOk, fresh, patch, person } from './fixtures';
+import { ACTION, RULE, SITUATION, entriesFor, expectOk, fresh, patch, person, rated } from './fixtures';
 
 describe('change log and history', () => {
   // @spec SIM-LOG-001
@@ -47,6 +47,9 @@ describe('teams', () => {
     const t1 = state.teams.t1!;
     expect(t1.form).toBe('aggregate');
     expect(t1.aggregate).toMatchObject({ headcount: 3, skill: 50, motivation: 50, stress: 30 });
+    expect(aggregateTeam(rated(), 't1', ACTION).state.teams.t1!.aggregate!.ratings).toEqual({
+      unrated: 0, below: 0, partial: 0, meets: 1, exceeds: 1, outstanding: 1,
+    });
     expect(t1.aggregate!.attritionRisk).toBeGreaterThanOrEqual(0);
   });
 

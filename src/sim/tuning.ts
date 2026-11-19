@@ -35,6 +35,11 @@ export const TUNING = {
   highStressQuitChancePerYear: 0.1,
   /** Weekly chance that each head of an aggregate team leaves, at 100 attrition risk. */
   aggregateAttritionPerWeek: 0.08,
+  /** Relative chance that a head lost from an aggregate team comes from each performance level. */
+  lossWeightByLevel: { unrated: 1, below: 2, partial: 1.25, meets: 1, exceeds: 1.25, outstanding: 2 },
+
+  /** Lowest contribution that corresponds to each rating above `below`. */
+  contributionBands: { partial: 20, meets: 40, exceeds: 60, outstanding: 80 },
 
   /** Weekly reputation change per project on track (positive) or in trouble (negative). */
   reputationPerProjectPerWeek: 1,

@@ -38,6 +38,7 @@ A person is an engineer or a manager below the player.
 | `stress` | Current load and strain |
 | `trust` | Their trust in their own manager (the player, or a manager the player manages) |
 | `want` | What matters most to them: `growth`, `recognition`, `stability` or `autonomy` |
+| `performance` | Their performance level: `unrated`, or a rating of `below`, `partial`, `meets`, `exceeds` or `outstanding` (see *Performance level*) |
 | `joinedWeek` | Game week they joined; tenure is derived from it |
 | `wantServedWeek` | Game week their want was last served; starts at `joinedWeek` |
 | `lowMotivationWeeks`, `highStressWeeks` | Consecutive weeks motivation has been low or stress high; drive departure |
@@ -50,6 +51,25 @@ A person's `want` is fixed for as long as they are in the simulation. It changes
 
 `trust` changes how the player's actions land and whether people stay. Positive motivation effects caused by the player — player actions and situation choices — are scaled down when the target's trust is low, and low trust raises the chance of departure.
 
+### Performance level
+
+A person's **performance level** is the rating their manager's evaluations give them, on a five-step scale: below expectations (`below`), partially meets (`partial`), meets (`meets`), exceeds (`exceeds`) and outstanding (`outstanding`). It is distinct from skill: skill is what they can do, the rating is what the organization has officially said about it, and the two can disagree. A person in the starting organization, and the player, may already be rated; that rating is recorded as given in week 0 by the starting organization (cause `rule.startingOrganization`), so it counts toward their plan. A hired person starts `unrated`.
+
+Everyone has a performance level: every person and the player. Only a **rate** effect changes a rating (see *Effects, Causes and History*). No advance rule changes it. What a rating does to the person's motivation or trust is expressed by the effects submitted with it, so it lands when it is given and carries the cause of that evaluation or calibration choice.
+
+`below` and `partial` are **low** ratings. Consecutive low ratings put someone on a plan, derived from their ratings rather than stored:
+
+| Consecutive low ratings, most recent first | Plan |
+|---|---|
+| None (unrated, or latest rating `meets` or better) | none |
+| One | coaching plan |
+| Two | performance improvement plan (PIP) |
+| Three or more | failed PIP |
+
+A rate effect either adds a new rating (an evaluation) or is a **revision** that replaces the latest rating (a calibration adjusting a rating just given), so that one review cycle never counts twice. A rating of `meets` or better ends any plan. A person whose PIP fails is removed, with departure reason `fired` and the cause of the rate effect that gave the third low rating; the removal takes effect after the rest of the batch is applied, so the effects submitted with the rating still land. If they led a team, it becomes leaderless. The player's failed PIP is reported, not acted on: what it means for the run is decided by the performance review. Departed people and people in aggregate teams have no plans, since they are no longer individuals the player manages.
+
+To let the rest of the game compare a rating with the work behind it, the core derives each active person's **contribution**, from 0 to 100, from their skill, motivation and stress, the same factors that give a team its capacity for project work. Contribution maps onto the rating scale by fixed bands, giving the rating the person's work **corresponds to**. Both are derived, not stored, and exist only for active people.
+
 Departed and aggregated people stay in the state so that history and debriefs can refer to them. Only active people are simulated or can be targeted by effects.
 
 ### Player standing
@@ -58,6 +78,8 @@ Departed and aggregated people stay in the state so that history and debriefs ca
 |---|---|
 | `reputation` | How the player's own manager rates them |
 | `stress` | The player's own load |
+| `performance` | The player's own performance level, on the same scale as a person's; set by their performance reviews |
+| `ratingHistory` | Every rating the player has been given: game week, rating and cause |
 
 What the player can do with their time is defined by the active career level, not by the core.
 
@@ -70,13 +92,13 @@ The state holds only the player's own organization: every team in it is under th
 A team has a leader (the player, a managed person, or none), a list of projects, and one of two representations:
 
 - **Detailed**: a list of member people, each simulated individually.
-- **Aggregate**: a summary in place of members — `headcount`, `skill`, `motivation`, `stress` and `attritionRisk` — simulated as a unit.
+- **Aggregate**: a summary in place of members — `headcount`, `skill`, `motivation`, `stress`, `attritionRisk` and `ratings` — simulated as a unit. `ratings` counts how many of the team's people hold each performance level, including `unrated`; its counts always sum to the headcount. A team given in aggregate form in the starting organization without rating counts has all its heads `unrated`.
 
 A change to a detailed team's skill, motivation or stress, whether from an effect or a rule, applies to each of its active members; a detailed team has no values of its own.
 
 Which teams are detailed is decided by the active career level. Converting a team from detailed to aggregate computes the summary from its active members and marks those members `aggregated`. A person who leads the team is not a member and stays active, so a senior manager's line managers remain individuals while their teams become aggregates. Conversion is one-way: the core never turns an aggregate back into individuals.
 
-Hiring into an aggregate team raises its headcount by one instead of adding a person. Moving a person into an aggregate team marks them `aggregated` and raises its headcount by one.
+Hiring into an aggregate team raises its headcount by one instead of adding a person; the new head counts as `unrated`. Moving a person into an aggregate team marks them `aggregated`, raises its headcount by one and adds one to the count for their rating. Whenever an aggregate team loses headcount, by attrition or by a value effect, each head lost is taken from a rating chosen at random, weighted by how many people hold it and by a per-rating weight that is higher at both ends of the scale: strong performers are recruited away and weak ones are managed out; a gain from a value effect counts as `unrated`.
 
 A team has at most one leader. Moving a team's leader to another team makes them a member there and leaves their old team leaderless. Setting a leader on a team that already has one is invalid; the current leader must be removed or moved first.
 
@@ -113,15 +135,17 @@ There are two kinds of effect:
   - remove a person (quit, fired or transferred),
   - move a person to another team,
   - set a team's leader (the team must be leaderless, and the person must not already lead a team),
+  - rate a person or the player (give an active person or the player a rating, either as a new rating or as a revision of the latest one; a rating for a person may carry a history note),
+  - re-rate within an aggregate team (move a number of heads from one performance level to a rating, for calibration at levels where the team's people are not individuals; the team must be aggregate and hold at least that many heads at the first level; moving heads to the level they are already at changes nothing),
   - start a project for a team,
   - reassign a project to another team,
   - cancel a project.
 
-Effects are submitted in batches. Each effect in a batch is validated against the state as left by the effects before it, so a batch can remove a team's leader and then set a new one. If any effect lacks a cause, targets something that does not exist, targets a person who is not active, carries a history note on anything but a person, or sets a leader where that is invalid, the whole batch is rejected with an error naming the invalid effect, and the state is unchanged. A valid batch is applied in the order given, with each value effect clamped as it is applied. Want tags on an effect that targets anything other than a person are ignored.
+Effects are submitted in batches. Each effect in a batch is validated against the state as left by the effects before it, so a batch can remove a team's leader and then set a new one. If any effect lacks a cause, targets something that does not exist, targets a person who is not active, carries a history note on anything but a person, sets a leader where that is invalid, or re-rates more heads than the team holds at that level, the whole batch is rejected with an error naming the invalid effect, and the state is unchanged. A valid batch is applied in the order given, with each value effect clamped as it is applied. Want tags on an effect that targets anything other than a person are ignored.
 
 Every applied change, whether from a submitted effect or from a rule during an advance, is recorded in the **change log** for the operation, with its cause and the value before and after. The change log is returned to the caller; the core does not keep change logs from earlier operations.
 
-A value effect with a history note is also appended to the target person's `history`, with the game week, the cause and the note. History is the durable record that situations trigger on ("passed over for promotion twice") and debriefs cite ("her motivation fell after you…"). Only individual people have history; aggregate teams do not.
+A value effect with a history note is also appended to the target person's `history`, with the game week, the cause and the note. History is the durable record that situations trigger on ("passed over for promotion twice") and debriefs cite ("her motivation fell after you…"). Every rate effect for a person is also appended to their history, with the rating it gave and its note if it has one (a rating for the player goes to the player's rating history), so that situations can trigger on a run of ratings ("rated below what they delivered twice"). Only individual people have history; aggregate teams do not.
 
 ## Advancing Time
 
@@ -141,7 +165,7 @@ Exact formulas and constants are tuning, kept in code next to the rules that use
 
 ## Reading the State
 
-Situations, career levels and debriefs read the state through read-only queries: people matching a condition, a person's history, team summaries (computed for detailed teams, stored for aggregate ones), overdue and behind-schedule projects, leaderless teams, and the player's standing. Queries never change the state.
+Situations, career levels and debriefs read the state through read-only queries: people matching a condition, a person's history, team summaries (computed for detailed teams, stored for aggregate ones), a person's contribution and the rating it corresponds to, the plan a person or the player is on, overdue and behind-schedule projects, leaderless teams, and the player's standing. Queries never change the state.
 
 ## Interface
 
@@ -168,6 +192,12 @@ State is plain, serializable data. Every operation returns a new state and leave
 | Detailed vs aggregate teams | Two team forms, one-way conversion | Simulate every person at every level; drop teams from the model once out of view | Higher levels must not show individuals, but their teams' health still has to move and matter. Simulating everyone individually keeps detail the player never sees; converting back would have to invent people. |
 | Value scale | Integers 0–100 | Floating-point values; unbounded values | Integers read clearly in debriefs and the UI and compare reliably in situation triggers. |
 | Pure, serializable state | Operations return new state; randomness from a seeded generator held in the state; iteration in id order | Mutable objects; global random source | Makes saves trivial, makes runs reproducible for tests and bug reports, and lets the turn loop discard a state safely. |
+| Performance level scale | A five-step rating plus `unrated`, changed only by a rate effect | A 0–100 value changed by value effects | Real evaluations assign a rating rather than adding points to one, and calibration is an argument over which step someone belongs on. A distinct `unrated` keeps new hires from being silently treated as average. |
+| Ratings in aggregate teams | Aggregate summaries keep a count per rating, adjusted by a re-rate effect | Calibrate only the managers who remain individuals; keep teams detailed wherever calibration happens | Calibration at senior manager is about the spread of ratings across teams ("four exceeds on one team, none on the other"), which survives aggregation as counts. Keeping teams detailed would show individuals the level is meant to hide. |
+| Consequences of a rating | Expressed by the effects submitted with the rate effect, at the moment it is given; core derives contribution so content can compare | An ongoing rule draining motivation from anyone rated below their contribution | Landing the consequence with the evaluation gives it a cause a debrief can name, keeps the rule set small, and avoids overlapping with want drift. History keeps the rating so later situations can follow up. |
+| Coaching plans and PIPs | Derived from consecutive low ratings; a person's failed PIP removes them automatically | A stored plan field content can set; a failed PIP handed to the player to decide | Deriving keeps plan and ratings from disagreeing. Automatic removal makes the PIP's stakes unambiguous; the player's work is avoiding that outcome through coaching, and handling its effect on the team. |
+| Revising a rating | A rate effect may be marked as a revision, replacing the latest rating | Every rate effect adds a rating; ratings in the same game week count as one | Calibration adjusts ratings already given; counting the adjustment as a second rating would put people on a PIP from one review cycle. Same-week merging breaks when calibration falls in a later week than the evaluation. |
+| Removal after a failed PIP | Applied after the rest of the batch | Applied at the rate effect, in batch order | Content naturally submits a rating together with its consequences; removing the person mid-batch would make those later effects target a departed person and reject the batch. |
 | Judging outcomes | The core reports values; career levels and reviews decide burnout, dismissal and promotion | The core declares burnout or dismissal itself | What counts as failure differs by career level, which the core does not know about. |
 
 ## Open Questions & Future Decisions

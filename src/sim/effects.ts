@@ -1,5 +1,14 @@
-import { changePerson, changeTeam, clamp100, depart, leadsTeam, record, type Ctx } from './core';
-import type { ApplyEffectsResult, Cause, Effect, Person, SimState } from './types';
+import { changePerson, changeTeam, clamp100, depart, gainHeads, leadsTeam, loseHeads, personRatings, planFrom, record, type Ctx } from './core';
+import {
+  PERFORMANCE_LEVELS,
+  RATINGS,
+  type ApplyEffectsResult,
+  type Cause,
+  type Effect,
+  type HistoryEntry,
+  type Person,
+  type SimState,
+} from './types';
 
 const PERSON_FIELDS = ['skill', 'motivation', 'stress', 'trust'] as const;
 const DETAILED_TEAM_FIELDS = ['skill', 'motivation', 'stress'] as const;
@@ -55,6 +64,21 @@ function invalidReason(s: SimState, e: Effect): string | undefined {
       }
       return 'unknown target';
     }
+    case 'rate': {
+      if (!has(RATINGS, e.rating)) return `unknown rating ${String(e.rating)}`;
+      if (e.target.kind === 'player') return e.historyNote !== undefined ? 'history notes can only target a person' : undefined;
+      return activePerson(e.target.id);
+    }
+    case 'reRate': {
+      const t = s.teams[e.teamId];
+      if (!t) return `team ${e.teamId} does not exist`;
+      if (t.form !== 'aggregate' || !t.aggregate) return `team ${e.teamId} is not aggregate`;
+      if (!has(PERFORMANCE_LEVELS, e.from)) return `unknown performance level ${String(e.from)}`;
+      if (!has(RATINGS, e.to)) return `unknown rating ${String(e.to)}`;
+      if (!Number.isInteger(e.count) || e.count < 1) return 'count must be a whole number of at least one';
+      if (t.aggregate.ratings[e.from] < e.count) return `team ${e.teamId} has fewer than ${e.count} heads at ${e.from}`;
+      return undefined;
+    }
     case 'hire':
       return team(e.teamId) ?? (s.people[e.person.id] ? `person ${e.person.id} already exists` : undefined);
     case 'remove':
@@ -82,10 +106,33 @@ function invalidReason(s: SimState, e: Effect): string | undefined {
   }
 }
 
-function raiseHeadcount(ctx: Ctx, teamId: string, cause: Cause) {
-  const agg = ctx.s.teams[teamId]!.aggregate!;
-  record(ctx, cause, { kind: 'team', id: teamId }, 'headcount', agg.headcount, agg.headcount + 1);
-  agg.headcount += 1;
+/** Gives a person or the player a rating, either as a new rating or as a revision of their latest one. */
+function rate(ctx: Ctx, e: Extract<Effect, { type: 'rate' }>) {
+  const s = ctx.s;
+  const holder = e.target.kind === 'player' ? s.player : s.people[e.target.id]!;
+  record(ctx, e.cause, e.target, 'performance', holder.performance, e.rating);
+  holder.performance = e.rating;
+
+  if (e.target.kind === 'player') {
+    const list = s.player.ratingHistory;
+    const latest = list.length - 1;
+    const entry = { week: e.revision && latest >= 0 ? list[latest]!.week : s.week, cause: e.cause, rating: e.rating };
+    const before = e.revision && latest >= 0 ? list[latest] : undefined;
+    if (before) list[latest] = entry;
+    else list.push(entry);
+    record(ctx, e.cause, e.target, 'ratingHistory', before, entry);
+    return;
+  }
+  const history = s.people[e.target.id]!.history;
+  let latest = -1;
+  for (let i = history.length - 1; i >= 0 && latest < 0; i--) if (history[i]!.rating) latest = i;
+  const replacing = e.revision && latest >= 0;
+  const entry: HistoryEntry = { week: replacing ? history[latest]!.week : s.week, cause: e.cause, rating: e.rating };
+  if (e.historyNote !== undefined) entry.note = e.historyNote;
+  const before = replacing ? history[latest] : undefined;
+  if (replacing) history[latest] = entry;
+  else history.push(entry);
+  record(ctx, e.cause, e.target, 'history', before, entry);
 }
 
 function apply(ctx: Ctx, e: Effect) {
@@ -98,10 +145,9 @@ function apply(ctx: Ctx, e: Effect) {
       } else if (t.kind === 'team') {
         const team = s.teams[t.id]!;
         if (team.form === 'aggregate' && e.field === 'headcount') {
-          const agg = team.aggregate!;
-          const after = Math.max(0, Math.round(agg.headcount + e.amount));
-          record(ctx, e.cause, t, 'headcount', agg.headcount, after);
-          agg.headcount = after;
+          const change = Math.round(e.amount);
+          if (change > 0) gainHeads(ctx, team, change, 'unrated', e.cause);
+          else if (change < 0) loseHeads(ctx, team, -change, e.cause);
         } else if (team.form === 'aggregate' && e.field === 'attritionRisk') {
           const agg = team.aggregate!;
           const after = clamp100(agg.attritionRisk + e.amount);
@@ -126,11 +172,24 @@ function apply(ctx: Ctx, e: Effect) {
       }
       return;
     }
+    case 'rate':
+      return rate(ctx, e);
+    case 'reRate': {
+      if (e.from === e.to) return;
+      const team = s.teams[e.teamId]!;
+      const ratings = team.aggregate!.ratings;
+      const before = { ...ratings };
+      ratings[e.from] -= e.count;
+      ratings[e.to] += e.count;
+      ctx.log.push({ cause: e.cause, target: { kind: 'team', id: team.id }, field: 'ratings', before, after: { ...ratings } });
+      return;
+    }
     case 'hire': {
       const team = s.teams[e.teamId]!;
-      if (team.form === 'aggregate') return raiseHeadcount(ctx, team.id, e.cause);
+      if (team.form === 'aggregate') return gainHeads(ctx, team, 1, 'unrated', e.cause);
       const p: Person = {
         ...e.person,
+        performance: 'unrated',
         joinedWeek: s.week,
         wantServedWeek: s.week,
         lowMotivationWeeks: 0,
@@ -157,7 +216,7 @@ function apply(ctx: Ctx, e: Effect) {
       if (s.teams[e.teamId]!.form === 'aggregate') {
         record(ctx, e.cause, { kind: 'person', id: p.id }, 'status', p.status, 'aggregated');
         p.status = 'aggregated';
-        raiseHeadcount(ctx, e.teamId, e.cause);
+        gainHeads(ctx, s.teams[e.teamId]!, 1, p.performance, e.cause);
       }
       return;
     }
@@ -196,12 +255,25 @@ function apply(ctx: Ctx, e: Effect) {
 // @spec SIM-EFFECT-008, SIM-EFFECT-009, SIM-EFFECT-010, SIM-EFFECT-011, SIM-EFFECT-012, SIM-EFFECT-013, SIM-EFFECT-014
 // @spec SIM-EFFECT-015, SIM-EFFECT-016, SIM-EFFECT-017, SIM-EFFECT-018, SIM-EFFECT-019, SIM-EFFECT-020, SIM-EFFECT-021
 // @spec SIM-EFFECT-022, SIM-EFFECT-023, SIM-EFFECT-024, SIM-LOG-001, SIM-LOG-004, SIM-TEAM-003, SIM-TEAM-005
+// @spec SIM-PERF-002, SIM-PERF-003, SIM-PERF-004, SIM-PERF-005, SIM-PERF-006, SIM-PERF-008, SIM-PERF-009, SIM-PERF-012
+// @spec SIM-PERF-013, SIM-PERF-014, SIM-PERF-015, SIM-PERF-016, SIM-PERF-018
 export function applyEffects(state: SimState, effects: Effect[]): ApplyEffectsResult {
   const ctx: Ctx = { s: structuredClone(state), log: [] };
+  // People whose PIP a rate effect in this batch failed, with that effect's cause; removed once the batch is applied.
+  const failedPips = new Map<string, Cause>();
   for (const [index, effect] of effects.entries()) {
     const message = invalidReason(ctx.s, effect);
     if (message) return { ok: false, error: { index, effect, message } };
     apply(ctx, effect);
+    if (effect.type === 'rate' && effect.target.kind === 'person') {
+      const p = ctx.s.people[effect.target.id]!;
+      if (planFrom(personRatings(p)) === 'failedPip') failedPips.set(p.id, effect.cause);
+      else failedPips.delete(p.id);
+    }
+  }
+  for (const [id, cause] of failedPips) {
+    const p = ctx.s.people[id]!;
+    if (p.status === 'active') depart(ctx, p, 'fired', cause);
   }
   return { ok: true, state: ctx.s, log: ctx.log };
 }

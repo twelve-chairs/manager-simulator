@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { aggregateTeam, applyEffects, type Cause, type Effect, type SimState } from '../../src/sim';
-import { ACTION, RULE, SITUATION, expectOk, expectRejected, fresh, patch, person } from './fixtures';
+import { ACTION, RULE, SITUATION, expectOk, expectRejected, fresh, patch, person, rated } from './fixtures';
 
 const motivation = (id: string, amount: number, cause: Cause = RULE, extra: Partial<Effect> = {}): Effect =>
   ({ type: 'value', target: { kind: 'person', id }, field: 'motivation', amount, cause, ...extra }) as Effect;
@@ -160,6 +160,7 @@ describe('structural effects', () => {
     const before = s.teams.t1!.aggregate!.headcount;
     const r = expectOk(applyEffects(s, [{ type: 'hire', teamId: 't1', person: newHire, cause: ACTION }]));
     expect(r.state.teams.t1!.aggregate!.headcount).toBe(before + 1);
+    expect(r.state.teams.t1!.aggregate!.ratings.unrated).toBe(s.teams.t1!.aggregate!.ratings.unrated + 1);
     expect(r.state.people.n1).toBeUndefined();
   });
 
@@ -180,11 +181,12 @@ describe('structural effects', () => {
 
   // @spec SIM-EFFECT-020
   it('aggregates a person moved into an aggregate team', () => {
-    const s = aggregateTeam(fresh(), 't2', ACTION).state;
+    const s = aggregateTeam(rated(), 't2', ACTION).state;
     const before = s.teams.t2!.aggregate!.headcount;
     const r = expectOk(applyEffects(s, [{ type: 'move', personId: 'e1', teamId: 't2', cause: ACTION }]));
     expect(person(r.state, 'e1').status).toBe('aggregated');
     expect(r.state.teams.t2!.aggregate!.headcount).toBe(before + 1);
+    expect(r.state.teams.t2!.aggregate!.ratings.exceeds).toBe(s.teams.t2!.aggregate!.ratings.exceeds + 1);
   });
 
   // @spec SIM-EFFECT-021

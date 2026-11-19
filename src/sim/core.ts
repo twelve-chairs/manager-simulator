@@ -1,4 +1,19 @@
-import type { Cause, ChangeLogEntry, Person, Project, SimState, Team, TeamAggregate, ValueTarget, WantTags } from './types';
+import {
+  PERFORMANCE_LEVELS,
+  type Cause,
+  type ChangeLogEntry,
+  type HistoryEntry,
+  type PerformanceLevel,
+  type Person,
+  type Plan,
+  type Project,
+  type Rating,
+  type SimState,
+  type Team,
+  type TeamAggregate,
+  type ValueTarget,
+  type WantTags,
+} from './types';
 import { TUNING } from './tuning';
 
 /** A working copy of the state plus the change log for the operation in progress. */
@@ -47,8 +62,65 @@ export function summarize(s: SimState, team: Team): TeamAggregate {
   const mean = (f: (p: Person) => number) => (ms.length ? Math.round(ms.reduce((a, p) => a + f(p), 0) / ms.length) : 0);
   const motivation = mean((p) => p.motivation);
   const stress = mean((p) => p.stress);
-  return { headcount: ms.length, skill: mean((p) => p.skill), motivation, stress, attritionRisk: attritionRiskOf(motivation, stress) };
+  const ratings = emptyRatings();
+  for (const p of ms) ratings[p.performance] += 1;
+  return { headcount: ms.length, skill: mean((p) => p.skill), motivation, stress, attritionRisk: attritionRiskOf(motivation, stress), ratings };
 }
+
+export const emptyRatings = (): Record<PerformanceLevel, number> =>
+  Object.fromEntries(PERFORMANCE_LEVELS.map((l) => [l, 0])) as Record<PerformanceLevel, number>;
+
+/** Output factor shared by project work and contribution: 1 for an average, unstressed engineer. */
+export const outputFactor = (skill: number, motivation: number, stress: number) =>
+  (skill / 50) * (0.5 + motivation / 100) * (1 - stress / 200);
+
+/**
+ * Removes `n` heads from an aggregate team, each from a performance level drawn at random,
+ * weighted by its count and by how likely people at that level are to leave.
+ */
+export function loseHeads(ctx: Ctx, team: Team, n: number, cause: Cause) {
+  const agg = team.aggregate!;
+  const headcountBefore = agg.headcount;
+  const ratingsBefore = { ...agg.ratings };
+  for (let i = 0; i < n && agg.headcount > 0; i++) {
+    const weights = PERFORMANCE_LEVELS.map((l) => agg.ratings[l] * TUNING.lossWeightByLevel[l]);
+    let pick = random(ctx) * weights.reduce((a, b) => a + b, 0);
+    let level: PerformanceLevel = 'unrated';
+    for (const [j, l] of PERFORMANCE_LEVELS.entries()) {
+      if (weights[j] === 0) continue;
+      level = l;
+      pick -= weights[j]!;
+      if (pick < 0) break;
+    }
+    agg.ratings[level] -= 1;
+    agg.headcount -= 1;
+  }
+  record(ctx, cause, { kind: 'team', id: team.id }, 'headcount', headcountBefore, agg.headcount);
+  if (headcountBefore !== agg.headcount) {
+    ctx.log.push({ cause, target: { kind: 'team', id: team.id }, field: 'ratings', before: ratingsBefore, after: { ...agg.ratings } });
+  }
+}
+
+/** Adds heads to an aggregate team at the given performance level. */
+export function gainHeads(ctx: Ctx, team: Team, n: number, level: PerformanceLevel, cause: Cause) {
+  const agg = team.aggregate!;
+  const before = { ...agg.ratings };
+  record(ctx, cause, { kind: 'team', id: team.id }, 'headcount', agg.headcount, agg.headcount + n);
+  agg.headcount += n;
+  agg.ratings[level] += n;
+  ctx.log.push({ cause, target: { kind: 'team', id: team.id }, field: 'ratings', before, after: { ...agg.ratings } });
+}
+
+const isLow = (r: Rating) => r === 'below' || r === 'partial';
+
+/** The plan someone is on, from their ratings, oldest first. */
+export function planFrom(ratings: Rating[]): Plan {
+  let run = 0;
+  for (let i = ratings.length - 1; i >= 0 && isLow(ratings[i]!); i--) run++;
+  return run === 0 ? 'none' : run === 1 ? 'coaching' : run === 2 ? 'pip' : 'failedPip';
+}
+
+export const personRatings = (p: Person): Rating[] => p.history.flatMap((h) => (h.rating ? [h.rating] : []));
 
 export const isOverdue = (s: SimState, p: Project) => p.status === 'active' && s.week > p.deadlineWeek;
 
@@ -101,7 +173,7 @@ export function changePerson(
     record(ctx, cause, target, 'wantServedWeek', was, person.wantServedWeek);
   }
   if (historyNote !== undefined) {
-    const entry = { week: ctx.s.week, cause, note: historyNote };
+    const entry: HistoryEntry = { week: ctx.s.week, cause, note: historyNote };
     person.history.push(entry);
     record(ctx, cause, target, 'history', undefined, entry);
   }

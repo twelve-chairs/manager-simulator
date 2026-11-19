@@ -3,6 +3,14 @@ export type Role = 'engineer' | 'manager';
 export type PersonStatus = 'active' | 'departed' | 'aggregated';
 export type DepartureReason = 'quit' | 'fired' | 'transferred';
 export type ProjectStatus = 'active' | 'completed' | 'cancelled';
+export type Rating = 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding';
+export type PerformanceLevel = 'unrated' | Rating;
+export type Plan = 'none' | 'coaching' | 'pip' | 'failedPip';
+
+/** Ratings from lowest to highest. */
+export const RATINGS: readonly Rating[] = ['below', 'partial', 'meets', 'exceeds', 'outstanding'];
+/** Every performance level, in the order rating counts list them. */
+export const PERFORMANCE_LEVELS: readonly PerformanceLevel[] = ['unrated', ...RATINGS];
 
 export type Cause =
   | { kind: 'action'; actionId: string }
@@ -12,7 +20,15 @@ export type Cause =
 export interface HistoryEntry {
   week: number;
   cause: Cause;
-  note: string;
+  note?: string;
+  /** Present when the entry records a rating. */
+  rating?: Rating;
+}
+
+export interface RatingEntry {
+  week: number;
+  cause: Cause;
+  rating: Rating;
 }
 
 export interface Person {
@@ -24,6 +40,7 @@ export interface Person {
   stress: number;
   trust: number;
   want: Want;
+  performance: PerformanceLevel;
   joinedWeek: number;
   wantServedWeek: number;
   /** Consecutive weeks motivation has been below the low-motivation line. */
@@ -44,6 +61,8 @@ export interface TeamAggregate {
   motivation: number;
   stress: number;
   attritionRisk: number;
+  /** Heads at each performance level; the counts sum to headcount. */
+  ratings: Record<PerformanceLevel, number>;
 }
 
 export interface Team {
@@ -71,6 +90,8 @@ export interface Project {
 export interface PlayerStanding {
   reputation: number;
   stress: number;
+  performance: PerformanceLevel;
+  ratingHistory: RatingEntry[];
 }
 
 export interface SimState {
@@ -103,11 +124,16 @@ export interface NewProject {
   deadlineWeek: number;
 }
 
+/** A team as given in a starting organization; an aggregate team's rating counts may be left out. */
+export type StartingTeam = Omit<Team, 'aggregate'> & {
+  aggregate?: Omit<TeamAggregate, 'ratings'> & { ratings?: Record<PerformanceLevel, number> };
+};
+
 export interface StartingOrganization {
-  player: PlayerStanding;
-  teams: Team[];
+  player: { reputation: number; stress: number; performance?: Rating };
+  teams: StartingTeam[];
   /** People with the team they belong to (for managers, the team they lead). */
-  people: (NewPerson & { teamId: string })[];
+  people: (NewPerson & { teamId: string; performance?: Rating })[];
   projects: NewProject[];
 }
 
@@ -132,6 +158,16 @@ export type Effect =
       wantTags?: WantTags;
       historyNote?: string;
     }
+  | {
+      type: 'rate';
+      target: { kind: 'person'; id: string } | { kind: 'player' };
+      rating: Rating;
+      cause: Cause;
+      /** Replaces the latest rating instead of adding one. */
+      revision?: boolean;
+      historyNote?: string;
+    }
+  | { type: 'reRate'; teamId: string; from: PerformanceLevel; to: Rating; count: number; cause: Cause }
   | { type: 'hire'; teamId: string; person: NewPerson; cause: Cause }
   | { type: 'remove'; personId: string; reason: DepartureReason; cause: Cause }
   | { type: 'move'; personId: string; teamId: string; cause: Cause }
