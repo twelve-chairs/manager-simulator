@@ -109,7 +109,7 @@ export function plannedHours(level: LineState, sim: SimState, decisions: Record<
 // @spec LINE-ACT-001, LINE-ACT-002, LINE-ACT-003, LINE-ACT-004, LINE-ACT-005, LINE-ACT-006, LINE-ACT-007, LINE-ACT-008
 // @spec LINE-ACT-009, LINE-ACT-010, LINE-ACT-011, LINE-ACT-012, LINE-ACT-013
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-008, LINE-INBOX-009, LINE-INBOX-010
-// @spec LINE-INBOX-011, LINE-INBOX-012, LINE-INBOX-013, LINE-INBOX-014, LINE-INBOX-015, LINE-INBOX-016, LINE-HIRE-002, LINE-HIRE-003
+// @spec LINE-INBOX-011, LINE-INBOX-012, LINE-INBOX-013, LINE-INBOX-014, LINE-INBOX-015, LINE-INBOX-016, LINE-INBOX-017, LINE-HIRE-002, LINE-HIRE-003
 export function commitWeek(level: LineState, sim: SimState, decisions: Record<string, Decision>): CommitResult {
   for (const [demandId, decision] of Object.entries(decisions)) {
     const demand = level.inbox.find((d) => d.id === demandId);
@@ -120,7 +120,8 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
 
   const s = structuredClone(level);
   const week = sim.week;
-  const report: CommitReport = { hours: 0, overtime: 0, dropped: [], delegations: [], undelegated: [], voided: [], expired: [] };
+  const report: CommitReport = { hours: 0, overtime: 0, dropped: [], delegations: [], undelegated: [], voided: [], expired: [], demands: {} };
+  const describe = (d: Demand) => (report.demands[d.id] = { type: d.type, subject: { ...d.subject } });
   const effects: Effect[] = [];
   reconcileVacancies(s, sim);
 
@@ -165,6 +166,7 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
   for (const demand of s.inbox) {
     if (!subjectValid(s, sim, demand) && decisions[demand.id]) {
       report.voided.push({ demandId: demand.id, reason: `the ${demand.subject.kind} ${demand.subject.id} is no longer there to act on` });
+      describe(demand);
     }
   }
   s.inbox = s.inbox.filter((d) => subjectValid(s, sim, d));
@@ -181,12 +183,14 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
         if (!roster.has(decision.to)) {
           report.undelegated.push({ demandId: demand.id, reason: `${decision.to} is no longer an active engineer on the team` });
           undone.add(demand.id);
+          describe(demand);
           break;
         }
         const succeeded = sim.people[decision.to]!.skill >= demand.difficulty;
         effects.push(person(decision.to, 'stress', E.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${demand.type}` }));
         if (!succeeded) effects.push(person(decision.to, 'skill', E.delegateSkillOnStretch, action(DELEGATE)), ...consequence(demand, LINE_TUNING.reducedConsequence));
         report.delegations.push({ demandId: demand.id, to: decision.to, succeeded });
+        describe(demand);
         decided.add(demand.id);
         break;
       }
@@ -211,6 +215,7 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
     }
     effects.push(...consequence(demand, 1));
     report.expired.push(demand.id);
+    describe(demand);
     decided.add(demand.id);
   }
   s.inbox = s.inbox.filter((d) => !decided.has(d.id));

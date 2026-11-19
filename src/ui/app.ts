@@ -40,6 +40,12 @@ export interface ScreenContext {
 /** Panels a career level contributes to the week screen. */
 const LEVEL_PANELS: Record<string, (ctx: ScreenContext) => Child> = { 'line-manager': lineManagerPanels };
 
+const OUTCOMES = {
+  continue: 'You are continuing in your role.',
+  promote: 'You are being promoted.',
+  managedOut: 'You are being managed out.',
+} as const;
+
 const ENDINGS = {
   burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
@@ -149,6 +155,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-screen': 'review', class: 'review' },
       h('h1', {}, `Week ${ctx.run.sim.week} review`),
+      h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
       h(
         'table',
@@ -273,8 +280,16 @@ function lastWeek(run: Run): Child {
     undelegated: { demandId: string; reason: string }[];
     voided: { demandId: string; reason: string }[];
     expired: string[];
+    demands?: Record<string, { type: string; subject: { kind: string; id: string } }>;
   };
   const name = (id: string) => run.sim.people[id]?.name ?? id;
+  const subjectName = ({ kind, id }: { kind: string; id: string }) =>
+    kind === 'person' ? name(id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
+  // A reported demand has left the inbox, so it is named by what it was, not its id.
+  const demand = (id: string) => {
+    const d = report.demands?.[id];
+    return d ? `${d.type} for ${subjectName(d.subject)}` : id;
+  };
   const list = (part: string, title: string, items: string[]) =>
     h('div', { 'data-part': part }, items.length ? [h('h3', {}, title), h('ul', {}, items.map((i) => h('li', {}, i)))] : null);
   return h(
@@ -282,10 +297,10 @@ function lastWeek(run: Run): Child {
     { 'data-panel': 'last-week', class: 'last-week' },
     h('h2', {}, 'Last week'),
     list('aftermaths', 'How it went', run.lastWeek.aftermaths),
-    list('delegations', 'Delegated', report.delegations.map((d) => `${d.demandId} to ${name(d.to)}: ${d.succeeded ? 'handled' : 'a stretch, with some fallout'}`)),
-    list('undelegated', 'Not delegated', report.undelegated.map((d) => `${d.demandId}: ${d.reason}`)),
-    list('voided', 'Decisions with nothing to act on', report.voided.map((d) => `${d.demandId}: ${d.reason}`)),
+    list('delegations', 'Delegated', report.delegations.map((d) => `${demand(d.demandId)} to ${name(d.to)}: ${d.succeeded ? 'handled' : 'a stretch, with some fallout'}`)),
+    list('undelegated', 'Not delegated', report.undelegated.map((d) => `${demand(d.demandId)}: ${d.reason}`)),
+    list('voided', 'Decisions with nothing to act on', report.voided.map((d) => `${demand(d.demandId)}: ${d.reason}`)),
     list('dropped', 'Calendar entries dropped', report.dropped.map((d) => d.reason)),
-    list('expired', 'Left too long', report.expired),
+    list('expired', 'Left too long', report.expired.map(demand)),
   );
 }

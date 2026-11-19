@@ -167,7 +167,7 @@ The level keeps its own serializable state beside the simulation's and the situa
 | `arriveDemands` | level state, simulation state | new level state |
 | `editCalendar` | level state, simulation state, entries to add and to remove | new level state, or an error naming the invalid entry |
 | `view` | level state, simulation state | what the player can see (see *Visibility*) |
-| `commitWeek` | level state, simulation state, a decision for each inbox demand | new level state, new simulation state, change log, and a report of dropped entries, delegation outcomes and expired demands; or an error |
+| `commitWeek` | level state, simulation state, a decision for each inbox demand | new level state, new simulation state, change log, and a report of dropped entries, delegation outcomes and expired demands, with each demand it names described by its type and subject; or an error |
 | `afterAdvance` | level state, simulation state | new level state, and whether the player has burned out |
 | `scorecard` | level state, simulation state | the scorecard measures since the last review |
 

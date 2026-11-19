@@ -162,6 +162,18 @@ describe('the week screen', () => {
     expect($$(panel, '[data-part=aftermaths] li').map((li) => li.textContent)).toEqual(after.lastWeek!.aftermaths);
     for (const part of ['dropped', 'delegations', 'undelegated', 'voided', 'expired']) expect(panel.querySelector(`[data-part=${part}]`)).not.toBeNull();
   });
+
+  // @spec UI-WEEK-004
+  it('names reported demands by type and subject, not by id', () => {
+    const r = structuredClone(run());
+    const projectId = Object.keys(r.sim.projects).sort()[0]!;
+    level(r).inbox = [{ id: 'd-left', type: 'approval', subject: { kind: 'project', id: projectId }, hours: 1, difficulty: 30, arrivedWeek: 0, lastWeek: 0 }];
+    const { root } = makeApp({ run: step(r, { kind: 'endWeek' }) });
+    const expired = text(root, '[data-panel=last-week] [data-part=expired]');
+    expect(expired).toContain('approval');
+    expect(expired).toContain(r.sim.projects[projectId]!.name);
+    expect(expired).not.toContain('d-left');
+  });
 });
 
 describe('line manager panels', () => {
@@ -288,6 +300,9 @@ describe('review and end', () => {
     r.review!.debriefs.push({ week: 5, situationId: 'retired-situation', bindings: {}, status: 'ignored' });
     const { root, app } = makeApp({ run: r });
     expect(text(root, '[data-field=rating]')).toBe(r.review!.rating);
+    expect(text(root, '[data-field=outcome]')).toMatch(/continu/i);
+    expect(text(makeApp({ run: { ...r, review: { ...r.review!, outcome: 'managedOut' } } }).root, '[data-field=outcome]')).toMatch(/managed out/i);
+    expect(text(makeApp({ run: { ...r, review: { ...r.review!, outcome: 'promote' } } }).root, '[data-field=outcome]')).toMatch(/promot/i);
     expect($$(root, '[data-measure]').map((m) => m.dataset.measure)).toEqual(r.review!.measures.map((m) => m.id));
     const first = r.review!.measures[0]!;
     expect(text(root, `[data-measure="${first.id}"] [data-field=verdict]`)).toBe(first.verdict);

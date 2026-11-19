@@ -249,6 +249,31 @@ describe('deciding demands', () => {
     expect(arriveDemands(b.level, changed).inbox.some((d) => d.id === a.id || d.id === b.id)).toBe(false);
   });
 
+  // @spec LINE-INBOX-017
+  it('describes every demand its report names by type and subject', () => {
+    const { level, sim } = centeredRun(1);
+    const [a, b] = engineers(sim) as [string, string];
+    const project = projectSubject(sim);
+    let l = only(level, sim);
+    const delegated = withDemand(l, { type: 'approval', subject: project, difficulty: 10, lastWeek: 2 });
+    const undone = withDemand(delegated.level, { type: 'designReview', subject: project, lastWeek: 2 });
+    const voided = withDemand(undone.level, { type: 'expense', subject: { kind: 'person', id: b }, lastWeek: 2 });
+    const expired = withDemand(voided.level, { type: 'customerRequest', subject: project, lastWeek: sim.week });
+    l = expired.level;
+    const changed = patch(sim, (s) => (s.people[b]!.status = 'departed'));
+    const c = commit(l, changed, {
+      [delegated.id]: { kind: 'delegate', to: a },
+      [undone.id]: { kind: 'delegate', to: b },
+      [voided.id]: { kind: 'handle' },
+    });
+    expect(c.report.demands).toEqual({
+      [delegated.id]: { type: 'approval', subject: project },
+      [undone.id]: { type: 'designReview', subject: project },
+      [voided.id]: { type: 'expense', subject: { kind: 'person', id: b } },
+      [expired.id]: { type: 'customerRequest', subject: project },
+    });
+  });
+
   // @spec LINE-INBOX-011
   it('starts a new project when work intake is accepted', () => {
     const { level, sim } = centeredRun(1);

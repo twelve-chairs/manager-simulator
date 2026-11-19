@@ -92,6 +92,8 @@ export interface CommitReport {
   /** Decisions on demands whose subject was gone, which had nothing to act on. */
   voided: { demandId: string; reason: string }[];
   expired: string[];
+  /** Each demand named above, by type and subject, so the report reads after the demand has left the inbox. */
+  demands: Record<string, Pick<Demand, 'type' | 'subject'>>;
 }
 
 export type CommitResult =

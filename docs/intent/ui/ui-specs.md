@@ -16,7 +16,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-WEEK-001**: When the week screen is shown, the UI shall show the week, the weeks until the next review, the player's reputation and stress as band words, and the week's planned hours and overtime.
 - [x] **UI-WEEK-002**: When the week screen is shown, the UI shall show each open situation's text with a button per offered choice that sends an answer command, each answered situation's aftermath line, and each expired situation as expired.
 - [x] **UI-WEEK-003**: When the week screen is shown, the UI shall show an End week button that sends the end-week command.
-- [x] **UI-WEEK-004**: When the week screen is shown after a week has ended, the UI shall show last week's dropped calendar entries with their reasons, delegation outcomes, delegations that did not happen and void decisions with their reasons, expired demands, and aftermath lines; before the first week ends it shall show no last week.
+- [x] **UI-WEEK-004**: When the week screen is shown after a week has ended, the UI shall show last week's dropped calendar entries with their reasons, delegation outcomes, delegations that did not happen and void decisions with their reasons, expired demands, each demand named by its type and its subject's name, and aftermath lines; before the first week ends it shall show no last week.
 
 ## Line manager panels
 
@@ -31,7 +31,7 @@ Design: [ui-design.md](ui-design.md)
 
 ## Review and end
 
-- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the rating, the score, each measure with its value, target and verdict, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
+- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, or managed out), the rating, the score, each measure with its value, target and verdict, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
 - [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, or completed) and offer a button that returns to the start screen with a new seed.
 
 ## Content and build

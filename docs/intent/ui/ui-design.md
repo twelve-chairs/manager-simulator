@@ -31,9 +31,9 @@ The screen follows the run's phase:
   - **projects**: progress, deadline, schedule status, and risk and tech debt as words;
   - **inbox**: each demand with its type, subject, hours, difficulty and last week, and controls to handle it, delegate it to a chosen engineer (never offering a request's own requester, whom the level would refuse), accept or decline work intake, or clear the decision;
   - **calendar**: the entries, each removable, and a form to add one (action, target, cadence, and for an every-other-week entry whether it starts this week or next, which is how alternating 1:1s are set up);
-  - **last week**: the level's report (dropped entries, delegation outcomes, expired demands) and the aftermath lines;
+  - **last week**: the level's report (dropped entries, delegation outcomes, expired demands, each demand named by its type and subject rather than its id, since it has left the inbox) and the aftermath lines;
   - an **End week** button.
-- **Review** (review phase): the rating, each measure with its value, target and verdict, the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
+- **Review** (review phase): the outcome in plain words (continuing, promoted, or being managed out), so the player knows what acknowledging will do; the rating, each measure with its value, target and verdict, the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
 - **Ended**: why the run ended (burnout, managed out, completed) and a button to start a new run.
 
 The week screen's team, projects, inbox and calendar come from the career level's view; the UI has a renderer per career level for them, and a shell (header, situations, last week, review, ended) shared by every level.
