@@ -48,3 +48,9 @@ Annotate code and tests with `@spec` comments citing EARS IDs:
 ```
 
 Place the annotation at the *entry point of the behavior's implementation graph* — the topmost function or module owning the specified behavior, not every helper. When a behavior spans multiple subsystems (UI + API + database, for example), annotate at the entry point in each subsystem. Tests follow the same rule: annotate the test that directly exercises the spec, not every inner assertion.
+
+## Workflow
+
+- Commit with `/commit` (`.claude/skills/commit/`): it checks the arrow, runs `npm run typecheck` and `npm test`, scans for secrets, reviews the diff against `.claude/rules/security.md`, commits per `.claude/rules/commit-messages.md`, and pushes.
+- Audit the whole repo with `/security-audit` (`.claude/skills/security-audit/`) before a release or deployment.
+- The repository is public: no secrets, no real people's data, no employer-confidential material.

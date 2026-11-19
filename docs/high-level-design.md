@@ -8,7 +8,7 @@ Engineering management is a career most engineers enter without a clear picture 
 
 ### A simulated organization with authored situations on top
 
-A lightweight simulation models the organization the player manages: people (skills, motivation, career goals, relationships), teams, projects (scope, risk, tech debt, deadlines) and the player's own standing (reputation with their boss, stress). The simulation produces the *state*; authored **situations** produce the *drama*. A situation is a piece of written content — a 1:1 conversation, an escalation, an incident, a calibration meeting — with trigger conditions evaluated against simulation state, a set of choices, and effects that write back into the simulation. A flight-risk conversation appears because that engineer's motivation actually fell; the player's choice in it changes what the simulation does next.
+A lightweight simulation models the organization the player manages: people (skill, motivation, stress, what they want from the job, trust in their manager, and a history of what happened to them), teams, projects (scope, risk, tech debt, deadlines) and the player's own standing (reputation with their boss, stress). The simulation produces the *state*; authored **situations** produce the *drama*. A situation is a piece of written content — a 1:1 conversation, an escalation, an incident, a calibration meeting — with trigger conditions evaluated against simulation state, a set of choices, and effects that write back into the simulation. A flight-risk conversation appears because that engineer's motivation actually fell; the player's choice in it changes what the simulation does next.
 
 ### Each career level is a different game
 
@@ -16,17 +16,25 @@ The game is divided into **career levels**, and each level is its own set of mec
 
 | Level | You manage | Time step | What the player handles directly |
 |---|---|---|---|
-| Line manager | Individual engineers (one team) | Week | 1:1s, feedback, hiring, sprint/project delivery, incidents |
-| Senior manager | Line managers (several teams) | Month | Delegation, coaching managers, cross-team dependencies, calibration, staffing |
-| Director and above | Senior managers (an organization) | Quarter | Headcount budget, org design, strategy bets, executive politics, culture |
+| Line manager | Individual engineers (one team) | Week | 1:1s and feedback, evaluations and self-evaluations, promotion cases and arguing ratings in calibration, training, performance improvement plans and the terminations that follow failed ones, conflicts, interviewing and onboarding (including interns, entry-level program engineers, contractors and remote workers), leave, travel, expense and conference approvals, team events, agile ceremonies, work intake, project management and product ownership (backlog priority, scope and stakeholders), deliverables and due dates, incidents and on-call escalations, release and access approvals, architecture and design reviews, customer interaction |
+| Senior manager | Line managers (several teams) | Month | Delegating to and coaching managers, running calibrations and balancing ratings across teams, approving promotions and terminations, reassignments and restructuring, staffing across teams, cross-team dependencies and scrum-of-scrums, cross-team design disputes, customer escalations, referrals and external feedback requests |
+| Director and above | Senior managers (an organization) | Quarter | Headcount budget, org design, seating and space, strategy bets, executive politics and presentations, culture, diversity and belonging, volunteering and specialty groups, marketing the organization |
 
 Director and above spans several career levels (for example Director and VP), each its own level module; how they divide is defined in that level's design.
 
+Some responsibilities recur at several levels but change shape with the role: a line manager writes promotion cases and argues ratings, a senior manager runs the calibration that weighs them; a line manager interviews, a senior manager staffs teams, a director sets headcount. Presentations exist as a mechanic only at director and above, where presenting to executives is part of the job; below that they appear only as situations (a demo, a status update).
+
 On promotion, mechanics from the previous level are retired or folded into aggregates (a team becomes a few health numbers owned by its manager), and new mechanics appear. The simulation underneath keeps running at whatever level of detail the current level needs; the player sees only what someone in that role would see.
+
+### Drawn from real management work
+
+Situations and actions come from the recurring responsibilities of engineering managers: people work (hiring, onboarding, evaluations, calibrations, promotions, improvement plans, terminations, leave, conflicts), delivery (work intake, project management and product ownership, ceremonies, deliverables and due dates), operations (incident escalations, release and access approvals, legacy support, resiliency upkeep), administration (travel, expenses, conference approvals) and culture (team events, belonging, volunteering). The original list this draws on is in [references/2023-idea-notes.md](references/2023-idea-notes.md).
+
+At the line manager level, hands-on operational and technical-lead duties (approvals, design reviews, customer requests, legacy support, data investigations, on-call) appear as demands on the player's time that compete with managing people, rather than as technical puzzles. Learning when to delegate them is one of the level's lessons.
 
 ### Progression and failure
 
-The player advances through periodic performance reviews whose outcome depends on how the organization they are responsible for is doing, measured in the terms that matter at their level. A run can end through promotion past the top level, through being managed out, or through burnout.
+Every person the player manages has a **performance level**, a rating distinct from their skill that evaluations set and calibrations argue over. The player has a **scorecard** of manager KPIs for their current level (for a line manager, say, delivery, retention and team health; for a director, budget, attrition and strategic outcomes). The player advances through periodic performance reviews that read their scorecard. A run can end through promotion past the top level, through being managed out, or through burnout.
 
 ## Target Users
 
@@ -100,5 +108,7 @@ flowchart TD
 - Across seeded test runs, choices that follow sound practice outperform naive ones, and no context-blind strategy (always agree, always push back) reliably wins every level.
 
 ## References
+
+- [Original idea notes (2023)](references/2023-idea-notes.md): the responsibilities list this design draws its situations and mechanics from.
 
 - Management sims and narrative decision games are the nearest genres. This project borrows from their structure, not from any specific game's content.
