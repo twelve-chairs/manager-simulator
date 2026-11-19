@@ -68,6 +68,8 @@ The level starts the player with a default calendar: a 1:1 with each engineer ev
 
 An entry whose target is no longer valid when the week commits (a person who has left the team, a project that is no longer active, a filled vacancy) does not run, costs no hours, and is removed from the calendar; the player is told which entries dropped and why. This covers changes made during the week's planning, such as a situation choice that moves someone to another team.
 
+The level's action ids, together with the ids it uses for delegating and for accepting or declining work intake, are listed in the player action catalogue that situation content is checked against (see the situation engine's *Validation*).
+
 Every action that targets a person (1:1, coaching, recognition, training), and every delegation, adds an entry to that person's history with the action's id as its cause. Situations can then ask how long it has been since someone's last 1:1, or how often they have been delegated to, through the situation engine's `history` condition.
 
 An action's effects are submitted to the simulation core as one batch per week, each with the action's id as its cause, so history and debriefs can name what the player did. Effect sizes are tuning values, not design.
@@ -97,11 +99,11 @@ The player decides each demand in the week's plan:
 - **Delegate it** to an engineer on the team: it costs the player nothing, raises the delegate's stress, and serves a want for growth or autonomy. If the delegate's skill meets the demand's difficulty, it resolves as if handled; if not, it still resolves, and the delegate's skill rises a little, but with a reduced version of the expiry consequence. Repeatedly delegating to the same person compounds their stress.
 - **Leave it**: it stays in the inbox and expires when its time runs out, applying its consequence.
 
-An engineer may take several delegated demands in one week, each raising their stress again. A request from a person cannot be delegated to that person. A delegation to someone who is no longer an active engineer on the team when the week commits (because a situation that week moved them or they left) does not happen: the demand stays in the inbox undecided, and the player is told why. The level does not refuse a delegation to someone already struggling; the player can see their stress band and the choice is theirs.
+An engineer may take several delegated demands in one week, each raising their stress again. A request from a person cannot be delegated to that person. A delegation to someone who is no longer an active engineer on the team when the week commits (because a situation that week moved them or they left) does not happen: the demand stays in the inbox undecided, and the player is told why. If that week was the demand's last, its last week moves to the following week instead of the demand expiring, so the player is never penalized for a decision a situation undid. The level does not refuse a delegation to someone already struggling; the player can see their stress band and the choice is theirs.
 
 **Work intake** is a request to take on a new project, and is decided differently: the player **accepts** it (costing its hours and starting the project through the simulation core's start-project effect, with a name from the level's data), **declines** it (no hours; a small loss of reputation), or leaves it to expire (a larger loss). It cannot be delegated. Work intake is how the team gets new projects once its first ones finish.
 
-A demand whose subject is gone before it is decided (a project completed or cancelled, a requester who has left) leaves the inbox with no consequence.
+A demand whose subject is gone before it is decided (a project completed or cancelled, a requester who has left) leaves the inbox with no consequence. If the player had decided it that week, the decision has nothing to act on: it costs no hours and the player is told why.
 
 ## Where the Line Manager's Duties Live
 

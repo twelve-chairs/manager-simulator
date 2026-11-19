@@ -78,6 +78,8 @@ export interface CommitReport {
   dropped: { entryId: string; reason: string }[];
   delegations: { demandId: string; to: string; succeeded: boolean }[];
   undelegated: { demandId: string; reason: string }[];
+  /** Decisions on demands whose subject was gone, which had nothing to act on. */
+  voided: { demandId: string; reason: string }[];
   expired: string[];
 }
 

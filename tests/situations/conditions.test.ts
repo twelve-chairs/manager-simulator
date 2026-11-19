@@ -309,7 +309,6 @@ describe('history and presented', () => {
     check(result.state, { engineer: 'e1' }, [
       [{ history: 'engineer', action: 'line-manager.one-on-one', is: 2 }, true],
       [{ history: 'engineer', action: 'line-manager.coaching', is: 1 }, true],
-      [{ history: 'engineer', action: 'line-manager.one-on-one', situation: 'sit-a', is: 0 }, true],
     ]);
   });
 

@@ -307,6 +307,15 @@ describe('loading and validation', () => {
     valid(sit({ choices: [choice, other] }));
   });
 
+  // @spec SIT-CONTENT-020, SIT-CONTENT-021
+  it('rejects history actions combined with situations, or not in the catalogue', () => {
+    const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', situation: 'x', is: 0 }))).toMatch(/action/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', choice: 'x', is: 0 }))).toMatch(/action/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-ones', is: 0 }))).toMatch(/one-on-ones/);
+    valid(roleWhere({ history: 'engineer', action: 'line-manager.delegate', withinWeeks: 8, atLeast: 2 }));
+  });
+
   // @spec SIT-CONTENT-014
   it('rejects effects that rate the player', () => {
     const s = sit();

@@ -21,6 +21,8 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-017**: The situation engine shall treat a situation as invalid if a role that is not a team role has a `form`, or a team role's `form` is not `detailed` or `aggregate`.
 - [x] **SIT-CONTENT-018**: The situation engine shall treat a situation as invalid if a `reRate` effect, or a `value` effect changing `headcount` or `attritionRisk`, names a team role whose `form` is not `aggregate`.
 - [x] **SIT-CONTENT-019**: The situation engine shall treat a situation as invalid if two of its choices share an id, or two outcomes of one choice share an id.
+- [x] **SIT-CONTENT-020**: The situation engine shall treat a situation as invalid if a `history` condition gives an `action` together with a `situation` or `choice`.
+- [x] **SIT-CONTENT-021**: The situation engine shall treat a situation as invalid if a `history` condition's `action` is not in the player action catalogue.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 

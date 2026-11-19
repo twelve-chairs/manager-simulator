@@ -176,6 +176,30 @@ describe('deciding demands', () => {
     expect(c.report.undelegated).toEqual([{ demandId: id, reason: expect.stringMatching(/no longer/) }]);
   });
 
+  // @spec LINE-INBOX-015
+  it('gives an undone delegation one more week instead of expiring it', () => {
+    const { level, sim } = centeredRun(1);
+    const e = engineers(sim)[0]!;
+    const { level: l, id } = withDemand(only(level, sim), { type: 'onCall', subject: projectSubject(sim), lastWeek: sim.week });
+    const gone = patch(sim, (s) => (s.people[e]!.status = 'departed'));
+    const c = commit(l, gone, { [id]: { kind: 'delegate', to: e } });
+    expect(c.level.inbox).toMatchObject([{ id, lastWeek: sim.week + 1 }]);
+    expect(c.report.expired).toEqual([]);
+    expect(c.sim.player.reputation).toBe(gone.player.reputation);
+  });
+
+  // @spec LINE-INBOX-016
+  it('reports a decision on a demand whose subject is gone as void', () => {
+    const { level, sim } = centeredRun(1);
+    const e = engineers(sim)[0]!;
+    const { level: l, id } = withDemand(only(level, sim), { type: 'expense', subject: { kind: 'person', id: e }, hours: 1, lastWeek: 2 });
+    const gone = patch(sim, (s) => (s.people[e]!.status = 'departed'));
+    const c = commit(l, gone, { [id]: { kind: 'handle' } });
+    expect(c.report.hours).toBe(0);
+    expect(c.report.voided).toEqual([{ demandId: id, reason: expect.stringMatching(/no longer/) }]);
+    expect(c.level.inbox).toEqual([]);
+  });
+
   // @spec LINE-INBOX-009
   it('expires undecided demands in their last week, applying their consequence', () => {
     const { level, sim } = centeredRun(1);

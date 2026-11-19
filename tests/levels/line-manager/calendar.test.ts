@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { PLAYER_ACTION_IDS } from '../../../src/actions';
 import { ACTIONS, LINE_TUNING, commitWeek, editCalendar, type ActionId, type NewEntry } from '../../../src/levels/line-manager';
 import type { SimState } from '../../../src/sim';
-import { centeredRun, commit, effectOf, engineers, expectRejected, nextWeek, only, patch, projects, run, teamOf } from './fixtures';
+import { centeredRun, commit, edit, effectOf, engineers, expectRejected, nextWeek, only, patch, projects, run, teamOf, withDemand } from './fixtures';
 
 const person = (id: string, action: ActionId, cadence: NewEntry['cadence'] = 'once'): NewEntry => ({ action, target: { kind: 'person', id }, cadence });
 const hoursOf = (level: { calendar: unknown[] }, sim: SimState) => commit(level as never, sim).report.hours;
@@ -239,6 +240,26 @@ describe('actions', () => {
     const { level, sim } = centeredRun(1);
     const r = effectOf(level, sim, { action: 'line-manager.recovery', target: { kind: 'player' }, cadence: 'once' });
     expect(r.with.player.stress).toBeLessThan(r.without.player.stress);
+  });
+
+  // @spec LINE-ACT-014
+  it('uses only action ids from the player action catalogue', () => {
+    let { level, sim } = centeredRun(1);
+    const e = engineers(sim)[0]!;
+    const intake = withDemand(only(level, sim), { type: 'workIntake', subject: { kind: 'team', id: teamOf(sim) }, lastWeek: 2 });
+    const approval = withDemand(intake.level, { type: 'approval', subject: { kind: 'project', id: projects(sim)[0]! }, difficulty: 90, lastWeek: 2 });
+    const all = (Object.keys(ACTIONS) as ActionId[]).filter((a) => a !== 'line-manager.interview');
+    level = edit(approval.level, sim, { add: all.map((a) => ({ action: a, target: ACTIONS[a].target === 'person' ? { kind: 'person' as const, id: e } : ACTIONS[a].target === 'team' ? { kind: 'team' as const, id: teamOf(sim) } : ACTIONS[a].target === 'project' ? { kind: 'project' as const, id: projects(sim)[0]! } : { kind: 'player' as const }, cadence: 'once' as const })) });
+    const accepted = commitWeek(level, sim, { [intake.id]: { kind: 'accept' }, [approval.id]: { kind: 'delegate', to: e } });
+    const declined = commitWeek(level, sim, { [intake.id]: { kind: 'decline' } });
+    const used = new Set<string>();
+    for (const r of [accepted, declined]) {
+      if (!r.ok) throw new Error(r.error);
+      for (const x of r.log) if (x.cause.kind === 'action') used.add(x.cause.actionId);
+    }
+    for (const a of Object.keys(ACTIONS)) expect(PLAYER_ACTION_IDS).toContain(a);
+    expect(used.size).toBeGreaterThan(all.length);
+    for (const a of used) expect(PLAYER_ACTION_IDS).toContain(a);
   });
 
   // @spec LINE-ACT-012

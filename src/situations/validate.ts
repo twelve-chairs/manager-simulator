@@ -9,6 +9,7 @@ import {
   RATINGS,
   WANTS,
 } from '../sim';
+import { PLAYER_ACTION_IDS } from '../actions';
 import { OPERATORS } from './conditions';
 import { WEEK_TYPE, propertyType, type PropertyType } from './properties';
 import { PLACEHOLDER, PLACEHOLDER_PROPERTIES } from './text';
@@ -189,7 +190,12 @@ function checkCondition(x: unknown, scope: Scope, where: string): void {
       fail(at(where, 'history'), `${String(role)} is not a person role bound here`);
     if (Object.hasOwn(o, 'situation')) string(o, 'situation', where);
     if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
-    if (Object.hasOwn(o, 'action')) string(o, 'action', where);
+    if (Object.hasOwn(o, 'action')) {
+      const action = string(o, 'action', where);
+      if (Object.hasOwn(o, 'situation') || Object.hasOwn(o, 'choice'))
+        fail(at(where, 'action'), 'an action cannot be combined with a situation or choice; no history entry is caused by both');
+      if (!PLAYER_ACTION_IDS.includes(action)) fail(at(where, 'action'), `${action} is not in the player action catalogue`);
+    }
     if (Object.hasOwn(o, 'rating')) list(o.rating, at(where, 'rating')).forEach((r, i) => oneOf(r, RATINGS, at(at(where, 'rating'), i), 'a rating'));
     checkWindow(o, where);
     return;
@@ -395,6 +401,7 @@ export type ValidationResult = { ok: true; situation: Situation } | { ok: false;
 /** Validates each item of a bundle; results line up with the input. Executes nothing from the content. */
 // @spec SIT-CONTENT-004, SIT-CONTENT-005, SIT-CONTENT-006, SIT-CONTENT-007, SIT-CONTENT-008, SIT-CONTENT-009, SIT-CONTENT-010
 // @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016, SIT-CONTENT-017, SIT-CONTENT-018, SIT-CONTENT-019
+// @spec SIT-CONTENT-020, SIT-CONTENT-021
 export function validateBundle(items: unknown[]): ValidationResult[] {
   const seen = new Set<string>();
   return items.map((item, index) => {

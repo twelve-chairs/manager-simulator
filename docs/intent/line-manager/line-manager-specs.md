@@ -50,6 +50,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-ACT-010**: When recovery time runs, the line manager level shall lower the player's stress.
 - [x] **LINE-ACT-011**: When an interview runs, the line manager level shall add one interview to the vacancy it targets.
 - [x] **LINE-ACT-012**: When a 1:1, coaching, recognition or training runs, or a demand is delegated, the line manager level shall add an entry to the person's history with that action's id as its cause.
+- [x] **LINE-ACT-014**: The line manager level shall use only action ids listed in the player action catalogue, including those for delegating and for accepting or declining work intake.
 - [x] **LINE-ACT-013**: When ceremonies run, the line manager level shall raise the motivation of each active engineer on the team, tagged as serving a want for stability.
 
 ## Inbox
@@ -63,8 +64,10 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-INBOX-007**: When several demands are delegated to one engineer in a week, the line manager level shall raise that engineer's stress once for each.
 - [x] **LINE-INBOX-008**: If a decision delegates a demand to someone who is not a person in the simulation, to the person who made the request, or delegates a work intake demand, then the line manager level shall reject the commit with an error and leave both states unchanged.
 - [x] **LINE-INBOX-014**: When a week is committed with a demand delegated to a person who is no longer an active engineer on the team, the line manager level shall leave the demand in the inbox undecided and report it with the reason.
-- [x] **LINE-INBOX-009**: When a week is committed, the line manager level shall remove each demand left undecided whose last week is the current week, and apply its consequence with a level rule as the cause.
+- [x] **LINE-INBOX-015**: When a week is committed with a demand left undecided under LINE-INBOX-014 whose last week is the current week, the line manager level shall move its last week to the following week instead of expiring it.
+- [x] **LINE-INBOX-009**: When a week is committed, the line manager level shall remove each demand left undecided whose last week is the current week, other than one covered by LINE-INBOX-015, and apply its consequence with a level rule as the cause.
 - [x] **LINE-INBOX-010**: When a demand's subject is no longer valid (a project no longer active, a requester no longer active on the team), the line manager level shall remove it from the inbox without its consequence.
+- [x] **LINE-INBOX-016**: When a week is committed with a decision for a demand whose subject is no longer valid, the line manager level shall charge no hours for it, apply none of its effects, and report the decision as void with the reason.
 - [x] **LINE-INBOX-011**: When a week is committed with a work intake demand accepted, the line manager level shall charge its hours and start a new project on the team through the simulation core, named from the level's list.
 - [x] **LINE-INBOX-012**: When a week is committed with a work intake demand declined, the line manager level shall lower the player's reputation by less than the work intake's expiry consequence, and remove it from the inbox.
 - [x] **LINE-INBOX-013**: If a decision names a demand not in the inbox, or a decision the demand's type does not allow, then the line manager level shall reject the commit with an error and leave both states unchanged.

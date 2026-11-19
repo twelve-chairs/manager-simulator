@@ -97,7 +97,7 @@ function invalidDecision(sim: SimState, demand: Demand, decision: Decision): str
 // @spec LINE-ACT-001, LINE-ACT-002, LINE-ACT-003, LINE-ACT-004, LINE-ACT-005, LINE-ACT-006, LINE-ACT-007, LINE-ACT-008
 // @spec LINE-ACT-009, LINE-ACT-010, LINE-ACT-011, LINE-ACT-012, LINE-ACT-013
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-008, LINE-INBOX-009, LINE-INBOX-010
-// @spec LINE-INBOX-011, LINE-INBOX-012, LINE-INBOX-013, LINE-INBOX-014, LINE-HIRE-002, LINE-HIRE-003
+// @spec LINE-INBOX-011, LINE-INBOX-012, LINE-INBOX-013, LINE-INBOX-014, LINE-INBOX-015, LINE-INBOX-016, LINE-HIRE-002, LINE-HIRE-003
 export function commitWeek(level: LineState, sim: SimState, decisions: Record<string, Decision>): CommitResult {
   for (const [demandId, decision] of Object.entries(decisions)) {
     const demand = level.inbox.find((d) => d.id === demandId);
@@ -108,7 +108,7 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
 
   const s = structuredClone(level);
   const week = sim.week;
-  const report: CommitReport = { hours: 0, overtime: 0, dropped: [], delegations: [], undelegated: [], expired: [] };
+  const report: CommitReport = { hours: 0, overtime: 0, dropped: [], delegations: [], undelegated: [], voided: [], expired: [] };
   const effects: Effect[] = [];
   reconcileVacancies(s, sim);
 
@@ -151,8 +151,14 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
   }
 
   // Inbox
+  for (const demand of s.inbox) {
+    if (!subjectValid(s, sim, demand) && decisions[demand.id]) {
+      report.voided.push({ demandId: demand.id, reason: `the ${demand.subject.kind} ${demand.subject.id} is no longer there to act on` });
+    }
+  }
   s.inbox = s.inbox.filter((d) => subjectValid(s, sim, d));
   const decided = new Set<string>();
+  const undone = new Set<string>();
   for (const demand of s.inbox) {
     const decision = decisions[demand.id];
     if (!decision) continue;
@@ -164,6 +170,7 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
       case 'delegate': {
         if (!roster.has(decision.to)) {
           report.undelegated.push({ demandId: demand.id, reason: `${decision.to} is no longer an active engineer on the team` });
+          undone.add(demand.id);
           break;
         }
         const succeeded = sim.people[decision.to]!.skill >= demand.difficulty;
@@ -188,6 +195,11 @@ export function commitWeek(level: LineState, sim: SimState, decisions: Record<st
   }
   for (const demand of s.inbox) {
     if (decided.has(demand.id) || demand.lastWeek > week) continue;
+    if (undone.has(demand.id)) {
+      // A situation undid the player's decision; give them another week rather than penalize it.
+      demand.lastWeek = week + 1;
+      continue;
+    }
     effects.push(...consequence(demand, 1));
     report.expired.push(demand.id);
     decided.add(demand.id);

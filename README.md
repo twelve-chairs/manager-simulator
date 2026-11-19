@@ -27,6 +27,7 @@ npm run typecheck   # check types
 | `tests/sim/` | Simulation core tests |
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
+| `src/actions.ts` | Player action catalogue: every career level's action ids, which situation content is checked against |
 | `tests/levels/` | Career level tests |
 | `tests/situations/` | Situation engine tests |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
