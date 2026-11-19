@@ -163,18 +163,23 @@ function checkWindow(o: Obj, where: string) {
   if (Object.hasOwn(o, 'withinWeeks') && !(finite(o, 'withinWeeks', where) > 0)) fail(at(where, 'withinWeeks'), 'must be above 0');
 }
 
-function checkCondition(x: unknown, scope: Scope, where: string): void {
+/** How deeply `all`, `any`, `not` and `count` may nest; a cap keeps a malformed bundle from exhausting the stack. */
+const MAX_CONDITION_DEPTH = 32;
+
+function checkCondition(x: unknown, scope: Scope, where: string, depth = 0): void {
   if (!isObject(x)) fail(where, 'a condition must be an object');
   const o = x as Obj;
+  const nested = ['all', 'any', 'not', 'count'].some((form) => Object.hasOwn(o, form));
+  if (nested && depth >= MAX_CONDITION_DEPTH) fail(where, `conditions nest too deep (more than ${MAX_CONDITION_DEPTH} levels)`);
   if (Object.hasOwn(o, 'all') || Object.hasOwn(o, 'any')) {
     const form = Object.hasOwn(o, 'all') ? 'all' : 'any';
     object(o, where, `an ${form} condition`, [form]);
-    list(o[form], at(where, form)).forEach((c, i) => checkCondition(c, scope, at(at(where, form), i)));
+    list(o[form], at(where, form)).forEach((c, i) => checkCondition(c, scope, at(at(where, form), i), depth + 1));
     return;
   }
   if (Object.hasOwn(o, 'not')) {
     object(o, where, 'a not condition', ['not']);
-    checkCondition(o.not, scope, at(where, 'not'));
+    checkCondition(o.not, scope, at(where, 'not'), depth + 1);
     return;
   }
   if (Object.hasOwn(o, 'value')) return checkComparison(o, scope, where);
@@ -182,7 +187,7 @@ function checkCondition(x: unknown, scope: Scope, where: string): void {
     checkCountOperand(o, 'count', ['count'], where);
     const count = object(o.count, at(where, 'count'), 'a count', ['kind'], ['where']);
     const kind = oneOf(count.kind, KINDS, at(at(where, 'count'), 'kind'), 'a kind');
-    if (Object.hasOwn(count, 'where')) checkCondition(count.where, { roles: scope.roles, it: kind }, at(at(where, 'count'), 'where'));
+    if (Object.hasOwn(count, 'where')) checkCondition(count.where, { roles: scope.roles, it: kind }, at(at(where, 'count'), 'where'), depth + 1);
     return;
   }
   if (Object.hasOwn(o, 'history')) {
@@ -403,7 +408,7 @@ export type ValidationResult = { ok: true; situation: Situation } | { ok: false;
 /** Validates each item of a bundle; results line up with the input. Executes nothing from the content. */
 // @spec SIT-CONTENT-004, SIT-CONTENT-005, SIT-CONTENT-006, SIT-CONTENT-007, SIT-CONTENT-008, SIT-CONTENT-009, SIT-CONTENT-010
 // @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016, SIT-CONTENT-017, SIT-CONTENT-018, SIT-CONTENT-019
-// @spec SIT-CONTENT-020, SIT-CONTENT-021, SIT-CONTENT-022
+// @spec SIT-CONTENT-020, SIT-CONTENT-021, SIT-CONTENT-022, SIT-CONTENT-023
 export function validateBundle(items: unknown[]): ValidationResult[] {
   const seen = new Set<string>();
   return items.map((item, index) => {

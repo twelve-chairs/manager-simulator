@@ -173,7 +173,8 @@ Content is untrusted input: a content bundle is checked before any situation fro
 - an effect is malformed, hires, starts a project or rates the player, or names a role of the wrong kind for its field;
 - an effect only an aggregate team accepts names a team role without `form: aggregate`;
 - two choices share an id, or two outcomes of one choice share an id;
-- a choice has no outcomes, or its last outcome has a `when`, or an earlier outcome lacks one.
+- a choice has no outcomes, or its last outcome has a `when`, or an earlier outcome lacks one;
+- a condition nests more than 32 levels deep, counting each `all`, `any`, `not` and `count` as a level. No sensible situation comes near it, and the cap means a malformed bundle is rejected rather than exhausting the call stack while it is checked or evaluated.
 
 The compiler parses YAML with its safe schema, with no custom types and no aliases, so a content file cannot trigger parser features. The build fails on any invalid situation. At load, the game drops invalid situations and reports them, so a bad bundle degrades the content rather than crashing the game.
 

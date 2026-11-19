@@ -324,6 +324,21 @@ describe('loading and validation', () => {
     valid(sit({ when: { value: 'review.weeksAway', atMost: 2 } }));
   });
 
+  // @spec SIT-CONTENT-023
+  it('rejects conditions nested more than 32 levels deep, without throwing however deep', () => {
+    const nested = (depth: number) => {
+      let c: unknown = { value: 'player.stress', above: 1 };
+      for (let i = 0; i < depth; i++) c = i % 2 ? { not: c } : { all: [c] };
+      return c;
+    };
+    valid(sit({ when: nested(32) as never }));
+    expect(rejectionOf(sit({ when: nested(33) as never }))).toMatch(/deep/);
+    expect(() => loadContent([sit({ when: nested(50_000) as never })])).not.toThrow();
+    expect(rejectionOf(sit({ when: nested(50_000) as never }))).toMatch(/deep/);
+    const inCount = { count: { kind: 'person', where: nested(32) }, atLeast: 1 };
+    expect(rejectionOf(sit({ when: inCount as never }))).toMatch(/deep/);
+  });
+
   // @spec SIT-CONTENT-014
   it('rejects effects that rate the player', () => {
     const s = sit();

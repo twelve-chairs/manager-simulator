@@ -24,6 +24,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-020**: The situation engine shall treat a situation as invalid if a `history` condition gives an `action` together with a `situation` or `choice`.
 - [x] **SIT-CONTENT-021**: The situation engine shall treat a situation as invalid if a `history` condition's `action` is not in the player action catalogue.
 - [x] **SIT-CONTENT-022**: The situation engine shall treat a situation as invalid if a role is named `player`, `week`, `review` or `it`.
+- [x] **SIT-CONTENT-023**: The situation engine shall treat a situation as invalid if a condition in it nests more than 32 levels deep, counting each `all`, `any`, `not` and `count` as a level, and shall report it as invalid without throwing however deep the nesting.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 
