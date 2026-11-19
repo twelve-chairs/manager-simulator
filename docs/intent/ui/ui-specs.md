@@ -18,6 +18,11 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-WEEK-003**: When the week screen is shown, the UI shall show an End week button that sends the end-week command.
 - [x] **UI-WEEK-004**: When the week screen is shown after a week has ended, the UI shall show last week's dropped calendar entries with their reasons, delegation outcomes, delegations that did not happen and void decisions with their reasons, expired demands, each demand named by its type and its subject's name, and aftermath lines; before the first week ends it shall show no last week.
 
+## Help
+
+- [x] **UI-HELP-001**: When the week screen is shown, the UI shall show a collapsible How to play section with the help text's six topics, open by default in weeks 0 to 2 and closed by default after, keeping the player's choice to open or close it across redraws.
+- [x] **UI-HELP-002**: When the week screen is shown for the line manager, the UI shall show the help text's line under the team, projects, inbox and calendar panels' headings.
+
 ## Line manager panels
 
 - [x] **UI-LINE-001**: When the week screen is shown for the line manager, the UI shall list each engineer with name, role, tenure, performance level, motivation, stress and skill as band words, and their want, or that it is unknown.

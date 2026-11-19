@@ -338,3 +338,36 @@ describe('content', () => {
     expect(makeApp({ contentErrors: errors, showContentErrors: false }).root.querySelector('[data-panel=content-errors]')).toBeNull();
   });
 });
+
+describe('help', () => {
+  // @spec UI-HELP-001
+  it('shows How to play, open in the first weeks and closed after, keeping the player’s choice', () => {
+    const r = run();
+    const { root } = makeApp({ run: r });
+    const help = () => $(root, '[data-panel=help]') as HTMLDetailsElement;
+    expect(help().tagName).toBe('DETAILS');
+    expect(help().open).toBe(true);
+    expect($$(help(), '[data-topic]').map((t) => t.dataset.topic)).toEqual(['how-to-play', 'hours', 'inbox', 'situations', 'people', 'reviews']);
+    expect(text(help(), '[data-topic=hours]')).toContain('40 hours a week');
+
+    // the player's choice survives a redraw
+    help().open = false;
+    help().dispatchEvent(new Event('toggle'));
+    click(root, '[data-action=end-week]');
+    expect(help().open).toBe(false);
+
+    const later = endWeeks(run(), 3);
+    expect(later.sim.week).toBe(3);
+    expect(($(makeApp({ run: later }).root, '[data-panel=help]') as HTMLDetailsElement).open).toBe(false);
+  });
+
+  // @spec UI-HELP-002
+  it('shows a help line under each line manager panel heading', () => {
+    const { root } = makeApp({ run: run() });
+    const line = (panel: string) => text(root, `[data-panel=${panel}] [data-part=help]`);
+    expect(line('team')).toBe('Words are your read on each person. Wants appear after a 1:1.');
+    expect(line('projects')).toBe('Projects move on their own. Risk and tech debt make setbacks more likely.');
+    expect(line('inbox')).toBe("Difficulty uses the same words as skill. Delegate to someone at least that skilled, or it's a stretch with some fallout.");
+    expect(line('calendar')).toBe('Recurring entries repeat until you remove them.');
+  });
+});

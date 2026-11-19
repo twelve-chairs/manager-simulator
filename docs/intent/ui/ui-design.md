@@ -33,6 +33,7 @@ The screen follows the run's phase:
   - **calendar**: the entries, each removable, and a form to add one (action, target, cadence, and for an every-other-week entry whether it starts this week or next, which is how alternating 1:1s are set up);
   - **last week**: the level's report (dropped entries, delegation outcomes, expired demands, each demand named by its type and subject rather than its id, since it has left the inbox) and the aftermath lines;
   - an **End week** button.
+  - a collapsible **How to play** section, open by default in weeks 0 to 2 and closed after, that keeps the player's choice to open or close it across redraws; and one line of help under each line manager panel's heading.
 - **Review** (review phase): the outcome in plain words (continuing, promoted, or being managed out), so the player knows what acknowledging will do; the rating, each measure with its value, target and verdict, the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
 - **Ended**: why the run ended (burnout, managed out, completed) and a button to start a new run.
 
@@ -49,6 +50,26 @@ The UI wires the save component (see [Save / load](../save/save-design.md)) to t
 - If writing a save fails, the UI also removes the stored save if it can, so a reload does not resume a run from before the failure.
 
 Storage is passed to the app rather than reached for directly, so tests can supply their own and the app works when the browser's storage is missing.
+
+## Help Text
+
+The How to play section and the panel help lines teach the game's controls, not management (see the HLD's non-goals); the first weeks' onboarding situations, written as content, do the same in the story.
+
+| Topic | Text |
+|---|---|
+| How to play | Each turn is one week: plan it, deal with what comes up, then press End week. |
+| Hours | You have 40 hours a week. Calendar entries and inbox items you handle yourself cost hours; going over means overtime, which raises your stress. |
+| Inbox | Hands-on work arrives here. Handle it yourself (costs hours), delegate it to an engineer (costs them stress; it goes well if the difficulty is within their skill), or leave it. Left too long, it causes trouble. |
+| Situations | Moments that need a decision. Choices take effect at once. |
+| Your people | 1:1s build trust and reveal what each person wants. Coaching, training, recognition, delegation and ceremonies each serve a different want. People whose wants go unserved lose motivation, and unhappy people leave. |
+| Reviews | Every 13 weeks your manager reviews delivery, retention and team health. Two strong reviews in a row from week 52 earn a promotion; three weak ones in a row and you're out. Four weeks at the edge of your stress and you burn out. |
+
+| Panel | Help line |
+|---|---|
+| Team | Words are your read on each person. Wants appear after a 1:1. |
+| Projects | Projects move on their own. Risk and tech debt make setbacks more likely. |
+| Inbox | Difficulty uses the same words as skill. Delegate to someone at least that skilled, or it's a stretch with some fallout. |
+| Calendar | Recurring entries repeat until you remove them. |
 
 ## Bands as Words
 

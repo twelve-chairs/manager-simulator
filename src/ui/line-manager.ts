@@ -3,6 +3,7 @@ import type { SimState } from '../sim';
 import type { ScreenContext } from './app';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
+import { PANEL_HELP } from './help';
 
 const ACTION_LABELS: Record<ActionId, string> = {
   'line-manager.one-on-one': '1:1',
@@ -42,12 +43,13 @@ export function lineManagerPanels(ctx: ScreenContext): Child {
   return [team(view), projects(view), inbox(ctx, level, plan, view), calendar(ctx, level, view)];
 }
 
-// @spec UI-LINE-001
+// @spec UI-LINE-001, UI-HELP-002
 function team(view: View) {
   return h(
     'section',
     { 'data-panel': 'team' },
     h('h2', {}, 'Your team'),
+    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.team),
     h(
       'table',
       {},
@@ -76,6 +78,7 @@ function projects(view: View) {
     'section',
     { 'data-panel': 'projects' },
     h('h2', {}, 'Projects'),
+    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.projects),
     h(
       'table',
       {},
@@ -108,6 +111,7 @@ function inbox(ctx: ScreenContext, level: LineState, plan: LinePlan, view: View)
     'section',
     { 'data-panel': 'inbox' },
     h('h2', {}, 'Inbox'),
+    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.inbox),
     view.inbox.length === 0 ? h('p', {}, 'Nothing waiting.') : null,
     view.inbox.map((d) => {
       const requester = d.subject.kind === 'person' ? d.subject.id : undefined;
@@ -196,6 +200,7 @@ function calendar(ctx: ScreenContext, level: LineState, view: View) {
     'section',
     { 'data-panel': 'calendar' },
     h('h2', {}, 'Your calendar'),
+    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.calendar),
     h(
       'ul',
       {},

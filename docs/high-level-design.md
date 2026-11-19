@@ -55,7 +55,7 @@ All of them need a game that is fun to play in sessions of 20–60 minutes, with
 
 ## Non-Goals
 
-- **No lessons or quizzes outside play.** The game teaches through consequences in play and through debriefs that explain why a choice or turn went the way it did; it has no standalone lessons or graded tests, and makes no claim that its outcomes predict real-world outcomes.
+- **No lessons or quizzes outside play.** The game teaches through consequences in play and through debriefs that explain why a choice or turn went the way it did; it has no standalone lessons or graded tests, and makes no claim that its outcomes predict real-world outcomes. Explaining how to play, in a help panel or in onboarding during the first weeks, is not a lesson in this sense: it teaches the game's controls, not management.
 - **No individual-contributor work.** The player never writes code or solves technical puzzles; technical work exists only as simulated output.
 - **No realistic HR, legal or compensation processes.** These appear only as situations, abstracted for pace.
 - **No multiplayer, no online services.** The game runs locally.

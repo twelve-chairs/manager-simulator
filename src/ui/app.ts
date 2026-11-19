@@ -3,6 +3,7 @@ import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '
 import type { ContentError, Situation } from '../situations';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
+import { HELP_OPEN_THROUGH_WEEK, HELP_TOPICS } from './help';
 import { lineManagerPanels } from './line-manager';
 import { emphasis } from './text';
 
@@ -299,10 +300,24 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         h('span', {}, 'Your stress: ', h('strong', { 'data-field': 'stress' }, bandWord('stress', view.player.stress))),
         h('span', {}, 'Hours planned: ', h('strong', { 'data-field': 'planned-hours' }, view.plannedHours), ' (overtime ', h('strong', { 'data-field': 'overtime' }, view.overtime), ')'),
       ),
+      help(ctx),
       situations(ctx),
       LEVEL_PANELS[run.levelId]?.(ctx),
       lastWeek(run),
       h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => send({ kind: 'endWeek' }, 'end-week') }, 'End week'), errorFor('end-week')),
+    );
+  }
+
+  /** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
+  // @spec UI-HELP-001
+  function help(ctx: ScreenContext) {
+    const chosen = ctx.drafts.get('help')?.open;
+    const open = chosen === undefined ? ctx.run.sim.week <= HELP_OPEN_THROUGH_WEEK : chosen === 'true';
+    return h(
+      'details',
+      { 'data-panel': 'help', class: 'help', open, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
+      h('summary', {}, 'How to play'),
+      HELP_TOPICS.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
     );
   }
 

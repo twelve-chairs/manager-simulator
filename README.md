@@ -6,7 +6,7 @@ The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
 
-Early development, and **playable**: the line manager level runs in the browser from start to promotion, burnout or being managed out, with eleven authored situations. The run saves in the browser after every move and resumes on reload, and can be exported to a file and imported again.
+Early development, and **playable**: the line manager level runs in the browser from start to promotion, burnout or being managed out, with eleven authored situations and a short onboarding: your manager walks you through your first three weeks, and a How to play section stays on the week screen. The run saves in the browser after every move and resumes on reload, and can be exported to a file and imported again.
 
 The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. The **turn loop** runs a career week by week as commands applied to one saveable, replayable run. The **performance review** scores each quarter against the level's targets, rates the player, and decides whether they continue, are promoted or are managed out. The **UI** renders the run in the browser as plain DOM with no runtime dependencies.
 

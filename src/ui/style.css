@@ -23,3 +23,6 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #e3e
 .notice { background: #fff8e1; border: 1px solid #e2c46b; padding: 0.5rem 1rem; }
 .save { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d6d3cc; font-size: 0.9rem; }
 .import { margin: 0 0.5rem; }
+.help { color: #4a5056; font-size: 0.92rem; }
+details.help { background: #fff; border: 1px solid #d6d3cc; border-radius: 6px; padding: 0.5rem 1rem; margin-top: 1rem; }
+details.help summary { cursor: pointer; font-weight: 600; color: #1d2125; }
