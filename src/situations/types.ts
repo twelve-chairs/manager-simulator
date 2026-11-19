@@ -1,6 +1,7 @@
 import type { ChangeLogEntry, DepartureReason, PerformanceLevel, Rating, SimState, WantTags } from '../sim';
 
 export type RoleKind = 'person' | 'team' | 'project';
+export type TeamForm = 'detailed' | 'aggregate';
 export type Operator = 'below' | 'atMost' | 'above' | 'atLeast' | 'is' | 'isNot' | 'in';
 
 /** A literal, or another path written as `{ value: path }`. */
@@ -20,6 +21,8 @@ export type Condition =
 export interface SituationRole {
   name: string;
   kind: RoleKind;
+  /** For a team role: binds only teams of this form. */
+  form?: TeamForm;
   where?: Condition;
 }
 

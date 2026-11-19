@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { debriefsSince, type Condition, type Situation } from '../../src/situations';
-import { applyEffects, type SimState } from '../../src/sim';
+import { aggregateTeam, applyEffects, type SimState } from '../../src/sim';
 import { ONLY_E1, OTHER_TEAM, engine, expectResolved, fresh, patch, plain, presentOne, resolve, select, sit } from './fixtures';
 
 const c = (x: unknown) => x as Condition;
@@ -102,6 +102,12 @@ describe('expiry', () => {
     const t = presented(onTeam);
     const noTeam = patch(t.sim, (s) => delete s.teams.t2);
     expect(resolve(t.eng, noTeam, t.situations, t.presentation, 'ok').kind).toBe('expired');
+
+    const detailed = sit({ id: 'detailed', roles: [{ name: 'team', kind: 'team', form: 'detailed', where: OTHER_TEAM }], text: '{team}', choices: plain('x').choices });
+    const d = presented(detailed);
+    const aggregated = aggregateTeam(d.sim, 't2', { kind: 'rule', ruleId: 'test.rule' }).state;
+    expect(resolve(d.eng, aggregated, d.situations, d.presentation, 'ok').kind).toBe('expired');
+    expect(resolve(d.eng, d.sim, d.situations, d.presentation, 'ok').kind).toBe('resolved');
   });
 });
 
@@ -202,16 +208,16 @@ describe('applying an outcome', () => {
 
   // @spec SIT-RES-007
   it('reports a batch the core rejects and changes nothing', () => {
-    // re-rating needs an aggregate team; t2 is detailed, which validation cannot know
+    // t2 already has a leader, so the core refuses a new one; validation cannot know who leads a team
     const s = sit({
       id: 'calibrate',
       roles: [{ name: 'team', kind: 'team', where: OTHER_TEAM }],
-      text: 'Calibrate {team}.',
+      text: 'Take over {team}.',
       choices: [
         {
           id: 'raise',
-          label: 'Raise one',
-          outcomes: [{ id: 'raised', effects: [{ type: 'reRate', teamId: 'team', from: 'unrated', to: 'meets', count: 1 }], aftermath: '', debrief: '' }],
+          label: 'Lead it yourself',
+          outcomes: [{ id: 'raised', effects: [{ type: 'setLeader', teamId: 'team', leader: 'player' }], aftermath: '', debrief: '' }],
         },
       ],
     });

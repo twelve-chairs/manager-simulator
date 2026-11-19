@@ -68,6 +68,8 @@ const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
 /** The roles visible at a point in a situation, and the candidate inside a count. */
 interface Scope {
   roles: Record<string, RoleKind>;
+  /** The declared form of each team role that has one. */
+  forms?: Record<string, string>;
   it?: RoleKind;
 }
 
@@ -217,6 +219,12 @@ function checkText(o: Obj, key: string, path: string, scope: Scope) {
 // ---- effects ----
 
 const TEAM_FIELDS = [...new Set([...DETAILED_TEAM_FIELDS, ...AGGREGATE_TEAM_FIELDS])];
+const AGGREGATE_ONLY_FIELDS: readonly string[] = AGGREGATE_TEAM_FIELDS.filter((f) => !(DETAILED_TEAM_FIELDS as readonly string[]).includes(f));
+
+/** Effects only an aggregate team accepts must name a team role declared `form: aggregate`. */
+function requireAggregate(role: string, scope: Scope, path: string, what: string) {
+  if (scope.forms?.[role] !== 'aggregate') fail(path, `${what} only applies to aggregate teams; give role ${role} form: aggregate`);
+}
 const FIELDS: Record<RoleKind | 'player', readonly string[]> = {
   person: PERSON_FIELDS,
   team: TEAM_FIELDS,
@@ -253,6 +261,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
       else return fail(at(path, 'target'), `${target} is not a role`);
       const field = string(o, 'field', path);
       if (!FIELDS[kind].includes(field)) fail(at(path, 'field'), `${kind} has no field ${field}`);
+      if (kind === 'team' && AGGREGATE_ONLY_FIELDS.includes(field)) requireAggregate(target, scope, at(path, 'field'), `changing ${field}`);
       finite(o, 'amount', path);
       if (Object.hasOwn(o, 'wantTags')) checkWantTags(o.wantTags, at(path, 'wantTags'));
       if (Object.hasOwn(o, 'historyNote')) {
@@ -273,6 +282,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
     case 'reRate': {
       const o = object(x, path, 'a reRate effect', ['type', 'teamId', 'from', 'to', 'count']);
       roleOf(o, 'teamId', 'team', scope, path);
+      requireAggregate(o.teamId as string, scope, at(path, 'teamId'), 're-rating');
       oneOf(o.from, PERFORMANCE_LEVELS, at(path, 'from'), 'a performance level');
       oneOf(o.to, RATINGS, at(path, 'to'), 'a rating');
       if (!Number.isInteger(o.count) || (o.count as number) < 1) fail(at(path, 'count'), 'must be a whole number of at least one');
@@ -330,32 +340,43 @@ function checkSituation(x: unknown): Situation {
   if (Object.hasOwn(o, 'when')) checkCondition(o.when, { roles: {} }, 'when');
 
   const roles: Record<string, RoleKind> = {};
+  const forms: Record<string, string> = {};
   list(o.roles, 'roles').forEach((r, i) => {
     const path = at('roles', i);
-    const role = object(r, path, 'a role', ['name', 'kind'], ['where']);
+    const role = object(r, path, 'a role', ['name', 'kind'], ['form', 'where']);
     const name = string(role, 'name', path);
     if (!ROLE_NAME.test(name) || RESERVED.includes(name)) fail(at(path, 'name'), `${name} cannot be a role name`);
     if (Object.hasOwn(roles, name)) fail(at(path, 'name'), `duplicate role ${name}`);
     roles[name] = oneOf(role.kind, KINDS, at(path, 'kind'), 'a role kind');
+    if (Object.hasOwn(role, 'form')) {
+      if (roles[name] !== 'team') fail(at(path, 'form'), `only team roles have a form, and ${name} is a ${roles[name]} role`);
+      forms[name] = oneOf(role.form, ['detailed', 'aggregate'], at(path, 'form'), 'a team form');
+    }
     if (Object.hasOwn(role, 'where')) checkCondition(role.where, { roles: { ...roles } }, at(path, 'where'));
   });
-  const scope: Scope = { roles };
+  const scope: Scope = { roles, forms };
 
   checkText(o, 'text', '', scope);
   const choices = list(o.choices, 'choices');
   if (choices.length === 0) fail('choices', 'needs at least one choice');
+  const choiceIds = new Set<string>();
   choices.forEach((ch, i) => {
     const path = at('choices', i);
     const choice = object(ch, path, 'a choice', ['id', 'label', 'outcomes'], ['availableIf']);
-    string(choice, 'id', path);
+    const choiceId = string(choice, 'id', path);
+    if (choiceIds.has(choiceId)) fail(at(path, 'id'), `duplicate choice id ${choiceId}`);
+    choiceIds.add(choiceId);
     checkText(choice, 'label', path, scope);
     if (Object.hasOwn(choice, 'availableIf')) checkCondition(choice.availableIf, scope, at(path, 'availableIf'));
     const outcomes = list(choice.outcomes, at(path, 'outcomes'));
     if (outcomes.length === 0) fail(at(path, 'outcomes'), 'needs at least one outcome');
+    const outcomeIds = new Set<string>();
     outcomes.forEach((oc, j) => {
       const opath = at(at(path, 'outcomes'), j);
       const outcome = object(oc, opath, 'an outcome', ['id', 'effects', 'aftermath', 'debrief'], ['when']);
-      string(outcome, 'id', opath);
+      const outcomeId = string(outcome, 'id', opath);
+      if (outcomeIds.has(outcomeId)) fail(at(opath, 'id'), `duplicate outcome id ${outcomeId} in choice ${choiceId}`);
+      outcomeIds.add(outcomeId);
       const last = j === outcomes.length - 1;
       if (last && Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'the last outcome cannot have a when; it applies when no other does');
       if (!last && !Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'required on every outcome but the last');
@@ -372,7 +393,7 @@ export type ValidationResult = { ok: true; situation: Situation } | { ok: false;
 
 /** Validates each item of a bundle; results line up with the input. Executes nothing from the content. */
 // @spec SIT-CONTENT-004, SIT-CONTENT-005, SIT-CONTENT-006, SIT-CONTENT-007, SIT-CONTENT-008, SIT-CONTENT-009, SIT-CONTENT-010
-// @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016
+// @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016, SIT-CONTENT-017, SIT-CONTENT-018, SIT-CONTENT-019
 export function validateBundle(items: unknown[]): ValidationResult[] {
   const seen = new Set<string>();
   return items.map((item, index) => {

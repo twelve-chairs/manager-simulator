@@ -85,15 +85,15 @@ A build step compiles every situation file into one JSON content bundle that the
 
 ### Roles
 
-A role has a `name`, a `kind` (`person`, `team` or `project`) and an optional `where` condition. Roles are bound in order, and a role's condition may refer to itself and to roles before it. Only active people, existing teams and active projects can be bound, and each role in a situation binds a different entity. A situation may have no roles, for organization-wide or player-only situations. The player is not a role; conditions and text refer to the player as `player`.
+A role has a `name`, a `kind` (`person`, `team` or `project`) and an optional `where` condition. A team role may also have a `form` (`detailed` or `aggregate`), and then binds only teams of that form. Roles are bound in order, and a role's condition may refer to itself and to roles before it. Only active people, existing teams and active projects can be bound, and each role in a situation binds a different entity. A situation may have no roles, for organization-wide or player-only situations. The player is not a role; conditions and text refer to the player as `player`.
 
 ### Choices and Outcomes
 
-A choice has an `id`, a `label`, an optional `availableIf` condition (a choice whose condition fails is not offered), and an ordered list of **outcomes**. When the player picks a choice, the first outcome whose `when` condition holds applies. The last outcome has no `when`, so exactly one outcome always applies.
+A choice has an `id` unique within its situation, a `label`, an optional `availableIf` condition (a choice whose condition fails is not offered), and an ordered list of **outcomes**. Each outcome's `id` is unique within its choice. When the player picks a choice, the first outcome whose `when` condition holds applies. The last outcome has no `when`, so exactly one outcome always applies.
 
 An outcome has an `id`, a list of `effects`, an `aftermath` line shown immediately, and a `debrief` explanation kept for the performance review.
 
-Effects are the simulation core's effects, written with role names where the core takes ids: `target: engineer` rather than a person id, `teamId: newTeam` rather than a team id. The engine substitutes the bound ids and adds the cause (the situation id and choice id). Situations may use every effect except hiring and starting a project, which create new entities and are career-level actions, and rating the player, which only the performance review does. Situations may rate people (evaluations are situations) and re-rate aggregate teams (calibrations at higher levels).
+Effects are the simulation core's effects, written with role names where the core takes ids: `target: engineer` rather than a person id, `teamId: newTeam` rather than a team id. The engine substitutes the bound ids and adds the cause (the situation id and choice id). Situations may use every effect except hiring and starting a project, which create new entities and are career-level actions, and rating the player, which only the performance review does. Situations may rate people (evaluations are situations) and re-rate aggregate teams (calibrations at higher levels). Effects that only an aggregate team accepts (re-rating, and changing `headcount` or `attritionRisk`) must name a team role with `form: aggregate`, so a situation can never bind a team its effects cannot apply to.
 
 ### Text
 
@@ -133,7 +133,7 @@ Each turn, the turn loop asks the engine for situations for the active career le
 1. Closes any situation still open from an earlier selection as **ignored**, keeping a debrief record with status `ignored`: not responding is itself something a debrief can name.
 2. Takes the situations tagged with that level, skipping any marked `once` that has been presented, and any presented within its `cooldownWeeks`.
 3. Drops those whose `when` does not hold.
-4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
+4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates (for a team role with a `form`, only teams of that form) in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
 5. Selects up to the limit: `urgent` situations first, then `normal` ones, each group drawn at random by `weight`, so that when there are more urgent situations than the limit, the limit still holds. No person is bound into two situations in the same turn; a situation that would reuse someone already bound is re-bound without them, or dropped.
 6. Records each selected situation as presented in the current game week and as **open** until it is resolved.
 
@@ -146,7 +146,7 @@ A presented situation carries a presentation id unique within the run, its situa
 When the player picks a choice for a presented situation, the engine:
 
 1. Checks the presentation is open; resolving one that is not (already resolved, ignored, or never presented) is an error, so no situation applies its effects twice. Resolving closes it.
-2. Checks the bindings are still valid (bound people and projects still active, bound teams still present). If one is not, because an earlier situation this turn removed or moved someone, the situation **expires**: no effects apply, and a debrief record is kept with status `expired` and no choice, aftermath or debrief text, so the review can see conversations that never happened.
+2. Checks the bindings are still valid (bound people and projects still active, bound teams still present and, for a role with a `form`, still of that form). If one is not, because an earlier situation this turn removed or moved someone, the situation **expires**: no effects apply, and a debrief record is kept with status `expired` and no choice, aftermath or debrief text, so the review can see conversations that never happened.
 3. Checks the choice is offered, re-evaluating `availableIf` against the current state.
 4. Selects the first outcome whose `when` holds against the current state.
 5. Substitutes bound ids into the outcome's effects, attaches the cause, and submits them to the simulation core as one batch.
@@ -168,7 +168,10 @@ Content is untrusted input: a content bundle is checked before any situation fro
 - its id duplicates another situation's;
 - a condition uses an unknown form, operator, subject or property, compares a property with a literal of the wrong type, compares an id-valued property with a literal, gives `in` something other than a list, uses `history` on anything but a person role, or refers to a role not yet bound at that point (a role's `where` may refer to itself and earlier roles; `when` refers to no roles);
 - a placeholder names an unknown role or property;
+- a role has a `form` but is not a team role;
 - an effect is malformed, hires, starts a project or rates the player, or names a role of the wrong kind for its field;
+- an effect only an aggregate team accepts names a team role without `form: aggregate`;
+- two choices share an id, or two outcomes of one choice share an id;
 - a choice has no outcomes, or its last outcome has a `when`, or an earlier outcome lacks one.
 
 The compiler parses YAML with its safe schema, with no custom types and no aliases, so a content file cannot trigger parser features. The build fails on any invalid situation. At load, the game drops invalid situations and reports them, so a bad bundle degrades the content rather than crashing the game.
@@ -197,6 +200,7 @@ The content compiler (`scripts/`) is a build-time tool: it reads `content/situat
 | Debriefs | A short aftermath line at once, plus a debrief record for the performance review | Only immediate feedback; only end-of-period debriefs | The immediate line keeps choices responsive; the review-time debrief is where delayed consequences (a resignation months later) are linked back to choices. |
 | Situations per turn | Up to a level-set limit; urgent first, then weighted random; cooldowns and once-per-run | Every eligible situation fires | A cap keeps turns playable and lets levels set pace; cooldowns stop the same situation repeating. |
 | Engine randomness | Its own seeded generator in engine state | Draw from the simulation's generator | Content changes would otherwise change simulation outcomes for the same seed, making balance tests and bug reports unreproducible. |
+| Form-specific team effects | A `form` on team roles, required for effects only aggregate teams accept | A `where` condition on `team.form`; let the core reject the batch at resolution | The validator can check a declared form statically, so content that could never resolve fails the build; a `where` condition is too open-ended to check, and a runtime rejection leaves the player with a choice that always errors. |
 | Binding | Ordered roles, shuffled candidates, backtracking search | First match in id order; random pick with no backtracking | Shuffling spreads situations across people; backtracking finds a binding whenever one exists, which is cheap at the organization sizes the game simulates. |
 | Comparing entities | An `id` property on people, teams and projects, compared with other id-valued paths | Literal ids in content; a bare role name as a path | Ids are generated per run, so a literal id in content means nothing; an ordinary property keeps the path grammar uniform. |
 | One person per situation per turn | No person bound into two situations in a turn | Allow overlap | Two situations about the same person in one turn read as contradictory and can invalidate each other's bindings. |

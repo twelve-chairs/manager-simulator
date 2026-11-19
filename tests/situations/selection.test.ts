@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { debriefsSince, type Condition, type Situation } from '../../src/situations';
+import { aggregateTeam } from '../../src/sim';
 import { seeds } from '../sim/fixtures';
 import { ONLY_E1, OTHER_TEAM, engine, fresh, holds, patch, plain, resolve, select, sit } from './fixtures';
 
@@ -100,6 +101,18 @@ describe('binding roles', () => {
       ],
     });
     expect(select(engine(), fresh(), [managers]).presented).toEqual([]);
+  });
+
+  // @spec SIT-SEL-014
+  it('binds a team role with a form only to teams of that form', () => {
+    const onForm = (form: 'detailed' | 'aggregate') =>
+      sit({ id: form, roles: [{ name: 'team', kind: 'team', form }], text: '{team}', choices: plain('x').choices });
+    expect(select(engine(), fresh(), [onForm('aggregate')]).presented).toEqual([]);
+    const mixed = aggregateTeam(fresh(), 't2', { kind: 'rule', ruleId: 'test.rule' }).state;
+    for (const seed of seeds(10)) {
+      expect(select(engine(seed), mixed, [onForm('aggregate')]).presented[0]!.bindings).toEqual({ team: 't2' });
+      expect(select(engine(seed), mixed, [onForm('detailed')]).presented[0]!.bindings).toEqual({ team: 't1' });
+    }
   });
 
   // @spec SIT-SEL-005

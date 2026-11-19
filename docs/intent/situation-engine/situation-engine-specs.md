@@ -18,6 +18,9 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-013**: The situation engine shall treat a situation as invalid if its `weight` is not above 0, its `cooldownWeeks` is negative, a comparison's literal does not match the property's type, `in` is given something other than a list, `ratings.<level>` names an unknown level, or a `history` condition names anything but a person role.
 - [x] **SIT-CONTENT-014**: The situation engine shall treat a situation as invalid if an effect rates the player.
 - [x] **SIT-CONTENT-016**: The situation engine shall treat a situation as invalid if it compares an id-valued property (`id`, `team`, `ledTeam`, `leader`) with a literal rather than a path.
+- [x] **SIT-CONTENT-017**: The situation engine shall treat a situation as invalid if a role that is not a team role has a `form`, or a team role's `form` is not `detailed` or `aggregate`.
+- [x] **SIT-CONTENT-018**: The situation engine shall treat a situation as invalid if a `reRate` effect, or a `value` effect changing `headcount` or `attritionRisk`, names a team role whose `form` is not `aggregate`.
+- [x] **SIT-CONTENT-019**: The situation engine shall treat a situation as invalid if two of its choices share an id, or two outcomes of one choice share an id.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 
@@ -43,6 +46,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-SEL-002**: When situations are selected, the situation engine shall skip a situation marked `once` that has been presented, and a situation presented fewer than `cooldownWeeks` weeks ago.
 - [x] **SIT-SEL-003**: When situations are selected, the situation engine shall skip a situation whose `when` does not hold.
 - [x] **SIT-SEL-004**: When binding a situation's roles, the situation engine shall bind them in order, each to an active person, existing team or active project of the role's kind for which its `where` holds, trying candidates in an order shuffled by the engine's generator, and never binding the same entity to two roles of one situation.
+- [x] **SIT-SEL-014**: When binding a team role that has a `form`, the situation engine shall consider only teams of that form.
 - [x] **SIT-SEL-005**: When a role has no candidate that lets every later role bind, the situation engine shall backtrack to the previous role's next candidate, and skip the situation when no complete binding exists.
 - [x] **SIT-SEL-013**: When binding leaves a situation with no choice whose `availableIf` holds, the situation engine shall skip it.
 - [x] **SIT-SEL-006**: When selecting from eligible situations, the situation engine shall draw `urgent` situations before any `normal` one, drawing within each group at random with probability proportional to `weight`, until the limit is reached.
@@ -56,7 +60,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 
 - [x] **SIT-RES-008**: If a resolution names a presentation that is not open, then the situation engine shall return an error and leave both states unchanged.
 - [x] **SIT-RES-009**: When a presentation is resolved or expires, the situation engine shall close it.
-- [x] **SIT-RES-001**: When a choice is resolved, if any bound person or project is no longer active or any bound team no longer exists, then the situation engine shall expire the situation, apply no effects, and record a debrief record with the game week, situation id and bindings, the status `expired`, and no choice, aftermath or debrief text.
+- [x] **SIT-RES-001**: When a choice is resolved, if any bound person or project is no longer active, any bound team no longer exists, or a team bound to a role with a `form` no longer has that form, then the situation engine shall expire the situation, apply no effects, and record a debrief record with the game week, situation id and bindings, the status `expired`, and no choice, aftermath or debrief text.
 - [x] **SIT-RES-010**: When a choice is resolved, the situation engine shall look up the presented situation by id in the situations it is given, and return an error leaving both states unchanged when it is not among them.
 - [x] **SIT-RES-002**: If the chosen choice does not exist or its `availableIf` does not hold against the current state, then the situation engine shall return an error and leave both states unchanged.
 - [x] **SIT-RES-003**: When a choice is resolved, the situation engine shall apply the first outcome whose `when` holds against the current state, or the final outcome when none does.

@@ -267,6 +267,45 @@ describe('loading and validation', () => {
     valid(roleWhere({ value: 'engineer.team', isNot: { value: 'player.team' } }));
   });
 
+  // @spec SIT-CONTENT-017
+  it('allows a form only on team roles, and only detailed or aggregate', () => {
+    const plainChoices = sit().choices.map((ch) => ({ ...ch, label: 'Talk', outcomes: ch.outcomes.map((o) => ({ ...o, effects: [], aftermath: '', debrief: '' })) }));
+    const withRole = (role: unknown) => sit({ roles: [role as never], text: 'x', choices: plainChoices });
+    expect(rejectionOf(withRole({ name: 'engineer', kind: 'person', form: 'aggregate' }))).toMatch(/form/);
+    expect(rejectionOf(withRole({ name: 'team', kind: 'team', form: 'huge' }))).toMatch(/form/);
+    valid(withRole({ name: 'team', kind: 'team', form: 'detailed' }));
+  });
+
+  // @spec SIT-CONTENT-018
+  it('requires form aggregate for effects only aggregate teams accept', () => {
+    const withTeam = (form: string | undefined, effect: unknown) =>
+      sit({
+        roles: [{ name: 'team', kind: 'team', ...(form && { form }) } as never],
+        text: '{team}',
+        choices: [{ id: 'c', label: 'C', outcomes: [{ id: 'o', effects: [effect as never], aftermath: '', debrief: '' }] }],
+      });
+    const reRate = { type: 'reRate', teamId: 'team', from: 'unrated', to: 'meets', count: 1 };
+    const headcount = { type: 'value', target: 'team', field: 'headcount', amount: -1 };
+    const attrition = { type: 'value', target: 'team', field: 'attritionRisk', amount: 5 };
+    for (const effect of [reRate, headcount, attrition]) {
+      expect(rejectionOf(withTeam(undefined, effect))).toMatch(/aggregate/);
+      expect(rejectionOf(withTeam('detailed', effect))).toMatch(/aggregate/);
+      valid(withTeam('aggregate', effect));
+    }
+    valid(withTeam(undefined, { type: 'value', target: 'team', field: 'stress', amount: 5 }));
+  });
+
+  // @spec SIT-CONTENT-019
+  it('rejects duplicate choice ids, and duplicate outcome ids within a choice', () => {
+    const choice = sit().choices[0]!;
+    expect(rejectionOf(sit({ choices: [choice, { ...choice, label: 'Again' }] }))).toMatch(/talk/);
+    const outcome = choice.outcomes[0]!;
+    const twice = { ...choice, outcomes: [{ ...outcome, when: { all: [] } }, outcome] };
+    expect(rejectionOf(sit({ choices: [twice as never] }))).toMatch(/fine/);
+    const other = { ...choice, id: 'other' };
+    valid(sit({ choices: [choice, other] }));
+  });
+
   // @spec SIT-CONTENT-014
   it('rejects effects that rate the player', () => {
     const s = sit();

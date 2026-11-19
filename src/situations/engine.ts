@@ -50,7 +50,7 @@ const ctxFor = (sim: SimState, engine: EngineState, situation: Situation, bindin
  * Binds roles in order, trying each role's candidates in shuffled order and backtracking when a later role cannot bind.
  * Returns undefined when no complete binding exists.
  */
-// @spec SIT-SEL-004, SIT-SEL-005
+// @spec SIT-SEL-004, SIT-SEL-005, SIT-SEL-014
 function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeople: Set<string>): Record<string, string> | undefined {
   const bindings: Record<string, string> = {};
   const used = new Set<string>();
@@ -58,7 +58,12 @@ function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeopl
     const role = situation.roles[i];
     if (!role) return true;
     const key = (id: string) => `${role.kind}:${id}`;
-    const candidates = candidatesOf(sim, role.kind).filter((id) => !used.has(key(id)) && !(role.kind === 'person' && excludedPeople.has(id)));
+    const candidates = candidatesOf(sim, role.kind).filter(
+      (id) =>
+        !used.has(key(id)) &&
+        !(role.kind === 'person' && excludedPeople.has(id)) &&
+        !(role.kind === 'team' && role.form && sim.teams[id]!.form !== role.form),
+    );
     for (const id of shuffled(s, candidates)) {
       bindings[role.name] = id;
       if (role.where && !evaluateCondition(role.where, ctxFor(sim, s, situation, bindings))) continue;
@@ -146,7 +151,7 @@ function stillBound(sim: SimState, situation: Situation, bindings: Record<string
       case 'person':
         return sim.people[id]?.status === 'active';
       case 'team':
-        return Object.hasOwn(sim.teams, id);
+        return Object.hasOwn(sim.teams, id) && (!role.form || sim.teams[id]!.form === role.form);
       case 'project':
         return sim.projects[id]?.status === 'active';
     }
