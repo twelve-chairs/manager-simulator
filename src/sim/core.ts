@@ -26,15 +26,17 @@ export const sortedIds = (record: Record<string, unknown>) => Object.keys(record
 
 export const clamp100 = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
 
-/** mulberry32: a small, fast, seedable generator whose whole state is one 32-bit integer. */
-export function random(ctx: Ctx): number {
-  const a = (ctx.s.rngState + 0x6d2b79f5) >>> 0;
-  ctx.s.rngState = a;
+/** mulberry32: a small, fast, seedable generator whose whole state is one 32-bit integer, advanced in place. */
+export function nextRandom(holder: { rngState: number }): number {
+  const a = (holder.rngState + 0x6d2b79f5) >>> 0;
+  holder.rngState = a;
   let t = a;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
+
+export const random = (ctx: Ctx): number => nextRandom(ctx.s);
 
 /** Chance of at least one event over `weeks`, given a weekly chance. */
 export const chanceOver = (weekly: number, weeks: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, weekly)), weeks);

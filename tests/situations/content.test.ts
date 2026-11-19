@@ -255,6 +255,7 @@ describe('loading and validation', () => {
     ).toMatch(/history/);
     valid(roleWhere({ value: 'engineer.performance', below: { value: 'engineer.correspondingRating' } }));
     valid(roleWhere({ value: 'engineer.want', in: ['growth', 'autonomy'] }));
+    valid(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', withinWeeks: 4, is: 0 }));
   });
 
   // @spec SIT-CONTENT-016

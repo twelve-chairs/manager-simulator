@@ -107,7 +107,7 @@ function candidates(sim: SimState, kind: RoleKind): string[] {
 export const candidatesOf = (sim: SimState, kind: RoleKind) => candidates(sim, kind).sort();
 
 /** Evaluates a condition against the simulation and engine state. Changes neither. */
-// @spec SIT-COND-001, SIT-COND-002, SIT-COND-003, SIT-COND-004, SIT-COND-005, SIT-COND-007, SIT-COND-008, SIT-COND-009, SIT-COND-010, SIT-COND-011
+// @spec SIT-COND-001, SIT-COND-002, SIT-COND-003, SIT-COND-004, SIT-COND-005, SIT-COND-007, SIT-COND-008, SIT-COND-009, SIT-COND-010, SIT-COND-011, SIT-COND-013
 export function evaluateCondition(condition: Condition, ctx: EvalContext): boolean {
   const c = condition as Record<string, unknown>;
   if (has(c, 'all')) return (c.all as Condition[]).every((x) => evaluateCondition(x, ctx));
@@ -126,11 +126,13 @@ export function evaluateCondition(condition: Condition, ctx: EvalContext): boole
     if (!person) return false;
     const situation = c.situation as string | undefined;
     const choice = c.choice as string | undefined;
+    const action = c.action as string | undefined;
     const ratings = c.rating as string[] | undefined;
     const n = person.history.filter(
       (h) =>
         (situation === undefined || (h.cause.kind === 'situation' && h.cause.situationId === situation)) &&
         (choice === undefined || (h.cause.kind === 'situation' && h.cause.choiceId === choice)) &&
+        (action === undefined || (h.cause.kind === 'action' && h.cause.actionId === action)) &&
         (ratings === undefined || (h.rating !== undefined && ratings.includes(h.rating))) &&
         inWindow(ctx, h.week, c.withinWeeks as number | undefined),
     ).length;

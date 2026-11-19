@@ -297,6 +297,22 @@ describe('history and presented', () => {
     ]);
   });
 
+  // @spec SIT-COND-013
+  it('counts history entries caused by a player action', () => {
+    const action = (actionId: string): Cause => ({ kind: 'action', actionId });
+    const result = applyEffects(fresh(), [
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'trust', amount: 1, cause: action('line-manager.one-on-one'), historyNote: '1:1' },
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'trust', amount: 1, cause: action('line-manager.one-on-one'), historyNote: '1:1' },
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'skill', amount: 1, cause: action('line-manager.coaching'), historyNote: 'Coaching' },
+    ]);
+    if (!result.ok) throw new Error(result.error.message);
+    check(result.state, { engineer: 'e1' }, [
+      [{ history: 'engineer', action: 'line-manager.one-on-one', is: 2 }, true],
+      [{ history: 'engineer', action: 'line-manager.coaching', is: 1 }, true],
+      [{ history: 'engineer', action: 'line-manager.one-on-one', situation: 'sit-a', is: 0 }, true],
+    ]);
+  });
+
   // @spec SIT-COND-009
   it('counts presentations of a situation, ever or within a window', () => {
     const sim = fresh();

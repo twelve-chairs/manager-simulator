@@ -6,7 +6,7 @@ The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
 
-Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. There is no career level, turn loop, UI or playable game yet.
+Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. There is no turn loop, performance review, UI or playable game yet.
 
 ## Development
 
@@ -26,6 +26,8 @@ npm run typecheck   # check types
 | `src/sim/` | Simulation core |
 | `tests/sim/` | Simulation core tests |
 | `src/situations/` | Situation engine |
+| `src/levels/line-manager/` | Line manager career level |
+| `tests/levels/` | Career level tests |
 | `tests/situations/` | Situation engine tests |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
 | `scripts/` | Build-time tools, such as the situation content compiler |

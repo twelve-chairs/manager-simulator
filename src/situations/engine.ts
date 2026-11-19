@@ -1,4 +1,4 @@
-import { applyEffects, type Cause, type Effect, type SimState, type ValueTarget } from '../sim';
+import { applyEffects, nextRandom as random, type Cause, type Effect, type SimState, type ValueTarget } from '../sim';
 import { candidatesOf, evaluateCondition, type EvalContext } from './conditions';
 import { render } from './text';
 import type {
@@ -11,16 +11,6 @@ import type {
   Situation,
   SituationEffect,
 } from './types';
-
-/** mulberry32, as in the simulation core, over the engine's own state. */
-function random(s: EngineState): number {
-  const a = (s.rngState + 0x6d2b79f5) >>> 0;
-  s.rngState = a;
-  let t = a;
-  t = Math.imul(t ^ (t >>> 15), t | 1);
-  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
 
 function shuffled<T>(s: EngineState, items: T[]): T[] {
   const out = [...items];
