@@ -23,9 +23,9 @@ Design: [turn-loop-design.md](turn-loop-design.md)
 - [x] **LOOP-WEEK-001**: When the week is ended, the turn loop shall have the active level commit the week's plan, and if the level rejects it, return the level's error and leave the run unchanged.
 - [x] **LOOP-WEEK-002**: When the level has committed the week, the turn loop shall advance the simulation by the level's time step and then run the level's after-advance step.
 - [x] **LOOP-WEEK-003**: When the level's after-advance step reports burnout, the turn loop shall end the run with the ending `burnout`, without conducting a review that would be due.
-- [x] **LOOP-WEEK-004**: When the simulation has advanced to a week that is a multiple of the level's review cadence and the run has not ended, the turn loop shall call the performance review with the level id, the simulation state and the level's scorecard, take the simulation state it returns, and enter the review phase holding its rating and outcome.
+- [x] **LOOP-WEEK-004**: When an advance takes the simulation to or past a multiple of the level's review cadence that it had not reached before, and the run has not ended, the turn loop shall call the performance review with the level id, the simulation state and the level's scorecard, take the simulation state it returns, and enter the review phase holding its rating and outcome.
 - [x] **LOOP-WEEK-005**: When the next week begins, the turn loop shall have the level begin the week, start an empty plan, and present situations selected by the situation engine for the level's id up to the level's limit.
-- [x] **LOOP-WEEK-007**: When the turn loop selects or resolves situations, it shall give the situation engine the weeks until the next review: the level's review cadence less the current week's remainder after dividing by it.
+- [x] **LOOP-WEEK-007**: When the turn loop selects or resolves situations, it shall give the situation engine the weeks until the next review is held: from the current week to the end of the first step, counting whole steps of the level's time step, that reaches the next multiple of the review cadence.
 - [x] **LOOP-WEEK-006**: When a week ends, the turn loop shall keep the level's report and the aftermath lines of the situations answered that week as the run's last week.
 
 ## Reviews

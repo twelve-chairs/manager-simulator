@@ -2,11 +2,16 @@ import { advance } from '../sim';
 import { createEngine, resolveChoice, selectSituations, type Situation, type Timing } from '../situations';
 import type { AnyLevel, ApplyResult, Command, Dependencies, Run } from './types';
 
-/** Weeks until the next review: the cadence less the weeks since the last one. */
+/** Weeks until the next review is held: to the end of the first whole step that reaches the next review week. */
 // @spec LOOP-WEEK-007
-const timingOf = (run: Run, level: AnyLevel): Timing => ({
-  weeksToReview: level.params.reviewEveryWeeks - (run.sim.week % level.params.reviewEveryWeeks),
-});
+function timingOf(run: Run, level: AnyLevel): Timing {
+  const { weeksPerStep: step, reviewEveryWeeks: cadence } = level.params;
+  const nextReviewWeek = (Math.floor(run.sim.week / cadence) + 1) * cadence;
+  return { weeksToReview: Math.ceil((nextReviewWeek - run.sim.week) / step) * step };
+}
+
+/** Whether an advance from one week to another reached or passed a review week. */
+const crossedReview = (from: number, to: number, cadence: number) => Math.floor(to / cadence) > Math.floor(from / cadence);
 
 /** Begins the run's next week: the level prepares it, the plan empties, and situations are presented. */
 // @spec LOOP-WEEK-005
@@ -54,6 +59,7 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
     report: committed.report,
     aftermaths: run.presented.flatMap((p) => (p.status === 'answered' && p.aftermath !== undefined ? [p.aftermath] : [])),
   };
+  const fromWeek = committed.sim.week;
   run.sim = advance(committed.sim, level.params.weeksPerStep).state;
   const after = level.afterAdvance(committed.level, run.sim);
   run.level = after.level;
@@ -62,7 +68,7 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
     run.ending = 'burnout';
     return { ok: true };
   }
-  if (run.sim.week % level.params.reviewEveryWeeks === 0) {
+  if (crossedReview(fromWeek, run.sim.week, level.params.reviewEveryWeeks)) {
     const result = deps.review({ levelId: level.params.id, sim: run.sim, scorecard: level.scorecard(run.level, run.sim) });
     run.sim = result.sim;
     run.review = { rating: result.rating, outcome: result.outcome };

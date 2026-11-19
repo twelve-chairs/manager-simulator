@@ -212,6 +212,32 @@ describe('a week', () => {
     expect(run.review).toEqual({ rating: 'meets', outcome: 'continue' });
   });
 
+  // @spec LOOP-WEEK-004, LOOP-WEEK-007
+  it('reviews after the advance that crosses a review week when the step does not divide the cadence', () => {
+    const monthly = { ...L, params: { ...L.params, weeksPerStep: 4 } };
+    const { review, calls } = stubReview();
+    const d = { levels: [monthly], review };
+    const timed = (weeks: number) => ({ ...CONTENT[0]!, id: `in-${weeks}`, when: { value: 'review.weeksAway', is: weeks } }) as (typeof CONTENT)[number];
+    const content = [4, 12, 16].map(timed);
+    let run = newRun(1, content, d);
+    // week 0: the review falls after the step that reaches week 13, which ends at week 16
+    expect(run.presented.map((p) => p.presentation.situationId)).toEqual(['in-16']);
+    const weeks: number[] = [];
+    while (run.phase === 'planning') {
+      run = step(run, { kind: 'endWeek' }, d, content);
+      weeks.push(run.sim.week);
+    }
+    expect(weeks).toEqual([4, 8, 12, 16]);
+    expect(calls).toHaveLength(1);
+    run = step(run, { kind: 'acknowledge' }, d, content);
+    // week 16: the next review is after the step that reaches week 26, which ends at week 28
+    expect(run.presented.map((p) => p.presentation.situationId)).toEqual(['in-12']);
+    run = endWeeks(run, 5, d);
+    expect(run.sim.week).toBe(28);
+    expect(run.phase).toBe('review');
+    expect(calls).toHaveLength(2);
+  });
+
   // @spec LOOP-WEEK-006
   it('keeps the level report and the week’s aftermaths as last week', () => {
     let run = start();

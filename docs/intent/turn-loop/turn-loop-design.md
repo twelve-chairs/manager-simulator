@@ -53,10 +53,10 @@ A run begins with week 0 in the planning phase. **End week** then does, in order
 1. The level commits the week with the pending plan, returning the new simulation and level states and its report. If the level rejects the plan (for the line manager, too many hours), the command is an error and the run is unchanged.
 2. The simulation advances by the level's time step.
 3. The level's after-advance step runs. If it reports burnout, the run ends with `burnout`.
-4. If the new game week is a multiple of the level's review cadence, the loop asks the performance review for a result and enters the review phase.
+4. If the advance reached or passed a multiple of the level's review cadence, the loop asks the performance review for a result and enters the review phase. A level's time step need not divide its cadence: a monthly level reviewed every 13 weeks is reviewed after the advance that crosses week 13, 26 and so on, so no review is skipped.
 5. Otherwise the next week begins: the level begins the week, and the situation engine selects situations for the level, up to its limit.
 
-Whenever the loop selects or resolves situations, it tells the situation engine how many weeks remain until the next review (the level's cadence less the weeks since the last one), so content can time evaluations to the review cycle.
+Whenever the loop selects or resolves situations, it tells the situation engine how many weeks remain until the next review is held: the weeks to the end of the step that reaches the next multiple of the cadence. With a one-week step, that is the cadence less the weeks since the last review. Content can then time evaluations to the review cycle.
 
 **Acknowledge** applies the review's result: `continue` begins the next week; `managedOut` ends the run; `promote` moves the run to the next career level, or ends it as `completed` when the player is at the highest level the game has.
 
@@ -111,7 +111,7 @@ The loop is given the career levels it can run and the performance review as dep
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Converting a run's state on promotion to a higher level: each higher level's design defines how it takes over a run from the level below.
+1. Converting a run's state on promotion to a higher level: each higher level's design defines how it takes over a run from the level below. Until one does, a review that promotes the player below the highest level the loop is given has no way forward: acknowledging it is an error, and the run stays in the review phase. This cannot happen while the line manager is the only level.
 2. Undo within a week, which replaying the week's commands without the last one would make possible.
 3. Whether the command list is trimmed for long runs, at the cost of full replay.
 
