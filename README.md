@@ -6,7 +6,9 @@ The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
 
-Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. The **turn loop** runs a career week by week as commands applied to one saveable, replayable run. The **performance review** scores each quarter against the level's targets, rates the player, and decides whether they continue, are promoted or are managed out. There is no UI or playable game yet.
+Early development, and **playable**: the line manager level runs in the browser from start to promotion, burnout or being managed out, with eleven authored situations. There is no save yet, so closing the tab ends the run.
+
+The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. The **turn loop** runs a career week by week as commands applied to one saveable, replayable run. The **performance review** scores each quarter against the level's targets, rates the player, and decides whether they continue, are promoted or are managed out. The **UI** renders the run in the browser as plain DOM with no runtime dependencies.
 
 ## Development
 
@@ -14,6 +16,9 @@ Requires Node.js.
 
 ```bash
 npm ci              # install dependencies
+npm run dev         # play locally at the address Vite prints
+npm run build       # build the static game into dist/
+npm run preview     # serve the built game
 npm test            # run the tests once
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
@@ -29,6 +34,8 @@ npm run typecheck   # check types
 | `src/levels/line-manager/` | Line manager career level |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |
+| `src/ui/` | Browser UI; `index.html` at the root loads it |
+| `tests/ui/` | UI and build tests |
 | `tests/review/` | Performance review tests |
 | `tests/loop/` | Turn loop tests |
 | `src/actions.ts` | Player action catalogue: every career level's action ids, which situation content is checked against |
@@ -36,6 +43,7 @@ npm run typecheck   # check types
 | `tests/situations/` | Situation engine tests |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
 | `scripts/` | Build-time tools, such as the situation content compiler |
+| `vite.config.ts` | Build configuration, including the plugin that compiles situations into the page |
 | `docs/high-level-design.md` | Project-level design |
 | `docs/intent/` | Component designs and their requirements (EARS specs) |
 | `docs/decisions/` | Project-level decision records |

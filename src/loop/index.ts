@@ -1,2 +1,2 @@
 export * from './types';
-export { apply, newRun, replay } from './loop';
+export { apply, newRun, replay, weeksToReview } from './loop';

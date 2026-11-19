@@ -1,0 +1,22 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.45;
+  color: #1d2125;
+  background: #f6f5f2;
+}
+body { margin: 0; }
+#app { max-width: 60rem; margin: 0 auto; padding: 1.5rem; }
+h1, h2, h3 { line-height: 1.2; }
+h2 { margin-top: 2rem; border-bottom: 1px solid #d6d3cc; padding-bottom: 0.25rem; }
+button { font: inherit; padding: 0.3rem 0.8rem; margin: 0.15rem 0.3rem 0.15rem 0; cursor: pointer; }
+select { font: inherit; margin-right: 0.3rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #e3e0d9; }
+.status { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.8rem 1rem; background: #fff; border: 1px solid #d6d3cc; border-radius: 6px; }
+.situation, .demand { background: #fff; border: 1px solid #d6d3cc; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.8rem 0; }
+.situation[data-status='open'] { border-left: 4px solid #b5651d; }
+.aftermath { font-style: italic; color: #4a5056; }
+.error { color: #a12622; font-weight: 600; }
+.content-errors { background: #fff3f2; border: 1px solid #e3a7a3; padding: 0.5rem 1rem; }
+.end-week { margin: 2rem 0; }
+.end-week button { font-size: 1.1rem; padding: 0.5rem 1.4rem; }

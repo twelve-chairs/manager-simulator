@@ -10,6 +10,12 @@ function timingOf(run: Run, level: AnyLevel): Timing {
   return { weeksToReview: Math.ceil((nextReviewWeek - run.sim.week) / step) * step };
 }
 
+/** Weeks until the run's next review is held, for display. */
+export function weeksToReview(run: Run, deps: Dependencies): number | undefined {
+  const level = deps.levels.find((l) => l.params.id === run.levelId);
+  return level ? timingOf(run, level).weeksToReview : undefined;
+}
+
 /** Whether an advance from one week to another reached or passed a review week. */
 const crossedReview = (from: number, to: number, cadence: number) => Math.floor(to / cadence) > Math.floor(from / cadence);
 

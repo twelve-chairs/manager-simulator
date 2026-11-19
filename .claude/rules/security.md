@@ -69,7 +69,10 @@ Treat as untrusted anything the game did not just compute itself:
 ## Determinism is not a security control, but keep it
 
 `Math.random` and `Date.now` are not used in the simulation; randomness comes
-from the seeded generator in the simulation state (SIM-STATE-004). This rule
+from the seeded generator in the simulation state (SIM-STATE-004). The one
+exception is the UI choosing a new run's seed, which it draws from
+`crypto.getRandomValues` and shows the player; everything after the seed is
+deterministic, so this does not break reproducible runs. This rule
 lives here because a reviewer scanning for `Math.random` will find it.
 
 ## Debug-only code
