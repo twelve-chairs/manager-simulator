@@ -81,10 +81,11 @@ Design: [line-manager-design.md](line-manager-design.md)
 
 ## Reviews and the end of the level
 
-- [x] **LINE-END-001**: When the scorecard is requested, the line manager level shall report the number of the team's projects completed by their deadline in the 13 weeks before the scorecard's week, and the share of its active projects neither overdue nor behind schedule.
+- [x] **LINE-END-001**: When the scorecard is requested, the line manager level shall report the number of the team's projects completed by their deadline in the 13 weeks before the scorecard's week, and, when the team has active projects, the share of them neither overdue nor behind schedule, or no share when it has none.
 - [x] **LINE-END-002**: When the scorecard is requested, the line manager level shall report the number of engineers who quit the team in the 13 weeks before the scorecard's week, and how many of them were rated meets or above.
 - [x] **LINE-END-003**: When the scorecard is requested, the line manager level shall report the team's average motivation and average stress, and the share of its active engineers who have had a 1:1 in the four weeks before the scorecard's week.
-- [x] **LINE-END-004**: When the scorecard is requested, the line manager level shall report whether promotion is possible, which it is from week 52 (the fourth review) on.
+- [x] **LINE-END-004**: When the level is assessed for a review, the line manager level shall report whether promotion is possible, which it is from week 52 (the fourth review) on.
+- [x] **LINE-END-007**: When the level is assessed for a review, the line manager level shall report as measures the projects completed on time and the on-schedule share (higher is better), the quits rated meets or above (lower is better), the average motivation (higher is better), the average stress (lower is better) and the 1:1 share (higher is better), each with the target and tolerance its tuning sets, leaving out the on-schedule share when the team has no active projects.
 - [x] **LINE-END-006**: When the simulation has advanced, the line manager level shall record the week in which each of the team's projects became completed.
 - [x] **LINE-END-005**: When the simulation has advanced, if the player's stress has been at or above the burnout threshold for four consecutive weeks, then the line manager level shall report that the player has burned out.
 

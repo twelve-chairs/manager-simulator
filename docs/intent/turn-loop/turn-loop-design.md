@@ -28,7 +28,7 @@ Three principles shape it:
 | phase | `planning`, `review` or `ended` |
 | presented | The situations presented this week, with what happened to each: open, answered (with its aftermath line) or expired |
 | last week | The level's report and the situation aftermaths from the week just ended, for the UI to show; empty until the first week ends |
-| review | In the `review` phase, the review's result waiting to be acknowledged |
+| review | In the `review` phase, the review's result waiting to be acknowledged: rating, outcome, each measure with its verdict, the score, and the quarter's debrief records |
 | ending | In the `ended` phase, why the run ended: `burnout`, `managedOut` or `completed` |
 | commands | Every command applied successfully, in order; a command that failed changed nothing and is not recorded |
 
@@ -72,14 +72,15 @@ Every career level provides the same operations, so the loop runs any level and 
 | empty plan, update plan | Hold and change the week's pending plan from level-specific planning commands, rejecting invalid ones |
 | commit | Apply the week's plan, returning new states, the change log and a report; or an error |
 | after advance | Run the level's checks after the simulation advances, reporting burnout |
-| scorecard | The measures the performance review reads |
+| scorecard | The level's raw measures |
+| assess | The measures the performance review scores, each with its target, tolerance and direction, and whether promotion is possible yet |
 | view | What the player can see |
 
 A level supplies these through an adapter over its own operations (for the line manager, see its design's *Turn Loop Contract*).
 
 ## Performance Review Interface
 
-The loop calls the performance review with the level id, the simulation state and the level's scorecard. The review returns a new simulation state (it rates the player), its rating and an outcome of `continue`, `promote` or `managedOut`. How the rating and outcome are decided is the review's design. The review keeps no state of its own in the run: the simulation records every rating the player has had, so a rule that looks at earlier reviews (two strong reviews in a row, say) reads them there.
+The loop calls the performance review with the level id, the simulation state, the level's assessment, and the situation engine's debrief records since the week of the player's previous rating (or since week 0, at the first review), together with a record marked ignored for each situation of the week just ended that is still open. The situation engine closes those only at its next selection, after the review, so without them the last week's unanswered situations would reach no review; their week keeps them out of the next review's window. The review returns a new simulation state (it rates the player), its rating, an outcome of `continue`, `promote` or `managedOut`, each measure with its verdict, the score, and the debrief records, all of which the run holds until the player acknowledges the review. How the rating and outcome are decided is the review's design. The review keeps no state of its own in the run: the simulation records every rating the player has had, so a rule that looks at earlier reviews (two strong reviews in a row, say) reads them there.
 
 ## Content
 

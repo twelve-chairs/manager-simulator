@@ -6,7 +6,7 @@ The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
 
-Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. The **turn loop** runs a career week by week as commands applied to one saveable, replayable run. There is no performance review, UI or playable game yet.
+Early development. The **simulation core** exists: the deterministic model of people, teams, projects and the player's standing, including performance ratings, coaching plans and PIPs. The **situation engine** exists too: it validates authored situations, selects and binds them each turn, and applies the player's choices to the simulation. The first career level, **line manager**, has its rules: a weekly hours budget spent through a calendar of actions, an inbox of hands-on demands to handle or delegate, hiring, and the scorecard its reviews read. The **turn loop** runs a career week by week as commands applied to one saveable, replayable run. The **performance review** scores each quarter against the level's targets, rates the player, and decides whether they continue, are promoted or are managed out. There is no UI or playable game yet.
 
 ## Development
 
@@ -28,6 +28,8 @@ npm run typecheck   # check types
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
 | `src/loop/` | Turn loop |
+| `src/review/` | Performance review |
+| `tests/review/` | Performance review tests |
 | `tests/loop/` | Turn loop tests |
 | `src/actions.ts` | Player action catalogue: every career level's action ids, which situation content is checked against |
 | `tests/levels/` | Career level tests |

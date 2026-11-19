@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, NAMES, afterAdvance, scorecard, type LineState } from '../../../src/levels/line-manager';
+import { LINE_TUNING, NAMES, afterAdvance, assess, scorecard, type LineState } from '../../../src/levels/line-manager';
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../../src/sim';
 import { commit, engineers, nextWeek, only, patch, projects, run } from './fixtures';
 
@@ -108,8 +108,34 @@ describe('scorecard', () => {
   // @spec LINE-END-004
   it('allows promotion from week 52', () => {
     const { level, sim } = run(1);
-    expect(scorecard(level, patch(sim, (s) => (s.week = 51))).promotionPossible).toBe(false);
-    expect(scorecard(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
+    expect(assess(level, patch(sim, (s) => (s.week = 51))).promotionPossible).toBe(false);
+    expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
+  });
+
+  // @spec LINE-END-001
+  it('has no on-schedule share when the team has no active projects', () => {
+    const { level, sim } = run(1);
+    const idle = patch(sim, (s) => Object.values(s.projects).forEach((p) => (p.status = 'completed')));
+    expect(scorecard(level, idle).delivery.onScheduleShare).toBeNull();
+  });
+
+  // @spec LINE-END-007
+  it('assesses six measures against tuned targets, leaving out the share without projects', () => {
+    const { level, sim } = run(1);
+    const at13 = patch(sim, (s) => (s.week = 13));
+    const card = scorecard(level, at13);
+    const a = assess(level, at13);
+    const t = LINE_TUNING.review;
+    expect(a.measures).toEqual([
+      { id: 'completedOnTime', value: card.delivery.completedOnTime, ...t.completedOnTime, better: 'higher' },
+      { id: 'onScheduleShare', value: card.delivery.onScheduleShare, ...t.onScheduleShare, better: 'higher' },
+      { id: 'regrettedQuits', value: card.retention.quitsRatedMeetsOrAbove, ...t.regrettedQuits, better: 'lower' },
+      { id: 'motivation', value: card.teamHealth.motivation, ...t.motivation, better: 'higher' },
+      { id: 'stress', value: card.teamHealth.stress, ...t.stress, better: 'lower' },
+      { id: 'oneOnOneShare', value: card.teamHealth.oneOnOneShare, ...t.oneOnOneShare, better: 'higher' },
+    ]);
+    const idle = patch(at13, (s) => Object.values(s.projects).forEach((p) => (p.status = 'completed')));
+    expect(assess(level, idle).measures.map((m) => m.id)).not.toContain('onScheduleShare');
   });
 });
 

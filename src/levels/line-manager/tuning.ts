@@ -52,6 +52,16 @@ export const LINE_TUNING = {
   },
   difficultyRange: [20, 90] as const,
 
+  /** Review targets for the level's measures: at target within the tolerance, edges included. */
+  review: {
+    completedOnTime: { target: 0, tolerance: 0 },
+    onScheduleShare: { target: 0.75, tolerance: 0.15 },
+    regrettedQuits: { target: 0, tolerance: 0 },
+    motivation: { target: 55, tolerance: 10 },
+    stress: { target: 45, tolerance: 10 },
+    oneOnOneShare: { target: 0.8, tolerance: 0.15 },
+  },
+
   /** Consequences of an expired demand. */
   expiry: {
     approvalProgress: -4,

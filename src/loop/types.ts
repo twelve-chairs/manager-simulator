@@ -1,5 +1,8 @@
-import type { ChangeLogEntry, Rating, SimState } from '../sim';
+import type { Assessment, ReviewInput, ReviewOutcome, ReviewResult } from '../review';
+import type { ChangeLogEntry, SimState } from '../sim';
 import type { EngineState, Presentation } from '../situations';
+
+export type { ReviewOutcome } from '../review';
 
 /** The operations every career level provides, so the turn loop can run any of them. */
 export interface CareerLevel<L = unknown, P = unknown, C = unknown> {
@@ -11,13 +14,12 @@ export interface CareerLevel<L = unknown, P = unknown, C = unknown> {
   commit(level: L, sim: SimState, plan: P): { ok: true; level: L; sim: SimState; log: ChangeLogEntry[]; report: unknown } | { ok: false; error: string };
   afterAdvance(level: L, sim: SimState): { level: L; burnedOut: boolean };
   scorecard(level: L, sim: SimState): unknown;
+  assess(level: L, sim: SimState): Assessment;
   view(level: L, sim: SimState, plan: P): unknown;
 }
 
-export type ReviewOutcome = 'continue' | 'promote' | 'managedOut';
-
 /** The performance review: rates the player and decides what happens next. */
-export type Review = (input: { levelId: string; sim: SimState; scorecard: unknown }) => { sim: SimState; rating: Rating; outcome: ReviewOutcome };
+export type Review = (input: ReviewInput) => ReviewResult;
 
 /** A career level of any state, plan and command types; the loop only passes its own values back to it. */
 export type AnyLevel = CareerLevel<any, any, any>;
@@ -50,7 +52,8 @@ export interface Run {
   phase: 'planning' | 'review' | 'ended';
   presented: PresentedRecord[];
   lastWeek: { report: unknown; aftermaths: string[] } | null;
-  review: { rating: Rating; outcome: ReviewOutcome } | null;
+  /** A conducted review waiting to be acknowledged: everything the review returned but the simulation state. */
+  review: Omit<ReviewResult, 'sim'> | null;
   ending: 'burnout' | 'managedOut' | 'completed' | null;
   commands: Command[];
 }

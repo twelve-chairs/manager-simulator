@@ -133,7 +133,8 @@ export interface View {
 }
 
 export interface Scorecard {
-  delivery: { completedOnTime: number; onScheduleShare: number };
+  /** No on-schedule share when the team has no active projects. */
+  delivery: { completedOnTime: number; onScheduleShare: number | null };
   retention: { quits: number; quitsRatedMeetsOrAbove: number };
   teamHealth: { motivation: number; stress: number; oneOnOneShare: number };
   promotionPossible: boolean;

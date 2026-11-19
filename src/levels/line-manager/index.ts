@@ -7,6 +7,6 @@ export { LEVEL, startRun } from './start';
 export { editCalendar } from './calendar';
 export { arriveDemands } from './inbox';
 export { commitWeek } from './commit';
-export { afterAdvance, scorecard } from './review';
+export { afterAdvance, assess, scorecard } from './review';
 export { band, view } from './view';
 export { lineManagerLevel } from './contract';

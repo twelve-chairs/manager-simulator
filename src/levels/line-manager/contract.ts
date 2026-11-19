@@ -2,7 +2,7 @@ import type { CareerLevel } from '../../loop/types';
 import { editCalendar } from './calendar';
 import { commitWeek, invalidDecision } from './commit';
 import { arriveDemands } from './inbox';
-import { afterAdvance, scorecard } from './review';
+import { afterAdvance, assess, scorecard } from './review';
 import { LEVEL, startRun } from './start';
 import type { LinePlan, LinePlanCommand, LineState } from './types';
 import { view } from './view';
@@ -41,5 +41,6 @@ export const lineManagerLevel: CareerLevel<LineState, LinePlan, LinePlanCommand>
   commit: (level, sim, plan) => commitWeek(level, sim, plan.decisions),
   afterAdvance,
   scorecard,
+  assess,
   view,
 };

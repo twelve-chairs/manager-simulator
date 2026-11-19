@@ -3,6 +3,7 @@ import { lineManagerLevel, type LineState } from '../../src/levels/line-manager'
 import { apply, newRun, replay, type Command, type Run } from '../../src/loop';
 import { debriefsSince, selectSituations } from '../../src/situations';
 import { advance } from '../../src/sim';
+import { conductReview } from '../../src/review';
 import { CONTENT, deps, endWeeks, step, stubReview } from './fixtures';
 
 const L = lineManagerLevel;
@@ -193,7 +194,7 @@ describe('a week', () => {
   });
 
   // @spec LOOP-WEEK-004
-  it('conducts a review every 13 weeks with the level scorecard', () => {
+  it('conducts a review every 13 weeks with the level assessment and the quarter’s debriefs', () => {
     const { review, calls } = stubReview();
     const d = deps(review);
     let run = endWeeks(start(1, d), 12, d);
@@ -207,9 +208,40 @@ describe('a week', () => {
     const committed = L.commit(level(beforeReview), beforeReview.sim, beforeReview.plan as never);
     if (!committed.ok) throw new Error(committed.error);
     const advanced = advance(committed.sim, 1).state;
-    expect(calls[0]!.scorecard).toEqual(L.scorecard(L.afterAdvance(committed.level, advanced).level, advanced));
+    expect(calls[0]!.assessment).toEqual(L.assess(L.afterAdvance(committed.level, advanced).level, advanced));
+    // every situation presented since week 0: the closed ones as recorded, the last week's still-open ones as ignored
+    const closed = debriefsSince(beforeReview.engine, 0);
+    const stillOpen = beforeReview.presented.map((p) => ({ week: 12, situationId: p.presentation.situationId, bindings: p.presentation.bindings, status: 'ignored' }));
+    expect(calls[0]!.debriefs).toEqual([...closed, ...stillOpen]);
+    expect(calls[0]!.debriefs.filter((r) => r.week === 12)).toHaveLength(beforeReview.presented.length);
     expect(run.sim.player.reputation).toBe(77);
-    expect(run.review).toEqual({ rating: 'meets', outcome: 'continue' });
+    expect(run.review).toEqual({ rating: 'meets', outcome: 'continue', score: 0, measures: calls[0]!.assessment.measures.map((m) => ({ ...m, verdict: 'at' })), debriefs: calls[0]!.debriefs });
+  });
+
+  // @spec LOOP-WEEK-004
+  it('takes the debriefs since the player’s previous rating at later reviews', () => {
+    // the real review, since only a review that rates the player leaves a previous rating to count from
+    const calls: Parameters<typeof conductReview>[0][] = [];
+    const review: typeof conductReview = (input) => {
+      calls.push(structuredClone(input));
+      return { ...conductReview(input), outcome: 'continue' };
+    };
+    const d = deps(review);
+    let run = step(endWeeks(start(1, d), 13, d), { kind: 'acknowledge' }, d);
+    run = endWeeks(run, 13, d);
+    expect(run.sim.week).toBe(26);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]!.debriefs.every((r) => r.week >= 13)).toBe(true);
+    expect(calls[1]!.debriefs.some((r) => r.week === 13)).toBe(true);
+  });
+
+  // @spec LOOP-WEEK-004
+  it('runs with the real performance review', () => {
+    const d = { levels: [L], review: conductReview };
+    const run = endWeeks(newRun(1, CONTENT, d), 13, d);
+    expect(run.phase).toBe('review');
+    expect(run.sim.player.ratingHistory).toHaveLength(1);
+    expect(run.review!.measures.map((m) => m.id)).toContain('reputation');
   });
 
   // @spec LOOP-WEEK-004, LOOP-WEEK-007

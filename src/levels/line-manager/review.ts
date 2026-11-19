@@ -2,6 +2,7 @@ import { RATINGS, behindScheduleProjects, overdueProjects, type SimState } from 
 import { reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
 import { LINE_TUNING } from './tuning';
+import type { Assessment, Measure } from '../../review';
 import type { LineState, Scorecard } from './types';
 
 /** Records completions, keeps vacancies in step and tracks burnout, after the simulation advances. */
@@ -24,7 +25,7 @@ const before = (when: number, week: number, weeks: number) => when >= week - wee
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 /** The measures the performance review reads, over the review period before the current week. */
-// @spec LINE-END-001, LINE-END-002, LINE-END-003, LINE-END-004
+// @spec LINE-END-001, LINE-END-002, LINE-END-003
 export function scorecard(level: LineState, sim: SimState): Scorecard {
   const week = sim.week;
   const period = LEVEL.reviewEveryWeeks;
@@ -35,7 +36,7 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
   }).length;
   const active = teamProjects(level, sim);
   const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
-  const onScheduleShare = active.length ? active.filter((id) => !troubled.has(id)).length / active.length : 1;
+  const onScheduleShare = active.length ? active.filter((id) => !troubled.has(id)).length / active.length : null;
 
   const quits = Object.values(sim.people).filter(
     (p) => p.teamId === level.teamId && p.status === 'departed' && p.departure?.reason === 'quit' && before(p.departure.week, week, period),
@@ -57,5 +58,25 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
       oneOnOneShare: engineers.length ? hadOneOnOne / engineers.length : 0,
     },
     promotionPossible: week >= 4 * period,
+  };
+}
+
+/** The measures a review scores, with the level's targets, and whether promotion is possible yet. */
+// @spec LINE-END-004, LINE-END-007
+export function assess(level: LineState, sim: SimState): Assessment {
+  const card = scorecard(level, sim);
+  const t = LINE_TUNING.review;
+  const measure = (id: keyof typeof t, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
+  return {
+    measures: [
+      measure('completedOnTime', card.delivery.completedOnTime, 'higher'),
+      // A team with nothing to deliver has no on-schedule share to reward or punish.
+      ...(card.delivery.onScheduleShare === null ? [] : [measure('onScheduleShare', card.delivery.onScheduleShare, 'higher')]),
+      measure('regrettedQuits', card.retention.quitsRatedMeetsOrAbove, 'lower'),
+      measure('motivation', card.teamHealth.motivation, 'higher'),
+      measure('stress', card.teamHealth.stress, 'lower'),
+      measure('oneOnOneShare', card.teamHealth.oneOnOneShare, 'higher'),
+    ],
+    promotionPossible: card.promotionPossible,
   };
 }

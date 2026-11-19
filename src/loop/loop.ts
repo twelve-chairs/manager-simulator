@@ -1,5 +1,5 @@
 import { advance } from '../sim';
-import { createEngine, resolveChoice, selectSituations, type Situation, type Timing } from '../situations';
+import { createEngine, debriefsSince, resolveChoice, selectSituations, type DebriefRecord, type Situation, type Timing } from '../situations';
 import type { AnyLevel, ApplyResult, Command, Dependencies, Run } from './types';
 
 /** Weeks until the next review is held: to the end of the first whole step that reaches the next review week. */
@@ -69,14 +69,27 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
     return { ok: true };
   }
   if (crossedReview(fromWeek, run.sim.week, level.params.reviewEveryWeeks)) {
-    const result = deps.review({ levelId: level.params.id, sim: run.sim, scorecard: level.scorecard(run.level, run.sim) });
-    run.sim = result.sim;
-    run.review = { rating: result.rating, outcome: result.outcome };
+    const { sim, ...result } = deps.review({ levelId: level.params.id, sim: run.sim, assessment: level.assess(run.level, run.sim), debriefs: quarterDebriefs(run) });
+    run.sim = sim;
+    run.review = result;
     run.phase = 'review';
     return { ok: true };
   }
   beginWeek(run, level, content);
   return { ok: true };
+}
+
+/**
+ * The situations since the player's previous rating: the engine's records, then a record marked ignored for each of
+ * the last week's situations still open, which the engine closes only at its next selection, after the review.
+ */
+function quarterDebriefs(run: Run): DebriefRecord[] {
+  const since = run.sim.player.ratingHistory.at(-1)?.week ?? 0;
+  const lastWeek = run.sim.week - 1;
+  const open = run.presented
+    .filter((p) => p.status === 'open')
+    .map((p): DebriefRecord => ({ week: lastWeek, situationId: p.presentation.situationId, bindings: { ...p.presentation.bindings }, status: 'ignored' }));
+  return [...debriefsSince(run.engine, since), ...open];
 }
 
 /** Applies a review's outcome. */

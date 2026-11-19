@@ -145,11 +145,11 @@ The level defines the scorecard its performance reviews read, and their cadence;
 
 - **Cadence**: a review every 13 weeks, at weeks 13, 26, 39 and so on; "since the last review" means the 13 weeks before the review.
 - **Scorecard**:
-  - **Delivery**: the number of the team's projects completed by their deadline since the last review, and the share of its active projects neither overdue nor behind schedule.
+  - **Delivery**: the number of the team's projects completed by their deadline since the last review, and the share of its active projects neither overdue nor behind schedule (no share when it has no active projects).
   - **Retention**: the number of engineers who quit the team since the last review, and how many of them were rated meets or above.
   - **Team health**: the team's average motivation and average stress, and the share of its engineers who have had a 1:1 in the four weeks before the review.
 
-  The level reports these measures; turning them into a rating is the performance review's job.
+  The level reports these measures; turning them into a rating is the performance review's job. For the review, the level's **assessment** gives each measure a target, a tolerance and a direction (tuning values): projects completed on time and the on-schedule share (higher is better), quits rated meets or above (lower is better), average motivation (higher), average stress (lower) and the 1:1 share (higher). A team with no active projects has no on-schedule share, so the assessment leaves that measure out rather than rewarding a team with nothing to deliver. The assessment also says whether promotion is possible.
 - **Promotion**: possible from the fourth review on, when the performance review rates the player highly enough.
 - **Burnout**: if the player's stress stays at or above the burnout threshold (a tuning value) for four consecutive weeks, the run ends.
 - **Managed out**: the performance review ends the run when the player fails an improvement plan.
@@ -175,7 +175,7 @@ The turn loop calls these in the order of *A Week*; situations are selected and 
 
 ## Turn Loop Contract
 
-The level provides the turn loop's career level contract through an adapter over the operations above: *begin week* is `arriveDemands`; planning commands either edit the calendar, changing the level state at once, or decide an inbox demand, which is held in the week's plan; *commit* calls `commitWeek` with the decisions in the plan; *after advance*, *scorecard* and *view* are the level's own.
+The level provides the turn loop's career level contract through an adapter over the operations above: *begin week* is `arriveDemands`; planning commands either edit the calendar, changing the level state at once, or decide an inbox demand, which is held in the week's plan; *commit* calls `commitWeek` with the decisions in the plan; *after advance*, *scorecard*, *assess* and *view* are the level's own.
 
 A decision is checked when it enters the plan, with the same checks the commit applies (the demand is in the inbox, the decision suits its type, a delegate is a person and not the requester), so the player hears about a bad decision when they make it; the commit checks again, since situations can change the team in between. A planning command can also clear a demand's decision, leaving it undecided.
 

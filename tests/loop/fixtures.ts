@@ -15,7 +15,14 @@ export function stubReview(outcome: ReviewOutcome = 'continue') {
   const calls: Parameters<Review>[0][] = [];
   const review: Review = (input) => {
     calls.push(structuredClone(input));
-    return { sim: { ...input.sim, player: { ...input.sim.player, reputation: 77 } }, rating: 'meets', outcome };
+    return {
+      sim: { ...input.sim, player: { ...input.sim.player, reputation: 77 } },
+      rating: 'meets',
+      outcome,
+      score: 0,
+      measures: input.assessment.measures.map((m) => ({ ...m, verdict: 'at' as const })),
+      debriefs: input.debriefs,
+    };
   };
   return { review, calls };
 }
