@@ -61,7 +61,9 @@ Treat as untrusted anything the game did not just compute itself:
   framework's escaped interpolation), never through `innerHTML`,
   `outerHTML`, `insertAdjacentHTML`, `document.write` or
   `dangerouslySetInnerHTML`.
-- No `javascript:` URLs; links the game opens are constants.
+- No `javascript:` URLs; links the game opens are constants. The one exception
+  is exporting a save, which downloads through a link to an object URL the game
+  creates from the save and revokes straight after; it never navigates.
 - When the game is deployed, it is served with a Content-Security-Policy that
   disallows inline script and `unsafe-eval`, plus `X-Content-Type-Options:
   nosniff` and `frame-ancestors` set.

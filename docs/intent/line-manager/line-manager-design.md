@@ -177,7 +177,7 @@ The turn loop calls these in the order of *A Week*; situations are selected and 
 
 The level provides the turn loop's career level contract through an adapter over the operations above: *begin week* is `arriveDemands`; planning commands either edit the calendar, changing the level state at once, or decide an inbox demand, which is held in the week's plan; *commit* calls `commitWeek` with the decisions in the plan; *after advance*, *scorecard*, *assess* and *view* are the level's own.
 
-A decision is checked when it enters the plan, with the same checks the commit applies (the demand is in the inbox, the decision suits its type, a delegate is a person and not the requester), so the player hears about a bad decision when they make it; the commit checks again, since situations can change the team in between. A planning command can also clear a demand's decision, leaving it undecided.
+A decision is checked when it enters the plan, with the same checks the commit applies (the demand is in the inbox, the decision suits its type, a delegate is a person and not the requester), so the player hears about a bad decision when they make it; the commit checks again, since situations can change the team in between. A planning command can also clear a demand's decision, leaving it undecided. Planning commands can come back from a saved run, so their shape is checked before use: a calendar edit's additions and removals must be lists, each addition an object and each removal an entry id.
 
 ## Decisions & Alternatives
 

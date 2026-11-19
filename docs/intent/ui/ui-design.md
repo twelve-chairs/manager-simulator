@@ -38,6 +38,18 @@ The screen follows the run's phase:
 
 The week screen's team, projects, inbox and calendar come from the career level's view; the UI has a renderer per career level for them, and a shell (header, situations, last week, review, ended) shared by every level.
 
+## Saving
+
+The UI wires the save component (see [Save / load](../save/save-design.md)) to the page:
+
+- When the page starts, it loads the saved run from storage, if there is one, and shows it, so a reload resumes where the player was. With no save, or one that fails to load, it shows the start screen, with a message when a save failed.
+- After every command that applies, and when a run begins, it saves.
+- A notice under the header says when a loaded run was rebuilt (how many of its commands still applied) or when saving is not possible; it stays until the next command.
+- Every run screen has a small save area with **Export**, **Import** and **Discard and start over**; the start screen has **Import**. Discarding, and importing over the current run, each show a confirmation (**Yes** and **Cancel** buttons in the save area) before anything is replaced or removed.
+- If writing a save fails, the UI also removes the stored save if it can, so a reload does not resume a run from before the failure.
+
+Storage is passed to the app rather than reached for directly, so tests can supply their own and the app works when the browser's storage is missing.
+
 ## Bands as Words
 
 The career level shows values as bands, 0 for the lowest. The UI names each band per kind of value:

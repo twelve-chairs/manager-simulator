@@ -4,7 +4,7 @@ Design: [ui-design.md](ui-design.md)
 
 ## The page
 
-- [x] **UI-SHELL-001**: When the page starts, the UI shall show the start screen with a new seed drawn from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
+- [x] **UI-SHELL-001**: When the page starts with no saved run, or one that fails to load, the UI shall show the start screen with a new seed drawn from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
 - [x] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the planning phase, the review screen in the review phase, and the ended screen once the run has ended.
 - [x] **UI-SHELL-003**: When a command applies, the UI shall redraw the whole screen from the new run.
 - [x] **UI-SHELL-004**: If a command returns an error, then the UI shall show the error next to the control that sent it and leave the rest of the screen as it was.
@@ -24,6 +24,17 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-LINE-002**: When the week screen is shown for the line manager, the UI shall list each active project with name, progress against scope, deadline week, schedule status, and risk and tech debt as band words.
 - [x] **UI-LINE-003**: When the week screen is shown for the line manager, the UI shall list each inbox demand with its type, subject's name, hours, difficulty as a band word, last week and current decision, with controls that send plan commands to handle it, delegate it to a chosen engineer (offering every engineer on the team except the request's own requester) or clear the decision, or for work intake to accept it, decline it or clear the decision.
 - [x] **UI-LINE-004**: When the week screen is shown for the line manager, the UI shall list each calendar entry with its action, target's name and cadence and a button that sends a plan command removing it, and a form whose action, target and cadence choices send a plan command adding an entry, offering only targets of the action's kind, only this week for a one-off action, and for an every-other-week entry a start of this week or next.
+
+## Saving
+
+- [x] **UI-SAVE-001**: When the page starts with a saved run in storage, the UI shall restore it and show it.
+- [x] **UI-SAVE-002**: When a run begins and after every command that applies, the UI shall write the run's save to storage.
+- [x] **UI-SAVE-003**: When a restored run was rebuilt, the UI shall show a notice saying how many of its commands still applied, until the player's next command.
+- [x] **UI-SAVE-004**: If a saved run in storage fails to load, then the UI shall show the start screen with a message and leave the stored save in place until a new run begins.
+- [x] **UI-SAVE-005**: If storage cannot be read or written, then the UI shall keep playing without saving, show a notice once, and remove the stored save if it can.
+- [x] **UI-SAVE-006**: When the player exports from a run screen, the UI shall download the save as a JSON file named `manager-simulator-<seed>-week-<week>.json`, through an object URL it revokes after the download starts.
+- [x] **UI-SAVE-007**: When the player imports a save file from the start screen, or from a run screen and confirms replacing the current run, the UI shall restore it, and if it loads, replace the current run with it, save it and show it; if it fails, show a message and leave the current run as it was.
+- [x] **UI-SAVE-008**: When the player discards from a run screen and confirms, the UI shall remove the stored save and show the start screen with a new seed; if they cancel, the run and its save stay as they were.
 
 ## Band words
 

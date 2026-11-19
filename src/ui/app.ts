@@ -1,4 +1,5 @@
 import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Dependencies, type Run } from '../loop';
+import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '../save';
 import type { ContentError, Situation } from '../situations';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
@@ -14,7 +15,14 @@ export interface AppOptions {
   newSeed: () => number;
   /** Start on an existing run instead of the start screen. */
   run?: Run;
+  /** Where the run is saved (the browser's localStorage in the game). Without it, the game plays without saving. */
+  storage?: SaveStorage;
 }
+
+/** The part of the browser's Storage the app uses. */
+export type SaveStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+export const SAVE_KEY = 'manager-simulator.save';
 
 export type AppState = { screen: 'start'; seed: number } | { screen: 'run'; run: Run };
 
@@ -55,10 +63,179 @@ const ENDINGS = {
 /** Mounts the game in `root` and redraws it from the run after every command. */
 // @spec UI-SHELL-001, UI-SHELL-002, UI-SHELL-003, UI-SHELL-004, UI-CONTENT-001
 export function createApp(root: HTMLElement, options: AppOptions) {
-  let state: AppState = options.run ? { screen: 'run', run: options.run } : { screen: 'start', seed: options.newSeed() };
+  // The start screen's seed is drawn only once it is known no saved run will be resumed.
+  let state: AppState = options.run ? { screen: 'run', run: options.run } : { screen: 'start', seed: 0 };
   let error: { control: string; message: string } | null = null;
+  /** A message about saving or loading, shown until the player's next command. */
+  let notice: string | null = null;
+  let warnedStorage = false;
   const drafts = new Map<string, Record<string, string>>();
   const titles = new Map(options.content.map((s) => [s.id, s.title]));
+  const fingerprint = contentFingerprint(options.content);
+
+  /** Writes the run's save; a storage failure is reported once, and the game plays on unsaved. */
+  // @spec UI-SAVE-002, UI-SAVE-005
+  function save(run: Run) {
+    if (!options.storage) return;
+    try {
+      options.storage.setItem(SAVE_KEY, JSON.stringify(toSave(run, fingerprint)));
+    } catch {
+      // An older save left in place would be resumed on reload as if nothing had happened since.
+      try {
+        options.storage.removeItem(SAVE_KEY);
+      } catch {
+        // storage is entirely unavailable; there is nothing to remove
+      }
+      if (!warnedStorage) notice = 'Your progress cannot be saved in this browser, so this run will not be saved.';
+      warnedStorage = true;
+    }
+  }
+
+  /** Restores a save's text as the current run, or explains why not, leaving the current run as it was. */
+  // @spec UI-SAVE-001, UI-SAVE-003, UI-SAVE-004, UI-SAVE-007
+  function load(text: string, from: 'storage' | 'file'): boolean {
+    const parsed = parseSave(text);
+    if (!parsed.ok) {
+      notice = from === 'storage' ? `Your saved run could not be loaded: ${parsed.error}.` : `That file could not be loaded: ${parsed.error}.`;
+      return false;
+    }
+    const restored = restore(parsed.save, options.content, options.deps, fingerprint);
+    state = { screen: 'run', run: restored.run };
+    error = null;
+    drafts.clear();
+    notice = restored.rebuilt
+      ? `This run was rebuilt with the current version of the game: ${restored.applied} of ${restored.total} of its commands still applied.`
+      : null;
+    return true;
+  }
+
+  if (!options.run && options.storage) {
+    let stored: string | null = null;
+    try {
+      stored = options.storage.getItem(SAVE_KEY);
+    } catch {
+      stored = null; // reported when the game first tries to save
+    }
+    if (stored !== null) load(stored, 'storage');
+  }
+  if (state.screen === 'start') state = { screen: 'start', seed: options.newSeed() };
+
+  // @spec UI-SAVE-006
+  function exportSave(run: Run) {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(toSave(run, fingerprint), null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `manager-simulator-${run.seed}-week-${run.sim.week}.json`;
+    // Some browsers start the download only once the link is in the document, and after click() returns, so the
+    // URL is revoked on the next task rather than straight away.
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  /** Counts imports, so a file that finishes reading after a later choice does not replace it. */
+  let importCount = 0;
+  /** A file chosen over a run in progress, waiting for the player to confirm replacing the run. */
+  let pendingImport: Pick<File, 'size' | 'text'> | null = null;
+  let confirmingDiscard = false;
+
+  function importControl(): Child {
+    return h('label', { class: 'import' }, 'Import a save: ', h('input', {
+      type: 'file',
+      accept: '.json,application/json',
+      'data-input': 'import',
+      onChange: (e: Event) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        if (state.screen === 'run') {
+          pendingImport = file;
+          confirmingDiscard = false;
+          render();
+        } else startImport(file);
+      },
+    }));
+  }
+
+  function startImport(file: Pick<File, 'size' | 'text'>) {
+    const thisImport = ++importCount;
+    if (file.size > MAX_SAVE_BYTES) {
+      notice = 'That file could not be loaded: it is too large to be a save.';
+      render();
+      return;
+    }
+    file.text().then(
+      (text) => {
+        if (thisImport !== importCount) return;
+        if (load(text, 'file') && state.screen === 'run') save(state.run);
+        render();
+      },
+      () => {
+        if (thisImport !== importCount) return;
+        notice = 'That file could not be read.';
+        render();
+      },
+    );
+  }
+
+  // @spec UI-SAVE-008
+  function saveArea(run: Run): Child {
+    const discard = () => {
+      try {
+        options.storage?.removeItem(SAVE_KEY);
+      } catch {
+        // nothing stored to remove
+      }
+      state = { screen: 'start', seed: options.newSeed() };
+      error = null;
+      notice = null;
+      confirmingDiscard = false;
+      pendingImport = null;
+      drafts.clear();
+      render();
+    };
+    // Discarding and importing over a run each destroy its only saved copy, so both ask first.
+    const confirmation = pendingImport
+      ? h(
+          'p',
+          { class: 'confirm' },
+          'Replace your current run with the imported file? ',
+          h('button', { 'data-action': 'confirm-import', onClick: () => {
+            const file = pendingImport!;
+            pendingImport = null;
+            startImport(file);
+            render();
+          } }, 'Yes, replace it'),
+          h('button', { 'data-action': 'cancel-import', onClick: () => {
+            pendingImport = null;
+            render();
+          } }, 'Cancel'),
+        )
+      : confirmingDiscard
+        ? h(
+            'p',
+            { class: 'confirm' },
+            'Discard this run? It cannot be recovered unless you exported it. ',
+            h('button', { 'data-action': 'confirm-discard', onClick: discard }, 'Yes, discard it'),
+            h('button', { 'data-action': 'cancel-discard', onClick: () => {
+              confirmingDiscard = false;
+              render();
+            } }, 'Cancel'),
+          )
+        : null;
+    return h(
+      'section',
+      { 'data-panel': 'save', class: 'save' },
+      h('button', { 'data-action': 'export', onClick: () => exportSave(run) }, 'Export save'),
+      importControl(),
+      h('button', { 'data-action': 'discard', onClick: () => {
+        confirmingDiscard = true;
+        pendingImport = null;
+        render();
+      } }, 'Discard and start over'),
+      confirmation,
+    );
+  }
 
   function send(command: Command, control: string, onApplied?: () => void) {
     if (state.screen !== 'run') return;
@@ -66,7 +243,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     if (result.ok) {
       state = { screen: 'run', run: result.run };
       error = null;
+      notice = null;
       onApplied?.();
+      save(result.run);
     } else {
       error = { control, message: result.error };
     }
@@ -96,8 +275,11 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('button', { 'data-action': 'begin', onClick: () => {
         state = { screen: 'run', run: newRun(seed, options.content, options.deps) };
         error = null;
+        notice = null;
+        save(state.run);
         render();
       } }, 'Begin'),
+      importControl(),
     );
   }
 
@@ -236,7 +418,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     root.replaceChildren();
     const errors = contentErrors();
     if (errors) root.append(errors as Node);
+    if (notice) root.append(h('p', { 'data-notice': true, role: 'status', class: 'notice' }, notice));
     root.append(screen as Node);
+    if (state.screen === 'run') root.append(saveArea(state.run) as Node);
     restoreFocus(root, focus);
   }
 

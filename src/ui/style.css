@@ -20,3 +20,6 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid #e3e
 .content-errors { background: #fff3f2; border: 1px solid #e3a7a3; padding: 0.5rem 1rem; }
 .end-week { margin: 2rem 0; }
 .end-week button { font-size: 1.1rem; padding: 0.5rem 1.4rem; }
+.notice { background: #fff8e1; border: 1px solid #e2c46b; padding: 0.5rem 1rem; }
+.save { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d6d3cc; font-size: 0.9rem; }
+.import { margin: 0 0.5rem; }

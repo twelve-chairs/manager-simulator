@@ -95,6 +95,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-CONTRACT-001**: The line manager level shall provide the turn loop's career level contract, beginning a week by having demands arrive, applying calendar edits to the level state at once, holding demand decisions in the week's plan, and committing the week with the decisions in the plan.
 - [x] **LINE-CONTRACT-002**: When a planning command decides a demand, the line manager level shall reject the decision with an error and leave the plan unchanged if the demand is not in the inbox, the decision does not suit its type, or a delegate is not a person or is the requester.
 - [x] **LINE-CONTRACT-003**: When a planning command clears a demand's decision, the line manager level shall remove it from the plan, leaving the demand undecided.
+- [x] **LINE-CONTRACT-004**: If a planning command that edits the calendar has additions or removals that are not lists, an addition that is not an object, or a removal that is not text, then the line manager level shall reject it with an error and leave the level state unchanged.
 
 ## Level state
 

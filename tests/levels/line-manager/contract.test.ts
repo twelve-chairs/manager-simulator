@@ -60,6 +60,26 @@ describe('the turn loop contract', () => {
     for (const command of malformed) expect(L.updatePlan(intake.level, sim, plan, command as never).ok).toBe(false);
   });
 
+  // @spec LINE-CONTRACT-004
+  it('rejects calendar commands of the wrong shape, as a saved run could hold', () => {
+    const { level, sim } = run(1);
+    const before = structuredClone(level);
+    for (const command of [
+      { kind: 'calendar', add: 5 },
+      { kind: 'calendar', add: 'line-manager.coaching' },
+      { kind: 'calendar', add: [null] },
+      { kind: 'calendar', add: [7] },
+      { kind: 'calendar', remove: 'c1' },
+      { kind: 'calendar', remove: [{}] },
+      { kind: 'calendar', remove: [3] },
+    ]) {
+      let result: ReturnType<typeof L.updatePlan> | undefined;
+      expect(() => (result = L.updatePlan(level, sim, L.emptyPlan(), command as never))).not.toThrow();
+      expect(result!.ok).toBe(false);
+    }
+    expect(level).toEqual(before);
+  });
+
   // @spec LINE-CONTRACT-003
   it('clears a decision, leaving the demand undecided', () => {
     const { level, sim } = centeredRun(1);

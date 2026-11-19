@@ -21,13 +21,26 @@ function invalidEntry(level: LineState, sim: SimState, entry: NewEntry): string 
   return undefined;
 }
 
-/** Adds and removes calendar entries. */
+/** Why a calendar edit's additions or removals are the wrong shape, as a saved run could hold, or undefined. */
+// @spec LINE-CONTRACT-004
+function shapeError(change: { add?: unknown; remove?: unknown }): string | undefined {
+  if (typeof change !== 'object' || change === null) return 'a calendar edit must be an object';
+  const { add, remove } = change;
+  if (add !== undefined && (!Array.isArray(add) || !add.every((e) => typeof e === 'object' && e !== null && !Array.isArray(e))))
+    return 'calendar additions must be a list of entries';
+  if (remove !== undefined && (!Array.isArray(remove) || !remove.every((id) => typeof id === 'string'))) return 'calendar removals must be a list of entry ids';
+  return undefined;
+}
+
+/** Adds and removes calendar entries, checking the edit's shape first so no caller can pass it something it would crash on. */
 // @spec LINE-CAL-004, LINE-CAL-009
 export function editCalendar(
   level: LineState,
   sim: SimState,
   change: { add?: NewEntry[]; remove?: string[] },
 ): { ok: true; level: LineState } | { ok: false; error: string } {
+  const malformed = shapeError(change);
+  if (malformed) return { ok: false, error: malformed };
   const next = structuredClone(level);
   for (const id of change.remove ?? []) {
     if (!next.calendar.some((e) => e.id === id)) return { ok: false, error: `no calendar entry ${id}` };
