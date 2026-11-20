@@ -12,6 +12,7 @@ A browser game about the career of a software engineering manager, where the peo
 [![Status: early development](https://img.shields.io/badge/status-early%20development-orange)](#status)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/twelve-chairs/manager-simulator/badge)](https://scorecard.dev/viewer/?uri=github.com/twelve-chairs/manager-simulator)
 [![CodeQL](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml)
+[![Dependabot](https://github.com/twelve-chairs/manager-simulator/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/dependabot/dependabot-updates)
 [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
 [![Security rating](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
 [![Reliability rating](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
