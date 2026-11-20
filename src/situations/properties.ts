@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../sim';
 import {
   PERFORMANCE_LEVELS,
   WANTS as WANT_VALUES,
@@ -99,7 +100,7 @@ export const ratingRank = (level: string) => PERFORMANCE_LEVELS.indexOf(level as
 
 const ledTeam = (sim: SimState, personId: string) =>
   Object.keys(sim.teams)
-    .sort()
+    .sort(compareCodeUnits)
     .find((id) => {
       const leader = sim.teams[id]!.leader;
       return leader?.kind === 'person' && leader.id === personId;
@@ -203,7 +204,7 @@ export function propertyValue(sim: SimState, subject: Subject, id: string, prope
           return planOf(sim, { kind: 'player' });
         case 'team':
           return Object.keys(sim.teams)
-            .sort()
+            .sort(compareCodeUnits)
             .find((tid) => sim.teams[tid]!.leader?.kind === 'player');
       }
       return undefined;

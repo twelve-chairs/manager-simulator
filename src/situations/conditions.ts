@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../sim';
 import type { SimState } from '../sim';
 import { propertyValue, ratingRank, type Value } from './properties';
 import type { Condition, EngineState, Operand, Operator, RoleKind } from './types';
@@ -107,7 +108,7 @@ function candidates(sim: SimState, kind: RoleKind): string[] {
 }
 
 /** Active people, existing teams or active projects of a kind, in id order. */
-export const candidatesOf = (sim: SimState, kind: RoleKind) => candidates(sim, kind).sort();
+export const candidatesOf = (sim: SimState, kind: RoleKind) => candidates(sim, kind).sort(compareCodeUnits);
 
 /** Evaluates a condition against the simulation and engine state. Changes neither. */
 // @spec SIT-COND-001, SIT-COND-002, SIT-COND-003, SIT-COND-004, SIT-COND-005, SIT-COND-007, SIT-COND-008, SIT-COND-009, SIT-COND-010, SIT-COND-011, SIT-COND-013

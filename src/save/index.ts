@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../sim';
 import { apply, newRun, type Command, type Dependencies, type Run } from '../loop';
 import type { Situation } from '../situations';
 
@@ -43,8 +44,8 @@ type Obj = Record<string, unknown>;
 const isObject = (x: unknown): x is Obj => typeof x === 'object' && x !== null && !Array.isArray(x);
 /** Whether an object has exactly these own keys; a `__proto__` key from JSON is an own key and fails this. */
 const hasExactly = (o: Obj, keys: string[]) => {
-  const own = Object.keys(o).sort();
-  return own.length === keys.length && [...keys].sort().every((k, i) => k === own[i]);
+  const own = Object.keys(o).sort(compareCodeUnits);
+  return own.length === keys.length && [...keys].sort(compareCodeUnits).every((k, i) => k === own[i]);
 };
 
 function commandError(c: unknown, i: number): string | undefined {

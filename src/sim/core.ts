@@ -22,7 +22,14 @@ export interface Ctx {
   log: ChangeLogEntry[];
 }
 
-export const sortedIds = (record: Record<string, unknown>) => Object.keys(record).sort();
+/**
+ * Orders strings by their UTF-16 code units: the same order on every machine and in every locale. Ids are sorted this
+ * way wherever order matters, because a locale-aware comparison could order them differently for different players and
+ * so break the rule that a run is reproducible from its seed.
+ */
+export const compareCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+export const sortedIds = (record: Record<string, unknown>) => Object.keys(record).sort(compareCodeUnits);
 
 const copyEach = <T>(record: Record<string, T>, copy: (x: T) => T): Record<string, T> =>
   Object.fromEntries(Object.entries(record).map(([id, x]) => [id, copy(x)]));

@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../../../src/sim';
 import { expect } from 'vitest';
 import {
   afterAdvance,
@@ -28,13 +29,13 @@ export function teamOf(sim: SimState): string {
 export const engineers = (sim: SimState): string[] =>
   Object.keys(sim.people)
     .filter((id) => sim.people[id]!.status === 'active' && sim.people[id]!.teamId === teamOf(sim))
-    .sort();
+    .sort(compareCodeUnits);
 
 /** Ids of the team's active projects, in id order. */
 export const projects = (sim: SimState): string[] =>
   Object.keys(sim.projects)
     .filter((id) => sim.projects[id]!.status === 'active' && sim.projects[id]!.teamId === teamOf(sim))
-    .sort();
+    .sort(compareCodeUnits);
 
 /** Sets every simulated value to the middle of its range, so a change in either direction shows. */
 export const centered = (sim: SimState): SimState => {

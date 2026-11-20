@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../../sim';
 import { nextRandom, type Cause, type Effect, type NewPerson, type NewProject, type SimState, type Want } from '../../sim';
 import { NAMES } from './names';
 import { PERSONALITIES } from '../../personalities';
@@ -19,13 +20,13 @@ export const teamEngineers = (level: LineState, sim: SimState): string[] =>
       const p = sim.people[id]!;
       return p.status === 'active' && p.teamId === level.teamId && p.role === 'engineer';
     })
-    .sort();
+    .sort(compareCodeUnits);
 
 /** Active projects on the level's team, in id order. */
 export const teamProjects = (level: LineState, sim: SimState): string[] =>
   Object.keys(sim.projects)
     .filter((id) => sim.projects[id]!.status === 'active' && sim.projects[id]!.teamId === level.teamId)
-    .sort();
+    .sort(compareCodeUnits);
 
 export const isEngineer = (level: LineState, sim: SimState, id: string) => teamEngineers(level, sim).includes(id);
 

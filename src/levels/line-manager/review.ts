@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '../../sim';
 import { RATINGS, behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import { reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
@@ -11,7 +12,7 @@ import type { LineState, Scorecard } from './types';
 export function afterAdvance(level: LineState, sim: SimState): { level: LineState; burnedOut: boolean } {
   const s = structuredClone(level);
   const playedWeek = sim.week - LEVEL.weeksPerStep;
-  for (const id of Object.keys(sim.projects).sort()) {
+  for (const id of Object.keys(sim.projects).sort(compareCodeUnits)) {
     const p = sim.projects[id]!;
     if (p.teamId === s.teamId && p.status === 'completed' && !Object.hasOwn(s.completions, id)) s.completions[id] = playedWeek;
   }
