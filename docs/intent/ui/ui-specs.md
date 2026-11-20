@@ -5,30 +5,38 @@ Design: [ui-design.md](ui-design.md)
 ## The page
 
 - [x] **UI-SHELL-001**: When the page starts with no saved run, or one that fails to load, the UI shall show the start screen with a new seed drawn from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
-- [x] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the planning phase, the review screen in the review phase, and the ended screen once the run has ended.
+- [ ] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the week phase, the review screen in the review phase, and the ended screen once the run has ended.
 - [x] **UI-SHELL-003**: When a command applies, the UI shall redraw the whole screen from the new run.
 - [x] **UI-SHELL-004**: If a command returns an error, then the UI shall show the error next to the control that sent it and leave the rest of the screen as it was.
+- [ ] **UI-SHELL-005**: When the scene changes (after an answer, a wait, Continue, starting the week, closing the recap or ending the week), the UI shall move keyboard focus to the heading of the week screen's scene, or of the review or ended screen; after a habit change it shall keep focus on that habit's control.
 - [x] **UI-TEXT-002**: When the UI shows situation text, it shall show each span wrapped in `*` or `_` as an emphasized element whose text is set as text, and show an unmatched marker as written.
 - [x] **UI-TEXT-001**: The UI shall put every string from content, the simulation or the player on the page only as text nodes or as attributes set as text, and shall never parse HTML from a string.
 
 ## The week screen
 
-- [x] **UI-WEEK-001**: When the week screen is shown, the UI shall show the week, the weeks until the next review, the player's reputation and stress as band words, and the week's planned hours and overtime.
-- [x] **UI-WEEK-002**: When the week screen is shown, the UI shall show each open situation's text with a button per offered choice that sends an answer command, each answered situation's aftermath line, and each expired situation as expired.
-- [x] **UI-WEEK-003**: When the week screen is shown, the UI shall show an End week button that sends the end-week command.
-- [x] **UI-WEEK-004**: When the week screen is shown after a week has ended, the UI shall show last week's dropped calendar entries with their reasons, delegation outcomes, delegations that did not happen and void decisions with their reasons, expired demands, each demand named by its type and its subject's name, and aftermath lines; before the first week ends it shall show no last week.
+- [ ] **UI-WEEK-001**: When the week screen is shown, the UI shall show a header with the week, the weeks until the next review, the five days with the current moment's day marked and earlier days shown as past, the player's energy as a meter and a band word, their reputation as a band word, and each of the review period's goals with its progress.
+- [ ] **UI-WEEK-002**: When the week screen shows the current moment, the UI shall show its day and time in words (such as "Tuesday morning"), its title and text, a button per choice that sends an answer command for it, and a Let it wait button that sends the wait command.
+- [ ] **UI-WEEK-003**: When the week screen is shown, the UI shall show an End the week button that sends the end-week command.
+- [ ] **UI-WEEK-004**: When the week screen is shown after a week has ended, while no moment of the new week has been answered or let wait and the player has not closed the recap, the UI shall show the recap in place of the current moment: each of last week's moments in order with its day, time, title and what happened (its reaction or aftermath line, that it was let wait, or that it passed), followed by the level's part of the recap, and a Start week button that closes it; before the first week ends it shall show no recap.
+- [ ] **UI-WEEK-005**: When the week screen is shown in week 0 before the player has started the week and while no moment of the week has been answered or let wait, the UI shall show a Before Monday scene with each habit, a line on what it does and a control to change it, the How to play section open, and a Start the week button that closes the scene.
+- [ ] **UI-WEEK-006**: When a choice for the current moment applies, the UI shall show that moment's reaction or aftermath line, or that the moment passed when it expired, with the change chips, a line naming each later moment of the week that the answer left expired, and a Continue button, in place of the next moment, until the player presses Continue.
+- [ ] **UI-WEEK-007**: When the week screen is shown with no open moment left and no reaction waiting, the UI shall show that the week is done, with an End the week button.
+- [ ] **UI-WEEK-008**: When a choice for a moment applies, the UI shall show a change chip for each band in the level's view that differs from before the command (a person's motivation or stress, the player's energy or reputation, or a project's risk or tech debt) and for each person who left or joined the team, each naming who or what changed and marked good or bad for the player (lower stress, risk and tech debt are good; someone leaving is bad).
+- [ ] **UI-WEEK-009**: The UI shall keep whether the player has read the latest reaction, started week 0 and closed the latest recap only as page state, never in the run or the save, so a reload never shows a reaction again.
 
 ## Help
 
-- [x] **UI-HELP-001**: When the week screen is shown, the UI shall show a collapsible How to play section with the help text's six topics, open by default in weeks 0 to 2 and closed by default after, keeping the player's choice to open or close it across redraws.
-- [x] **UI-HELP-002**: When the week screen is shown for the line manager, the UI shall show the help text's line under the team, projects, inbox and calendar panels' headings.
+- [ ] **UI-HELP-001**: When the week screen is shown, the UI shall show a collapsible How to play section with the help text's six topics (How to play, Moments, Habits, Your people, Energy, Reviews), open by default in weeks 0 to 2 and closed by default after, keeping the player's choice to open or close it across redraws.
+- [ ] **UI-HELP-002**: When the week screen is shown for the line manager, the UI shall show the help text's line under the team, projects and habits panels' headings.
 
-## Line manager panels
+## Line manager panels and scenes
 
-- [x] **UI-LINE-001**: When the week screen is shown for the line manager, the UI shall list each engineer with name, role, tenure, performance level, motivation, stress and skill as band words, and their want, or that it is unknown.
+- [ ] **UI-LINE-001**: When the week screen is shown for the line manager, the UI shall show a card for each engineer with name, role, personality, tenure, performance level, motivation, stress and skill as band words, their want or that it is unknown, and their memory notes, newest first.
 - [x] **UI-LINE-002**: When the week screen is shown for the line manager, the UI shall list each active project with name, progress against scope, deadline week, schedule status, and risk and tech debt as band words.
-- [x] **UI-LINE-003**: When the week screen is shown for the line manager, the UI shall list each inbox demand with its type, subject's name, hours, difficulty as a band word, last week and current decision, with controls that send plan commands to handle it, delegate it to a chosen engineer (offering every engineer on the team except the request's own requester) or clear the decision, or for work intake to accept it, decline it or clear the decision.
-- [x] **UI-LINE-004**: When the week screen is shown for the line manager, the UI shall list each calendar entry with its action, target's name and cadence and a button that sends a plan command removing it, and a form whose action, target and cadence choices send a plan command adding an entry, offering only targets of the action's kind, only this week for a one-off action, and for an every-other-week entry a start of this week or next.
+- [ ] **UI-LINE-005**: When the week screen is shown for the line manager, the UI shall show each open vacancy with its interview count.
+- [ ] **UI-LINE-006**: When the week screen is shown for the line manager, the UI shall show a habits panel, folded by default after week 0 and keeping the player's choice to open or close it across redraws, with a control per habit that sends a plan command changing it at once, offering the team's engineers by name for a habit that names one.
+- [ ] **UI-LINE-007**: When the current moment is the line manager's, the UI shall show its difficulty as a band word where it has one, and beside each choice that gives the work or an interview to an engineer, that engineer's skill and stress band words.
+- [ ] **UI-LINE-008**: When the recap is shown for the line manager, the UI shall show each engineer whose band changed with their changes and that week's notes, what each habit did and each habit that fell back, each expired work item by its kind and its subject's name, and each goal's progress.
 
 ## Saving
 
@@ -43,12 +51,12 @@ Design: [ui-design.md](ui-design.md)
 
 ## Band words
 
-- [x] **UI-BAND-001**: The UI shall name bands 0 to 4 as: motivation struggling, flat, fine, good, energized; stress calm, steady, busy, strained, overwhelmed; skill and demand difficulty learning, developing, capable, strong, expert; risk and tech debt low, moderate, elevated, high, severe; reputation poor, mixed, fair, good, excellent.
+- [ ] **UI-BAND-001**: The UI shall name bands 0 to 4 as: motivation struggling, flat, fine, good, energized; stress calm, steady, busy, strained, overwhelmed; energy running on fumes, tired, okay, good, fresh; skill and work difficulty learning, developing, capable, strong, expert; risk and tech debt low, moderate, elevated, high, severe; reputation poor, mixed, fair, good, excellent.
 
 ## Review and end
 
-- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, or managed out), the rating, the score, each measure with its value, target and verdict, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
-- [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, or completed) and offer a button that returns to the start screen with a new seed.
+- [ ] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, or managed out), the rating, the score, each measure with its value, target and verdict, a goal measure named by its goal's text, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
+- [ ] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, or completed), show the final week's recap, and offer a button that returns to the start screen with a new seed.
 
 ## Content and build
 

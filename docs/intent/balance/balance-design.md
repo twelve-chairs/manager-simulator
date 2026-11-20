@@ -13,25 +13,27 @@ It is test tooling: nothing in it ships in the game.
 
 Three principles shape it:
 
-- **Strategies play as a player would.** A strategy sees only what the player sees (the level's view, this week's situations, and review results) and acts only through turn loop commands. It never reads hidden values, so a strategy that wins does so by playing well, not by peeking.
+- **Strategies play as a player would.** A strategy sees only what the player sees (the level's view, the current moment, and review results) and acts only through turn loop commands. It never reads hidden values, so a strategy that wins does so by playing well, not by peeking.
 - **Real game, real content.** Runs use the compiled situation content, the real career level, the real performance review and the real tuning. The harness adds strategies and measurement, nothing else.
 - **Relations, not magic numbers.** The checks compare strategies with each other (sound practice beats every naive strategy) and against a few thresholds. The thresholds are tuning values set from measurement, kept in one place, and changed deliberately: when a check fails, the first remedy is the game's own tuning or content, and loosening a threshold to make a check pass needs its own justification in the commit that does it.
 
 ## Strategies
 
-A **strategy** is a function from what the player can see this week to the commands it sends before ending the week. The harness applies those commands, ends the week, and acknowledges any review, until the run ends or reaches the weeks played.
+A **strategy** plays a week the way the player does, moment by moment. At the start of each week it may change habits. Then, for each current moment in turn, it picks one of the offered choices or lets the moment wait, seeing what the player would see at that point: the level's view, the moment's day, time, text and choices, and for a line manager moment its difficulty. When no moment is left, the harness ends the week and acknowledges any review, until the run ends or reaches the weeks played.
 
-| Strategy | Calendar | Inbox | Situations |
-|---|---|---|---|
-| **Idle** | Keeps the default calendar | Decides nothing | Answers nothing |
-| **Hero** | Keeps the default calendar | Handles every demand it can within the overtime cap, accepts work intake | Picks the first offered choice |
-| **Delegator** | Keeps the default calendar | Delegates every demand it can to the least stressed engineer (ties broken by engineer id), accepts work intake | Picks the first offered choice |
-| **Contrarian** | Keeps the default calendar | Leaves everything | Picks the last offered choice |
-| **Sound practice** | Keeps 1:1s and ceremonies; adds recognition, coaching or delegation-serving actions for people whose known want calls for it; takes recovery time when its own stress band is high; interviews for open vacancies | Handles on-call escalations itself; delegates other demands to the least stressed engineer whose skill band is at least the demand's difficulty band; handles what it cannot delegate while hours allow; accepts work intake | Picks the situation's better choice from the table below |
+| Strategy | Habits | Work moments | Night pages | Interviews | Work intake | Check-ins | Situations |
+|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait | Lets them wait | Lets them wait |
+| **Hero** | Takes night pages and signs approvals itself | Does them itself | Takes over | Interviews itself | Takes it on | Picks the first offered choice | Picks the first offered choice |
+| **Delegator** | Defaults | Gives them to the least stressed engineer offered, and lets them wait when none is | Leaves them to the engineer on call | Asks the least stressed engineer | Takes it on | Picks the first offered choice | Picks the first offered choice |
+| **Contrarian** | Defaults | Pushes back | Leaves them to the engineer on call | Skips | Declines | Picks the last offered choice | Picks the last offered choice |
+| **Sound practice** | Defaults, with the growth focus on the engineer a *Help someone grow* goal names, or else one whose known want is growth (or, before any is known, the least skilled); routine approvals left with itself, since handing them to the strongest engineer piles routine onto the person doing the most work | Gives the work to the engineer offered whose skill band reaches its difficulty band; with none, does it itself while its own energy band is at least *okay*, and otherwise gives it as a stretch to an offered engineer whose stress band is at most *busy*, or pushes back | Leaves the page to the engineer on call when their skill band reaches the page's difficulty band, and otherwise backs them up | Interviews itself while its energy band is at least *okay*, and otherwise asks the least stressed engineer | Takes it on while the team has fewer than two projects and its energy band is at least *okay*, and otherwise declines | Cuts scope when the project is behind or overdue and its reputation band is at least *fair*; re-plans a project that is only at risk while its energy band is at least *okay*; otherwise pushes on | Picks the situation's better choice from the table below |
+
+A sixth strategy, **sound practice with other habits**, plays exactly as sound practice but holds 1:1s every week and runs ceremonies light. It is a measurement, not a check: reported beside the others, it shows how much the habits themselves matter, which no check enforces.
 
 Idle, Hero, Delegator and Contrarian are the **naive** strategies: each applies one rule regardless of context. Picking the first or last offered choice stands in for "always agree" and "always push back", since a situation's choices come in no particular order.
 
-Strategies are measuring instruments: their rules live in this document, not in specs, so a strategy can be refined without a spec change. Every strategy keeps its plan within the level's hours cap, so the turn loop never refuses a week; a refusal is a bug in the strategy and fails the harness.
+Strategies are measuring instruments: their rules live in this document, not in specs, so a strategy can be refined without a spec change. A strategy only ever picks a choice the moment offers, so the turn loop never refuses a command; a refusal is a bug in the strategy and fails the harness.
 
 ## Better Choices
 
@@ -60,6 +62,8 @@ The test suite runs 20 seeds per strategy and must stay within about 15 seconds;
 |---|---|---|---|
 | Where better choices are declared | A table in the harness, with a check that every situation has an entry | A field on the choice in the situation file | Keeps test-only knowledge out of the game's data and needs no change to the content format, while still forcing every new situation to name its better choice. |
 | What strategies see | The player's view and commands only | Reading the simulation state | A strategy that peeks at hidden values proves nothing about what a player can learn. |
+| Measuring habits | A variant of sound practice with other habits, reported but not checked | No habit variant; a check that the habits change the result | Without a variant nothing shows whether habits matter at all. A check would need a threshold no measurement supports yet; reporting first lets tuning decide whether one is worth adding. |
+| How a strategy plays a week | Habit changes at the start of the week, then one decision per moment as it becomes current | One list of commands for the whole week | The turn loop plays moments in order, and a later moment can depend on an earlier choice; deciding each as it comes is what the player does. |
 | When balance is checked | In the test suite with 20 seeds per strategy, plus a report command with more | Only in the report command | Every commit is checked, so content or tuning changes cannot quietly break balance. |
 | Context-blind choices | First or last offered choice | A hand-labelled "agreeable" choice per situation | Choice order carries no meaning, so first and last are honest stand-ins for a fixed habit, with no extra labelling. |
 

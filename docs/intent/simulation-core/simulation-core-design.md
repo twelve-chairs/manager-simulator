@@ -46,6 +46,7 @@ A person is an engineer or a manager below the player.
 | `status` | `active`, `departed`, or `aggregated` (folded into an aggregate team; see *Team*) |
 | `departure` | When departed: the game week and reason (`quit`, `fired`, `transferred`) |
 | `history` | Notable things that happened to them (see *History*) |
+| `personality` | Optional: a trait the career level gives the person (for example `quiet` or `ambitious`). No simulation rule reads it; story situations condition on it to choose how people react. |
 
 A person's `want` is fixed for as long as they are in the simulation. It changes how effects land: an effect tagged as serving their want has a larger positive impact on motivation, and an effect tagged as working against it has a larger negative one. A person's want counts as **served** whenever an effect tagged as serving it is applied to them, whatever field the effect changes: a stretch assignment that only raises stress still serves someone who wants growth.
 

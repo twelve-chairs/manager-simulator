@@ -7,20 +7,22 @@ prefix: LINE
 
 ## Context and Design Philosophy
 
-The line manager level is the first career level: the player leads one team of engineers, week by week. It defines what the player can do each week, what they can see, the demands that compete for their time, and the scorecard their reviews read. It does not order the turn (the turn loop does), write situations (content does), or decide ratings and promotion (the performance review does).
+The line manager level is the first career level: the player leads one team of engineers, week by week. Following the HLD's *A week is a run of moments*, a week here is a handful of short scenes, not a planning screen. The level decides who is on the team and what they are like, which standing habits the player can set and what they do each week, what hands-on work arrives and which of it becomes a moment, what the player can see, what each week's recap says about the level's part of the week, and what the quarter's goals and reviews measure. It does not order the week (the turn loop does), write story situations (content does), or decide ratings and promotion (the performance review does).
 
-The level's core struggle is **time**. A line manager has more to do than hours to do it in: their people need 1:1s, coaching and recognition; their projects need planning and ceremonies; and a stream of hands-on work arrives every week (approvals, design reviews, customer requests, on-call escalations). Learning which of that work to do personally, which to delegate, and which to let slide is the level's main lesson, as the HLD sets out.
+The level's core tension is the one the HLD names: hands-on work competes with managing people for the player's energy. The player meets it in two ways. **Habits** decide how routine work and routine care happen, week after week, without a decision each time. **Moments** are the work and the people that need a decision this week.
 
 Four principles shape it:
 
-- **The week is a budget.** Every action and every demand handled personally costs hours from a fixed weekly budget. Working past it is possible and raises the player's stress. Nothing is free, so every choice is also a choice not to do something else.
-- **The calendar carries over.** The player builds a recurring weekly calendar once and edits it as things change, rather than planning every week from scratch. Most weeks the player's attention goes to the inbox and to situations, not to re-entering the same 1:1s.
-- **Neglect shows.** Whoever gets no 1:1s drifts; a project nobody plans gets riskier; a request left in the inbox expires with a consequence. The level never punishes neglect with a message; the simulation and the inbox make it visible.
-- **Delegation is a real choice with known costs.** Delegating a demand costs the delegate time and stress and may grow them; whether it goes well depends on their skill against the demand's difficulty, not on a roll, so the player can learn when to delegate and to whom.
+- **Habits over chores.** Anything that would be the same decision every week is a habit: set once, changed when the player wants, and visible in its effects in each recap. A habit has real costs as well as benefits, so there is no single right setting for every team.
+- **Work keeps arriving.** Approvals, design reviews, customer requests, on-call pages and new work keep arriving from the state of the team's projects, as they do in the real job; busier and riskier projects bring more. Routine work is absorbed by habits; the rest becomes moments. This keeps the pressure systemic: it is not only as strong as the content written about it.
+- **Energy is your stress.** The player has no hours to budget. Doing work yourself, demanding habits and hard conversations raise the player's stress; a well-run team lowers it. Shown to the player as energy, it is the simulation's own player stress, and burnout is what happens when it stays at the edge.
+- **People are characters.** Each engineer has a personality as well as numbers, and moments and their reactions are written for it: the same choice lands differently on a quiet engineer and an ambitious one.
 
 ## The Organization
 
-A run at this level starts from an organization the level generates from the run's seed: one team led by the player, of five engineers with varied skill, motivation, stress and wants, and two projects, one on track and one already at risk. Names come from a fixed list of fictional names in the level's data. All teams are simulated in detail.
+A run starts from an organization the level generates from the run's seed: one team led by the player, of five engineers with varied skill, motivation, stress, wants and **personalities**, and two projects, one on track and one already at risk. Names come from a fixed list of fictional names in the level's data.
+
+A **personality** is one trait from the personality catalogue, the shared list the situation engine also validates content against (for example *ambitious*, *quiet*, *eager*, *steady*, *blunt*, *anxious*), drawn so that a starting team has at least three different ones. It is stored on the simulation's person, where story situations can read it as a condition, but no simulation rule uses it: it changes no number, and content conditions on it to choose which reaction a choice gets.
 
 ## Visibility
 
@@ -28,182 +30,131 @@ The player sees what a manager of this team would see, which is less than the si
 
 | Value | What the player sees |
 |---|---|
-| Name, role, tenure, team | Exactly |
-| Motivation and stress | A coarse band (for example *energized*, *fine*, *flat*, *struggling*) |
+| Name, role, tenure, personality | Exactly |
+| Motivation and stress | A coarse band, in words (*struggling* to *energized*, *calm* to *overwhelmed*) |
 | Skill | A coarse band |
 | Want | Unknown until the player has held a 1:1 with that person; known from then on |
 | Trust | Not shown |
-| Performance level | Exactly (the player set or inherited it) |
+| Performance level | Exactly |
+| What they remember | Their most recent notable history entries, as short lines in their own terms |
 | Project progress, deadline, schedule status | Exactly |
 | Project risk and tech debt | A coarse band |
-| Player reputation and stress | A coarse band |
-| Calendar, open vacancies and their interviews | Exactly |
-| This week's planned hours and the overtime they imply | Exactly, from the calendar entries that run this week and the demands the plan handles or accepts |
-| Inbox demands: type, subject, hours, expiry | Exactly |
-| Demand difficulty | A band on the same scale as skill, so the player can compare a demand with a possible delegate |
+| The player's energy and reputation | A coarse band |
+| Habits, open vacancies, the quarter's goals and their progress | Exactly |
 
-Every banded value uses the same scale of bands over 0–100 (the number of bands and their cut-offs are tuning values), so bands of different values compare directly.
+Every banded value uses the same scale of bands over 0–100 (the cut-offs are tuning values), so a work moment's difficulty and an engineer's skill compare directly.
 
-Hidden wants are what make 1:1s matter beyond the trust they build. An action or situation choice serves a person's want whether or not the player knows it; knowing the want is what tells the player where to aim.
+## Habits
 
-## The Weekly Calendar
+A habit is a standing choice with weekly effects. The level starts every run with each habit at its default. The player can change any habit at any point in a week: the change applies to that week's end-of-week habit effects and to the moments of the weeks after, while a moment already on screen stays as it was. When a habit names an engineer who leaves the team, it falls back (*routine approvals* to you signing, *growth focus* to nobody) as soon as the next week begins or the current one ends, and the recap says so. An engineer who signs routine approvals never signs their own expenses: those come to you. A night page that reaches the week's end without a moment (it arrived while you were taking pages yourself, or there was nobody to put on call) is one you took. The simulation keeps whole points, so a habit's small per-item costs are added up for the week before they apply. Each week's recap reports what each habit did.
 
-The player has a weekly budget of **hours**. The calendar holds **entries**: an action, its target (a person, the team, a project, a vacancy or the player), a cadence (every week, every other week, or this week only), and for an every-other-week entry a start week. Recurring entries stay in the calendar from week to week until the player removes them; one-off entries are removed after the week they run in. An every-other-week entry runs in its start week and in every second week after; its start week is the week it was added unless the player picks the following week. An entry must name an action from the catalogue and a target of the kind that action takes, and an action marked one-off can only be scheduled as one-off. Any action may be scheduled for this week only.
+| Habit | Options (default first) | Each week |
+|---|---|---|
+| **Night pages** | A rotation through the team; you take them yourself; seniors only | Decides who handles on-call escalations. You: no moment, and the player's stress rises for each. A rotation or seniors: the escalation becomes a moment for the person on call, and their skill against its difficulty decides how it goes; seniors only spares juniors but loads the most skilled. |
+| **1:1 cadence** | Fortnightly; weekly; only when needed | Holds a 1:1 with each engineer at that cadence: trust and a little motivation, and the person's want becomes known. Weekly costs the player more stress; only when needed costs nothing and holds none, which also shows in the review's 1:1 share. |
+| **Routine approvals** | You sign them; a named engineer signs them | Release, access and expense approvals. You: a small stress cost per approval. A named engineer: it costs them a little stress and serves a want for autonomy; those they are not skilled enough for wait and can expire. |
+| **Ceremonies** | Full; light | Full: project risk holds, a small stability-serving motivation for the team, a little stress for the player. Light: no player cost, and project risk creeps up. |
+| **Growth focus** | Nobody; a named engineer | Coaching for that engineer each week: skill rises, serving a want for growth; costs the player some stress. |
 
-The level starts the player with a default calendar: a 1:1 with each engineer every other week, staggered so that alternate engineers (in id order) start in the first and second week, and the team's ceremonies every week.
+Every habit's effects enter the simulation as one batch per week, each with the habit's id as its cause, so history and the recap can name the habit.
 
-### Actions
+## Work
 
-| Action | Id | Target | Hours | What it does |
-|---|---|---|---|---|
-| 1:1 | `line-manager.one-on-one` | person | 1 | Raises trust; reveals the person's want; small motivation gain |
-| Coaching | `line-manager.coaching` | person | 2 | Slowly raises skill; serves a want for growth |
-| Recognition | `line-manager.recognition` | person | 1 | Raises motivation; serves a want for recognition |
-| Training | `line-manager.training` | person | 1 (one-off) | Sends the person on a course: raises skill, and their stress for that week; serves a want for growth |
-| Ceremonies | `line-manager.ceremonies` | team | 4 | Keeps the team's projects from drifting (without them, project risk rises each week); gives each engineer a small motivation gain that serves a want for stability |
-| Project planning | `line-manager.project-planning` | project | 3 | Lowers the project's risk |
-| Scope negotiation | `line-manager.scope-negotiation` | project | 2 (one-off) | Reduces the project's scope; costs some reputation |
-| Team event | `line-manager.team-event` | team | 3 (one-off) | Raises motivation and lowers stress across the team |
-| Interview | `line-manager.interview` | vacancy | 2 (one-off) | Advances a vacancy toward a hire |
-| Recovery time | `line-manager.recovery` | player | 2 | Lowers the player's stress |
+Each week, hands-on **work items** arrive for the team's active projects and people: approvals, design reviews, customer requests, on-call escalations, expense requests, and work intake when the team has fewer than two active projects. How many arrive, and of which kinds, depends on the projects' risk and tech debt and on how many there are; the level draws them from its own seeded generator. Each item has a difficulty, a subject (a project or a person), and a last week before it expires.
 
-An entry whose target is no longer valid when the week commits (a person who has left the team, a project that is no longer active, a filled vacancy) does not run, costs no hours, and is removed from the calendar; the player is told which entries dropped and why. This covers changes made during the week's planning, such as a situation choice that moves someone to another team.
+- **Routine items** (release, access and expense approvals) are handled by the *routine approvals* habit and never become moments.
+- **On-call escalations** are handled by the *night pages* habit: by the player directly, or as a moment for the engineer on call, where the player can back them up, take over, or leave it to them.
+- **Everything else** (design reviews, customer requests, work intake) becomes a **work moment**.
 
-The level's action ids, together with the ids it uses for delegating and for accepting or declining work intake, are listed in the player action catalogue that situation content is checked against (see the situation engine's *Validation*).
+A **work moment** presents the item in a sentence and offers, at most:
 
-Every action that targets a person (1:1, coaching, recognition, training), and every delegation, adds an entry to that person's history with the action's id as its cause. Situations can then ask how long it has been since someone's last 1:1, or how often they have been delegated to, through the situation engine's `history` condition.
+- **Do it yourself**: resolves it, at a stress cost for the player that grows with its size;
+- **Give it to** each of up to two engineers the level suggests (the least stressed whose skill band reaches the item's difficulty, and the least stressed who would be stretched by it): their stress rises and wants for growth or autonomy are served; if the item's difficulty is above their skill, it is a stretch: it resolves with a reduced consequence and their skill rises;
+- **Push back or let it wait**: nothing now; the item stays and expires at its last week with its consequence (a slipped project, a lost bit of reputation, a frustrated requester). Work intake offers **take it on** and **decline** instead.
 
-An action's effects are submitted to the simulation core as one batch per week, each with the action's id as its cause, so history and debriefs can name what the player did. Effect sizes are tuning values, not design.
+Each choice gets a short reaction from the level's templates, written for the person involved and their personality where there is one.
 
-### Overtime
+## Hiring
 
-Hours planned past the budget are overtime. The level allows overtime up to a cap, and each overtime hour raises the player's stress at the end of the week. A week whose plan would exceed the cap cannot be committed.
+When the team's active engineers fall below its target headcount (its starting size), the level opens a **vacancy**. While a vacancy is open, each week brings an **interview moment**: interview the candidate yourself (stress for the player), ask an engineer to (stress for them, a little recognition), or skip this week. After a set number of interviews, the level hires a generated engineer with a name from the list and a personality.
 
-## The Inbox
+## Project Check-ins
 
-Each week, **demands** arrive in the player's inbox: hands-on work that needs doing by someone. A demand has a type, a subject (a project, or a person when it is a request from them), an hour cost, a difficulty, and a last week: the week it arrived plus the type's expiry weeks. A demand left undecided through its last week expires at that week's commit.
+When a week begins, each of the team's active projects that is behind schedule, overdue, or at high risk brings a **check-in moment**, at most once in a few weeks per project (a tuning value), so a struggling project asks for the player's attention rather than quietly wearing them down. A check-in offers:
 
-| Demand | Typical subject | Hours | Expiry weeks | If it expires |
-|---|---|---|---|---|
-| Approval (release, access) | project | 1 | 1 | The project loses progress while blocked |
-| Design review | project | 3 | 2 | The project's tech debt rises |
-| Customer request | project | 2 | 2 | The player's reputation falls |
-| On-call escalation | project | 4 | 0 (this week) | The player's reputation falls and the project's risk rises |
-| Expense, travel or conference approval | person | 1 | 2 | The requester's motivation falls |
-| Work intake | team | 2 | 2 | The player's reputation falls |
+- **Re-plan it with the team**: the player's stress rises, and the project's risk falls;
+- **Cut scope**: the project's scope shrinks by a share of what is left, and the player's reputation falls a little;
+- **Move the deadline**: the deadline moves out by a few weeks, and the player's reputation falls more than for cutting scope;
+- **Push on**: nothing changes now.
 
-A work intake demand arrives whenever the team has fewer than two active projects and no work intake demand is already in the inbox. How many of the other demands arrive, and of which types, depends on the state: more projects mean more approvals and customer requests; higher risk and tech debt mean more on-call escalations. The level draws arrivals from its own seeded generator, held in the level's state, so changing the level's content never changes the simulation's own random rolls.
+These are the levers a line manager has over a project in trouble: more planning, less work, more time, or none. Each has a cost, and which is right depends on why the project is struggling: risk is what brings setbacks, while scope and the deadline are what decide whether it is behind.
 
-The player decides each demand in the week's plan:
+## A Week's Moments
 
-- **Handle it**: it costs the player its hours and resolves this week.
-- **Delegate it** to an engineer on the team: it costs the player nothing, raises the delegate's stress, and serves a want for growth or autonomy. If the delegate's skill meets the demand's difficulty, it resolves as if handled; if not, it still resolves, and the delegate's skill rises a little, but with a reduced version of the expiry consequence. Repeatedly delegating to the same person compounds their stress.
-- **Leave it**: it stays in the inbox and expires when its time runs out, applying its consequence.
+The level contributes four kinds of moment to a week: work moments, interview moments, check-in moments, and on-call moments when the night pages habit puts an engineer on call. The situation engine contributes story moments from content. The level caps its own moments per week (a tuning value) so that a week stays a handful of scenes; items closest to expiring become moments first, and items beyond the cap wait for a later week and keep counting down to expiry. An item pushed back or left unanswered comes back as a moment in later weeks until it is resolved or expires, so pushing back defers a decision rather than dropping it. A level moment left unanswered at the end of the week counts as letting it wait: a work item stays and keeps counting down, an interview is skipped, and an on-call escalation nobody answered expires with its consequence. When the cap bites, on-call moments come first, then check-ins, then interviews, then work. Each moment has a day and a time (on-call at night, check-ins on Monday morning, interviews mid-week, work through the week), which the turn loop uses to order the week. A check-in left unanswered changes nothing.
 
-An engineer may take several delegated demands in one week, each raising their stress again. A request from a person cannot be delegated to that person. A delegation to someone who is no longer an active engineer on the team when the week commits (because a situation that week moved them or they left) does not happen: the demand stays in the inbox undecided, and the player is told why. If that week was the demand's last, its last week moves to the following week instead of the demand expiring, so the player is never penalized for a decision a situation undid. The level does not refuse a delegation to someone already struggling; the player can see their stress band and the choice is theirs.
+## The Quarter's Goals
 
-**Work intake** is a request to take on a new project, and is decided differently: the player **accepts** it (costing its hours and starting the project through the simulation core's start-project effect, with a name from the level's data), **declines** it (no hours; a small loss of reputation), or leaves it to expire (a larger loss). It cannot be delegated. Work intake is how the team gets new projects once its first ones finish.
+At the start of each review period, the player's own manager sets **goals** for it, drawn from a fixed set by the state of the team: ship an at-risk project by its deadline (the deadline as it stood when the goal was set, so moving it at a check-in does not meet the goal; offered only when the deadline falls within the period, so it can be judged at the review; otherwise get it back on schedule), keep everyone (no quits), grow someone (a named engineer's skill rises by a set amount), bring team stress down to a level. Each period has two or three. A goal about an engineer who leaves the team is dropped from that review's scoring, and the recap says so: the departure already counts against retention. Their progress is visible all period, and they are scored at the review as extra measures alongside the scorecard.
 
-A demand whose subject is gone before it is decided (a project completed or cancelled, a requester who has left) leaves the inbox with no consequence. If the player had decided it that week, the decision has nothing to act on: it costs no hours and the player is told why.
+## The Recap
 
-## Where the Line Manager's Duties Live
+At the end of each week the level reports its part of the week, for the turn loop to show alongside the situations' aftermath:
 
-The HLD lists the line manager's responsibilities. At this level each is one of three things: an **action** the player schedules, a **demand** that arrives in the inbox, or a **situation** written as content.
-
-| Duty | Where it lives |
-|---|---|
-| 1:1s and feedback, coaching, recognition, training | Actions |
-| Agile ceremonies, project management | Actions (ceremonies, project planning, scope negotiation) |
-| Team events | Action |
-| Interviewing | Action, against a vacancy |
-| Approvals (release, access, expense, travel, conference), design reviews, customer interaction, incidents and on-call | Demands |
-| Work intake | Demand |
-| Evaluations, self-evaluations, promotion cases, arguing ratings in calibration | Situations, presented around review time |
-| Improvement plans and the terminations that follow failed ones | Situations, triggered by a person's plan |
-| Conflicts, leave, onboarding, product ownership disputes, architecture decisions | Situations |
-
-## A Week
-
-Within a turn, the level provides the turn loop with these steps, in this order:
-
-1. **Arrive**: new demands enter the inbox.
-2. **Plan**: the player edits the calendar and decides inbox demands. Situations for the week are presented alongside the plan.
-3. **Commit**: the planned actions and handled or delegated demands apply as effect batches; overtime raises the player's stress; demands that expire this week apply their consequences.
-4. **Advance**: the simulation advances one week.
-
-Situations come from the situation engine, tagged `line-manager`, up to two per week. Answering a situation costs no hours, and its choice applies when the player picks it, during planning.
-
-The burnout check (below) runs after the simulation advances; where it sits relative to the performance review is the turn loop's to order.
-
-## Vacancies and Hiring
-
-The team has a **target headcount**, its starting size. When the simulation has advanced, and when a week begins to commit, the level compares the team's active engineers and open vacancies with it; for each engineer short, for any reason (a quit, a firing, a move to another team), it opens a **vacancy**; a team never has more open vacancies than it is short of engineers, and cannot grow past its target headcount through hiring. Interviews advance a vacancy; after a set number of interviews the level hires a new engineer, generated from the level's seed with a name from the fictional list, through the simulation core's hire effect. An unfilled vacancy means one fewer pair of hands on the team's projects.
+- what each habit did ("Carmen signed four approvals", "You took two night pages");
+- how each work moment went, and what expired;
+- who changed, in words, with the causes the simulation recorded ("Dario seems flat: no 1:1 in three weeks");
+- the goals' progress.
 
 ## Scorecard, Reviews and the End of the Level
 
-The level defines the scorecard its performance reviews read, and their cadence; the performance review decides the rating and promotion.
-
 - **Cadence**: a review every 13 weeks, at weeks 13, 26, 39 and so on; "since the last review" means the 13 weeks before the review.
-- **Scorecard**:
-  - **Delivery**: the number of the team's projects completed by their deadline since the last review, and the share of its active projects neither overdue nor behind schedule (no share when it has no active projects).
-  - **Retention**: the number of engineers who quit the team since the last review, and how many of them were rated meets or above.
-  - **Team health**: the team's average motivation and average stress, and the share of its engineers who have had a 1:1 in the four weeks before the review.
-
-  The level reports these measures; turning them into a rating is the performance review's job. For the review, the level's **assessment** gives each measure a target, a tolerance and a direction (tuning values): projects completed on time and the on-schedule share (higher is better), quits rated meets or above (lower is better), average motivation (higher), average stress (lower) and the 1:1 share (higher). A team with no active projects has no on-schedule share, so the assessment leaves that measure out rather than rewarding a team with nothing to deliver. The assessment also says whether promotion is possible.
+- **Scorecard and assessment**: delivery (projects completed on time, and the share of active projects neither overdue nor behind), retention (quits rated meets or above), and team health (average motivation and stress, and the share who had a 1:1 in the four weeks before the review). Each has a target, tolerance and direction for the review, and the on-schedule share is left out when there are no active projects. The period's **goals** are added as measures: each scores *above target* if achieved and *below* if missed.
 - **Promotion**: possible from the fourth review on, when the performance review rates the player highly enough.
-- **Burnout**: if the player's stress stays at or above the burnout threshold (a tuning value) for four consecutive weeks, the run ends.
+- **Burnout**: if the player's stress stays at or above the burnout threshold for four consecutive weeks, the run ends.
 - **Managed out**: the performance review ends the run when the player fails an improvement plan.
-
-## Level State
-
-The level keeps its own serializable state beside the simulation's and the situation engine's: its generator state, the calendar, the inbox, the wants the player has learned, open vacancies and their interview counts, the week each of the team's projects completed, and the counters its rules need (consecutive weeks at or above the burnout threshold). The simulation core records that a project completed but not when, so the level notes each completion after the simulation advances. Like the other components, every operation returns a new state and leaves its input unchanged.
-
-## Interface
-
-| Operation | Input | Output |
-|---|---|---|
-| `startRun` | seed | simulation state, level state |
-| `levelParameters` | — | level id `line-manager`, time step 1 week, situation limit 2, review cadence 13 weeks |
-| `arriveDemands` | level state, simulation state | new level state |
-| `editCalendar` | level state, simulation state, entries to add and to remove | new level state, or an error naming the invalid entry |
-| `view` | level state, simulation state | what the player can see (see *Visibility*) |
-| `commitWeek` | level state, simulation state, a decision for each inbox demand | new level state, new simulation state, change log, and a report of dropped entries, delegation outcomes and expired demands, with each demand it names described by its type and subject; or an error |
-| `afterAdvance` | level state, simulation state | new level state, and whether the player has burned out |
-| `scorecard` | level state, simulation state | the scorecard measures since the last review |
-
-The turn loop calls these in the order of *A Week*; situations are selected and resolved through the situation engine between `arriveDemands` and `commitWeek`.
 
 ## Turn Loop Contract
 
-The level provides the turn loop's career level contract through an adapter over the operations above: *begin week* is `arriveDemands`; planning commands either edit the calendar, changing the level state at once, or decide an inbox demand, which is held in the week's plan; *commit* calls `commitWeek` with the decisions in the plan; *after advance*, *scorecard*, *assess* and *view* are the level's own.
+The level provides the turn loop's career level contract through an adapter over its own operations:
 
-A decision is checked when it enters the plan, with the same checks the commit applies (the demand is in the inbox, the decision suits its type, a delegate is a person and not the requester), so the player hears about a bad decision when they make it; the commit checks again, since situations can change the team in between. A planning command can also clear a demand's decision, leaving it undecided. Planning commands can come back from a saved run, so their shape is checked before use: a calendar edit's additions and removals must be lists, each addition an object and each removal an entry id.
+- *begin week* has work arrive, sets a new review period's goals, and makes the week's moments, each with a day and a time;
+- *moments* lists the week's level moments and which are still open: a moment is open only while it can still be answered, so one whose work, vacancy, project or engineer on call has gone is reported closed;
+- *plan* takes a **habit change**, which applies at once to the level; commands arrive from saves, so their shape is checked rather than trusted;
+- *choose* applies a **moment choice** at once to the level and the simulation, and returns its reaction;
+- *end week* closes the moments left unanswered, applies the habits' weekly effects and expires what is due, and returns the level's **recap**;
+- *assess* includes the period's goals.
+
+## Level State
+
+The level keeps its own serializable state beside the simulation's and the situation engine's: its generator state, the habits, the open work items, the week's level moments and which are resolved, the wants the player has learned, open vacancies and their interview counts, the period's goals and their starting values, the week each project completed, the week of each project's last check-in, and the counters its rules need. Every operation returns a new state and leaves its input unchanged.
 
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
-| Core loop | A weekly hours budget spent through a calendar of actions, with an inbox of hands-on demands to handle, delegate or leave | An inbox where every decision is a situation; standing policies with weeks advancing until a situation interrupts | Makes the line manager's struggle (time pulled between people and hands-on work) the mechanic itself. An all-situation inbox plays as pure triage with no proactive management, and lives or dies by writing volume. Standing policies are how a senior manager or director works; keeping them for those levels makes promotion change the game. |
-| Re-planning each week | A calendar that carries over, with one-off entries for this week | Plan every week from scratch | Planning 13 weeks a quarter from scratch is tedious; editing a standing calendar keeps attention on the week's inbox and situations. |
-| Hands-on work | Arrives as inbox demands with an expiry and a consequence | Fixed recurring chores; technical puzzles | The HLD excludes technical puzzles; demands with consequences make letting work slide a real choice, and delegating it a lesson. |
-| Delegation outcome | Decided by the delegate's skill against the demand's difficulty | A random chance of success | Deterministic outcomes are learnable: the player can see why a delegation went badly and choose better next time. |
-| Wants | Hidden until a 1:1 reveals them | Always visible | Makes 1:1s matter beyond trust, and mirrors the real job: a manager learns what someone wants by asking. |
-| Duty mapping | Scheduled care as actions, hands-on work as demands, judgment-heavy moments (evaluations, conflicts, improvement plans) as situations | Everything as actions; everything as situations | Each kind of duty gets the mechanic that matches how it reaches a real manager: care is planned, hands-on work arrives, and hard conversations are moments with choices worth writing. |
-| Situation cost | Situations cost no hours | Each situation costs hours | Keeps the budget about the player's own planning; situations are already constrained by the per-week limit. |
-| Visible values | Coarse bands for motivation, stress, skill, risk and standing; trust hidden | Exact numbers | A manager reads people, not dashboards; bands keep the player reasoning about people rather than optimizing numbers. |
+| Core loop | Habits for routine work and care, moments for what needs a decision; see [decisions/moments-loop.md](../../decisions/moments-loop.md) | A weekly calendar and inbox planned by hand | The planner played as a test; habits remove repeated decisions, and moments carry the reactions that make play engaging. |
+| Where work moments come from | A work generator in the level, driven by project state; routine items absorbed by habits, the rest presented as templated work moments | Every work moment written as content | Keeps work pressure systemic, so busier and riskier projects really are harder and the balance checks mean something, and keeps delegation a lesson every week, not only in weeks content covers it. Story situations still add written drama on top. |
+| Time and energy | Energy is the player's stress; no hours | A weekly energy budget that moments spend | One number the simulation already has, with burnout already attached; a budget would bring back the planning the moments loop removes. |
+| Goals | Two or three per review period, scored as extra measures beside the scorecard | Goals replace the scorecard | Gives each quarter something to aim at while keeping the stable measures the balance checks rely on. |
+| Personality | One trait per person that content conditions on; no effect on numbers | Traits that change how effects land | Keeps the simulation's balance independent of personality while letting the writing make people distinct. |
+| Levers over a struggling project | A check-in moment for a project behind, overdue or at high risk, with re-plan, cut scope, move the deadline or push on | Project actions in a habit; no lever, leaving projects to the simulation | Without a lever, a project that falls behind keeps the player's stress rising with nothing to do about it, and burnout becomes luck. A moment raises it when it matters, keeps the choice visible, and gives the player proactive play over delivery. A habit would make the decision once for every project. |
+| Delegation choices in a work moment | Up to two suggested engineers, one within reach and one stretched | Every engineer as a choice | Keeps a moment to a few choices, and puts the real decision (a safe pair of hands or someone who would grow) in front of the player. |
+| Visible values | Bands in words and what people remember; numbers secondary | Exact numbers | The HLD's *Show it through people over through numbers*; a manager reads people, not dashboards. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Contractors, interns, entry-level program engineers and remote workers: whether they are distinct kinds of hire with their own costs and behavior.
-2. Whether some situations should cost hours (a long incident, a difficult conversation).
-3. Leave: whether engineers take leave that removes them from the team for some weeks.
-4. Tuning: hour costs, the budget, the overtime cap, band cut-offs and effect sizes are set by play-testing, not by this design.
-5. Changing wants: people's priorities shift in real teams; if the simulation core gains want changes, the player's learned want would go stale until their next 1:1.
+1. Contractors, interns, entry-level program engineers and remote workers as distinct kinds of hire.
+2. Leave: engineers away from the team for some weeks.
+3. Whether personality should also change how effects land.
+4. Tuning: habit effects, arrival rates, the cap on level moments, goal thresholds and effect sizes are set by the balance harness and play-testing, not by this design.
 
 ## References
 
 - [High-level design](../../high-level-design.md)
+- [Decision: the week as a run of moments](../../decisions/moments-loop.md)
 - [Simulation core](../simulation-core/simulation-core-design.md)
 - [Situation engine](../situation-engine/situation-engine-design.md)
-- [Original idea notes (2023)](../../references/2023-idea-notes.md)
+- [Turn loop](../turn-loop/turn-loop-design.md)
+- [Performance review](../performance-review/performance-review-design.md)

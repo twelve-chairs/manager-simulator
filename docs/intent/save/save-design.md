@@ -20,7 +20,7 @@ Three principles shape it:
 | Field | Meaning |
 |---|---|
 | `format` | The constant `manager-simulator-save`, so a stray file is recognized as not a save |
-| `version` | The save format's version, currently 1 |
+| `version` | The save format's version, currently 2: version 2 records the week as a sequence of moments, answered by `momentId` |
 | `seed` | The run's seed, a whole number from 0 to 2³²−1 |
 | `content` | A fingerprint of the situation content the run was played with |
 | `commands` | The run's applied commands, in order |

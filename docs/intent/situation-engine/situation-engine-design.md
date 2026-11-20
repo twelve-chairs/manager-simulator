@@ -7,15 +7,15 @@ prefix: SIT
 
 ## Context and Design Philosophy
 
-Situations are the game's written drama: a 1:1 that turns into a resignation conversation, an incident at 2 a.m., a calibration meeting where two managers want the same "exceeds". The situation engine decides which situations happen each turn, binds them to the people and teams they are about, presents their choices, and turns the player's choice into effects on the simulation core. It also keeps the record that debriefs explain outcomes from.
+Situations are the game's written drama: a 1:1 that turns into a resignation conversation, an incident at 2 a.m., a calibration meeting where two managers want the same "exceeds". The situation engine decides which situations happen each turn and where in the week each falls, binds them to the people and teams they are about, presents their choices, and turns the player's choice into effects on the simulation core. It also keeps the record that debriefs explain outcomes from.
 
-The engine does not render anything (the UI does), decide when in a turn situations happen (the turn loop does), or define the player's own actions (career levels do). It reads the simulation only through the core's queries and state, and changes it only by submitting effect batches.
+The engine does not render anything (the UI does), interleave situations with the career level's own moments (the turn loop does), or define the player's own actions (career levels do). It reads the simulation only through the core's queries and state, and changes it only by submitting effect batches.
 
 Four principles shape it:
 
 - **Content is data, never code.** Situations are written as files and loaded as data. Trigger conditions, choice availability and outcomes are expressed in a small, fixed condition language that the engine evaluates; nothing in a situation file is executed. This keeps situations writable without touching code, and keeps content files safe to load (see `.claude/rules/security.md`).
 - **Situations are about someone.** A situation names the roles it needs ("the engineer", "their lead"), and the engine fills them with people, teams or projects that match the role's conditions. The same situation lands on different people across runs, for reasons the simulation state can explain.
-- **Context decides outcomes, not dice.** A choice's outcome is selected by conditions on the current state, never by a random roll. The same choice can go well or badly depending on, say, the person's trust or the player's reputation, and a player can learn why. Randomness is used only to choose which situations appear and who they bind to.
+- **Context decides outcomes, not dice.** A choice's outcome is selected by conditions on the current state, never by a random roll. The same choice can go well or badly depending on, say, the person's trust or the player's reputation, and a player can learn why. The same mechanism lets a reaction be written for a person's personality: an outcome conditioned on `engineer.personality` carries the aftermath line for that kind of person. Randomness is used only to choose which situations appear and who they bind to.
 - **Every outcome can be explained.** Each resolved situation leaves a short aftermath line for the moment and a debrief record that the performance review can use to connect later outcomes to earlier choices.
 
 ## Situation Files
@@ -79,6 +79,8 @@ A build step compiles every situation file into one JSON content bundle that the
 | `cooldownWeeks` | Weeks after it is presented before it can be presented again; default 0 |
 | `once` | When true, presented at most once per run |
 | `when` | Optional condition on the state as a whole (no roles) |
+| `day` | Optional day of the week it falls on: `monday` to `friday` |
+| `time` | Optional time of day: `morning`, `afternoon` or `night` |
 | `roles` | Ordered list of roles to bind (see *Roles*) |
 | `choices` | One or more choices (see *Choices and Outcomes*) |
 | body | The text presented, with placeholders (see *Text*) |
@@ -110,7 +112,7 @@ Conditions appear in a situation's `when`, in role `where` clauses, in choice `a
 | `{ not: c }` | the condition does not hold |
 | `{ value: path, <op>: operand }` | the comparison holds (see below) |
 | `{ count: { kind, where }, <op>: n }` | the number of active people, teams or projects matching `where` (in which the candidate is called `it`, and earlier roles stay visible; in a nested `count`, `it` is the inner candidate) compares to `n` |
-| `{ history: role, situation?, choice?, action?, rating?, withinWeeks?, <op>: n }` | the number of the person's history entries caused by that situation (and choice) or by that player action (such as `line-manager.one-on-one`), or recording one of the ratings listed in `rating`, within the last `withinWeeks` weeks, compares to `n` |
+| `{ history: role, situation?, choice?, action?, rating?, withinWeeks?, <op>: n }` | the number of the person's history entries caused by that situation (and choice) or by that player action (such as `line-manager.habit.one-on-ones`), or recording one of the ratings listed in `rating`, within the last `withinWeeks` weeks, compares to `n` |
 | `{ presented: situationId, withinWeeks?, <op>: n }` | the number of times that situation was presented (within the window, and including the current presentation when evaluated inside it) compares to `n` |
 
 A **path** names a subject and a property: `engineer.motivation`, `player.reputation`, `team.headcount`. Subjects are role names, `player`, `week` (the current game week, which has no property) and `review`. `review.weeksAway` is the number of weeks until the next performance review, so content can time evaluations, self-evaluations and promotion cases to the review cycle; the engine does not know the review cadence, so the caller supplies it when selecting and resolving, and without it `review.weeksAway` has no value. The names `player`, `week`, `review` and `it` cannot be role names. The comparison operators are `below`, `atMost`, `above`, `atLeast`, `is`, `isNot` and `in`. An operand is a literal or another path written as `{ value: path }`. Ratings compare in their scale order, so `{ value: engineer.performance, below: { value: engineer.correspondingRating } }` means "rated below what they deliver"; `unrated` is below every rating for comparison and is matched exactly with `is`.
@@ -119,13 +121,13 @@ Properties available per subject:
 
 | Subject | Properties |
 |---|---|
-| person | `id`, `skill`, `motivation`, `stress`, `trust`, `want`, `role`, `performance`, `plan`, `contribution`, `correspondingRating`, `team`, `ledTeam`, `tenureWeeks`, `weeksSinceWantServed`, `lowMotivationWeeks`, `highStressWeeks` |
+| person | `id`, `skill`, `motivation`, `stress`, `trust`, `want`, `personality`, `role`, `performance`, `plan`, `contribution`, `correspondingRating`, `team`, `ledTeam`, `tenureWeeks`, `weeksSinceWantServed`, `lowMotivationWeeks`, `highStressWeeks` |
 | team | `id`, `form`, `headcount`, `skill`, `motivation`, `stress`, `attritionRisk`, `ratings.<level>`, `leader`, `leaderless`, `troubled` |
 | project | `id`, `team`, `progressShare` (0–100), `risk`, `techDebt`, `overdue`, `behind`, `weeksToDeadline`, `status` |
 | player | `reputation`, `stress`, `performance`, `plan`, `team` (the team the player leads directly, if any) |
 | review | `weeksAway` |
 
-`id`, `team`, `ledTeam` and `leader` are ids, compared with `is` and `isNot` against other id-valued paths: `{ value: team.leader, is: { value: lead.id } }` means "the bound team is led by the bound lead". Ids are generated by the simulation, so content compares them only with each other, never with a literal. A team's `leader` is the id of the person leading it; a team the player leads or that has no leader has no `leader` value (`player.team` and `leaderless` describe those). A property that has no value (the `ledTeam` of someone who leads nothing) makes any comparison with it false, except `isNot`.
+`personality` is one of the traits in the **personality catalogue**, a shared list that career levels draw people's personalities from, and is compared with `is`, `isNot` and `in` against literals from it; a person with no personality has no `personality` value. `id`, `team`, `ledTeam` and `leader` are ids, compared with `is` and `isNot` against other id-valued paths: `{ value: team.leader, is: { value: lead.id } }` means "the bound team is led by the bound lead". Ids are generated by the simulation, so content compares them only with each other, never with a literal. A team's `leader` is the id of the person leading it; a team the player leads or that has no leader has no `leader` value (`player.team` and `leaderless` describe those). A property that has no value (the `ledTeam` of someone who leads nothing) makes any comparison with it false, except `isNot`.
 
 ## Selecting Situations
 
@@ -136,11 +138,12 @@ Each turn, the turn loop asks the engine for situations for the active career le
 3. Drops those whose `when` does not hold.
 4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates (for a team role with a `form`, only teams of that form) in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
 5. Selects up to the limit: `urgent` situations first, then `normal` ones, each group drawn at random by `weight`, so that when there are more urgent situations than the limit, the limit still holds. No person is bound into two situations in the same turn; a situation that would reuse someone already bound is re-bound without them, or dropped.
-6. Records each selected situation as presented in the current game week and as **open** until it is resolved.
+6. Places each selected situation in the week: on its `day` and at its `time` when the situation sets them, and otherwise on a day drawn by the engine's generator, in the morning or afternoon (a night is only ever authored, since it means someone was woken).
+7. Records each selected situation as presented in the current game week and as **open** until it is resolved.
 
 The engine's randomness comes from its own seeded generator, held in the engine's state, not from the simulation's. Adding, removing or editing situation content then changes which situations appear but never the simulation's own random rolls (who quits, which projects suffer setbacks).
 
-A presented situation carries a presentation id unique within the run, its situation id, its bindings, its rendered text and its offered choices.
+A presented situation carries a presentation id unique within the run, its situation id, its bindings, its day and time, its rendered text and its offered choices.
 
 ## Resolving a Choice
 
@@ -166,8 +169,9 @@ Content is untrusted input: a content bundle is checked before any situation fro
 
 - a required field is missing, a field has the wrong type, or there is a field the format does not define (including `__proto__`, `constructor` and `prototype`);
 - its `weight` is not above 0 or its `cooldownWeeks` is negative;
+- its `day` or `time` is not one the format defines;
 - its id duplicates another situation's;
-- a condition uses an unknown form, operator, subject or property, compares a property with a literal of the wrong type, compares an id-valued property with a literal, gives `in` something other than a list, uses `history` on anything but a person role, gives `history` an `action` together with a `situation` or `choice` (no entry is caused by both), names an `action` that is not in the player action catalogue, or refers to a role not yet bound at that point (a role's `where` may refer to itself and earlier roles; `when` refers to no roles);
+- a condition uses an unknown form, operator, subject or property, compares a property with a literal of the wrong type, compares an id-valued property with a literal, gives `in` something other than a list, uses `history` on anything but a person role, gives `history` an `action` together with a `situation` or `choice` (no entry is caused by both), names an `action` that is not in the player action catalogue, compares `personality` with a trait not in the personality catalogue, or refers to a role not yet bound at that point (a role's `where` may refer to itself and earlier roles; `when` refers to no roles);
 - a placeholder names an unknown role or property;
 - a role has a `form` but is not a team role;
 - an effect is malformed, hires, starts a project or rates the player, or names a role of the wrong kind for its field;
@@ -205,6 +209,8 @@ The content compiler (`scripts/`) is a build-time tool: it reads `content/situat
 | Form-specific team effects | A `form` on team roles, required for effects only aggregate teams accept | A `where` condition on `team.form`; let the core reject the batch at resolution | The validator can check a declared form statically, so content that could never resolve fails the build; a `where` condition is too open-ended to check, and a runtime rejection leaves the player with a choice that always errors. |
 | Binding | Ordered roles, shuffled candidates, backtracking search | First match in id order; random pick with no backtracking | Shuffling spreads situations across people; backtracking finds a binding whenever one exists, which is cheap at the organization sizes the game simulates. |
 | Checking action ids | A player action catalogue, one shared list in which each career level declares its action ids, read by the validator | No check; passing the known ids into every load and compile; the situation engine importing each level | An unchecked id lets a typo silently disable a situation. One shared list keeps the situation engine independent of any particular level and keeps the compiler and loader on the same validator with no extra input. |
+| Checking personalities | A personality catalogue, one shared list that career levels draw traits from and the validator reads | Accept any string; each level validating its own traits | Mirrors the action catalogue: a misspelt trait would silently make an outcome unreachable, and one shared list keeps the engine independent of any particular level. |
+| Place in the week | An optional authored `day` and `time`; otherwise a weekday drawn by the engine's generator, in the morning or afternoon | Always drawn; always authored; the turn loop placing situations | Some situations only make sense at a time (a Friday 1:1, a 2 a.m. page) and most fit any day. Drawing the rest from the engine's generator keeps placement reproducible and leaves the simulation's rolls untouched. Night is authored only, because a random night scene reads as arbitrary. |
 | Comparing entities | An `id` property on people, teams and projects, compared with other id-valued paths | Literal ids in content; a bare role name as a path | Ids are generated per run, so a literal id in content means nothing; an ordinary property keeps the path grammar uniform. |
 | One person per situation per turn | No person bound into two situations in a turn | Allow overlap | Two situations about the same person in one turn read as contradictory and can invalidate each other's bindings. |
 | Situation effects | All core effects except hire and start project | All core effects | New people and projects need generated identities and are deliberate player actions at the line manager level. |

@@ -7,11 +7,12 @@ prefix: UI
 
 ## Context and Design Philosophy
 
-The UI is the browser page the player plays on. It shows the run (the week, the team, the inbox, this week's situations, a review when one is due) and turns the player's clicks into turn loop commands. It holds no game rules: every rule lives in the simulation core, the situation engine, the career level, the turn loop or the performance review.
+The UI is the browser page the player plays on. It shows the run (the week's moments one at a time, the team as people, the habits and goals, a review when one is due) and turns the player's clicks into turn loop commands. It holds no game rules: every rule lives in the simulation core, the situation engine, the career level, the turn loop or the performance review.
 
-Three principles shape it:
+Four principles shape it:
 
-- **A view over the run.** The run is one value. After every command the UI redraws the screen from the new run; it keeps no copy of game state that could drift from it. The only state it holds is what the player is editing before sending a command (a half-filled calendar entry).
+- **A view over the run.** The run is one value. After every command the UI redraws the screen from the new run; it keeps no copy of game state that could drift from it. The only state it holds is where the player is looking: whether they have read the reaction to their last choice, and whether they have closed last week's recap.
+- **People first, numbers second.** A choice's result leads with what the person said or did, the reaction or aftermath line; what changed follows as short secondary chips ("Carmen: more stressed"). This is the HLD's tenet *show it through people over through numbers*.
 - **Text, never HTML.** Every string from content, the simulation or the player reaches the page through `textContent` or an attribute set as text. The UI never parses HTML from a string, so a situation file or a name cannot inject markup or script.
 - **No runtime dependencies.** The page is built from plain DOM calls through a small helper. A framework would add the project's first runtime dependency for screens that are mostly lists, buttons and selects.
 
@@ -24,20 +25,37 @@ Situation text may use Markdown emphasis, `*like this*` or `_like this_`, and no
 The screen follows the run's phase:
 
 - **Start**: a new run's seed, shown so a run can be reproduced, and a button to begin.
-- **Week** (planning phase):
-  - a header with the week, weeks until the next review, the player's reputation and stress (as words for their bands), and this week's planned hours and overtime;
-  - **situations**: each presented situation's text and a button per offered choice; an answered one shows its aftermath line instead;
-  - **team**: each engineer with role, tenure, performance level, and motivation, stress and skill as words, and their want once a 1:1 has revealed it;
-  - **projects**: progress, deadline, schedule status, and risk and tech debt as words;
-  - **inbox**: each demand with its type, subject, hours, difficulty and last week, and controls to handle it, delegate it to a chosen engineer (never offering a request's own requester, whom the level would refuse), accept or decline work intake, or clear the decision;
-  - **calendar**: the entries, each removable, and a form to add one (action, target, cadence, and for an every-other-week entry whether it starts this week or next, which is how alternating 1:1s are set up);
-  - **last week**: the level's report (dropped entries, delegation outcomes, expired demands, each demand named by its type and subject rather than its id, since it has left the inbox) and the aftermath lines;
-  - an **End week** button.
-  - a collapsible **How to play** section, open by default in weeks 0 to 2 and closed after, that keeps the player's choice to open or close it across redraws; and one line of help under each line manager panel's heading.
-- **Review** (review phase): the outcome in plain words (continuing, promoted, or being managed out), so the player knows what acknowledging will do; the rating, each measure with its value, target and verdict, the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
-- **Ended**: why the run ended (burnout, managed out, completed) and a button to start a new run.
+- **Week** (week phase): a header and a team panel around a **scene**, the one place the player's attention goes. The scene shows, in order:
+  1. **Before Monday**, in week 0 only, until the player starts the week: the habits with a line on what each does, and the How to play section, so the player sets how they run the team before anything arrives.
+  2. **Last week's recap**, after a week has ended, until the player closes it with **Start week N** (see *The Recap*).
+  3. The **current moment** (the turn loop's first open moment): where and when it happens ("Tuesday morning", "Wednesday night"), its title and text, and a button per choice. A line manager moment shows its difficulty as a word where it has one, and a choice that gives work or an interview to an engineer shows that engineer's skill and stress words beside it, so the player can choose without leaving the scene. A **Let it wait** button sends the wait command.
+  4. After the player answers, the **reaction**: the moment's reaction or aftermath line, the change chips, a line for each later moment the answer made impossible ("Thursday night's night page has passed"), and **Continue**, which moves on to the next moment. An expired moment says the moment passed because something changed.
+  5. When no moment is open: "That's the week", with **End the week**.
 
-The week screen's team, projects, inbox and calendar come from the career level's view; the UI has a renderer per career level for them, and a shell (header, situations, last week, review, ended) shared by every level.
+  An **End the week** button is also always available beside the scene; ending early lets the rest of the week wait.
+
+  Which of these the scene shows is read from the run where it can be: Before Monday and the recap show only until a moment of their week has been answered or let wait, so a reload returns the player to where they were, and a reaction, which only the page remembers, is never shown twice. Whenever the scene changes, keyboard focus moves to the scene's heading (a habit change keeps focus on its control), so a player on the keyboard or a screen reader follows the week from scene to scene.
+- **Header**, on every week screen: the week number and the weeks until the next review; a strip of the five days, marking the current moment's day and the days already past; the player's energy as a meter and a word, and reputation as a word; and the review period's goals, each with its progress.
+- **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. Below the cards, open vacancies with their interview counts, and the team's projects with progress against scope, deadline, schedule status, and risk and tech debt as words.
+- **Habits panel**, on every week screen, folded away by default after week 0: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
+- **Review** (review phase): the outcome in plain words (continuing, promoted, or being managed out), so the player knows what acknowledging will do; the rating, each measure with its value, target and verdict (a goal named by its text), the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
+- **Ended**: why the run ended (burnout, managed out, completed), the final week's recap, which is what explains a burnout, and a button to start a new run.
+
+The scene, header and recap are a shell shared by every level; the team panel, habits panel, the words beside a moment's choices and the level's part of the recap come from a renderer per career level, working from the level's view.
+
+## Change Chips
+
+After a choice applies, the UI compares the level's view before and after the command and shows a chip for each band that moved: a person's motivation or stress ("Dario: less motivated"), the player's energy and reputation, and a project's risk or tech debt; and a chip for each person who left the team or joined it. A rise that is good for the player reads as good and a fall as bad, whatever the number did: less stress is good news. The comparison reads bands the view already shows, so it adds no rule and reveals nothing the player could not see by comparing the panels.
+
+## The Recap
+
+The recap tells the story of the week just ended, from the run's last week:
+
+- **Your people**: each engineer whose motivation or stress changed band, with what was recorded for them that week; an engineer with no change gets no line;
+- **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed");
+- **Habits**: what each habit did and any habit that fell back because its engineer left;
+- **What slipped**: work that expired, by its kind and what it was about;
+- **Goals**: each goal's progress.
 
 ## Saving
 
@@ -57,19 +75,18 @@ The How to play section and the panel help lines teach the game's controls, not 
 
 | Topic | Text |
 |---|---|
-| How to play | Each turn is one week: plan it, deal with what comes up, then press End week. |
-| Hours | You have 40 hours a week. Calendar entries and inbox items you handle yourself cost hours; going over means overtime, which raises your stress. |
-| Inbox | Hands-on work arrives here. Handle it yourself (costs hours), delegate it to an engineer (costs them stress; it goes well if the difficulty is within their skill), or leave it. Left too long, it causes trouble. |
-| Situations | Moments that need a decision. Choices take effect at once. |
-| Your people | 1:1s build trust and reveal what each person wants. Coaching, training, recognition, delegation and ceremonies each serve a different want. People whose wants go unserved lose motivation, and unhappy people leave. |
-| Reviews | Every 13 weeks your manager reviews delivery, retention and team health. Two strong reviews in a row from week 52 earn a promotion; three weak ones in a row and you're out. Four weeks at the edge of your stress and you burn out. |
+| How to play | Each week is a handful of moments, Monday to Friday. Pick what you do in each one, or let it wait. Your habits handle the routine, and a recap ends the week. |
+| Moments | Choices take effect at once. Doing something yourself costs energy; giving it to someone costs them, and goes well if it's within their skill. What you let wait may come back, or cause trouble. |
+| Habits | Habits are how you run the team every week: who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony there is, and whose growth you focus on. Change them any time. |
+| Your people | Everyone has a personality and remembers what happened between you. 1:1s build trust and reveal what each person wants; people whose wants go unserved lose motivation, and unhappy people leave. |
+| Energy | Your energy falls with the work you take on and recovers in quiet weeks. Four weeks running on fumes and you burn out. |
+| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. Two strong reviews in a row from week 52 earn a promotion; three weak ones in a row and you're out. |
 
 | Panel | Help line |
 |---|---|
 | Team | Words are your read on each person. Wants appear after a 1:1. |
 | Projects | Projects move on their own. Risk and tech debt make setbacks more likely. |
-| Inbox | Difficulty uses the same words as skill. Delegate to someone at least that skilled, or it's a stretch with some fallout. |
-| Calendar | Recurring entries repeat until you remove them. |
+| Habits | Changes apply from this week's end, and to moments from next week. |
 
 ## Bands as Words
 
@@ -79,15 +96,16 @@ The career level shows values as bands, 0 for the lowest. The UI names each band
 |---|---|
 | Motivation | struggling, flat, fine, good, energized |
 | Stress | calm, steady, busy, strained, overwhelmed |
-| Skill and demand difficulty | learning, developing, capable, strong, expert |
+| Energy | running on fumes, tired, okay, good, fresh |
+| Skill and work difficulty | learning, developing, capable, strong, expert |
 | Risk and tech debt | low, moderate, elevated, high, severe |
 | Reputation | poor, mixed, fair, good, excellent |
 
-The words are UI text; the bands come from the level. Skill and difficulty share words so the player can compare a demand with a possible delegate.
+The words are UI text; the bands come from the level. Skill and difficulty share words so the player can compare a piece of work with the person they might give it to.
 
 ## Commands and Errors
 
-Every control sends one turn loop command. If the loop returns an error (a plan over the hours cap, a decision the level rejects), the UI shows the error next to the control that caused it and redraws nothing else; the run is unchanged.
+Every control sends one turn loop command. If the loop returns an error (a habit the level rejects, a choice that no longer applies), the UI shows the error next to the control that caused it and redraws nothing else; the run is unchanged.
 
 ## Content and Seeds
 
@@ -104,17 +122,20 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
 | Rendering | Plain DOM through a small helper that sets text with `textContent`; redraw the screen after each command | Preact or another small framework; web components (Lit) | Zero runtime dependencies, safe-by-construction text that is easy to audit, and a redraw fits the one-value run. A framework's escape hatch for HTML would need policing; its ergonomics are not needed for screens of lists and forms. |
-| Level-specific screens | A renderer per career level for its panels, inside a shared shell | One generic renderer for every level | Each level is a different game with different panels; a shared shell keeps situations, reviews and endings consistent. |
+| Level-specific screens | A renderer per career level for its panels, inside a shared shell | One generic renderer for every level | Each level is a different game with different panels; a shared shell keeps the scene, recap, reviews and endings consistent. |
+| The week on screen | One scene at a time, with the team and header around it | Every moment of the week listed at once | A list of the week's moments reads as a form to fill in; one scene at a time, with its reaction before the next, is what made the mockup feel like a game. |
+| Reactions | Shown after each choice until the player presses Continue | Shown above the next moment | Reading the reaction is the payoff of the choice; moving on at once buries it. |
+| What changed | Chips from comparing the view's bands before and after a choice, after the reaction | Numbers changed; no chips | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. |
+| Habits | Set before Monday in week 0, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
 | Seed choice | Drawn from the browser's cryptographic random source and displayed | A fixed seed; the clock | A visible random seed gives a fresh run each time and still lets a run be reproduced; the clock and `Math.random` are kept out of the game. |
 | Invalid content | Dropped; listed on the page only in the development build | Always listed; failing to start | Players should not see authoring errors; authors should. The build already fails on invalid content, so this only matters for a bundle edited by hand. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Saving and loading a run, through the save component (not yet designed).
-2. Undo within a week.
-3. Visual design beyond a clean, readable default.
-4. Accessibility beyond semantic HTML, labels and keyboard-operable controls.
+1. Undo within a week.
+2. Visual design beyond a clean, readable default: faces, animation.
+3. Accessibility beyond semantic HTML, labels and keyboard-operable controls.
 
 ## References
 
