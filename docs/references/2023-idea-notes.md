@@ -1,6 +1,6 @@
 # Original Idea Notes (2023)
 
-The first notes for this game, then called "Office Manager". They list the responsibilities of an engineering manager that stood out as learning opportunities. Not every item is meant to become a mechanic; the design draws on them as source material (see the HLD's *Drawn from real management work*). The names of two employer-internal tools are replaced with "internal tooling".
+The first notes for this game, then called "Office Manager". They list the responsibilities of an engineering manager that stood out as learning opportunities. Not every item is meant to become a mechanic; the design draws on them as source material (see the HLD's *Drawn from real management work*). The names of two employer-internal tools are replaced with "internal tooling", and employer-specific program names and abbreviations with generic terms.
 
 ## Responsibilities
 
@@ -35,7 +35,7 @@ The first notes for this game, then called "Office Manager". They list the respo
 - Interviewing
 - Calibrations
 - Interns
-- TDPs
+- Early-career engineers in a development program
 - Self-evaluations
 - S2s, S3s, S4s
 - Agile ceremonies
@@ -44,7 +44,7 @@ The first notes for this game, then called "Office Manager". They list the respo
 - Legacy infrastructure support and rehydrations
 - Customer interaction
 - Snowflake data investigations
-- Handling of Jira intakes, with frequent direct interaction with OP
+- Handling of Jira intakes, with frequent direct interaction with stakeholders
 - Lead engineer roles and responsibilities (approvals, registrations, and validations in ServiceNow and/or Exchange)
 - Data steward
 - Upkeep of resiliency and failover capabilities via internal tooling
@@ -55,7 +55,6 @@ The first notes for this game, then called "Office Manager". They list the respo
 
 ## Terms
 
-- **TDPs**: entry-level engineers in a development program.
 - **S2s, S3s, S4s**: scrum-of-scrums meetings.
 
 ## Scoring ideas
