@@ -53,7 +53,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Private by design
 
-The game runs entirely in your browser. There are no accounts, no servers, no analytics and no network requests, and the page's Content-Security-Policy makes the browser enforce that. Your saved run stays on your machine.
+The game runs entirely in your browser. There are no accounts, no servers, no analytics and no network requests, and the page's Content-Security-Policy makes the browser enforce that. Your saved run stays on your machine. Found a security problem? See [SECURITY.md](SECURITY.md) for how to report it privately.
 
 ## How it's built
 
