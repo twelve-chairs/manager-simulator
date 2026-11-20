@@ -16,7 +16,7 @@ Design: [save-design.md](save-design.md)
 
 ## Restoring
 
-- [x] **SAVE-RESTORE-001**: When a save is restored, the save component shall start a new run from its seed and apply its commands in order through the turn loop, stopping at the first command the loop refuses or throws on, and return the run, the number of commands applied and the number in the save.
+- [x] **SAVE-RESTORE-001**: When a save is restored, the save component shall start a new run from its seed and apply its commands in order through the turn loop, stopping at the first command the loop refuses or throws on, or once the run has reached week 1,040, and return the run, the number of commands applied and the number in the save.
 - [x] **SAVE-RESTORE-002**: When a save is restored, the save component shall report the run as rebuilt if the save's content fingerprint differs from the current one or not every command applied.
 - [x] **SAVE-RESTORE-003**: When a save made from a run is restored with the same content, the save component shall produce a run identical to the one that was saved.
 - [x] **SAVE-RESTORE-004**: The save component shall not throw when restoring any save that passed parsing, however its commands were edited.

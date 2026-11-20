@@ -11,6 +11,8 @@ const MAX_TEXT = MAX_SAVE_BYTES;
 const MAX_COMMANDS = 10_000;
 const MAX_CONTENT = 64;
 const MAX_SEED = 0xffffffff;
+/** Twenty years, far past any real run. One command can be a whole week, so only a week limit bounds replay's work. */
+export const MAX_REPLAY_WEEK = 1040;
 
 export interface Save {
   format: typeof SAVE_FORMAT;
@@ -100,7 +102,8 @@ export interface Restored {
 
 /**
  * Rebuilds a run by replaying a save's commands from its seed, stopping at the first command the turn loop refuses
- * or throws on, so a tampered save can shorten a run but never crash the game.
+ * or throws on, so a tampered save can shorten a run but never crash the game, and at the week limit, so it cannot
+ * freeze the page either.
  */
 // @spec SAVE-RESTORE-001, SAVE-RESTORE-002, SAVE-RESTORE-003, SAVE-RESTORE-004
 export function restore(save: Save, content: Situation[], deps: Dependencies, fingerprint: string): Restored {
@@ -109,6 +112,7 @@ export function restore(save: Save, content: Situation[], deps: Dependencies, fi
   let run: Run = { ...newRun(save.seed, content, deps), commands: [] };
   const applied: Command[] = [];
   for (const command of save.commands) {
+    if (run.sim.week >= MAX_REPLAY_WEEK) break;
     let result: ReturnType<typeof apply>;
     try {
       result = apply(run, command, content, deps);

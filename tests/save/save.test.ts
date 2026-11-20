@@ -3,6 +3,7 @@ import { lineManagerLevel } from '../../src/levels/line-manager';
 import { newRun, type Dependencies, type Run } from '../../src/loop';
 import { conductReview } from '../../src/review';
 import { contentFingerprint, parseSave, restore, toSave, type Save } from '../../src/save';
+import { realContent } from '../balance/harness';
 import { CONTENT, answerCurrent, step } from '../loop/fixtures';
 
 const DEPS: Dependencies = { levels: [lineManagerLevel], review: conductReview };
@@ -126,6 +127,28 @@ describe('restoring', () => {
     const clean = restore(s, CONTENT, DEPS, FP);
     expect(clean).toMatchObject({ applied: s.commands.length, total: s.commands.length, rebuilt: false });
     expect(restore(s, CONTENT, DEPS, 'different').rebuilt).toBe(true);
+  });
+
+  // @spec SAVE-RESTORE-001, SAVE-RESTORE-002
+  it('stops replaying at week 1,040, so a crafted save cannot freeze the page', { timeout: 30_000 }, () => {
+    // 13 weeks then an acknowledge, over and over: a run that only idles can last far past any real one
+    const commands: Save['commands'] = [];
+    while (commands.length < 10_000) {
+      for (let i = 0; i < 13; i++) commands.push({ kind: 'endWeek' });
+      commands.push({ kind: 'acknowledge' });
+    }
+    // the real content: with it, this seed's idle run keeps going for thousands of weeks
+    const content = realContent();
+    const fingerprint = contentFingerprint(content);
+    const long: Save = { ...valid(), seed: 1, content: fingerprint, commands: commands.slice(0, 10_000) };
+    const started = performance.now();
+    const result = restore(long, content, DEPS, fingerprint);
+    const took = performance.now() - started;
+    expect(result.run.sim.week).toBe(1040);
+    expect(result.applied).toBeLessThan(long.commands.length);
+    expect(result.rebuilt).toBe(true);
+    // a guard against the multi-second freeze coming back, loose enough for a slow machine
+    expect(took).toBeLessThan(5_000);
   });
 
   // @spec SAVE-RESTORE-003
