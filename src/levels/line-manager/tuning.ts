@@ -5,7 +5,7 @@ export const LINE_TUNING = {
   weeklyHours: 40,
   overtimeCapHours: 12,
   /** Player stress added per overtime hour. */
-  overtimeStressPerHour: 2,
+  overtimeStressPerHour: 3,
   /** Player stress at or above which a week counts toward burnout. */
   burnoutThreshold: 90,
   burnoutWeeks: 4,
@@ -21,7 +21,7 @@ export const LINE_TUNING = {
 
   effects: {
     oneOnOneTrust: 4,
-    oneOnOneMotivation: 2,
+    oneOnOneMotivation: 1,
     coachingSkill: 2,
     recognitionMotivation: 5,
     trainingSkill: 4,
@@ -35,20 +35,20 @@ export const LINE_TUNING = {
     teamEventMotivation: 4,
     teamEventStress: -5,
     recoveryStress: -6,
-    delegateStress: 4,
+    delegateStress: 2,
     delegateSkillOnStretch: 2,
     declineIntakeReputation: -2,
   },
 
-  /** Weekly chance of each demand per active project (or, for expenses, per engineer). */
+  /** Expected weekly number of each demand per active project (or, for expenses, per engineer); above 1, several can arrive. */
   arrivals: {
-    approval: 0.35,
-    designReview: 0.15,
-    customerRequest: 0.2,
+    approval: 1.5,
+    designReview: 1.3,
+    customerRequest: 1.0,
     /** On-call chance at zero risk and tech debt, and the extra at both 100. */
-    onCallBase: 0.03,
-    onCallFromTrouble: 0.3,
-    expense: 0.06,
+    onCallBase: 0.1,
+    onCallFromTrouble: 0.5,
+    expense: 0.12,
   },
   difficultyRange: [20, 90] as const,
 
@@ -57,9 +57,9 @@ export const LINE_TUNING = {
     completedOnTime: { target: 0, tolerance: 0 },
     onScheduleShare: { target: 0.75, tolerance: 0.15 },
     regrettedQuits: { target: 0, tolerance: 0 },
-    motivation: { target: 55, tolerance: 10 },
-    stress: { target: 45, tolerance: 10 },
-    oneOnOneShare: { target: 0.8, tolerance: 0.15 },
+    motivation: { target: 65, tolerance: 10 },
+    stress: { target: 35, tolerance: 10 },
+    oneOnOneShare: { target: 0.9, tolerance: 0.08 },
   },
 
   /** Consequences of an expired demand. */
@@ -88,10 +88,10 @@ export const ACTIONS: Record<ActionId, { hours: number; target: TargetKind; oneO
 };
 
 export const DEMAND_TYPES: Record<DemandType, { hours: number; expiryWeeks: number }> = {
-  approval: { hours: 1, expiryWeeks: 1 },
-  designReview: { hours: 3, expiryWeeks: 2 },
-  customerRequest: { hours: 2, expiryWeeks: 2 },
-  onCall: { hours: 4, expiryWeeks: 0 },
+  approval: { hours: 2, expiryWeeks: 1 },
+  designReview: { hours: 5, expiryWeeks: 2 },
+  customerRequest: { hours: 4, expiryWeeks: 2 },
+  onCall: { hours: 8, expiryWeeks: 0 },
   expense: { hours: 1, expiryWeeks: 2 },
   workIntake: { hours: 2, expiryWeeks: 2 },
 };

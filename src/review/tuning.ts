@@ -7,5 +7,5 @@ export const REVIEW_TUNING = {
    * scores 0, which must be `meets`. Some measures cannot score above target, so `exceeds` and `outstanding` must
    * be reachable without every measure above.
    */
-  thresholds: { outstanding: 0.6, exceeds: 0.3, meets: -0.2, partial: -0.55 },
+  thresholds: { outstanding: 0.65, exceeds: 0.45, meets: -0.2, partial: -0.55 },
 } as const;

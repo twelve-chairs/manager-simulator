@@ -15,6 +15,9 @@ export function subjectValid(level: LineState, sim: SimState, demand: Demand): b
   }
 }
 
+/** How many demands arrive at an expected rate: the whole part always, plus one more with the fractional part's chance. */
+const count = (s: LineState, rate: number) => Math.floor(rate) + (random(s) < rate - Math.floor(rate) ? 1 : 0);
+
 function addDemand(level: LineState, sim: SimState, type: DemandType, subject: Demand['subject']) {
   level.counters.demand += 1;
   const [low, high] = LINE_TUNING.difficultyRange;
@@ -41,10 +44,13 @@ export function arriveDemands(level: LineState, sim: SimState): LineState {
   for (const id of projects) {
     const p = sim.projects[id]!;
     const subject = { kind: 'project' as const, id };
-    if (random(s) < chance.approval) addDemand(s, sim, 'approval', subject);
-    if (random(s) < chance.designReview) addDemand(s, sim, 'designReview', subject);
-    if (random(s) < chance.customerRequest) addDemand(s, sim, 'customerRequest', subject);
-    if (random(s) < chance.onCallBase + (chance.onCallFromTrouble * (p.risk + p.techDebt)) / 200) addDemand(s, sim, 'onCall', subject);
+    const arrive = (type: DemandType, rate: number) => {
+      for (let i = count(s, rate); i > 0; i--) addDemand(s, sim, type, subject);
+    };
+    arrive('approval', chance.approval);
+    arrive('designReview', chance.designReview);
+    arrive('customerRequest', chance.customerRequest);
+    arrive('onCall', chance.onCallBase + (chance.onCallFromTrouble * (p.risk + p.techDebt)) / 200);
   }
   for (const id of teamEngineers(s, sim)) {
     if (random(s) < chance.expense) addDemand(s, sim, 'expense', { kind: 'person', id });

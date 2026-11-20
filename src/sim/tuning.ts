@@ -1,9 +1,9 @@
 /** Balancing constants for the simulation rules. Values are provisional until playtesting. */
 export const TUNING = {
   /** Weeks since a want was last served before motivation starts to drift down. */
-  wantDriftThresholdWeeks: 8,
+  wantDriftThresholdWeeks: 4,
   /** Motivation lost per week while a want is past the drift threshold. */
-  wantDriftPerWeek: 2,
+  wantDriftPerWeek: 3,
   /** Motivation regained per week while a want has been served recently. */
   wantRecoveryPerWeek: 1,
   /** Multiplier on motivation changes that serve or work against a person's want. */
@@ -21,7 +21,7 @@ export const TUNING = {
   /** Weekly team stress rise per trouble (overdue or behind project, no leader). */
   troubleStressPerWeek: 3,
   /** Weekly team stress recovery when the team is not in trouble. */
-  stressRecoveryPerWeek: 2,
+  stressRecoveryPerWeek: 1,
 
   /** Motivation below this counts as low. */
   lowMotivationLine: 30,

@@ -22,6 +22,7 @@ npm run preview     # serve the built game
 npm test            # run the tests once
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
+npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
 ## Layout
@@ -38,6 +39,7 @@ npm run typecheck   # check types
 | `tests/save/` | Save / load tests |
 | `src/ui/` | Browser UI; `index.html` at the root loads it |
 | `tests/ui/` | UI and build tests |
+| `tests/balance/` | Balance harness: scripted strategies play seeded runs to check that sound management outperforms naive habits |
 | `tests/review/` | Performance review tests |
 | `tests/loop/` | Turn loop tests |
 | `src/actions.ts` | Player action catalogue: every career level's action ids, which situation content is checked against |
