@@ -10,6 +10,10 @@ Engineering management is a career most engineers enter without a clear picture 
 
 A lightweight simulation models the organization the player manages: people (skill, motivation, stress, what they want from the job, trust in their manager, and a history of what happened to them), teams, projects (scope, risk, tech debt, deadlines) and the player's own standing (reputation with their boss, stress). The simulation produces the *state*; authored **situations** produce the *drama*. A situation is a piece of written content — a 1:1 conversation, an escalation, an incident, a calibration meeting — with trigger conditions evaluated against simulation state, a set of choices, and effects that write back into the simulation. A flight-risk conversation appears because that engineer's motivation actually fell; the player's choice in it changes what the simulation does next.
 
+### A week is a run of moments
+
+A turn is not a planning screen. A week plays as a short sequence of **moments**: a standup, someone at your desk, a 2 a.m. page, a stakeholder email, a Friday 1:1. Each moment is a small scene with a few choices, and every choice gets an **immediate reaction**, written in the voice of the people involved, with its effects shown at once. The people the player manages are **characters**. Each has a personality that colours how they react, and a memory of what happened between you, which later moments bring up. Routine work does not need a decision each time: the player sets a few standing **habits** for how they run the team (who takes the night pages, whether Fridays are kept for 1:1s, who signs routine approvals), and only interesting work becomes a moment. Each week ends with a **recap** of what changed and why, and each review period has a few **goals** from the player's own manager to aim at. Habits and goals are the player's proactive levers; moments are where they meet what the week brings.
+
 ### Each career level is a different game
 
 The game is divided into **career levels**, and each level is its own set of mechanics, not a wider view of the same ones:
@@ -30,7 +34,7 @@ On promotion, mechanics from the previous level are retired or folded into aggre
 
 Situations and actions come from the recurring responsibilities of engineering managers: people work (hiring, onboarding, evaluations, calibrations, promotions, improvement plans, terminations, leave, conflicts), delivery (work intake, project management and product ownership, ceremonies, deliverables and due dates), operations (incident escalations, release and access approvals, legacy support, resiliency upkeep), administration (travel, expenses, conference approvals) and culture (team events, belonging, volunteering). The original list this draws on is in [references/2023-idea-notes.md](references/2023-idea-notes.md).
 
-At the line manager level, hands-on operational and technical-lead duties (approvals, design reviews, customer requests, legacy support, data investigations, on-call) appear as demands on the player's time that compete with managing people, rather than as technical puzzles. Learning when to delegate them is one of the level's lessons.
+At the line manager level, hands-on operational and technical-lead duties (approvals, design reviews, customer requests, legacy support, data investigations, on-call) compete with managing people for the player's time and energy, rather than appearing as technical puzzles. Habits handle the routine ones, and the rest arrive as moments. Learning which to keep, which to delegate and to whom is one of the level's lessons.
 
 ### Progression and failure
 
@@ -49,6 +53,7 @@ All of them need a game that is fun to play in sessions of 20–60 minutes, with
 
 - Each promotion feels like starting a new job: a player can name at least one thing they used to do that they no longer do, and one new thing they have to learn.
 - Consequences are traceable: when something goes wrong, the player can see which earlier decisions or neglected people led to it.
+- Choices feel consequential: every choice gets a reaction at once, and people bring past choices up later.
 - A full run from line manager to the top level is completable in a few hours of play.
 - New situations can be added as content (data) without changing simulation code.
 - Skill is learnable: situations have better and worse choices, the better choices reflect sound management practice, and a player who learns from earlier runs does measurably better in later ones.
@@ -64,6 +69,7 @@ All of them need a game that is fun to play in sessions of 20–60 minutes, with
 
 - **Fun over authenticity in pace and process.** When realism and fun pull apart over timing, procedure or presentation (a realistically slow hiring cycle, a tedious but true process), choose the version that plays better; cause and effect between management choices and their outcomes stays true to real practice.
 - **Learnable over ambiguous.** When a situation could be written as a pure trade-off or with a choice that is clearly better for a skilled player, give it a better choice, and make that choice reflect sound management practice.
+- **Show it through people over through numbers.** When an effect could be shown as a person's words and reactions or as a changed number, lead with the person; numbers stay available as secondary detail for players who want them.
 - **A fresh role over a continuous system.** When a mechanic could carry over to the next level or be replaced by one that fits the new role better, replace it, even at the cost of the player relearning.
 
 ## System Design
@@ -83,16 +89,17 @@ flowchart TD
 ```
 
 - **Simulation core**: the organization model (people, teams, projects, the player's standing) and the rules that advance it one time step. Deterministic for a given seed and sequence of player choices. Has no UI and no knowledge of which career level is active beyond the level of detail it is asked to simulate.
-- **Career level modules**: one per level. Each defines the player's available actions, the time step, what is visible versus aggregated, and the review criteria. Promotion replaces the active module and converts simulation state into the next level's level of detail.
-- **Situation engine**: evaluates authored situations against simulation state, selects which ones fire each turn, presents their choices, and applies effects.
+- **Career level modules**: one per level. Each defines the player's habits and other actions, the time step, what is visible versus aggregated, and the review criteria. Promotion replaces the active module and converts simulation state into the next level's level of detail.
+- **Situation engine**: evaluates authored situations against simulation state, selects which ones fire each turn and where in the week they fall, presents their choices, and applies effects and reactions.
 - **Situation content**: authored situations as data files, each tagged with the career levels it belongs to.
-- **Turn loop**: orders each turn: situations and player actions, simulation advance, review when due.
+- **Turn loop**: plays each turn as a run of moments, then the simulation advance and a recap, then a review when due.
 - **Performance review and progression**: scores the player against the active level's criteria and decides promotion, continued play, or the end of the run.
 - **Presentation / UI**: renders the active level's views and situations and collects choices.
 - **Save / load**: persists a run locally.
 
 ## Key Design Decisions
 
+- **The week as a run of moments.** The player spends a turn in short scenes that react to every choice, with characters who remember, standing habits instead of per-item planning, and a recap. A planning screen of calendar and inbox plays correctly but reads as a test. Chosen over keeping the planner with more feedback and over a relationships-only game; see [decisions/moments-loop.md](decisions/moments-loop.md).
 - **Hybrid of simulation and authored situations.** Writing is the source of drama and of the lessons; simulated state decides when and why situations appear, so the same situation lands differently across runs. Chosen over a pure narrative decision game and a pure systemic simulation; see [decisions/simulation-and-situations.md](decisions/simulation-and-situations.md).
 - **Separate mechanics per career level.** One shared mechanic set with a widening scope would be simpler to build and keep players' skills relevant, but it would not deliver the core fantasy that each level is a different job. Level modules over a shared simulation core keep the per-level mechanics separate without needing three separate simulations.
 - **Time step widens with level.** Weeks, months, then quarters, so that a run at each level takes a similar amount of play time while the player's horizon grows the way it does in the real role.
@@ -105,6 +112,7 @@ flowchart TD
 - Playtesters complete at least one promotion in their first session.
 - Playtesters asked "what changed when you were promoted?" name concrete mechanics, not only bigger numbers. *Falsification signal:* if players describe higher levels as "the same thing with more people," the per-level design has failed.
 - Playtesters can explain at least one bad outcome by pointing to an earlier decision.
+- Playtesters describe a session as playing a game. *Falsification signal:* if they describe it as answering questions or taking a test, the moments loop has failed.
 - Across seeded test runs, choices that follow sound practice outperform naive ones, and no context-blind strategy (always agree, always push back) reliably wins every level.
 
 ## References
