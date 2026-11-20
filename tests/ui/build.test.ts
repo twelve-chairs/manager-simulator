@@ -25,8 +25,8 @@ describe('the build', () => {
     const out = mkdtempSync(join(tmpdir(), 'build-'));
     build(out);
     const html = readFileSync(join(out, 'index.html'), 'utf8');
-    // Tag names are case-insensitive in HTML, and a closing tag may carry whitespace before its >.
-    const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
+    // Tag names are case-insensitive in HTML, and browsers end a script at </script followed by anything up to >.
+    const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)];
     expect(scripts.length).toBeGreaterThan(0);
     for (const [, body] of scripts) expect(body!.trim()).toBe('');
     expect(html).not.toMatch(/\son[a-z]+=/i);
