@@ -1,6 +1,5 @@
 /// <reference types="node" />
 import { describe, expect, it } from 'vitest';
-import type { Command } from '../../src/loop';
 import type { Moment } from './harness';
 import { BALANCE_TUNING, DEPS, playRun, realContent, runScore, summarize, table, type Seen, type Strategy, type Summary } from './harness';
 import { BETTER_CHOICES, STRATEGIES, idle, sound, soundHabits } from './strategies';
@@ -73,7 +72,7 @@ describe('playing runs', () => {
   it('fails with the strategy, seed and week when a command is refused', () => {
     const broken: Strategy = { name: 'broken', naive: true, choose: () => 'not-a-choice' };
     expect(() => playRun(broken, 3, CONTENT)).toThrow(/broken, seed 3, week 0: answer refused/);
-    const badHabit: Strategy = { name: 'bad-habit', naive: true, habits: () => [{ kind: 'acknowledge' } as Command], choose: () => 'wait' };
+    const badHabit: Strategy = { name: 'bad-habit', naive: true, habits: () => [{ kind: 'acknowledge' }], choose: () => 'wait' };
     expect(() => playRun(badHabit, 3, CONTENT)).toThrow(/bad-habit, seed 3, week 0: acknowledge refused/);
   });
 

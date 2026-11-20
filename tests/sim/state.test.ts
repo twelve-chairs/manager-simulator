@@ -94,7 +94,7 @@ describe('personality', () => {
     const o = org();
     o.people[0] = { ...o.people[0]!, personality: 'quiet' };
     const s = create(1, o);
-    expect(s.people[o.people[0]!.id]!.personality).toBe('quiet');
+    expect(s.people[o.people[0].id]!.personality).toBe('quiet');
     const hired = applyEffects(s, [
       { type: 'hire', teamId: 't1', person: { id: 'h1', name: 'h1', role: 'engineer', skill: 50, motivation: 50, stress: 30, trust: 60, want: 'growth', personality: 'blunt' }, cause: ACTION },
     ]);

@@ -1,4 +1,4 @@
-# Typechecks, tests and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
+# Typechecks, lints, tests and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
 # push to main only.
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
 name: Deploy to GitHub Pages
@@ -33,6 +33,7 @@ jobs:
       # is allowed to run.
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
+      - run: npm run lint
       - run: npm test
       # The site is served from /manager-simulator/, so asset paths need that prefix.
       - run: npm run build -- --base=/manager-simulator/

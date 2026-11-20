@@ -17,7 +17,7 @@ export function emphasis(text: string): Node[] {
     const em = document.createElement('em');
     em.textContent = match[1] ?? match[2]!;
     nodes.push(em);
-    last = match.index! + match[0].length;
+    last = match.index + match[0].length;
   }
   nodes.push(document.createTextNode(text.slice(last)));
   return nodes.filter((n) => n.nodeType !== Node.TEXT_NODE || n.textContent !== '');

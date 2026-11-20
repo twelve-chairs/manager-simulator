@@ -74,7 +74,7 @@ describe('scorecard', () => {
     const atReview = patch(after.sim, (s) => (s.week = 13));
     const card = scorecard(after.level, atReview);
     expect(card.delivery.completedOnTime).toBe(1);
-    const late = { ...after.level, completions: { [p]: atReview.projects[p]!.deadlineWeek + 1 } } as LineState;
+    const late = { ...after.level, completions: { [p]: atReview.projects[p]!.deadlineWeek + 1 } };
     expect(scorecard(late, patch(atReview, (s) => (s.week = s.projects[p]!.deadlineWeek + 5))).delivery.completedOnTime).toBe(0);
     expect(scorecard(after.level, patch(atReview, (s) => (s.week = 40))).delivery.completedOnTime).toBe(0);
 
@@ -223,14 +223,14 @@ describe('goals', () => {
       s.people[a]!.skill += 12;
       Object.assign(s.people[b]!, { status: 'departed', departure: { week: 5, reason: 'fired' } });
     });
-    const measures = assess({ ...level, goals, goalsPeriod: 0 } as LineState, at13).measures;
+    const measures = assess({ ...level, goals, goalsPeriod: 0 }, at13).measures;
     const byId = new Map(measures.map((m) => [m.id, m]));
     expect(verdictOf(byId.get('goal:g-keep')!)).toBe('above');
     expect(verdictOf(byId.get('goal:g-grow')!)).toBe('above');
     expect(byId.has('goal:g-grow-gone')).toBe(false);
     const quitting = patch(at13, (s) => Object.assign(s.people[engineers(sim)[2]!]!, { status: 'departed', departure: { week: 8, reason: 'quit' } }));
-    expect(verdictOf(new Map(assess({ ...level, goals, goalsPeriod: 0 } as LineState, quitting).measures.map((m) => [m.id, m])).get('goal:g-keep')!)).toBe('below');
-    const recap = end({ ...level, goals, goalsPeriod: 0, items: [], moments: [] } as LineState, at13).recap;
+    expect(verdictOf(new Map(assess({ ...level, goals, goalsPeriod: 0 }, quitting).measures.map((m) => [m.id, m])).get('goal:g-keep')!)).toBe('below');
+    const recap = end({ ...level, goals, goalsPeriod: 0, items: [], moments: [] }, at13).recap;
     expect(recap.goals.some((g) => g.id === 'g-grow-gone' && /left/.test(g.text))).toBe(true);
   });
 });
@@ -246,7 +246,7 @@ describe('goals and moved deadlines', () => {
       Object.assign(s.projects[p]!, { status: 'completed', deadlineWeek: 14 });
     });
     const score = (completed: number) =>
-      verdictOf(assess({ ...level, goals: [goal], goalsPeriod: 0, completions: { [p]: completed } } as LineState, at13).measures.find((m) => m.id === 'goal:g-ship')!);
+      verdictOf(assess({ ...level, goals: [goal], goalsPeriod: 0, completions: { [p]: completed } }, at13).measures.find((m) => m.id === 'goal:g-ship')!);
     expect(score(9)).toBe('above');
     expect(score(12)).toBe('below');
   });

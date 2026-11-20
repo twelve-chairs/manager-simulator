@@ -352,7 +352,7 @@ describe('place in the week and personality', () => {
   // @spec SIT-CONTENT-024
   it('rejects a day or time the format does not define', () => {
     for (const [field, value] of [['day', 'saturday'], ['day', 3], ['day', 'Monday'], ['time', 'evening'], ['time', '']] as const) {
-      expect(rejectionOf(sit({ [field]: value } as never))).toMatch(field);
+      expect(rejectionOf(sit({ [field]: value }))).toMatch(field);
     }
     valid(sit({ day: 'monday', time: 'night' } as never), sit({ id: 'friday-only', day: 'friday' } as never), sit({ id: 'night-only', time: 'night' } as never));
   });

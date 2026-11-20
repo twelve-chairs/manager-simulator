@@ -245,7 +245,7 @@ describe('a week', () => {
     for (const seed of [1, 2, 3, 4, 5]) {
       const w = start(seed).week;
       const key = (m: (typeof w)[number]) => m.day * 10 + TIME_RANK[m.time] * 2 + (m.source === 'level' ? 0 : 1);
-      expect(w.map(key)).toEqual([...w.map(key)].sort((a, b) => a - b));
+      expect(w.map(key)).toEqual(w.map(key).sort((a, b) => a - b));
     }
   });
 

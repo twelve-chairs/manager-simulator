@@ -74,10 +74,11 @@ npm run preview     # serve the built game
 npm test            # run the tests once
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
+npm run lint        # lint with oxlint, including type-aware rules
 npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
-Every push to `main` is typechecked, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, and Dependabot keeps the dev tools and pinned actions up to date.
+Every push to `main` is typechecked, linted, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, and Dependabot keeps the dev tools and pinned actions up to date.
 
 ## Layout
 

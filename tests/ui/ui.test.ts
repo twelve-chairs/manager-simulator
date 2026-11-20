@@ -5,7 +5,7 @@ import type { AnyLevel, Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
 import { current, waitUntil } from '../loop/fixtures';
-import { $, $$, CONTENT, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
+import { $, $$, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
 
 const L = lineManagerLevel;
 const word = (kind: keyof typeof BAND_WORDS, value: number) => BAND_WORDS[kind][band(value)];

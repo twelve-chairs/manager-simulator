@@ -602,7 +602,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const errors = contentErrors();
     if (errors) root.append(errors as Node);
     if (notice) root.append(h('p', { 'data-notice': true, role: 'status', class: 'notice' }, notice));
-    root.append(screen as Node);
+    root.append(screen);
     if (state.screen === 'run') root.append(saveArea(state.run) as Node);
     // @spec UI-SHELL-005
     if (focusScene) root.querySelector<HTMLElement>('[data-scene] [data-part=heading], [data-screen] > [data-part=heading]')?.focus();

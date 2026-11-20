@@ -251,7 +251,7 @@ describe('presenting', () => {
 
 describe('place in the week', () => {
   const placed = (overrides: Record<string, unknown>, seed: number) => {
-    const s = plain('s', overrides as never);
+    const s = plain('s', overrides);
     return select(engine(seed), fresh(seed), [s]).presented[0]!;
   };
 
@@ -272,7 +272,7 @@ describe('place in the week', () => {
       expect(['morning', 'afternoon']).toContain(placed({ day: 'friday' }, seed).time);
       expect(placed({ time: 'night' }, seed).time).toBe('night');
     }
-    expect([...days].sort()).toEqual([0, 1, 2, 3, 4]);
+    expect([...days].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4]);
     expect([...times].sort()).toEqual(['afternoon', 'morning']);
   });
 

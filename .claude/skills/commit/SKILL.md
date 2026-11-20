@@ -72,14 +72,15 @@ wildcard pattern like `Bash(npx:*)`) — into `.claude/settings.local.json`.
 Merge with existing entries; do not duplicate. Save both files if changes were
 made. `.claude/settings.local.json` is gitignored; never stage it.
 
-## 6. Typecheck and test
+## 6. Typecheck, lint and test
 
 Run, in order:
 
 1. `npx tsc --noEmit` — must report no errors.
-2. `npx vitest run` — must pass.
+2. `npm run lint` — must report no errors or warnings. Fix the code rather than switching a rule off; a rule that is wrong for this project is changed in `.oxlintrc.json`, with the reason in the commit message.
+3. `npx vitest run` — must pass.
 
-Do not commit if either fails.
+Do not commit if any of them fails.
 
 **If a test fails, fix the code, not the test.** Read the failure, find the
 cause, fix it, and run again until it passes. Change a test only when the

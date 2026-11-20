@@ -23,7 +23,7 @@ const ratePlayer = (rating: Rating, cause: Cause = SITUATION, extra: Partial<Eff
   ({ type: 'rate', target: { kind: 'player' }, rating, cause, ...extra }) as Effect;
 
 const reRate = (teamId: string, from: PerformanceLevel, to: Rating, count: number): Effect =>
-  ({ type: 'reRate', teamId, from, to, count, cause: ACTION }) as Effect;
+  ({ type: 'reRate', teamId, from, to, count, cause: ACTION });
 
 /** Applies each batch in turn, failing the test if any is rejected. */
 function applyAll(state: SimState, ...batches: Effect[][]) {
