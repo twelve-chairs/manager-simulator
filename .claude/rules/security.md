@@ -67,6 +67,18 @@ Treat as untrusted anything the game did not just compute itself:
 - When the game is deployed, it is served with a Content-Security-Policy that
   disallows inline script and `unsafe-eval`, plus `X-Content-Type-Options:
   nosniff` and `frame-ancestors` set.
+- **Exception, GitHub Pages for playtesting.** GitHub Pages cannot send
+  headers, so while the game is hosted there for playtests:
+  - the policy is carried in a `<meta>` tag the production build adds
+    (UI-BUILD-002), which covers everything but `frame-ancestors`;
+  - `frame-ancestors` and `nosniff` are not set. The accepted risk is small:
+    the game has no accounts, payments or server, the worst a framing site
+    could trick a player into is discarding a run (which asks for
+    confirmation), and the site serves only its own static files;
+  - "Enforce HTTPS" is on in the Pages settings; `github.io` is HSTS-preloaded.
+
+  Before a wider release, move to a host that can send these headers (for
+  example Cloudflare Pages with a `_headers` file) and remove this exception.
 
 ## Determinism is not a security control, but keep it
 
