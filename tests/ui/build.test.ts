@@ -25,7 +25,8 @@ describe('the build', () => {
     const out = mkdtempSync(join(tmpdir(), 'build-'));
     build(out);
     const html = readFileSync(join(out, 'index.html'), 'utf8');
-    const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+    // Tag names are case-insensitive in HTML, and a closing tag may carry whitespace before its >.
+    const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
     expect(scripts.length).toBeGreaterThan(0);
     for (const [, body] of scripts) expect(body!.trim()).toBe('');
     expect(html).not.toMatch(/\son[a-z]+=/i);

@@ -29,7 +29,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # No installed package needs a lifecycle script on Linux (fsevents, the only one with one, is macOS-only), so none
+      # is allowed to run.
+      - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
       # The site is served from /manager-simulator/, so asset paths need that prefix.
