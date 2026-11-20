@@ -10,6 +10,7 @@ A browser game about the career of a software engineering manager, where the peo
 
 [![Deploy](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml)
 [![Status: early development](https://img.shields.io/badge/status-early%20development-orange)](#status)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/twelve-chairs/manager-simulator/badge)](https://scorecard.dev/viewer/?uri=github.com/twelve-chairs/manager-simulator)
 [![Last commit](https://img.shields.io/github/last-commit/twelve-chairs/manager-simulator)](https://github.com/twelve-chairs/manager-simulator/commits/main)
 [![Top language](https://img.shields.io/github/languages/top/twelve-chairs/manager-simulator)](https://github.com/twelve-chairs/manager-simulator)
 [![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](package.json)
@@ -78,7 +79,7 @@ npm run lint        # lint with oxlint, including type-aware rules
 npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
-Every push to `main` is typechecked, linted, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, and Dependabot keeps the dev tools and pinned actions up to date.
+Every push to `main` is typechecked, linted, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, OpenSSF Scorecard grades the supply-chain practices, and Dependabot keeps the dev tools and pinned actions up to date.
 
 ## Layout
 
@@ -99,6 +100,7 @@ Every push to `main` is typechecked, linted, tested, built and published to [Git
 | `scripts/` | Build-time tools, such as the situation content compiler |
 | `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to GitHub Pages from `main` |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |
+| `.github/workflows/scorecard.yml` | OpenSSF Scorecard, which publishes the score behind the README badge |
 | `.github/dependabot.yml` | Weekly dependency and action updates |
 | `vite.config.ts` | Build configuration, including the plugin that compiles situations into the page |
 | `docs/high-level-design.md` | Project-level design |
