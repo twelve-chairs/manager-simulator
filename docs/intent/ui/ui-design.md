@@ -97,7 +97,7 @@ A new run's seed is drawn from the browser's cryptographic random source and sho
 
 ## Build
 
-Vite builds the page (a development dependency). The build compiles the situation content, bundles the TypeScript, and emits static files with no inline script, so the page can be served with a Content-Security-Policy that forbids inline script and `eval`. Render functions are tested under Vitest in `happy-dom`, a development dependency that provides a DOM without a browser.
+Vite builds the page (a development dependency). The build compiles the situation content, bundles the TypeScript, and emits static files with no inline script, so the page can be served with a Content-Security-Policy that forbids inline script and `eval`. The production build also carries that policy itself, in a `<meta>` tag, so it applies on hosts that cannot send headers: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`. `connect-src 'none'` makes the no-network promise something the browser enforces. The development server injects styles inline for live reloading, so the tag is added only to the production build. Render functions are tested under Vitest in `happy-dom`, a development dependency that provides a DOM without a browser.
 
 ## Decisions & Alternatives
 

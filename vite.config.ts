@@ -39,7 +39,34 @@ function situations(): Plugin {
   };
 }
 
+/**
+ * The Content-Security-Policy the game runs under, carried in the page so it applies on hosts that cannot send
+ * headers. No inline script, no eval, and no network connections at all. Production only: the development server
+ * injects styles inline for live reloading.
+ */
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self'",
+  "connect-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join('; ');
+
+// @spec UI-BUILD-002
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: () => [
+      { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: CONTENT_SECURITY_POLICY }, injectTo: 'head-prepend' },
+    ],
+  };
+}
+
 export default defineConfig({
-  plugins: [situations()],
+  plugins: [situations(), contentSecurityPolicy()],
   build: { sourcemap: false, modulePreload: { polyfill: false } },
 });

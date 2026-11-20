@@ -34,6 +34,26 @@ describe('the build', () => {
     expect(files(out).some((f) => f.endsWith('.map'))).toBe(false);
   });
 
+  // @spec UI-BUILD-002
+  it('carries a strict Content-Security-Policy in the page', { timeout: 60_000 }, () => {
+    const out = mkdtempSync(join(tmpdir(), 'build-'));
+    build(out);
+    const html = readFileSync(join(out, 'index.html'), 'utf8');
+    const meta = html.match(/<head>\s*<meta http-equiv="Content-Security-Policy" content="([^"]+)"/);
+    expect(meta).not.toBeNull();
+    // Read the attribute as a browser does: the build escapes quotes as entities.
+    const content = meta![1]!.replaceAll('&#39;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&');
+    const policy = new Map(content.split(';').map((d) => d.trim().split(/\s+/)).map(([name, ...values]) => [name!, values]));
+    expect(policy.get('default-src')).toEqual(["'self'"]);
+    expect(policy.get('script-src')).toEqual(["'self'"]);
+    expect(policy.get('style-src')).toEqual(["'self'"]);
+    expect(policy.get('connect-src')).toEqual(["'none'"]);
+    expect(policy.get('object-src')).toEqual(["'none'"]);
+    expect(policy.get('base-uri')).toEqual(["'none'"]);
+    expect(policy.get('form-action')).toEqual(["'none'"]);
+    expect(content).not.toMatch(/unsafe-inline|unsafe-eval/);
+  });
+
   // @spec UI-BUILD-001
   it('fails on an invalid situation', { timeout: 60_000 }, () => {
     const bad = mkdtempSync(join(tmpdir(), 'situations-'));
