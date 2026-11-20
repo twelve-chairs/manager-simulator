@@ -1,11 +1,7 @@
-import type { ActionId, DemandType, TargetKind } from './types';
+import type { HabitId, WorkKind } from './types';
 
-/** Balancing constants for the line manager level. Values are provisional until playtesting. */
+/** Balancing constants for the line manager level. Values are provisional until the balance harness and playtesting set them. */
 export const LINE_TUNING = {
-  weeklyHours: 40,
-  overtimeCapHours: 12,
-  /** Player stress added per overtime hour. */
-  overtimeStressPerHour: 3,
   /** Player stress at or above which a week counts toward burnout. */
   burnoutThreshold: 90,
   burnoutWeeks: 4,
@@ -16,36 +12,49 @@ export const LINE_TUNING = {
   bandEdges: [20, 40, 60, 80] as readonly number[],
   /** Window for the scorecard's 1:1 share. */
   recentOneOnOneWeeks: 4,
-  /** Share of a demand's consequence applied when a delegate's skill falls short of it. */
-  reducedConsequence: 0.5,
+  /** Share of a work item's consequence applied when the person handling it falls short of it. */
+  reducedConsequence: 0.9,
+  /** Most level moments in one week, so a week stays a handful of scenes. */
+  levelMomentCap: 5,
+  reviewEveryWeeks: 13,
 
-  effects: {
+  habits: {
+    /** Player stress per night page taken personally, per unit of the page's size. */
+    pageStressPerSize: 1,
     oneOnOneTrust: 4,
     oneOnOneMotivation: 1,
-    coachingSkill: 2,
-    recognitionMotivation: 5,
-    trainingSkill: 4,
-    trainingStress: 5,
+    // A normal week's routine (1:1s, ceremonies, signing approvals) costs little; effort beyond it is what wears the player down.
+    // The simulation keeps whole numbers, so these per-item costs are added up per habit before they apply.
+    oneOnOneStress: 0.4,
+    /** Player stress per routine item signed personally. */
+    approvalStress: 0.25,
+    /** An engineer's stress per routine item they sign. */
+    signerStress: 1,
     ceremoniesMotivation: 1,
-    noCeremoniesRisk: 3,
-    planningRisk: -6,
-    /** Share of scope removed by scope negotiation. */
-    scopeCut: 0.1,
-    scopeReputation: -3,
-    teamEventMotivation: 4,
-    teamEventStress: -5,
-    recoveryStress: -6,
-    delegateStress: 2,
-    delegateSkillOnStretch: 2,
-    declineIntakeReputation: -2,
+    ceremoniesStress: 1,
+    lightCeremoniesRisk: 3,
+    coachingSkill: 2,
+    coachingStress: 1,
   },
 
-  /** Expected weekly number of each demand per active project (or, for expenses, per engineer); above 1, several can arrive. */
+  work: {
+    /** Player stress per unit of size for work done yourself. */
+    selfStressPerSize: 1.2,
+    delegateStress: 4,
+    stretchSkill: 1,
+    declineIntakeReputation: -2,
+    interviewStress: 3,
+    interviewerStress: 2,
+    interviewerMotivation: 1,
+    backUpStress: 2,
+  },
+
+  /** Expected weekly number of each kind per active project (or, for expenses, per engineer); above 1, several can arrive. */
   arrivals: {
-    approval: 1.5,
-    designReview: 1.3,
-    customerRequest: 1.0,
-    /** On-call chance at zero risk and tech debt, and the extra at both 100. */
+    approval: 0.6,
+    designReview: 0.4,
+    customerRequest: 0.3,
+    /** On-call expectation at zero risk and tech debt, and the extra at both 100. */
     onCallBase: 0.1,
     onCallFromTrouble: 0.5,
     expense: 0.12,
@@ -60,9 +69,30 @@ export const LINE_TUNING = {
     motivation: { target: 65, tolerance: 10 },
     stress: { target: 35, tolerance: 10 },
     oneOnOneShare: { target: 0.9, tolerance: 0.08 },
+    /** A goal is a measure of 1 when achieved and 0 when missed. */
+    goal: { target: 0.5, tolerance: 0.4 },
   },
 
-  /** Consequences of an expired demand. */
+  /** Check-ins for projects in trouble: when they come, and what each choice does. */
+  checkIn: {
+    /** A project at or above this risk band is due a check-in. */
+    band: 3,
+    cooldownWeeks: 4,
+    replanStress: 3,
+    replanRisk: 20,
+    /** Share of the remaining work cutting scope removes. */
+    scopeShare: 0.2,
+    scopeReputation: -2,
+    deadlineWeeks: 4,
+    deadlineReputation: -4,
+  },
+
+  goals: {
+    growSkill: 8,
+    teamStress: 40,
+  },
+
+  /** Consequences of an expired work item, at full strength. */
   expiry: {
     approvalProgress: -4,
     designReviewTechDebt: 8,
@@ -74,29 +104,32 @@ export const LINE_TUNING = {
   },
 } as const;
 
-export const ACTIONS: Record<ActionId, { hours: number; target: TargetKind; oneOff: boolean }> = {
-  'line-manager.one-on-one': { hours: 1, target: 'person', oneOff: false },
-  'line-manager.coaching': { hours: 2, target: 'person', oneOff: false },
-  'line-manager.recognition': { hours: 1, target: 'person', oneOff: false },
-  'line-manager.training': { hours: 1, target: 'person', oneOff: true },
-  'line-manager.ceremonies': { hours: 4, target: 'team', oneOff: false },
-  'line-manager.project-planning': { hours: 3, target: 'project', oneOff: false },
-  'line-manager.scope-negotiation': { hours: 2, target: 'project', oneOff: true },
-  'line-manager.team-event': { hours: 3, target: 'team', oneOff: true },
-  'line-manager.interview': { hours: 2, target: 'vacancy', oneOff: true },
-  'line-manager.recovery': { hours: 2, target: 'player', oneOff: false },
+/** Each kind of work: its size and how many weeks it waits before expiring. */
+export const WORK_KINDS: Record<WorkKind, { size: number; expiryWeeks: number }> = {
+  approval: { size: 2, expiryWeeks: 1 },
+  expense: { size: 1, expiryWeeks: 2 },
+  designReview: { size: 5, expiryWeeks: 2 },
+  customerRequest: { size: 4, expiryWeeks: 2 },
+  onCall: { size: 8, expiryWeeks: 0 },
+  workIntake: { size: 2, expiryWeeks: 2 },
 };
 
-export const DEMAND_TYPES: Record<DemandType, { hours: number; expiryWeeks: number }> = {
-  approval: { hours: 2, expiryWeeks: 1 },
-  designReview: { hours: 5, expiryWeeks: 2 },
-  customerRequest: { hours: 4, expiryWeeks: 2 },
-  onCall: { hours: 8, expiryWeeks: 0 },
-  expense: { hours: 1, expiryWeeks: 2 },
-  workIntake: { hours: 2, expiryWeeks: 2 },
-};
+export const ROUTINE_KINDS: readonly WorkKind[] = ['approval', 'expense'];
+export const MOMENT_KINDS: readonly WorkKind[] = ['designReview', 'customerRequest', 'workIntake'];
 
-/** Action ids for decisions that are not calendar actions. */
+
+/** Cause ids for the level's habits and moment choices; all listed in the player action catalogue. */
+export const HABIT_CAUSE: Record<HabitId, string> = {
+  nightPages: 'line-manager.habit.night-pages',
+  oneOnOnes: 'line-manager.habit.one-on-ones',
+  approvals: 'line-manager.habit.approvals',
+  ceremonies: 'line-manager.habit.ceremonies',
+  growth: 'line-manager.habit.growth',
+};
+export const DO_IT_YOURSELF = 'line-manager.self';
 export const DELEGATE = 'line-manager.delegate';
 export const ACCEPT_INTAKE = 'line-manager.accept-intake';
 export const DECLINE_INTAKE = 'line-manager.decline-intake';
+export const INTERVIEW = 'line-manager.interview';
+export const ON_CALL = 'line-manager.on-call';
+export const CHECK_IN = 'line-manager.check-in';

@@ -1,6 +1,6 @@
 import { advance } from '../sim';
 import { createEngine, debriefsSince, resolveChoice, selectSituations, type DebriefRecord, type Situation, type Timing } from '../situations';
-import type { AnyLevel, ApplyResult, Command, Dependencies, Run } from './types';
+import type { AnyLevel, ApplyResult, Command, Dependencies, Run, WeekMoment } from './types';
 
 /** Weeks until the next review is held: to the end of the first whole step that reaches the next review week. */
 // @spec LOOP-WEEK-007
@@ -19,16 +19,27 @@ export function weeksToReview(run: Run, deps: Dependencies): number | undefined 
 /** Whether an advance from one week to another reached or passed a review week. */
 const crossedReview = (from: number, to: number, cadence: number) => Math.floor(to / cadence) > Math.floor(from / cadence);
 
-/** Begins the run's next week: the level prepares it, the plan empties, and situations are presented. */
-// @spec LOOP-WEEK-005
+const TIME_ORDER = { morning: 0, afternoon: 1, night: 2 } as const;
+
+/** Begins the run's next week: the level makes its moments, situations are presented, and both are ordered into one sequence. */
+// @spec LOOP-WEEK-005, LOOP-WEEK-008
 function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
   run.level = level.beginWeek(run.level, run.sim);
-  run.plan = level.emptyPlan();
   const { engine, presented } = selectSituations(run.engine, run.sim, content, level.params.id, level.params.situationLimit, timingOf(run, level));
   run.engine = engine;
-  run.presented = presented.map((presentation) => ({ presentation, status: 'open' }));
-  run.phase = 'planning';
+  run.presented = presented;
+  const moments: WeekMoment[] = [
+    ...level.moments(run.level, run.sim).filter((m) => m.open).map((m): WeekMoment => ({ source: 'level', id: m.id, day: m.day, time: m.time, title: m.title ?? '', status: 'open' })),
+    ...presented.map((p): WeekMoment => ({ source: 'situation', id: p.id, day: p.day, time: p.time, title: content.find((x) => x.id === p.situationId)?.title ?? p.situationId, status: 'open' })),
+  ];
+  // The sort is stable and the level's moments come first, so within a slot each source keeps its own order.
+  run.week = moments.sort((a, b) => a.day - b.day || TIME_ORDER[a.time] - TIME_ORDER[b.time]);
+  run.phase = 'week';
 }
+
+/** The week's current moment: the first still open. */
+// @spec LOOP-WEEK-009
+const currentMoment = (run: Run) => run.week.find((m) => m.status === 'open');
 
 /** Starts a run at the lowest level given, in week 0's planning phase. */
 // @spec LOOP-RUN-001, LOOP-RUN-002
@@ -42,8 +53,8 @@ export function newRun(seed: number, content: Situation[], deps: Dependencies): 
     sim,
     engine: createEngine(seed),
     level: levelState,
-    plan: null, // set when the week begins
-    phase: 'planning',
+    phase: 'week',
+    week: [],
     presented: [],
     lastWeek: null,
     review: null,
@@ -56,15 +67,13 @@ export function newRun(seed: number, content: Situation[], deps: Dependencies): 
 
 type Outcome = { ok: true } | { ok: false; error: string };
 
-/** Ends the week: commit, advance, after-advance, then a review or the next week. */
+/** Ends the week: open moments wait, the level ends the week, then advance, after-advance, and a review or the next week. */
 // @spec LOOP-WEEK-001, LOOP-WEEK-002, LOOP-WEEK-003, LOOP-WEEK-004, LOOP-WEEK-006, LOOP-CMD-005
 function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies): Outcome {
-  const committed = level.commit(run.level, run.sim, run.plan);
+  for (const m of run.week) if (m.status === 'open') m.status = 'waited';
+  const committed = level.endWeek(run.level, run.sim);
   if (!committed.ok) return committed;
-  run.lastWeek = {
-    report: committed.report,
-    aftermaths: run.presented.flatMap((p) => (p.status === 'answered' && p.aftermath !== undefined ? [p.aftermath] : [])),
-  };
+  run.lastWeek = { recap: committed.recap, moments: structuredClone(run.week) };
   const fromWeek = committed.sim.week;
   run.sim = advance(committed.sim, level.params.weeksPerStep).state;
   const after = level.afterAdvance(committed.level, run.sim);
@@ -92,9 +101,10 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
 function quarterDebriefs(run: Run): DebriefRecord[] {
   const since = run.sim.player.ratingHistory.at(-1)?.week ?? 0;
   const lastWeek = run.sim.week - 1;
+  const unanswered = new Set(run.week.filter((m) => m.source === 'situation' && (m.status === 'open' || m.status === 'waited')).map((m) => m.id));
   const open = run.presented
-    .filter((p) => p.status === 'open')
-    .map((p): DebriefRecord => ({ week: lastWeek, situationId: p.presentation.situationId, bindings: { ...p.presentation.bindings }, status: 'ignored' }));
+    .filter((p) => unanswered.has(p.id))
+    .map((p): DebriefRecord => ({ week: lastWeek, situationId: p.situationId, bindings: { ...p.bindings }, status: 'ignored' }));
   return [...debriefsSince(run.engine, since), ...open];
 }
 
@@ -117,14 +127,41 @@ function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Depe
   return { ok: true };
 }
 
+/** Answers the current moment through its owner, then expires level moments the answer left impossible to answer. */
+function answer(run: Run, level: AnyLevel, content: Situation[], momentId: unknown, choiceId: unknown): Outcome {
+  const m = currentMoment(run);
+  if (!m) return { ok: false, error: 'no moment of the week is still open' };
+  if (m.id !== momentId) return { ok: false, error: `${String(momentId)} is not the current moment; ${m.id} is` };
+  if (typeof choiceId !== 'string') return { ok: false, error: 'an answer names a choice' };
+  if (m.source === 'level') {
+    const chosen = level.choose(run.level, run.sim, m.id, choiceId);
+    if (!chosen.ok) return chosen;
+    run.level = chosen.level;
+    run.sim = chosen.sim;
+    m.status = 'answered';
+    m.text = chosen.reaction;
+  } else {
+    const result = resolveChoice(run.engine, run.sim, content, m.id, choiceId, timingOf(run, level));
+    if (result.kind === 'error') return { ok: false, error: result.message };
+    run.engine = result.engine;
+    run.sim = result.sim;
+    m.status = result.kind === 'resolved' ? 'answered' : 'expired';
+    if (result.kind === 'resolved') m.text = result.aftermath;
+  }
+  const stillOpen = new Set(level.moments(run.level, run.sim).filter((x) => x.open).map((x) => x.id));
+  for (const x of run.week) if (x.source === 'level' && x.status === 'open' && !stillOpen.has(x.id)) x.status = 'expired';
+  return { ok: true };
+}
+
 const ALLOWED: Record<Run['phase'], Command['kind'][]> = {
-  planning: ['plan', 'answer', 'endWeek'],
+  week: ['plan', 'answer', 'wait', 'endWeek'],
   review: ['acknowledge'],
   ended: [],
 };
 
 /** Applies one command to a run, returning the new run, or an error and the unchanged run. */
 // @spec LOOP-RUN-003, LOOP-RUN-004, LOOP-CMD-001, LOOP-CMD-002, LOOP-CMD-003, LOOP-CMD-004
+// @spec LOOP-CMD-006, LOOP-CMD-007, LOOP-CMD-008
 export function apply(run: Run, command: Command, content: Situation[], deps: Dependencies): ApplyResult {
   // A run can come from a save, so an unknown phase or level is an error, never an exception.
   const allowed = Object.hasOwn(ALLOWED, run.phase) ? ALLOWED[run.phase] : undefined;
@@ -132,34 +169,26 @@ export function apply(run: Run, command: Command, content: Situation[], deps: De
   if (!allowed.includes(command?.kind)) return { ok: false, error: `${String(command?.kind)} is not allowed while the run is ${run.phase}`, run };
   const level = deps.levels.find((l) => l.params.id === run.levelId);
   if (!level) return { ok: false, error: `the run's level ${run.levelId} is not among the levels given`, run };
-  // Clone everything but the command history, which only ever grows and is never changed in place.
-  const { commands, ...rest } = run;
-  const next: Run = { ...structuredClone(rest), commands };
+  // Every component returns new states and leaves its inputs unchanged, so the new run shares the simulation, engine and
+  // level states with the old one and replaces them as commands apply. The loop changes only the week's moment entries in
+  // place, so those are copied; copying the whole run on every command was most of a run's time.
+  const { commands } = run;
+  const next: Run = { ...run, week: run.week.map((m) => ({ ...m })) };
   let outcome: Outcome;
   switch (command.kind) {
     case 'plan': {
-      const updated = level.updatePlan(next.level, next.sim, next.plan, command.command);
-      if (updated.ok) {
-        next.level = updated.level;
-        next.plan = updated.plan;
-      }
+      const updated = level.plan(next.level, next.sim, command.command);
+      if (updated.ok) next.level = updated.level;
       outcome = updated;
       break;
     }
-    case 'answer': {
-      const result = resolveChoice(next.engine, next.sim, content, command.presentationId, command.choiceId, timingOf(next, level));
-      if (result.kind === 'error') {
-        outcome = { ok: false, error: result.message };
-        break;
-      }
-      next.engine = result.engine;
-      next.sim = result.sim;
-      const record = next.presented.find((p) => p.presentation.id === command.presentationId);
-      if (record) {
-        record.status = result.kind === 'resolved' ? 'answered' : 'expired';
-        if (result.kind === 'resolved') record.aftermath = result.aftermath;
-      }
-      outcome = { ok: true };
+    case 'answer':
+      outcome = answer(next, level, content, command.momentId, command.choiceId);
+      break;
+    case 'wait': {
+      const m = currentMoment(next);
+      if (m) m.status = 'waited';
+      outcome = m ? { ok: true } : { ok: false, error: 'no moment of the week is still open' };
       break;
     }
     case 'endWeek':

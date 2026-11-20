@@ -1,235 +1,206 @@
-import { ACTIONS, type ActionId, type Cadence, type Decision, type LinePlan, type LineState, type NewEntry, type Target, type View } from '../levels/line-manager';
-import type { SimState } from '../sim';
-import type { ScreenContext } from './app';
+import { WORK_LABELS, type Habits, type HabitId, type Recap, type View } from '../levels/line-manager';
+import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { PANEL_HELP } from './help';
+import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
-const ACTION_LABELS: Record<ActionId, string> = {
-  'line-manager.one-on-one': '1:1',
-  'line-manager.coaching': 'Coaching',
-  'line-manager.recognition': 'Recognition',
-  'line-manager.training': 'Training',
-  'line-manager.ceremonies': 'Ceremonies',
-  'line-manager.project-planning': 'Project planning',
-  'line-manager.scope-negotiation': 'Scope negotiation',
-  'line-manager.team-event': 'Team event',
-  'line-manager.interview': 'Interview',
-  'line-manager.recovery': 'Recovery time',
+/** Each habit's name, what it does, and its settings' labels; engineer-naming habits list the team after the first. */
+const HABITS: Record<HabitId, { label: string; what: string; options: Record<string, string> }> = {
+  nightPages: {
+    label: 'Night pages',
+    what: 'Who answers when a service goes down overnight.',
+    options: { rotation: 'A rotation through the team', seniors: 'The most skilled engineer', me: 'You take them' },
+  },
+  oneOnOnes: {
+    label: '1:1s',
+    what: 'How often you sit down with each engineer. They build trust and tell you what people want.',
+    options: { fortnightly: 'Every other week', weekly: 'Every week', whenNeeded: 'Only when needed' },
+  },
+  approvals: { label: 'Routine approvals', what: 'Who signs off releases, access and expenses.', options: { me: 'You' } },
+  ceremonies: {
+    label: 'Ceremonies',
+    what: 'Stand-ups, planning and retros: steadiness for the team, time for you.',
+    options: { full: 'Full', light: 'Light' },
+  },
+  growth: { label: 'Growth focus', what: 'One engineer you coach each week.', options: { nobody: 'Nobody' } },
 };
+const HABIT_IDS = Object.keys(HABITS) as HabitId[];
+const NAMES_ENGINEERS = new Set<HabitId>(['approvals', 'growth']);
 
-const CADENCE_LABELS: Record<Cadence, string> = { weekly: 'every week', biweekly: 'every other week', once: 'this week only' };
+const viewOf = (ctx: ScreenContext) => ctx.view as View;
 
-const nameOf = (sim: SimState, level: LineState, target: { kind: string; id?: string }): string => {
-  switch (target.kind) {
-    case 'person':
-      return sim.people[target.id!]?.name ?? target.id!;
-    case 'project':
-      return sim.projects[target.id!]?.name ?? target.id!;
-    case 'team':
-      return sim.teams[target.id!]?.name ?? target.id!;
-    case 'vacancy':
-      return `vacancy ${target.id}`;
-    default:
-      return level.teamId === target.id ? 'your team' : 'you';
-  }
-};
-
-/** The line manager's panels on the week screen: team, projects, inbox and calendar. */
-export function lineManagerPanels(ctx: ScreenContext): Child {
-  const level = ctx.run.level as LineState;
-  const plan = ctx.run.plan as LinePlan;
-  const view = ctx.view as View;
-  return [team(view), projects(view), inbox(ctx, level, plan, view), calendar(ctx, level, view)];
-}
-
-// @spec UI-LINE-001, UI-HELP-002
-function team(view: View) {
-  return h(
-    'section',
-    { 'data-panel': 'team' },
-    h('h2', {}, 'Your team'),
-    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.team),
-    h(
-      'table',
-      {},
-      h('tr', {}, ['Name', 'Role', 'Weeks here', 'Rating', 'Motivation', 'Stress', 'Skill', 'Wants'].map((c) => h('th', {}, c))),
-      view.people.map((p) =>
-        h(
-          'tr',
-          { 'data-person': p.id },
-          h('td', { 'data-field': 'name' }, p.name),
-          h('td', { 'data-field': 'role' }, p.role),
-          h('td', { 'data-field': 'tenure' }, p.tenureWeeks),
-          h('td', { 'data-field': 'performance' }, p.performance),
-          h('td', { 'data-field': 'motivation' }, bandWord('motivation', p.motivation)),
-          h('td', { 'data-field': 'stress' }, bandWord('stress', p.stress)),
-          h('td', { 'data-field': 'skill' }, bandWord('skill', p.skill)),
-          h('td', { 'data-field': 'want' }, p.want),
-        ),
-      ),
-    ),
-  );
-}
-
-// @spec UI-LINE-002
-function projects(view: View) {
-  return h(
-    'section',
-    { 'data-panel': 'projects' },
-    h('h2', {}, 'Projects'),
-    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.projects),
-    h(
-      'table',
-      {},
-      h('tr', {}, ['Project', 'Progress', 'Due week', 'Schedule', 'Risk', 'Tech debt'].map((c) => h('th', {}, c))),
-      view.projects.map((p) =>
-        h(
-          'tr',
-          { 'data-project': p.id },
-          h('td', { 'data-field': 'name' }, p.name),
-          h('td', { 'data-field': 'progress' }, `${Math.round(p.progress)} / ${p.scope}`),
-          h('td', { 'data-field': 'deadline' }, p.deadlineWeek),
-          h('td', { 'data-field': 'schedule' }, p.schedule),
-          h('td', { 'data-field': 'risk' }, bandWord('risk', p.risk)),
-          h('td', { 'data-field': 'tech-debt' }, bandWord('risk', p.techDebt)),
-        ),
-      ),
-    ),
-  );
-}
-
-const describeDecision = (d: Decision | undefined, sim: SimState) =>
-  !d ? 'undecided' : d.kind === 'delegate' ? `delegate to ${sim.people[d.to]?.name ?? d.to}` : d.kind;
-
-// @spec UI-LINE-003
-function inbox(ctx: ScreenContext, level: LineState, plan: LinePlan, view: View) {
-  const sim = ctx.run.sim;
-  const decide = (demandId: string, decision: Decision) => ctx.send({ kind: 'plan', command: { kind: 'decide', demandId, decision } }, `demand:${demandId}`);
-  const clear = (demandId: string) => ctx.send({ kind: 'plan', command: { kind: 'clear', demandId } }, `demand:${demandId}`);
-  return h(
-    'section',
-    { 'data-panel': 'inbox' },
-    h('h2', {}, 'Inbox'),
-    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.inbox),
-    view.inbox.length === 0 ? h('p', {}, 'Nothing waiting.') : null,
-    view.inbox.map((d) => {
-      const requester = d.subject.kind === 'person' ? d.subject.id : undefined;
-      const delegates = view.people.filter((p) => p.id !== requester);
-      // The chosen delegate is kept as a draft, so a redraw before the player clicks Delegate does not reset it.
-      const draftKey = `delegate:${d.id}`;
-      const chosen = delegates.find((p) => p.id === ctx.drafts.get(draftKey)?.to)?.id ?? delegates[0]?.id;
-      const picker = h(
-        'select',
-        { 'data-input': 'delegate-to', 'aria-label': 'Delegate to', value: chosen, onChange: (e: Event) => ctx.drafts.set(draftKey, { to: (e.target as HTMLSelectElement).value }) },
-        delegates.map((p) => h('option', { value: p.id }, p.name)),
-      );
-      const controls: Child =
-        d.type === 'workIntake'
-          ? [
-              h('button', { 'data-action': 'accept', onClick: () => decide(d.id, { kind: 'accept' }) }, `Accept (${d.hours}h)`),
-              h('button', { 'data-action': 'decline', onClick: () => decide(d.id, { kind: 'decline' }) }, 'Decline'),
-            ]
-          : [
-              h('button', { 'data-action': 'handle', onClick: () => decide(d.id, { kind: 'handle' }) }, `Handle it (${d.hours}h)`),
-              delegates.length ? [picker, h('button', { 'data-action': 'delegate', onClick: () => decide(d.id, { kind: 'delegate', to: (picker as HTMLSelectElement).value }) }, 'Delegate')] : null,
-            ];
-      return h(
-        'article',
-        { 'data-demand': d.id, class: 'demand' },
-        h('h3', {}, h('span', { 'data-field': 'type' }, d.type), ': ', h('span', { 'data-field': 'subject' }, nameOf(sim, level, d.subject))),
-        h(
-          'p',
-          {},
-          h('span', { 'data-field': 'hours' }, d.hours),
-          'h, difficulty ',
-          h('span', { 'data-field': 'difficulty' }, bandWord('skill', d.difficulty)),
-          ', decide by week ',
-          h('span', { 'data-field': 'last-week' }, d.lastWeek),
-          '. Decision: ',
-          h('span', { 'data-field': 'decision' }, describeDecision(plan.decisions[d.id], sim)),
-        ),
-        h('div', { class: 'controls' }, controls, h('button', { 'data-action': 'clear', onClick: () => clear(d.id) }, 'Clear')),
-        ctx.errorFor(`demand:${d.id}`),
-      );
-    }),
-  );
-}
-
-/** Targets an action can take right now, as select options. */
-function targetsFor(action: ActionId, level: LineState, view: View): { value: string; label: string }[] {
-  switch (ACTIONS[action].target) {
-    case 'person':
-      return view.people.map((p) => ({ value: p.id, label: p.name }));
-    case 'team':
-      return [{ value: level.teamId, label: 'your team' }];
-    case 'project':
-      return view.projects.map((p) => ({ value: p.id, label: p.name }));
-    case 'vacancy':
-      return view.vacancies.map((v) => ({ value: v.id, label: `vacancy ${v.id} (${v.interviews} interviews)` }));
-    case 'player':
-      return [{ value: 'player', label: 'you' }];
-  }
-}
-
-// @spec UI-LINE-004
-function calendar(ctx: ScreenContext, level: LineState, view: View) {
-  const sim = ctx.run.sim;
-  const week = sim.week;
-  const draft = ctx.drafts.get('add-entry') ?? {};
-  const action = (draft.action as ActionId | undefined) ?? 'line-manager.one-on-one';
-  const targets = targetsFor(action, level, view);
-  const cadences: Cadence[] = ACTIONS[action].oneOff ? ['once'] : ['weekly', 'biweekly', 'once'];
-  const target = targets.some((t) => t.value === draft.target) ? draft.target! : targets[0]?.value ?? '';
-  const cadence = cadences.includes(draft.cadence as Cadence) ? (draft.cadence as Cadence) : cadences[0]!;
-  const start = draft.start === String(week + 1) ? week + 1 : week;
-  const update = (field: string) => (e: Event) => {
-    const value = (e.target as HTMLSelectElement).value;
-    ctx.drafts.set('add-entry', field === 'action' ? { action: value } : { action, target, cadence, start: String(start), [field]: value });
-    ctx.redraw();
-  };
-  const add = () => {
-    const kind = ACTIONS[action].target;
-    const t: Target = kind === 'player' ? { kind: 'player' } : { kind, id: target };
-    const entry: NewEntry = { action, target: t, cadence, ...(cadence === 'biweekly' && { startWeek: start }) };
-    // The draft is cleared only once the add applies, so a refused add leaves the form as the player filled it in.
-    ctx.send({ kind: 'plan', command: { kind: 'calendar', add: [entry] } }, 'add-entry', () => ctx.drafts.delete('add-entry'));
-  };
-  const options = (items: { value: string; label: string }[]) => items.map((i) => h('option', { value: i.value }, i.label));
-  return h(
-    'section',
-    { 'data-panel': 'calendar' },
-    h('h2', {}, 'Your calendar'),
-    h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.calendar),
-    h(
-      'ul',
-      {},
-      level.calendar.map((e) =>
-        h(
-          'li',
-          { 'data-entry': e.id },
-          h('span', { 'data-field': 'action' }, ACTION_LABELS[e.action]),
-          ' with ',
-          h('span', { 'data-field': 'target' }, nameOf(sim, level, e.target as { kind: string; id?: string })),
-          ', ',
-          h('span', { 'data-field': 'cadence' }, CADENCE_LABELS[e.cadence]),
-          ` (${ACTIONS[e.action].hours}h) `,
-          h('button', { 'data-action': 'remove', onClick: () => ctx.send({ kind: 'plan', command: { kind: 'calendar', remove: [e.id] } }, `entry:${e.id}`) }, 'Remove'),
-          ctx.errorFor(`entry:${e.id}`),
-        ),
-      ),
-    ),
-    h(
+/** A control per habit, sending a habit change at once. */
+// @spec UI-LINE-006
+function habitControls(ctx: ScreenContext, withHelp: boolean): Child {
+  const v = viewOf(ctx);
+  return HABIT_IDS.map((id) => {
+    const habit = HABITS[id];
+    const options = Object.entries(habit.options);
+    if (NAMES_ENGINEERS.has(id)) options.push(...v.people.map((p): [string, string] => [p.id, p.name]));
+    const control = `habit:${id}`;
+    return h(
       'div',
-      { 'data-form': 'add-entry', class: 'add-entry' },
-      h('select', { 'data-input': 'action', 'aria-label': 'Action', value: action, onChange: update('action') }, options((Object.keys(ACTIONS) as ActionId[]).map((a) => ({ value: a, label: `${ACTION_LABELS[a]} (${ACTIONS[a].hours}h)` })))),
-      h('select', { 'data-input': 'target', 'aria-label': 'With', value: target, onChange: update('target') }, options(targets)),
-      h('select', { 'data-input': 'cadence', 'aria-label': 'How often', value: cadence, onChange: update('cadence') }, options(cadences.map((c) => ({ value: c, label: CADENCE_LABELS[c] })))),
-      cadence === 'biweekly'
-        ? h('select', { 'data-input': 'start', 'aria-label': 'Starting', value: String(start), onChange: update('start') }, options([{ value: String(week), label: 'this week' }, { value: String(week + 1), label: 'next week' }]))
-        : null,
-      h('button', { 'data-action': 'add', disabled: targets.length === 0, onClick: add }, 'Add'),
-      ctx.errorFor('add-entry'),
-    ),
-  );
+      { class: 'habit' },
+      h('label', {}, h('span', { class: 'habit-name' }, habit.label), ' ',
+        h(
+          'select',
+          {
+            'data-habit': id,
+            value: v.habits[id as keyof Habits],
+            onChange: (e: Event) => ctx.send({ kind: 'plan', command: { kind: 'habit', habit: id, value: (e.target as HTMLSelectElement).value } }, control, { keepFocus: true }),
+          },
+          options.map(([value, label]) => h('option', { value }, label)),
+        ),
+        ctx.errorFor(control)),
+      withHelp ? h('p', { class: 'help' }, habit.what) : null,
+    );
+  });
 }
+
+/** The panels beside the scene: the team, open vacancies, projects and habits. */
+// @spec UI-LINE-001, UI-LINE-002, UI-LINE-005, UI-LINE-006, UI-HELP-002
+function panels(ctx: ScreenContext): Child {
+  const v = viewOf(ctx);
+  const chosen = ctx.drafts.get('habits')?.open;
+  const habitsOpen = chosen === undefined ? ctx.run.sim.week === 0 : chosen === 'true';
+  return [
+    h(
+      'section',
+      { 'data-panel': 'team', class: 'team' },
+      h('h2', {}, 'Your team'),
+      h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.team),
+      v.people.map((p) =>
+        h(
+          'article',
+          { 'data-person': p.id, class: 'person' },
+          h('div', { class: 'who' },
+            h('strong', { 'data-field': 'name' }, p.name),
+            h('span', { class: 'role' }, h('span', { 'data-field': 'role' }, p.role), ' · ', h('span', { 'data-field': 'personality' }, p.personality ?? ''))),
+          h('p', { class: 'mood' },
+            'Seems ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', p.motivation)),
+            ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', p.stress)), '.'),
+          h('p', { class: 'facts' },
+            'Skill ', h('span', { 'data-field': 'skill' }, bandWord('skill', p.skill)),
+            ' · wants ', h('span', { 'data-field': 'want' }, p.want),
+            ' · ', h('span', { 'data-field': 'performance' }, p.performance),
+            ' · ', h('span', { 'data-field': 'tenure' }, p.tenureWeeks), ' weeks here'),
+          p.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, p.memory.map((note) => h('li', {}, note))) : null,
+        ),
+      ),
+    ),
+    v.vacancies.length
+      ? h(
+          'section',
+          { 'data-panel': 'vacancies' },
+          h('h3', {}, 'Open roles'),
+          h('ul', {}, v.vacancies.map((x) => h('li', { 'data-vacancy': x.id }, 'One open role: ', h('span', { 'data-field': 'interviews' }, x.interviews), ' interviews so far'))),
+        )
+      : null,
+    h(
+      'section',
+      { 'data-panel': 'projects', class: 'projects' },
+      h('h2', {}, 'Projects'),
+      h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.projects),
+      v.projects.map((p) =>
+        h(
+          'article',
+          { 'data-project': p.id, class: 'project' },
+          h('strong', { 'data-field': 'name' }, p.name),
+          h('p', {},
+            h('span', { 'data-field': 'progress' }, `${p.progress} / ${p.scope}`), ' done, due week ', h('span', { 'data-field': 'deadline' }, p.deadlineWeek),
+            ' · ', h('span', { 'data-field': 'schedule' }, p.schedule)),
+          h('p', {}, 'Risk ', h('span', { 'data-field': 'risk' }, bandWord('risk', p.risk)), ' · tech debt ', h('span', { 'data-field': 'tech-debt' }, bandWord('risk', p.techDebt))),
+        ),
+      ),
+    ),
+    h(
+      'details',
+      { 'data-panel': 'habits', class: 'habits', open: habitsOpen, onToggle: (e: Event) => ctx.drafts.set('habits', { open: String((e.target as HTMLDetailsElement).open) }) },
+      h('summary', {}, 'Your habits'),
+      h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.habits),
+      habitControls(ctx, false),
+    ),
+  ];
+}
+
+/** A line manager moment for the scene: its words beside the choices that name an engineer. */
+// @spec UI-LINE-007
+function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined {
+  const v = viewOf(ctx);
+  const m = v.moments.find((x) => x.id === momentId);
+  if (!m) return undefined;
+  const people = new Map(v.people.map((p) => [p.id, p]));
+  return {
+    title: m.title,
+    text: m.text,
+    detail: m.difficulty === undefined ? null : h('p', { class: 'difficulty' }, 'Difficulty: ', h('strong', { 'data-field': 'difficulty' }, bandWord('skill', m.difficulty))),
+    choices: m.choices.map((c) => {
+      const id = c.id.startsWith('give:') ? c.id.slice('give:'.length) : c.id.startsWith('ask:') ? c.id.slice('ask:'.length) : undefined;
+      const p = id ? people.get(id) : undefined;
+      return { id: c.id, label: c.label, note: p ? `${bandWord('skill', p.skill)}, ${bandWord('stress', p.stress)}` : undefined };
+    }),
+  };
+}
+
+/** A chip per band that moved between two views, and per person who left or joined. */
+// @spec UI-WEEK-008
+function chips(before: unknown, after: unknown): Chip[] {
+  const a = before as View;
+  const b = after as View;
+  const out: Chip[] = [];
+  const move = (key: string, who: string, was: number, now: number, upIsGood: boolean, up: string, down: string) => {
+    if (was !== now) out.push({ key, text: `${who}: ${now > was ? up : down}`, tone: now > was === upIsGood ? 'good' : 'bad' });
+  };
+  const afterPeople = new Map(b.people.map((p) => [p.id, p]));
+  for (const p of a.people) {
+    const q = afterPeople.get(p.id);
+    if (!q) {
+      out.push({ key: `person:${p.id}:left`, text: `${p.name}: left the team`, tone: 'bad' });
+      continue;
+    }
+    move(`person:${p.id}:motivation`, p.name, p.motivation, q.motivation, true, 'more motivated', 'less motivated');
+    move(`person:${p.id}:stress`, p.name, p.stress, q.stress, false, 'more stressed', 'less stressed');
+  }
+  const was = new Set(a.people.map((p) => p.id));
+  for (const q of b.people) if (!was.has(q.id)) out.push({ key: `person:${q.id}:joined`, text: `${q.name}: joined the team`, tone: 'good' });
+  move('player:energy', 'You', a.player.energy, b.player.energy, true, 'more energy', 'less energy');
+  move('player:reputation', 'Your reputation', a.player.reputation, b.player.reputation, true, 'up', 'down');
+  const afterProjects = new Map(b.projects.map((p) => [p.id, p]));
+  for (const p of a.projects) {
+    const q = afterProjects.get(p.id);
+    if (!q) continue;
+    move(`project:${p.id}:risk`, p.name, p.risk, q.risk, false, 'riskier', 'less risky');
+    move(`project:${p.id}:techDebt`, p.name, p.techDebt, q.techDebt, false, 'more tech debt', 'less tech debt');
+  }
+  return out;
+}
+
+/** The line manager's part of the recap: people, habits, what slipped, goals. */
+// @spec UI-LINE-008
+function recap(run: Run, recapValue: unknown): Child {
+  const r = recapValue as Recap;
+  const subject = ({ kind, id }: { kind: string; id: string }) =>
+    kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
+  const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
+  return [
+    part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, `${p.name}: ${p.changes.join(' and ')}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
+    part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
+    part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
+    part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
+    part('recap-goals', 'Goals', r.goals.map((g) => h('li', {}, g.text))),
+  ];
+}
+
+export const lineManagerRenderer: LevelRenderer = {
+  panels,
+  habits: (ctx) => habitControls(ctx, true),
+  moment,
+  chips,
+  recap,
+  status: (view) => {
+    const v = view as View;
+    return { energy: v.player.energy, reputation: v.player.reputation, goals: v.goals };
+  },
+  measureName: (view, id) => (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
+};

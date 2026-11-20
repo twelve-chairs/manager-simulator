@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { lineManagerLevel } from '../../src/levels/line-manager';
-import type { Dependencies, Run } from '../../src/loop';
+import { newRun, type Dependencies, type Run } from '../../src/loop';
+import { conductReview } from '../../src/review';
 import { contentFingerprint, parseSave, restore, toSave, type Save } from '../../src/save';
-import { CONTENT, DEPS, run, step } from '../ui/fixtures';
+import { CONTENT, answerCurrent, step } from '../loop/fixtures';
+
+const DEPS: Dependencies = { levels: [lineManagerLevel], review: conductReview };
+const run = (seed: number) => newRun(seed, CONTENT, DEPS);
 
 const FP = contentFingerprint(CONTENT);
 
@@ -17,9 +21,10 @@ function fnv1a(text: string): string {
 function played(): Run {
   let r = run(5);
   for (let week = 0; week < 4; week++) {
-    const open = r.presented.find((p) => p.status === 'open');
-    if (open) r = step(r, { kind: 'answer', presentationId: open.presentation.id, choiceId: open.presentation.choices[0]!.id });
-    r = step(r, { kind: 'endWeek' });
+    if (week === 1) r = step(r, { kind: 'plan', command: { kind: 'habit', habit: 'ceremonies', value: 'light' } }, DEPS);
+    r = answerCurrent(r, week, DEPS);
+    r = step(r, { kind: 'wait' }, DEPS);
+    r = step(r, { kind: 'endWeek' }, DEPS);
   }
   return r;
 }
@@ -34,7 +39,7 @@ describe('the save', () => {
   // @spec SAVE-FORMAT-001
   it('holds the format, version, seed, fingerprint and commands', () => {
     const r = played();
-    expect(toSave(r, FP)).toEqual({ format: 'manager-simulator-save', version: 1, seed: 5, content: FP, commands: r.commands });
+    expect(toSave(r, FP)).toEqual({ format: 'manager-simulator-save', version: 2, seed: 5, content: FP, commands: r.commands });
   });
 
   // @spec SAVE-FORMAT-002
@@ -74,7 +79,8 @@ describe('parsing', () => {
     reject(`{"__proto__": {"polluted": true}, ${JSON.stringify(s).slice(1)}`);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     reject({ ...s, format: 'something-else' });
-    reject({ ...s, version: 2 });
+    reject({ ...s, version: 1 });
+    reject({ ...s, version: 3 });
     for (const seed of [-1, 1.5, 4294967296, '5', null]) reject({ ...s, seed });
     reject({ ...s, content: 'x'.repeat(65) });
     reject({ ...s, content: 7 });
@@ -93,12 +99,14 @@ describe('parsing', () => {
       'endWeek',
       { kind: 'cheat' },
       { kind: 'endWeek', extra: true },
-      { kind: 'answer', presentationId: 1, choiceId: 'x' },
-      { kind: 'answer', presentationId: 'p' },
+      { kind: 'answer', momentId: 1, choiceId: 'x' },
+      { kind: 'answer', momentId: 'p' },
+      { kind: 'answer', presentationId: 'p', choiceId: 'c' },
+      { kind: 'wait', extra: 1 },
       { kind: 'plan' },
       JSON.parse('{"kind": "acknowledge", "__proto__": {}}'),
     ]) reject(withCommand(bad));
-    for (const ok of [{ kind: 'endWeek' }, { kind: 'acknowledge' }, { kind: 'answer', presentationId: 'p', choiceId: 'c' }, { kind: 'plan', command: { anything: [1, 2] } }, { kind: 'plan', command: null }]) {
+    for (const ok of [{ kind: 'endWeek' }, { kind: 'acknowledge' }, { kind: 'answer', momentId: 'p', choiceId: 'c' }, { kind: 'wait' }, { kind: 'plan', command: { anything: [1, 2] } }, { kind: 'plan', command: null }]) {
       expect(parseSave(JSON.stringify(withCommand(ok))).ok).toBe(true);
     }
   });
@@ -129,18 +137,16 @@ describe('restoring', () => {
     expect(restore(parsed.save, CONTENT, DEPS, FP).run).toEqual(r);
   });
 
-  // @spec SAVE-RESTORE-004, LINE-CONTRACT-004
+  // @spec SAVE-RESTORE-004, LINE-CONTRACT-005
   it('never throws, whatever the commands were edited to', () => {
     const s = valid();
     const nasty: unknown[] = [
-      { kind: 'calendar', add: 5 },
-      { kind: 'calendar', remove: 'c1' },
-      { kind: 'calendar', add: [null] },
+      { kind: 'habit' },
+      { kind: 'habit', habit: 'growth', value: null },
+      { kind: 'habit', habit: '__proto__', value: 'x' },
+      { kind: 'habit', habit: 'toString', value: 'me' },
+      { kind: 'habit', habit: ['growth'], value: 'nobody' },
       { kind: 'calendar', add: [{ action: 'line-manager.coaching', target: null, cadence: 'once' }] },
-      { kind: 'calendar', remove: [{}] },
-      { kind: 'decide', demandId: { id: 1 }, decision: { kind: 'handle' } },
-      { kind: 'decide', demandId: 'd1', decision: 'handle' },
-      { kind: 'clear' },
       [],
       'text',
       42,
@@ -150,7 +156,7 @@ describe('restoring', () => {
       expect(() => restore(save, CONTENT, DEPS, FP)).not.toThrow();
     }
     // even a level that throws stops the replay rather than the game
-    const throwing: Dependencies = { ...DEPS, levels: [{ ...lineManagerLevel, updatePlan: () => { throw new Error('boom'); } }] };
+    const throwing: Dependencies = { ...DEPS, levels: [{ ...lineManagerLevel, plan: () => { throw new Error('boom'); } }] };
     const save = { ...s, commands: [{ kind: 'plan' as const, command: {} }, ...s.commands] };
     const result = restore(save, CONTENT, throwing, FP);
     expect(result).toMatchObject({ applied: 0, rebuilt: true });

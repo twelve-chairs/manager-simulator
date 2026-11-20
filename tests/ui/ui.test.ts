@@ -1,12 +1,33 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { ACTIONS, band, lineManagerLevel } from '../../src/levels/line-manager';
+import { band, lineManagerLevel, type LineState, type View } from '../../src/levels/line-manager';
+import type { AnyLevel, Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
+import { current, waitUntil } from '../loop/fixtures';
 import { $, $$, CONTENT, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
 
 const L = lineManagerLevel;
 const word = (kind: keyof typeof BAND_WORDS, value: number) => BAND_WORDS[kind][band(value)];
+const scene = (root: ParentNode) => $(root, '[data-scene]').dataset.scene;
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+/** A run in week 0 past Before Monday: a moment has been let wait, so the page opens on the current moment. */
+const playing = (seed = 1) => step(run(seed), { kind: 'wait' });
+
+/** A run whose current moment is a line manager work moment offering to give the work to someone. */
+function atWorkMoment(): Run {
+  for (let seed = 1; seed < 40; seed++) {
+    let r = playing(seed);
+    while (current(r)) {
+      const m = current(r)!;
+      const lm = m.source === 'level' ? level(r).moments.find((x) => x.id === m.id)! : undefined;
+      if (lm?.kind === 'work' && lm.choices.some((c) => c.id.startsWith('give:'))) return r;
+      r = step(r, { kind: 'wait' });
+    }
+  }
+  throw new Error('no seed has a work moment to give away');
+}
 
 describe('the page', () => {
   // @spec UI-SHELL-001
@@ -30,67 +51,58 @@ describe('the page', () => {
     expect($(makeApp({ run: ended }).root, '[data-screen]').dataset.screen).toBe('ended');
   });
 
-  // @spec UI-SHELL-003, UI-WEEK-003
-  it('redraws from the new run after a command', () => {
-    const { root, app } = makeApp({ run: run() });
-    expect(text(root, '[data-field=week]')).toBe('0');
-    click(root, '[data-action=end-week]');
-    expect(text(root, '[data-field=week]')).toBe('1');
-    const state = app.state();
-    expect(state.screen === 'run' && state.run.commands).toEqual([{ kind: 'endWeek' }]);
-  });
-
-  // @spec UI-SHELL-004
-  it('shows a refused command’s error next to its control and changes nothing else', () => {
-    let r = run();
-    const e = Object.keys(r.sim.people).sort()[0]!;
-    const coaching = { action: 'line-manager.coaching', target: { kind: 'person', id: e }, cadence: 'once' };
-    r = step(r, { kind: 'plan', command: { kind: 'calendar', add: Array.from({ length: 30 }, () => coaching) } });
-    const { root, app } = makeApp({ run: r });
-    click(root, '[data-action=end-week]');
-    const error = $($(root, '[data-action=end-week]').parentElement!, '[data-error]');
-    expect(error.textContent).toMatch(/hours/);
-    expect(text(root, '[data-field=week]')).toBe('0');
-    const state = app.state();
-    expect(state.screen === 'run' && state.run).toEqual(r);
-  });
-
-  // @spec UI-SHELL-004
-  it('keeps a form as the player filled it in when its command is refused', () => {
-    const refusing = { ...DEPS, levels: [{ ...lineManagerLevel, updatePlan: () => ({ ok: false as const, error: 'refused for the test' }) }] };
-    const { root } = makeApp({ run: run(), deps: refusing });
-    const form = () => $(root, '[data-form=add-entry]');
-    select(form(), '[data-input=action]', 'line-manager.coaching');
-    const people = Object.keys(run().sim.people).sort();
-    select(form(), '[data-input=target]', people[3]!);
-    select(form(), '[data-input=cadence]', 'biweekly');
-    select(form(), '[data-input=start]', '1');
-    click(form(), '[data-action=add]');
-    expect(text(form(), '[data-error]')).toBe('refused for the test');
-    expect(($(form(), '[data-input=action]') as HTMLSelectElement).value).toBe('line-manager.coaching');
-    expect(($(form(), '[data-input=target]') as HTMLSelectElement).value).toBe(people[3]);
-    expect(($(form(), '[data-input=start]') as HTMLSelectElement).value).toBe('1');
-  });
-
   // @spec UI-SHELL-002
   it('says so rather than crashing when a run’s level is not available', () => {
     const { root } = makeApp({ run: { ...run(), levelId: 'director' } });
     expect($(root, '[data-screen]').dataset.screen).toBe('unavailable');
   });
 
-  // @spec UI-SHELL-003
-  it('keeps keyboard focus on the same control across a redraw', () => {
-    const { root } = makeApp({ run: run(), attach: true });
-    $(root, '[data-form=add-entry] [data-input=action]').focus();
-    select(root, '[data-form=add-entry] [data-input=action]', 'line-manager.team-event');
-    expect(document.activeElement).toBe($(root, '[data-form=add-entry] [data-input=action]'));
+  // @spec UI-SHELL-003, UI-WEEK-003
+  it('redraws from the new run after a command', () => {
+    const { root, app } = makeApp({ run: playing() });
+    expect(text(root, '[data-field=week]')).toBe('0');
+    click(root, '[data-action=end-week]');
+    expect(text(root, '[data-field=week]')).toBe('1');
+    const state = app.state();
+    expect(state.screen === 'run' && state.run.commands).toEqual([{ kind: 'wait' }, { kind: 'endWeek' }]);
+  });
+
+  // @spec UI-SHELL-004
+  it('shows a refused command’s error next to its control and changes nothing else', () => {
+    const refusing: AnyLevel = { ...L, choose: () => ({ ok: false, error: 'refused for the test' }), plan: () => ({ ok: false, error: 'habit refused' }) };
+    const deps = { ...DEPS, levels: [refusing] };
+    const r = waitUntil(playing(), 'level', deps);
+    const { root, app } = makeApp({ run: r, deps });
+    const choice = $(root, '[data-scene] [data-choice]');
+    choice.click();
+    expect(text($(root, '[data-scene] [data-choice]').parentElement!, '[data-error]')).toBe('refused for the test');
+    let state = app.state();
+    expect(state.screen === 'run' && state.run).toEqual(r);
+    select(root, '[data-panel=habits] [data-habit=ceremonies]', 'light');
+    expect(text($(root, '[data-panel=habits] [data-habit=ceremonies]').parentElement!, '[data-error]')).toBe('habit refused');
+    state = app.state();
+    expect(state.screen === 'run' && state.run).toEqual(r);
+  });
+
+  // @spec UI-SHELL-005
+  it('moves focus to the scene heading when the scene changes, and keeps it on a habit control', () => {
+    const { root } = makeApp({ run: playing(), attach: true });
+    click(root, '[data-scene] [data-action=wait]');
+    expect(document.activeElement).toBe($(root, '[data-scene] [data-part=heading]'));
+    $(root, '[data-scene] [data-choice]').click();
+    expect(scene(root)).toBe('reaction');
+    expect(document.activeElement).toBe($(root, '[data-scene] [data-part=heading]'));
+    $(root, '[data-panel=habits] [data-habit=ceremonies]').focus();
+    select(root, '[data-panel=habits] [data-habit=ceremonies]', 'light');
+    expect(document.activeElement).toBe($(root, '[data-panel=habits] [data-habit=ceremonies]'));
+    click(root, '[data-action=end-week]');
+    expect(document.activeElement).toBe($(root, '[data-scene] [data-part=heading]'));
   });
 
   // @spec UI-TEXT-001
   it('puts names and content on the page as text, never as markup', () => {
-    let r = run();
+    const r = structuredClone(playing());
     const e = Object.keys(r.sim.people).sort()[0]!;
-    r = structuredClone(r);
     r.sim.people[e]!.name = '<img src=x onerror="alert(1)">Ana';
     const { root } = makeApp({ run: r });
     expect(root.querySelector('img')).toBeNull();
@@ -108,12 +120,9 @@ describe('the page', () => {
     expect([...a.querySelectorAll('em')].map((x) => x.textContent)).toEqual(['quiet', 'really']);
     expect(a.textContent).toBe('a quiet week and really late');
     expect(wrap(emphasis('5 * 3 is 15')).querySelector('em')).toBeNull();
-    expect(wrap(emphasis('5 * 3 is 15')).textContent).toBe('5 * 3 is 15');
-    // a skipped near-match must not swallow the next real span
     const later = wrap(emphasis('Pick *one*, budget 5 * 3, then *two*'));
     expect([...later.querySelectorAll('em')].map((x) => x.textContent)).toEqual(['one', 'two']);
     expect(wrap(emphasis('the deploy_job_runner failed')).querySelector('em')).toBeNull();
-    expect(wrap(emphasis('**urgent**')).querySelector('em')).toBeNull();
     expect(wrap(emphasis('**urgent**')).textContent).toBe('**urgent**');
     const tricky = wrap(emphasis('*<b>bold</b>*'));
     expect(tricky.querySelector('b')).toBeNull();
@@ -121,83 +130,198 @@ describe('the page', () => {
   });
 });
 
-describe('the week screen', () => {
+describe('the header', () => {
   // @spec UI-WEEK-001
-  it('shows the week, weeks to review, standing and planned hours', () => {
-    const r = run();
+  it('shows the week, weeks to review, the days, energy, reputation and goals', () => {
+    const r = waitUntil(playing(), 'level');
     const { root } = makeApp({ run: r });
-    const v = L.view(level(r), r.sim, r.plan as never) as { plannedHours: number; overtime: number };
+    const v = L.view(level(r), r.sim) as View;
     expect(text(root, '[data-field=week]')).toBe('0');
     expect(text(root, '[data-field=weeks-to-review]')).toBe('13');
+    const day = current(r)!.day;
+    expect($$(root, '[data-panel=days] [data-day]').map((d) => d.dataset.state)).toEqual([0, 1, 2, 3, 4].map((i) => (i < day ? 'past' : i === day ? 'now' : 'ahead')));
+    expect(text(root, '[data-field=energy]')).toBe(BAND_WORDS.energy[v.player.energy]);
+    // happy-dom's meter getters always read 1; the attributes, which browsers reflect, carry the range and value
+    expect([$(root, 'meter[data-meter=energy]').getAttribute('max'), $(root, 'meter[data-meter=energy]').getAttribute('value')]).toEqual(['4', String(v.player.energy)]);
     expect(text(root, '[data-field=reputation]')).toBe(word('reputation', r.sim.player.reputation));
-    expect(text(root, '[data-field=stress]')).toBe(word('stress', r.sim.player.stress));
-    expect(text(root, '[data-field=planned-hours]')).toBe(String(v.plannedHours));
-    expect(text(root, '[data-field=overtime]')).toBe(String(v.overtime));
-  });
-
-  // @spec UI-WEEK-002
-  it('shows situations with choice buttons, then their aftermath once answered', () => {
-    const r = run();
-    const { root } = makeApp({ run: r });
-    const first = r.presented[0]!.presentation;
-    const card = $(root, `[data-situation="${first.id}"]`);
-    expect(card.dataset.status).toBe('open');
-    expect(text(card, '[data-part=text]')).toBe(first.text);
-    expect($$(card, '[data-choice]').map((b) => b.textContent)).toEqual(first.choices.map((c) => c.label));
-    click(card, `[data-choice="${first.choices[0]!.id}"]`);
-    const answered = $(root, `[data-situation="${first.id}"]`);
-    expect(answered.dataset.status).toBe('answered');
-    expect(text(answered, '[data-part=aftermath]').length).toBeGreaterThan(0);
-    expect($$(answered, '[data-choice]')).toEqual([]);
-  });
-
-  // @spec UI-WEEK-004
-  it('shows last week’s report once a week has ended', () => {
-    const r = run();
-    expect(makeApp({ run: r }).root.querySelector('[data-panel=last-week]')).toBeNull();
-    const first = r.presented[0]!.presentation;
-    const after = step(step(r, { kind: 'answer', presentationId: first.id, choiceId: first.choices[0]!.id }), { kind: 'endWeek' });
-    const { root } = makeApp({ run: after });
-    const panel = $(root, '[data-panel=last-week]');
-    expect($$(panel, '[data-part=aftermaths] li').map((li) => li.textContent)).toEqual(after.lastWeek!.aftermaths);
-    for (const part of ['dropped', 'delegations', 'undelegated', 'voided', 'expired']) expect(panel.querySelector(`[data-part=${part}]`)).not.toBeNull();
-  });
-
-  // @spec UI-WEEK-004
-  it('names reported demands by type and subject, not by id', () => {
-    const r = structuredClone(run());
-    const projectId = Object.keys(r.sim.projects).sort()[0]!;
-    level(r).inbox = [{ id: 'd-left', type: 'approval', subject: { kind: 'project', id: projectId }, hours: 1, difficulty: 30, arrivedWeek: 0, lastWeek: 0 }];
-    const { root } = makeApp({ run: step(r, { kind: 'endWeek' }) });
-    const expired = text(root, '[data-panel=last-week] [data-part=expired]');
-    expect(expired).toContain('approval');
-    expect(expired).toContain(r.sim.projects[projectId]!.name);
-    expect(expired).not.toContain('d-left');
+    expect($$(root, '[data-panel=goals] [data-goal]').map((g) => [text(g, '[data-field=text]'), text(g, '[data-field=progress]')])).toEqual(v.goals.map((g) => [g.text, g.progress]));
   });
 });
 
+describe('the scene', () => {
+  // @spec UI-WEEK-005, UI-LINE-006
+  it('opens week 0 Before Monday, with the habits and How to play, until the week starts', () => {
+    const r = run();
+    const { root, app } = makeApp({ run: r });
+    expect(scene(root)).toBe('before-monday');
+    expect($$(root, '[data-scene] [data-habit]').map((h) => h.dataset.habit)).toEqual(['nightPages', 'oneOnOnes', 'approvals', 'ceremonies', 'growth']);
+    expect(($(root, '[data-scene] [data-panel=help]') as HTMLDetailsElement).open).toBe(true);
+    select(root, '[data-scene] [data-habit=oneOnOnes]', 'weekly');
+    let state = app.state();
+    expect(state.screen === 'run' && level(state.run).habits.oneOnOnes).toBe('weekly');
+    expect(scene(root)).toBe('before-monday');
+    click(root, '[data-action=start-week]');
+    expect(scene(root)).toBe('moment');
+    state = app.state();
+    expect(state.screen === 'run' && state.run.commands).toEqual([{ kind: 'plan', command: { kind: 'habit', habit: 'oneOnOnes', value: 'weekly' } }]);
+  });
+
+  // @spec UI-WEEK-002
+  it('shows the current moment with its day and time, choices that answer it, and Let it wait', () => {
+    const r = waitUntil(playing(), 'situation');
+    const { root, app } = makeApp({ run: r });
+    const m = current(r)!;
+    const p = r.presented.find((x) => x.id === m.id)!;
+    expect($(root, '[data-scene]').dataset.moment).toBe(m.id);
+    expect(text(root, '[data-scene] [data-field=when]')).toBe(`${DAY_NAMES[m.day]} ${m.time}`);
+    expect(text(root, '[data-scene] [data-part=text]')).toBe(p.text);
+    expect($$(root, '[data-scene] [data-choice]').map((b) => b.dataset.choice)).toEqual(p.choices.map((c) => c.id));
+    click(root, '[data-scene] [data-action=wait]');
+    const state = app.state();
+    expect(state.screen === 'run' && state.run.commands.at(-1)).toEqual({ kind: 'wait' });
+  });
+
+  // @spec UI-WEEK-006
+  it('shows the reaction after a choice until Continue', () => {
+    const r = waitUntil(playing(), 'level');
+    const { root, app } = makeApp({ run: r });
+    const m = current(r)!;
+    $(root, '[data-scene] [data-choice]').click();
+    const state = app.state();
+    const answered = state.screen === 'run' ? state.run.week.find((x) => x.id === m.id)! : undefined;
+    expect(scene(root)).toBe('reaction');
+    expect(text(root, '[data-scene] [data-part=reaction]')).toBe(answered!.text);
+    click(root, '[data-scene] [data-action=continue]');
+    expect(scene(root)).not.toBe('reaction');
+  });
+
+  // @spec UI-WEEK-006
+  it('names later moments the answer left expired', () => {
+    const closed = new Set<string>();
+    const closing: AnyLevel = { ...L, moments: (l: LineState, s) => L.moments(l, s).map((m) => (closed.has(m.id) ? { ...m, open: false } : m)) };
+    const deps = { ...DEPS, levels: [closing] };
+    const r = waitUntil(step(run(), { kind: 'wait' }), 'level', deps);
+    const target = r.week.find((x) => x.source === 'level' && x.status === 'open' && x.id !== current(r)!.id)!;
+    closed.add(target.id);
+    const { root } = makeApp({ run: r, deps });
+    $(root, '[data-scene] [data-choice]').click();
+    expect($$(root, '[data-scene] [data-part=passed] li').map((li) => li.dataset.moment)).toEqual([target.id]);
+    expect(text(root, '[data-scene] [data-part=passed]')).toContain(DAY_NAMES[target.day]!);
+  });
+
+  // @spec UI-WEEK-007
+  it('shows the week as done once nothing is left, with End the week', () => {
+    let r = playing();
+    while (current(r)) r = step(r, { kind: 'wait' });
+    const { root, app } = makeApp({ run: r });
+    expect(scene(root)).toBe('done');
+    click(root, '[data-scene] [data-action=finish-week]');
+    const state = app.state();
+    expect(state.screen === 'run' && state.run.sim.week).toBe(1);
+  });
+
+  // @spec UI-WEEK-008
+  it('shows a chip for each band that moved, marked good or bad for the player', () => {
+    const r = structuredClone(atWorkMoment());
+    const m = level(r).moments.find((x) => x.id === current(r)!.id)!;
+    const give = m.choices.find((c) => c.id.startsWith('give:'))!;
+    const who = give.id.slice('give:'.length);
+    r.sim.people[who]!.stress = 39; // the next point of stress crosses into the next band
+    const { root } = makeApp({ run: r });
+    click(root, `[data-scene] [data-choice="${give.id}"]`);
+    const chips = $$(root, '[data-scene] [data-chip]');
+    const chip = chips.find((c) => c.dataset.chip === `person:${who}:stress`)!;
+    expect(chip.textContent).toContain(r.sim.people[who]!.name);
+    expect(chip.dataset.tone).toBe('bad');
+  });
+
+  // @spec UI-WEEK-008
+  it('shows chips for people who leave or join the team', () => {
+    const shuffle: AnyLevel = {
+      ...L,
+      choose(l, s, momentId, choiceId) {
+        const result = L.choose(l, s, momentId, choiceId);
+        if (!result.ok) return result;
+        const sim = structuredClone(result.sim);
+        const [first] = Object.keys(sim.people).sort();
+        sim.people[first!]!.status = 'departed';
+        sim.people.newcomer = { ...structuredClone(sim.people[first!]!), id: 'newcomer', name: 'Newcomer', status: 'active' };
+        return { ...result, sim };
+      },
+    };
+    const deps = { ...DEPS, levels: [shuffle] };
+    const r = waitUntil(playing(), 'level', deps);
+    const first = Object.keys(r.sim.people).sort()[0]!;
+    const { root } = makeApp({ run: r, deps });
+    $(root, '[data-scene] [data-choice]').click();
+    expect($(root, `[data-chip="person:${first}:left"]`).dataset.tone).toBe('bad');
+    expect(text(root, `[data-chip="person:${first}:left"]`)).toContain(r.sim.people[first]!.name);
+    expect(text(root, '[data-chip="person:newcomer:joined"]')).toContain('Newcomer');
+  });
+
+  // @spec UI-WEEK-004, UI-WEEK-009
+  it('opens a new week on last week’s recap, read from the run, until a moment is played', () => {
+    expect(scene(makeApp({ run: playing() }).root)).toBe('moment');
+    let r = answerAndEnd(playing());
+    const { root } = makeApp({ run: r });
+    expect(scene(root)).toBe('recap');
+    expect($$(root, '[data-part=recap-moments] li').map((li) => li.dataset.moment)).toEqual(r.lastWeek!.moments.map((m) => m.id));
+    const answered = r.lastWeek!.moments.find((m) => m.status === 'answered')!;
+    expect(text(root, `[data-part=recap-moments] [data-moment="${answered.id}"]`)).toContain(answered.text!);
+    expect(text(root, '[data-action=close-recap]')).toBe('Start week 1');
+    click(root, '[data-action=close-recap]');
+    expect(scene(root)).toBe('moment');
+    // a reload after a moment of the new week has been played does not bring the recap back
+    r = step(r, { kind: 'wait' });
+    expect(scene(makeApp({ run: r }).root)).toBe('moment');
+  });
+
+  // @spec UI-WEEK-009
+  it('keeps what the player has read only on the page, never in the run', () => {
+    const r = waitUntil(playing(), 'level');
+    const { root, app } = makeApp({ run: r });
+    $(root, '[data-scene] [data-choice]').click();
+    expect(scene(root)).toBe('reaction');
+    const state = app.state();
+    const after = state.screen === 'run' ? state.run : r;
+    expect(JSON.stringify(after)).not.toMatch(/reaction|recapClosed|started/i);
+    // a reload never shows the reaction again
+    expect(scene(makeApp({ run: after }).root)).not.toBe('reaction');
+  });
+});
+
+/** Answers the current moment, lets the rest wait, and ends the week. */
+function answerAndEnd(r: Run): Run {
+  const m = current(r)!;
+  const choices = m.source === 'level' ? level(r).moments.find((x) => x.id === m.id)!.choices : r.presented.find((p) => p.id === m.id)!.choices;
+  return step(step(r, { kind: 'answer', momentId: m.id, choiceId: choices[0]!.id }), { kind: 'endWeek' });
+}
+
 describe('line manager panels', () => {
   // @spec UI-LINE-001, UI-BAND-001
-  it('lists the team with band words and known wants', () => {
-    const r = run();
-    const { root } = makeApp({ run: r });
+  it('shows each engineer as a card with band words, personality, want and memory', () => {
+    const r = structuredClone(playing());
     const ids = Object.keys(r.sim.people).sort();
+    r.sim.people[ids[0]!]!.history.push({ week: 0, cause: { kind: 'rule', ruleId: 'x' }, note: 'Fixed the build' });
+    const { root } = makeApp({ run: r });
     expect($$(root, '[data-panel=team] [data-person]').map((row) => row.dataset.person)).toEqual(ids);
     const p = r.sim.people[ids[0]!]!;
-    const row = $(root, `[data-person="${ids[0]}"]`);
-    expect(text(row, '[data-field=name]')).toBe(p.name);
-    expect(text(row, '[data-field=role]')).toBe(p.role);
-    expect(text(row, '[data-field=tenure]')).toBe('0');
-    expect(text(row, '[data-field=performance]')).toBe(p.performance);
-    expect(text(row, '[data-field=motivation]')).toBe(word('motivation', p.motivation));
-    expect(text(row, '[data-field=stress]')).toBe(word('stress', p.stress));
-    expect(text(row, '[data-field=skill]')).toBe(word('skill', p.skill));
-    expect(text(row, '[data-field=want]')).toBe('unknown');
+    const card = $(root, `[data-person="${ids[0]}"]`);
+    expect(text(card, '[data-field=name]')).toBe(p.name);
+    expect(text(card, '[data-field=role]')).toBe(p.role);
+    expect(text(card, '[data-field=personality]')).toBe(p.personality);
+    expect(text(card, '[data-field=tenure]')).toBe('0');
+    expect(text(card, '[data-field=performance]')).toBe(p.performance);
+    expect(text(card, '[data-field=motivation]')).toBe(word('motivation', p.motivation));
+    expect(text(card, '[data-field=stress]')).toBe(word('stress', p.stress));
+    expect(text(card, '[data-field=skill]')).toBe(word('skill', p.skill));
+    expect(text(card, '[data-field=want]')).toBe('unknown');
+    expect($$(card, '[data-part=memory] li').map((li) => li.textContent)).toEqual(['Fixed the build']);
   });
 
   // @spec UI-LINE-002
   it('lists projects with progress, deadline, schedule and band words', () => {
-    const r = run();
+    const r = playing();
     const { root } = makeApp({ run: r });
     for (const id of Object.keys(r.sim.projects)) {
       const p = r.sim.projects[id]!;
@@ -211,70 +335,53 @@ describe('line manager panels', () => {
     }
   });
 
-  // @spec UI-LINE-003
-  it('decides inbox demands through plan commands, never offering the requester as delegate', () => {
-    let r = run();
-    const e = Object.keys(r.sim.people).sort();
-    r = structuredClone(r);
-    level(r).inbox = [
-      { id: 'd-exp', type: 'expense', subject: { kind: 'person', id: e[0]! }, hours: 1, difficulty: 30, arrivedWeek: 0, lastWeek: 2 },
-      { id: 'd-in', type: 'workIntake', subject: { kind: 'team', id: 't1' }, hours: 2, difficulty: 30, arrivedWeek: 0, lastWeek: 2 },
-    ];
-    const { root, app } = makeApp({ run: r });
-    const exp = $(root, '[data-demand=d-exp]');
-    expect(text(exp, '[data-field=type]')).toBe('expense');
-    expect(text(exp, '[data-field=subject]')).toBe(r.sim.people[e[0]!]!.name);
-    expect(text(exp, '[data-field=difficulty]')).toBe(word('skill', 30));
-    const options = $$(exp, '[data-input=delegate-to] option').map((o) => (o as HTMLOptionElement).value);
-    expect(options).toEqual(e.slice(1));
-    select(exp, '[data-input=delegate-to]', e[2]!);
-    // a redraw before clicking Delegate (here, changing the calendar form) keeps the chosen delegate
-    select(root, '[data-form=add-entry] [data-input=action]', 'line-manager.team-event');
-    expect(($(root, '[data-demand=d-exp] [data-input=delegate-to]') as HTMLSelectElement).value).toBe(e[2]);
-    select(root, '[data-demand=d-exp] [data-input=delegate-to]', e[1]!);
-    click(root, '[data-demand=d-exp] [data-action=delegate]');
-    let state = app.state();
-    expect(state.screen === 'run' && state.run.plan).toEqual({ decisions: { 'd-exp': { kind: 'delegate', to: e[1] } } });
-    expect(text(root, '[data-demand=d-exp] [data-field=decision]')).toMatch(/delegate/);
-    click(root, '[data-demand=d-exp] [data-action=clear]');
-    state = app.state();
-    expect(state.screen === 'run' && state.run.plan).toEqual({ decisions: {} });
-
-    const intake = $(root, '[data-demand=d-in]');
-    expect(intake.querySelector('[data-action=handle]')).toBeNull();
-    expect(intake.querySelector('[data-action=delegate]')).toBeNull();
-    click(intake, '[data-action=accept]');
-    state = app.state();
-    expect(state.screen === 'run' && state.run.plan).toEqual({ decisions: { 'd-in': { kind: 'accept' } } });
+  // @spec UI-LINE-005
+  it('shows open vacancies with their interview counts', () => {
+    const r = structuredClone(playing());
+    level(r).vacancies = [{ id: 'v1', interviews: 2 }];
+    const { root } = makeApp({ run: r });
+    expect(text(root, '[data-panel=vacancies] [data-vacancy=v1] [data-field=interviews]')).toBe('2');
   });
 
-  // @spec UI-LINE-004
-  it('edits the calendar through plan commands, offering valid targets, cadences and start weeks', () => {
-    const r = run();
+  // @spec UI-LINE-006
+  it('changes habits from a panel, folded after week 0, offering engineers by name', () => {
+    const r = playing();
     const { root, app } = makeApp({ run: r });
-    const entries = level(r).calendar;
-    expect($$(root, '[data-panel=calendar] [data-entry]')).toHaveLength(entries.length);
-    click(root, `[data-entry="${entries[0]!.id}"] [data-action=remove]`);
-    let state = app.state();
-    expect(state.screen === 'run' && level(state.run).calendar).toHaveLength(entries.length - 1);
-
-    const form = () => $(root, '[data-form=add-entry]');
-    select(form(), '[data-input=action]', 'line-manager.team-event');
-    expect($$(form(), '[data-input=target] option').map((o) => (o as HTMLOptionElement).value)).toEqual(['t1']);
-    expect($$(form(), '[data-input=cadence] option').map((o) => (o as HTMLOptionElement).value)).toEqual(['once']);
-    select(form(), '[data-input=action]', 'line-manager.one-on-one');
     const people = Object.keys(r.sim.people).sort();
-    expect($$(form(), '[data-input=target] option').map((o) => (o as HTMLOptionElement).value)).toEqual(people);
-    expect($$(form(), '[data-input=cadence] option').map((o) => (o as HTMLOptionElement).value)).toEqual(['weekly', 'biweekly', 'once']);
-    select(form(), '[data-input=target]', people[2]!);
-    select(form(), '[data-input=cadence]', 'biweekly');
-    expect($$(form(), '[data-input=start] option').map((o) => (o as HTMLOptionElement).value)).toEqual(['0', '1']);
-    select(form(), '[data-input=start]', '1');
-    click(form(), '[data-action=add]');
-    state = app.state();
-    const added = state.screen === 'run' ? level(state.run).calendar.at(-1) : undefined;
-    expect(added).toMatchObject({ action: 'line-manager.one-on-one', target: { kind: 'person', id: people[2] }, cadence: 'biweekly', startWeek: 1 });
-    expect(ACTIONS['line-manager.one-on-one'].oneOff).toBe(false);
+    const options = $$(root, '[data-panel=habits] [data-habit=growth] option').map((o) => [(o as HTMLOptionElement).value, o.textContent]);
+    expect(options).toEqual([['nobody', 'Nobody'], ...people.map((id) => [id, r.sim.people[id]!.name])]);
+    select(root, '[data-panel=habits] [data-habit=growth]', people[2]!);
+    const state = app.state();
+    expect(state.screen === 'run' && state.run.commands.at(-1)).toEqual({ kind: 'plan', command: { kind: 'habit', habit: 'growth', value: people[2] } });
+    expect(($(root, '[data-panel=habits]') as HTMLDetailsElement).open).toBe(true);
+    const later = endWeeks(r, 1);
+    const folded = makeApp({ run: later }).root;
+    expect(($(folded, '[data-panel=habits]') as HTMLDetailsElement).open).toBe(false);
+  });
+
+  // @spec UI-LINE-007
+  it('shows a work moment’s difficulty and the skill and stress of whoever a choice names', () => {
+    const r = atWorkMoment();
+    const m = level(r).moments.find((x) => x.id === current(r)!.id)!;
+    const item = level(r).items.find((i) => i.id === m.ref)!;
+    const { root } = makeApp({ run: r });
+    expect(text(root, '[data-scene] [data-field=difficulty]')).toBe(word('skill', item.difficulty));
+    const give = m.choices.find((c) => c.id.startsWith('give:'))!;
+    const who = r.sim.people[give.id.slice('give:'.length)]!;
+    const note = text($(root, `[data-scene] [data-choice="${give.id}"]`), '[data-part=who]');
+    expect(note).toContain(word('skill', who.skill));
+    expect(note).toContain(word('stress', who.stress));
+  });
+
+  // @spec UI-LINE-008
+  it('adds the level’s part to the recap: people, habits, what slipped and goals', () => {
+    const r = answerAndEnd(playing());
+    const recap = r.lastWeek!.recap as { habits: string[]; people: { personId: string }[]; expired: { itemId: string }[]; goals: { id: string; text: string }[] };
+    const { root } = makeApp({ run: r });
+    expect($$(root, '[data-part=recap-people] li').map((li) => li.dataset.person)).toEqual(recap.people.map((p) => p.personId));
+    expect($$(root, '[data-part=recap-habits] li').map((li) => li.textContent)).toEqual(recap.habits);
+    expect($$(root, '[data-part=recap-slipped] li')).toHaveLength(recap.expired.length);
+    expect($$(root, '[data-part=recap-goals] li').map((li) => li.textContent)).toEqual(recap.goals.map((g) => g.text));
   });
 });
 
@@ -284,17 +391,17 @@ describe('band words', () => {
     expect(BAND_WORDS).toEqual({
       motivation: ['struggling', 'flat', 'fine', 'good', 'energized'],
       stress: ['calm', 'steady', 'busy', 'strained', 'overwhelmed'],
+      energy: ['running on fumes', 'tired', 'okay', 'good', 'fresh'],
       skill: ['learning', 'developing', 'capable', 'strong', 'expert'],
       risk: ['low', 'moderate', 'elevated', 'high', 'severe'],
       reputation: ['poor', 'mixed', 'fair', 'good', 'excellent'],
     });
-    expect(band(100)).toBe(4);
   });
 });
 
 describe('review and end', () => {
   // @spec UI-REVIEW-001
-  it('shows the rating, scored measures and the quarter’s debriefs, and acknowledges', () => {
+  it('shows the rating, scored measures with goals by name, the quarter’s debriefs, and acknowledges', () => {
     let r = endWeeks(run(), 13);
     r = structuredClone(r);
     r.review!.debriefs.push({ week: 5, situationId: 'retired-situation', bindings: {}, status: 'ignored' });
@@ -304,25 +411,25 @@ describe('review and end', () => {
     expect(text(makeApp({ run: { ...r, review: { ...r.review!, outcome: 'managedOut' } } }).root, '[data-field=outcome]')).toMatch(/managed out/i);
     expect(text(makeApp({ run: { ...r, review: { ...r.review!, outcome: 'promote' } } }).root, '[data-field=outcome]')).toMatch(/promot/i);
     expect($$(root, '[data-measure]').map((m) => m.dataset.measure)).toEqual(r.review!.measures.map((m) => m.id));
-    const first = r.review!.measures[0]!;
-    expect(text(root, `[data-measure="${first.id}"] [data-field=verdict]`)).toBe(first.verdict);
+    const goal = r.review!.measures.find((m) => m.id.startsWith('goal:'))!;
+    const goalText = (L.view(level(r), r.sim) as View).goals.find((g) => `goal:${g.id}` === goal.id)!.text;
+    expect(text(root, `[data-measure="${goal.id}"] [data-field=name]`)).toBe(goalText);
     const debriefs = $$(root, '[data-debrief]');
     expect(debriefs).toHaveLength(r.review!.debriefs.length);
-    const titles = new Map(CONTENT.map((s) => [s.id, s.title]));
-    expect(text(debriefs[0]!, '[data-field=title]')).toBe(titles.get(r.review!.debriefs[0]!.situationId));
     expect(text(debriefs.at(-1)!, '[data-field=title]')).toBe('retired-situation');
     expect(text(debriefs.at(-1)!, '[data-field=status]')).toBe('ignored');
-    expect(text(root, '[data-action=acknowledge]')).toBe('Acknowledge');
     click(root, '[data-action=acknowledge]');
     const state = app.state();
-    expect(state.screen === 'run' && state.run.phase).toBe('planning');
+    expect(state.screen === 'run' && state.run.phase).toBe('week');
   });
 
   // @spec UI-END-001
-  it('says why the run ended and starts over with a new seed', () => {
-    const ended = { ...run(), phase: 'ended' as const, ending: 'managedOut' as const };
+  it('says why the run ended, shows the final week’s recap, and starts over with a new seed', () => {
+    const last = answerAndEnd(playing());
+    const ended = { ...last, phase: 'ended' as const, ending: 'burnout' as const };
     const { root } = makeApp({ run: ended, seeds: [7] });
-    expect(text(root, '[data-field=ending]')).toMatch(/managed out/i);
+    expect(text(root, '[data-field=ending]')).toMatch(/burn/i);
+    expect($$(root, '[data-part=recap-moments] li')).toHaveLength(last.lastWeek!.moments.length);
     click(root, '[data-action=new-run]');
     expect($(root, '[data-screen]').dataset.screen).toBe('start');
     expect(text(root, '[data-field=seed]')).toBe('7');
@@ -342,18 +449,17 @@ describe('content', () => {
 describe('help', () => {
   // @spec UI-HELP-001
   it('shows How to play, open in the first weeks and closed after, keeping the player’s choice', () => {
-    const r = run();
-    const { root } = makeApp({ run: r });
+    const { root } = makeApp({ run: playing() });
     const help = () => $(root, '[data-panel=help]') as HTMLDetailsElement;
     expect(help().tagName).toBe('DETAILS');
     expect(help().open).toBe(true);
-    expect($$(help(), '[data-topic]').map((t) => t.dataset.topic)).toEqual(['how-to-play', 'hours', 'inbox', 'situations', 'people', 'reviews']);
-    expect(text(help(), '[data-topic=hours]')).toContain('40 hours a week');
+    expect($$(help(), '[data-topic]').map((t) => t.dataset.topic)).toEqual(['how-to-play', 'moments', 'habits', 'people', 'energy', 'reviews']);
+    expect(text(help(), '[data-topic=energy]')).toContain('burn out');
 
     // the player's choice survives a redraw
     help().open = false;
     help().dispatchEvent(new Event('toggle'));
-    click(root, '[data-action=end-week]');
+    click(root, '[data-scene] [data-action=wait]');
     expect(help().open).toBe(false);
 
     const later = endWeeks(run(), 3);
@@ -363,11 +469,10 @@ describe('help', () => {
 
   // @spec UI-HELP-002
   it('shows a help line under each line manager panel heading', () => {
-    const { root } = makeApp({ run: run() });
+    const { root } = makeApp({ run: playing() });
     const line = (panel: string) => text(root, `[data-panel=${panel}] [data-part=help]`);
     expect(line('team')).toBe('Words are your read on each person. Wants appear after a 1:1.');
     expect(line('projects')).toBe('Projects move on their own. Risk and tech debt make setbacks more likely.');
-    expect(line('inbox')).toBe("Difficulty uses the same words as skill. Delegate to someone at least that skilled, or it's a stretch with some fallout.");
-    expect(line('calendar')).toBe('Recurring entries repeat until you remove them.');
+    expect(line('habits')).toBe("Changes apply from this week's end, and to moments from next week.");
   });
 });

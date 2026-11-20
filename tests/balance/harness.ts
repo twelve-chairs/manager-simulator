@@ -1,8 +1,8 @@
 /// <reference types="node" />
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { lineManagerLevel, type LinePlan, type View } from '../../src/levels/line-manager';
-import { apply, newRun, type Command, type Dependencies, type PresentedRecord, type Run } from '../../src/loop';
+import { lineManagerLevel, type LevelMoment, type View } from '../../src/levels/line-manager';
+import { apply, newRun, type Command, type Dependencies, type Run } from '../../src/loop';
 import { conductReview } from '../../src/review';
 import { RATINGS, type Rating } from '../../src/sim';
 import type { Situation } from '../../src/situations';
@@ -14,7 +14,10 @@ export const BALANCE_TUNING = {
   reviewSlots: 6,
   scoreMargin: 0.3,
   minSoundPromotionShare: 0.3,
-  maxNaivePromotionShare: 0.1,
+  // Always delegating is half of good practice in this game, so Delegator earns some promotions: about 10-15% of runs,
+  // against sound practice's 38-40%, while scoring 0.7 below it. A limit near that share would fail on how content
+  // reshuffles the situation draws rather than on how the game plays.
+  maxNaivePromotionShare: 0.2,
   maxSoundBurnoutShare: 0.1,
 } as const;
 
@@ -33,15 +36,35 @@ export function realContent(): Situation[] {
 export interface Seen {
   week: number;
   view: View;
-  presented: PresentedRecord[];
   reviews: { week: number; rating: Rating; outcome: string }[];
-  plan: LinePlan;
+}
+
+/** The current moment, as the player sees it in the scene. */
+export interface Moment {
+  id: string;
+  source: 'level' | 'situation';
+  day: number;
+  time: string;
+  title: string;
+  text: string;
+  choices: { id: string; label: string }[];
+  /** For a situation: which one it is, so sound practice can look up its better choice. */
+  situationId?: string;
+  /** For a level moment: its kind, its difficulty band where it has one, and the engineer on call for a page. */
+  kind?: LevelMoment['kind'];
+  difficulty?: number;
+  personId?: string;
+  /** For a check-in: the project it is about. */
+  projectId?: string;
 }
 
 export interface Strategy {
   name: string;
   naive: boolean;
-  play(seen: Seen): Command[];
+  /** Habit changes at the start of a week, as plan commands. */
+  habits?(seen: Seen): Command[];
+  /** A choice for the current moment, or `wait`. */
+  choose(seen: Seen, moment: Moment): string;
 }
 
 export interface RunResult {
@@ -72,14 +95,13 @@ export function playRun(strategy: Strategy, seed: number, content: Situation[], 
     if (run.sim.week >= BALANCE_TUNING.weeks) break;
     const level = deps.levels.find((l) => l.params.id === run.levelId)!;
     // A copy, so a strategy cannot reach the run through what it is shown.
-    const seen: Seen = structuredClone({
-      week: run.sim.week,
-      view: level.view(run.level, run.sim, run.plan) as View,
-      presented: run.presented,
-      reviews,
-      plan: run.plan as LinePlan,
-    });
-    for (const command of strategy.play(seen)) step(command);
+    const see = (): Seen => structuredClone({ week: run.sim.week, view: level.view(run.level, run.sim) as View, reviews });
+    for (const command of strategy.habits?.(see()) ?? []) step(command);
+    for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
+      const seen = see();
+      const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
+      step(choice === 'wait' ? { kind: 'wait' } : { kind: 'answer', momentId: current.id, choiceId: choice });
+    }
     step({ kind: 'endWeek' });
   }
   const meets = RATINGS.indexOf('meets');
@@ -88,6 +110,26 @@ export function playRun(strategy: Strategy, seed: number, content: Situation[], 
   ).length;
   const ending = run.ending === 'completed' ? 'promoted' : run.ending === 'burnout' ? 'burnout' : run.ending === 'managedOut' ? 'managedOut' : null;
   return { strategy: strategy.name, seed, weeks: run.sim.week, ending, ratings: reviews.map((r) => r.rating), regrettedQuits };
+}
+
+/** The current moment as the scene shows it: the level's view of its own moments, or the presented situation. */
+function momentOf(run: Run, view: View, id: string): Moment {
+  const entry = run.week.find((m) => m.id === id)!;
+  const base = { id, source: entry.source, day: entry.day, time: entry.time, title: entry.title };
+  if (entry.source === 'situation') {
+    const p = run.presented.find((x) => x.id === id)!;
+    return structuredClone({ ...base, text: p.text, choices: p.choices, situationId: p.situationId });
+  }
+  const m = view.moments.find((x) => x.id === id)!;
+  return structuredClone({
+    ...base,
+    text: m.text,
+    choices: m.choices,
+    kind: m.kind,
+    ...(m.difficulty !== undefined && { difficulty: m.difficulty }),
+    ...(m.personId !== undefined && { personId: m.personId }),
+    ...(m.kind === 'checkIn' && { projectId: m.ref }),
+  });
 }
 
 /** A run's score over its six review slots: missed slots count 0 after failing, the last rating after a promotion. */

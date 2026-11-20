@@ -1,10 +1,10 @@
-import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Dependencies, type Run } from '../loop';
+import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Dependencies, type Run, type WeekMoment } from '../loop';
 import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '../save';
 import type { ContentError, Situation } from '../situations';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_OPEN_THROUGH_WEEK, HELP_TOPICS } from './help';
-import { lineManagerPanels } from './line-manager';
+import { lineManagerRenderer } from './line-manager';
 import { emphasis } from './text';
 
 export interface AppOptions {
@@ -27,27 +27,67 @@ export const SAVE_KEY = 'manager-simulator.save';
 
 export type AppState = { screen: 'start'; seed: number } | { screen: 'run'; run: Run };
 
+/** How a send is followed up: whether focus stays on the control, and what to do once the command applies. */
+export interface SendOptions {
+  /** Keep focus on the control that sent it, rather than moving it to the scene (a habit change). */
+  keepFocus?: boolean;
+  onApplied?: () => void;
+}
+
 /** What a screen needs from the app: the run, a way to send a command, and the error for a control. */
 export interface ScreenContext {
   run: Run;
   deps: Dependencies;
-  /** The active level's view of the run with the week's plan, computed once per redraw. */
+  /** The active level's view of the run, computed once per redraw. */
   view: unknown;
-  /**
-   * Sends a command; `control` names where to show an error if the loop refuses it. `onApplied` runs only when the
-   * command applies, before the redraw, so editing state is kept when a command is refused.
-   */
-  send: (command: Command, control: string, onApplied?: () => void) => void;
+  /** Sends a command; `control` names where to show an error if the loop refuses it. */
+  send: (command: Command, control: string, options?: SendOptions) => void;
   /** The error message for a control, if its last command was refused. */
   errorFor: (control: string) => Child;
-  /** Re-renders without sending a command, for form controls the player is still filling in. */
-  redraw: () => void;
-  /** Editing state that survives a redraw, by key. */
+  /** Page state that survives a redraw, by key. */
   drafts: Map<string, Record<string, string>>;
 }
 
-/** Panels a career level contributes to the week screen. */
-const LEVEL_PANELS: Record<string, (ctx: ScreenContext) => Child> = { 'line-manager': lineManagerPanels };
+/** A change chip: what moved, said in words, and whether it is good or bad for the player. */
+export interface Chip {
+  key: string;
+  text: string;
+  tone: 'good' | 'bad';
+}
+
+/** A level's moment as the scene shows it. */
+export interface MomentDetails {
+  title: string;
+  text: string;
+  /** Anything the level shows under the text, such as the work's difficulty. */
+  detail?: Child;
+  choices: { id: string; label: string; note?: string }[];
+}
+
+/** What a career level contributes to the week screen. */
+export interface LevelRenderer {
+  panels(ctx: ScreenContext): Child;
+  /** The habit controls for Before Monday, each with a line on what it does. */
+  habits(ctx: ScreenContext): Child;
+  moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined;
+  chips(before: unknown, after: unknown): Chip[];
+  recap(run: Run, recap: unknown): Child;
+  status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[] };
+  /** A measure's name on the review screen, when the level names it (a goal by its text). */
+  measureName(view: unknown, id: string): string | undefined;
+}
+
+const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer };
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const when = (m: { day: number; time: string }) => `${DAYS[m.day] ?? ''} ${m.time}`;
+
+/** The reaction to the player's last choice, waiting to be read; only the page remembers it. */
+interface Reaction {
+  momentId: string;
+  chips: Chip[];
+  passed: WeekMoment[];
+}
 
 const OUTCOMES = {
   continue: 'You are continuing in your role.',
@@ -71,6 +111,18 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   let notice: string | null = null;
   let warnedStorage = false;
   const drafts = new Map<string, Record<string, string>>();
+  // Where the player is looking, kept only on the page (UI-WEEK-009): a reload never shows a reaction again.
+  let reaction: Reaction | null = null;
+  let startedWeek0 = false;
+  let closedRecapWeek: number | null = null;
+  let focusScene = false;
+  /** Forgets where the player was looking, for a run that has just begun or been loaded. */
+  const resetPage = () => {
+    reaction = null;
+    startedWeek0 = false;
+    closedRecapWeek = null;
+    drafts.clear();
+  };
   const titles = new Map(options.content.map((s) => [s.id, s.title]));
   const fingerprint = contentFingerprint(options.content);
 
@@ -103,7 +155,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const restored = restore(parsed.save, options.content, options.deps, fingerprint);
     state = { screen: 'run', run: restored.run };
     error = null;
-    drafts.clear();
+    resetPage();
     notice = restored.rebuilt
       ? `This run was rebuilt with the current version of the game: ${restored.applied} of ${restored.total} of its commands still applied.`
       : null;
@@ -192,7 +244,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       notice = null;
       confirmingDiscard = false;
       pendingImport = null;
-      drafts.clear();
+      resetPage();
       render();
     };
     // Discarding and importing over a run each destroy its only saved copy, so both ask first.
@@ -238,18 +290,43 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     );
   }
 
-  function send(command: Command, control: string, onApplied?: () => void) {
+  /** The level and its renderer for the current run, if the game has them. */
+  const levelOf = (run: Run) => {
+    const level: AnyLevel | undefined = options.deps.levels.find((l) => l.params.id === run.levelId);
+    const renderer = RENDERERS[run.levelId];
+    return level && renderer ? { level, renderer } : undefined;
+  };
+
+  // @spec UI-WEEK-006, UI-WEEK-008
+  function send(command: Command, control: string, sendOptions: SendOptions = {}) {
     if (state.screen !== 'run') return;
-    const result = apply(state.run, command, options.content, options.deps);
+    const before = state.run;
+    const result = apply(before, command, options.content, options.deps);
     if (result.ok) {
       state = { screen: 'run', run: result.run };
       error = null;
       notice = null;
-      onApplied?.();
+      const found = levelOf(result.run);
+      if (command.kind === 'answer' && found) {
+        const after = result.run;
+        const passed = after.week.filter((m) => m.status === 'expired' && m.id !== command.momentId && before.week.find((x) => x.id === m.id)?.status === 'open');
+        const chips = found.renderer.chips(found.level.view(before.level, before.sim), found.level.view(after.level, after.sim));
+        reaction = { momentId: command.momentId, chips, passed };
+      } else if (command.kind !== 'plan') reaction = null;
+      focusScene = !sendOptions.keepFocus;
+      sendOptions.onApplied?.();
       save(result.run);
     } else {
       error = { control, message: result.error };
     }
+    render();
+  }
+
+  /** Moves on without a command (Continue, Start the week, closing the recap), focusing the next scene. */
+  function moveOn(change: () => void) {
+    change();
+    error = null;
+    focusScene = true;
     render();
   }
 
@@ -277,6 +354,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         state = { screen: 'run', run: newRun(seed, options.content, options.deps) };
         error = null;
         notice = null;
+        resetPage();
         save(state.run);
         render();
       } }, 'Begin'),
@@ -284,74 +362,163 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     );
   }
 
+  /** The header: the week, the review, the days, energy, reputation and goals. */
   // @spec UI-WEEK-001, UI-WEEK-003
-  function weekScreen(ctx: ScreenContext) {
+  function weekScreen(ctx: ScreenContext, renderer: LevelRenderer) {
     const { run } = ctx;
-    const view = ctx.view as { player: { reputation: number; stress: number }; plannedHours: number; overtime: number };
+    const status = renderer.status(ctx.view);
+    const kind = sceneKind(run);
+    const now = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
     return h(
       'section',
       { 'data-screen': 'week', class: 'week' },
       h(
         'header',
         { class: 'status' },
-        h('span', {}, 'Week ', h('strong', { 'data-field': 'week' }, run.sim.week)),
-        h('span', {}, 'Review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
-        h('span', {}, 'Reputation: ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', view.player.reputation))),
-        h('span', {}, 'Your stress: ', h('strong', { 'data-field': 'stress' }, bandWord('stress', view.player.stress))),
-        h('span', {}, 'Hours planned: ', h('strong', { 'data-field': 'planned-hours' }, view.plannedHours), ' (overtime ', h('strong', { 'data-field': 'overtime' }, view.overtime), ')'),
+        h('div', { class: 'week-number' }, 'Week ', h('strong', { 'data-field': 'week' }, run.sim.week), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
+        h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': i < now ? 'past' : i === now ? 'now' : 'ahead' }, d.slice(0, 3)))),
+        h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, bandWord('energy', status.energy)),
+          ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
+        h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
-      help(ctx),
-      situations(ctx),
-      LEVEL_PANELS[run.levelId]?.(ctx),
-      lastWeek(run),
-      h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => send({ kind: 'endWeek' }, 'end-week') }, 'End week'), errorFor('end-week')),
+      h(
+        'div',
+        { class: 'layout' },
+        h('main', { class: 'stage' },
+          scene(ctx, renderer, kind),
+          h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => ctx.send({ kind: 'endWeek' }, 'end-week') }, 'End the week'), errorFor('end-week')),
+          kind === 'before-monday' ? null : help(ctx)),
+        h('aside', { class: 'side' }, renderer.panels(ctx)),
+      ),
+    );
+  }
+
+  /** Which scene the week screen shows, read from the run where it can be (UI-WEEK-004, UI-WEEK-005). */
+  function sceneKind(run: Run): 'before-monday' | 'recap' | 'reaction' | 'moment' | 'done' {
+    const played = run.week.some((m) => m.status !== 'open');
+    if (reaction && run.week.some((m) => m.id === reaction!.momentId)) return 'reaction';
+    if (run.sim.week === 0 && !run.lastWeek && !played && !startedWeek0) return 'before-monday';
+    if (run.lastWeek && !played && closedRecapWeek !== run.sim.week) return 'recap';
+    return currentMoment(run) ? 'moment' : 'done';
+  }
+
+  const currentMoment = (run: Run) => run.week.find((m) => m.status === 'open');
+
+  const heading = (text: Child) => h('h2', { 'data-part': 'heading', tabindex: -1 }, text);
+
+  // @spec UI-WEEK-002, UI-WEEK-004, UI-WEEK-005, UI-WEEK-006, UI-WEEK-007, UI-WEEK-009
+  function scene(ctx: ScreenContext, renderer: LevelRenderer, kind: ReturnType<typeof sceneKind>): Child {
+    const { run } = ctx;
+    switch (kind) {
+      case 'before-monday':
+        return h(
+          'section',
+          { 'data-scene': 'before-monday', class: 'scene' },
+          h('p', { class: 'where' }, 'Before Monday'),
+          heading('How you run your team'),
+          h('p', {}, 'Your habits handle the routine, so the week can be about the moments that matter. You can change them any time.'),
+          renderer.habits(ctx),
+          help(ctx, true),
+          h('button', { 'data-action': 'start-week', class: 'primary', onClick: () => moveOn(() => (startedWeek0 = true)) }, 'Start the week'),
+        );
+      case 'recap':
+        return h(
+          'section',
+          { 'data-scene': 'recap', class: 'scene recap' },
+          h('p', { class: 'where' }, 'Friday evening'),
+          heading(`How week ${run.sim.week - 1} went`),
+          recapView(run, renderer),
+          h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start week ${run.sim.week}`),
+        );
+      case 'reaction': {
+        const m = run.week.find((x) => x.id === reaction!.momentId)!;
+        return h(
+          'section',
+          { 'data-scene': 'reaction', 'data-moment': m.id, class: 'scene' },
+          h('p', { class: 'where' }, when(m)),
+          heading(m.title),
+          h('p', { 'data-part': 'reaction', class: 'reaction' }, m.status === 'expired' ? 'This passed: something changed before you got to it.' : emphasis(m.text ?? '')),
+          reaction!.chips.length ? h('ul', { class: 'chips' }, reaction!.chips.map((c) => h('li', { 'data-chip': c.key, 'data-tone': c.tone, class: `chip ${c.tone}` }, c.text))) : null,
+          reaction!.passed.length ? h('ul', { 'data-part': 'passed', class: 'passed' }, reaction!.passed.map((p) => h('li', { 'data-moment': p.id }, `${when(p)}: ${p.title} has passed.`))) : null,
+          h('button', { 'data-action': 'continue', class: 'primary', onClick: () => moveOn(() => (reaction = null)) }, 'Continue'),
+        );
+      }
+      case 'moment': {
+        const m = currentMoment(run)!;
+        const control = `moment:${m.id}`;
+        const details: MomentDetails | undefined =
+          m.source === 'level'
+            ? renderer.moment(ctx, m.id)
+            : (() => {
+                const p = run.presented.find((x) => x.id === m.id)!;
+                return { title: m.title, text: p.text, choices: p.choices };
+              })();
+        return h(
+          'section',
+          { 'data-scene': 'moment', 'data-moment': m.id, class: 'scene' },
+          h('p', { class: 'where', 'data-field': 'when' }, when(m)),
+          heading(details?.title ?? m.title),
+          h('p', { 'data-part': 'text' }, emphasis(details?.text ?? '')),
+          details?.detail ?? null,
+          h(
+            'div',
+            { class: 'choices' },
+            (details?.choices ?? []).map((c) =>
+              h('button', { 'data-choice': c.id, class: 'choice', onClick: () => ctx.send({ kind: 'answer', momentId: m.id, choiceId: c.id }, control) },
+                c.label, c.note ? h('small', { 'data-part': 'who' }, c.note) : null),
+            ),
+            ctx.errorFor(control),
+          ),
+          h('button', { 'data-action': 'wait', class: 'quiet', onClick: () => ctx.send({ kind: 'wait' }, control) }, 'Let it wait'),
+        );
+      }
+      case 'done':
+        return h(
+          'section',
+          { 'data-scene': 'done', class: 'scene' },
+          h('p', { class: 'where' }, 'Friday afternoon'),
+          heading("That's the week"),
+          h('p', {}, 'Nothing else needs you this week.'),
+          h('button', { 'data-action': 'finish-week', class: 'primary', onClick: () => ctx.send({ kind: 'endWeek' }, 'finish-week') }, 'End the week'),
+          errorFor('finish-week'),
+        );
+    }
+  }
+
+  /** The recap of the week just ended: every moment in order, then the level's part. */
+  function recapView(run: Run, renderer: LevelRenderer): Child {
+    if (!run.lastWeek) return null;
+    const outcome = (m: WeekMoment) =>
+      m.status === 'answered' ? (m.text ?? '') : m.status === 'waited' ? 'You let it wait.' : m.status === 'expired' ? 'It passed.' : '';
+    return h(
+      'div',
+      { 'data-part': 'recap', class: 'recap' },
+      h('h3', {}, 'The week'),
+      h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m)} · ${m.title}: `), outcome(m)))),
+      renderer.recap(run, run.lastWeek.recap),
     );
   }
 
   /** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
   // @spec UI-HELP-001
-  function help(ctx: ScreenContext) {
+  function help(ctx: ScreenContext, open?: boolean) {
     const chosen = ctx.drafts.get('help')?.open;
-    const open = chosen === undefined ? ctx.run.sim.week <= HELP_OPEN_THROUGH_WEEK : chosen === 'true';
+    const isOpen = open ?? (chosen === undefined ? ctx.run.sim.week <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
     return h(
       'details',
-      { 'data-panel': 'help', class: 'help', open, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
+      { 'data-panel': 'help', class: 'help', open: isOpen, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
       h('summary', {}, 'How to play'),
       HELP_TOPICS.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
     );
   }
 
-  // @spec UI-WEEK-002
-  function situations(ctx: ScreenContext) {
-    return h(
-      'section',
-      { 'data-panel': 'situations' },
-      h('h2', {}, 'This week'),
-      ctx.run.presented.length === 0 ? h('p', {}, 'A quiet week.') : null,
-      ctx.run.presented.map(({ presentation: p, status, aftermath }) =>
-        h(
-          'article',
-          { 'data-situation': p.id, 'data-status': status, class: 'situation' },
-          h('h3', {}, titles.get(p.situationId) ?? p.situationId),
-          h('p', { 'data-part': 'text' }, emphasis(p.text)),
-          status === 'open'
-            ? h('div', { class: 'choices' }, p.choices.map((c) => h('button', { 'data-choice': c.id, onClick: () => ctx.send({ kind: 'answer', presentationId: p.id, choiceId: c.id }, `situation:${p.id}`) }, c.label)))
-            : status === 'answered'
-              ? h('p', { 'data-part': 'aftermath', class: 'aftermath' }, aftermath ?? '')
-              : h('p', { class: 'aftermath' }, 'This no longer applies: someone involved has gone.'),
-          ctx.errorFor(`situation:${p.id}`),
-        ),
-      ),
-    );
-  }
-
   // @spec UI-REVIEW-001
-  function reviewScreen(ctx: ScreenContext) {
+  function reviewScreen(ctx: ScreenContext, renderer: LevelRenderer) {
     const review = ctx.run.review!;
     return h(
       'section',
       { 'data-screen': 'review', class: 'review' },
-      h('h1', {}, `Week ${ctx.run.sim.week} review`),
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, `Week ${ctx.run.sim.week} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
       h(
@@ -362,7 +529,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           h(
             'tr',
             { 'data-measure': m.id },
-            h('td', {}, m.id),
+            h('td', { 'data-field': 'name' }, renderer.measureName(ctx.view, m.id) ?? m.id),
             h('td', { 'data-field': 'value' }, round(m.value)),
             h('td', { 'data-field': 'target' }, `${round(m.target)} ± ${round(m.tolerance)} (${m.better} is better)`),
             h('td', { 'data-field': 'verdict' }, m.verdict),
@@ -389,17 +556,18 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   // @spec UI-END-001
-  function endedScreen(run: Run) {
+  function endedScreen(run: Run, renderer: LevelRenderer) {
     return h(
       'section',
       { 'data-screen': 'ended', class: 'ended' },
-      h('h1', {}, 'The end'),
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
       h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
       h('p', {}, `Week ${run.sim.week}, seed ${run.seed}.`),
+      recapView(run, renderer),
       h('button', { 'data-action': 'new-run', onClick: () => {
         state = { screen: 'start', seed: options.newSeed() };
         error = null;
-        drafts.clear();
+        resetPage();
         render();
       } }, 'Start a new run'),
     );
@@ -423,11 +591,11 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     if (state.screen === 'start') screen = startScreen(state.seed);
     else {
       const run = state.run;
-      const level: AnyLevel | undefined = options.deps.levels.find((l) => l.params.id === run.levelId);
-      if (!level) screen = unavailableScreen(run);
+      const found = levelOf(run);
+      if (!found) screen = unavailableScreen(run);
       else {
-        const ctx: ScreenContext = { run, deps: options.deps, view: level.view(run.level, run.sim, run.plan), send, errorFor, redraw: render, drafts };
-        screen = run.phase === 'planning' ? weekScreen(ctx) : run.phase === 'review' ? reviewScreen(ctx) : endedScreen(run);
+        const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts };
+        screen = run.phase === 'week' ? weekScreen(ctx, found.renderer) : run.phase === 'review' ? reviewScreen(ctx, found.renderer) : endedScreen(run, found.renderer);
       }
     }
     root.replaceChildren();
@@ -436,18 +604,30 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     if (notice) root.append(h('p', { 'data-notice': true, role: 'status', class: 'notice' }, notice));
     root.append(screen as Node);
     if (state.screen === 'run') root.append(saveArea(state.run) as Node);
-    restoreFocus(root, focus);
+    // @spec UI-SHELL-005
+    if (focusScene) root.querySelector<HTMLElement>('[data-scene] [data-part=heading], [data-screen] > [data-part=heading]')?.focus();
+    else restoreFocus(root, focus);
+    focusScene = false;
   }
 
   render();
   return { state: (): AppState => structuredClone(state) };
 }
 
+/** A meter from 0 to `max`; its range is set as properties, which every DOM honours, before its value. */
+function meter(value: number, max: number): HTMLElement {
+  const m = h('meter', { 'data-meter': 'energy' }) as HTMLMeterElement;
+  m.min = 0;
+  m.max = max;
+  m.value = value;
+  return m;
+}
+
 const round = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 /** The data attributes that identify a control and the row it sits in, so it can be found again after a redraw. */
-const CONTROL_KEYS = ['data-input', 'data-action', 'data-choice'];
-const ROW_KEYS = ['data-demand', 'data-entry', 'data-situation', 'data-form', 'data-person', 'data-project'];
+const CONTROL_KEYS = ['data-input', 'data-action', 'data-choice', 'data-habit'];
+const ROW_KEYS = ['data-scene', 'data-panel', 'data-person', 'data-project'];
 
 function selectorFor(el: Element, keys: string[]): string | undefined {
   const key = keys.find((k) => el.hasAttribute(k));
@@ -467,39 +647,4 @@ function focusKey(root: HTMLElement): string | undefined {
 
 function restoreFocus(root: HTMLElement, key: string | undefined) {
   if (key) root.querySelector<HTMLElement>(key)?.focus();
-}
-
-/** The level's report from the week just ended, and the situations' aftermath lines. */
-// @spec UI-WEEK-004
-function lastWeek(run: Run): Child {
-  if (!run.lastWeek) return null;
-  const report = run.lastWeek.report as {
-    dropped: { reason: string }[];
-    delegations: { demandId: string; to: string; succeeded: boolean }[];
-    undelegated: { demandId: string; reason: string }[];
-    voided: { demandId: string; reason: string }[];
-    expired: string[];
-    demands?: Record<string, { type: string; subject: { kind: string; id: string } }>;
-  };
-  const name = (id: string) => run.sim.people[id]?.name ?? id;
-  const subjectName = ({ kind, id }: { kind: string; id: string }) =>
-    kind === 'person' ? name(id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
-  // A reported demand has left the inbox, so it is named by what it was, not its id.
-  const demand = (id: string) => {
-    const d = report.demands?.[id];
-    return d ? `${d.type} for ${subjectName(d.subject)}` : id;
-  };
-  const list = (part: string, title: string, items: string[]) =>
-    h('div', { 'data-part': part }, items.length ? [h('h3', {}, title), h('ul', {}, items.map((i) => h('li', {}, i)))] : null);
-  return h(
-    'section',
-    { 'data-panel': 'last-week', class: 'last-week' },
-    h('h2', {}, 'Last week'),
-    list('aftermaths', 'How it went', run.lastWeek.aftermaths),
-    list('delegations', 'Delegated', report.delegations.map((d) => `${demand(d.demandId)} to ${name(d.to)}: ${d.succeeded ? 'handled' : 'a stretch, with some fallout'}`)),
-    list('undelegated', 'Not delegated', report.undelegated.map((d) => `${demand(d.demandId)}: ${d.reason}`)),
-    list('voided', 'Decisions with nothing to act on', report.voided.map((d) => `${demand(d.demandId)}: ${d.reason}`)),
-    list('dropped', 'Calendar entries dropped', report.dropped.map((d) => d.reason)),
-    list('expired', 'Left too long', report.expired.map(demand)),
-  );
 }

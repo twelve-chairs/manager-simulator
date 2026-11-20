@@ -87,3 +87,22 @@ describe('state and determinism', () => {
     expect(troubledStress).toBeGreaterThan(calmStress);
   });
 });
+
+describe('personality', () => {
+  // @spec SIM-STATE-008
+  it('keeps a person’s personality from the starting organization or a hire, and no rule reads it', () => {
+    const o = org();
+    o.people[0] = { ...o.people[0]!, personality: 'quiet' };
+    const s = create(1, o);
+    expect(s.people[o.people[0]!.id]!.personality).toBe('quiet');
+    const hired = applyEffects(s, [
+      { type: 'hire', teamId: 't1', person: { id: 'h1', name: 'h1', role: 'engineer', skill: 50, motivation: 50, stress: 30, trust: 60, want: 'growth', personality: 'blunt' }, cause: ACTION },
+    ]);
+    if (!hired.ok) throw new Error(hired.error.message);
+    expect(hired.state.people.h1!.personality).toBe('blunt');
+    // the same organization with different personalities advances identically
+    const other = create(1, { ...o, people: o.people.map((p) => ({ ...p, personality: 'eager' })) });
+    const strip = (x: typeof s) => ({ ...x, people: Object.fromEntries(Object.entries(x.people).map(([k, p]) => [k, { ...p, personality: undefined }])) });
+    expect(strip(advance(s, 4).state)).toEqual(strip(advance(other, 4).state));
+  });
+});

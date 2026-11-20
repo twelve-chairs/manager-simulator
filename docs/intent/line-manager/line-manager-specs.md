@@ -4,96 +4,96 @@ Design: [line-manager-design.md](line-manager-design.md)
 
 ## Starting organization
 
-- [ ] **LINE-ORG-001**: When a run starts, the line manager level shall generate from the seed one team led by the player with five active engineers of varied skill, motivation, stress, wants and personalities, at least three of the personalities different, and two active projects on that team, one on schedule and one at risk.
+- [x] **LINE-ORG-001**: When a run starts, the line manager level shall generate from the seed one team led by the player with five active engineers of varied skill, motivation, stress, wants and personalities, at least three of the personalities different, and two active projects on that team, one on schedule and one at risk.
 - [x] **LINE-ORG-002**: The line manager level shall take the names of generated people and projects from its fixed list of fictional names, and shall not give two people in a run the same name.
 - [x] **LINE-ORG-003**: When runs are started from the same seed, the line manager level shall generate identical simulation and level states.
-- [ ] **LINE-ORG-004**: The line manager level shall give every engineer it generates, at the start or on hiring, one personality from the personality catalogue.
+- [x] **LINE-ORG-004**: The line manager level shall give every engineer it generates, at the start or on hiring, one personality from the personality catalogue.
 
 ## Level parameters
 
-- [ ] **LINE-WEEK-001**: The line manager level shall declare the level id `line-manager`, a time step of 1 week, a limit on story situations per week, and a review every 13 weeks.
-- [ ] **LINE-WEEK-002**: The line manager level shall produce at most its tuned cap of level moments in a week.
+- [x] **LINE-WEEK-001**: The line manager level shall declare the level id `line-manager`, a time step of 1 week, a limit on story situations per week, and a review every 13 weeks.
+- [x] **LINE-WEEK-002**: The line manager level shall produce at most its tuned cap of level moments in a week.
 
 ## Visibility
 
-- [ ] **LINE-VIS-001**: When the player's view is requested, the line manager level shall show each active engineer on the player's team with their name, role, tenure, personality and performance level.
+- [x] **LINE-VIS-001**: When the player's view is requested, the line manager level shall show each active engineer on the player's team with their name, role, tenure, personality and performance level.
 - [x] **LINE-VIS-002**: The line manager level shall show a person's motivation, stress and skill only as bands, never as numbers.
-- [ ] **LINE-VIS-003**: The line manager level shall show a person's want as unknown until a 1:1 with them has been held, and from then on as their want.
+- [x] **LINE-VIS-003**: The line manager level shall show a person's want as unknown until a 1:1 with them has been held, and from then on as their want.
 - [x] **LINE-VIS-004**: The line manager level shall not show a person's trust.
 - [x] **LINE-VIS-005**: The line manager level shall show each of the team's active projects with its progress, deadline and whether it is on schedule, behind or overdue, and its risk and tech debt only as bands.
-- [ ] **LINE-VIS-006**: The line manager level shall show the player's energy, the inverse of their stress, and their reputation only as bands.
+- [x] **LINE-VIS-006**: The line manager level shall show the player's energy, the inverse of their stress, and their reputation only as bands.
 - [x] **LINE-VIS-009**: The line manager level shall map every banded value to the same scale of bands over 0–100.
-- [ ] **LINE-VIS-011**: The line manager level shall show, for each engineer, the notes of their three most recent history entries that carry one, newest first.
-- [ ] **LINE-VIS-012**: The line manager level shall show the current habits, the open vacancies with their interview counts, and the review period's goals with their progress.
-- [ ] **LINE-VIS-013**: The line manager level shall show each moment's choices without those that name an engineer who is no longer active on the team.
+- [x] **LINE-VIS-011**: The line manager level shall show, for each engineer, the notes of their three most recent history entries that carry one, newest first.
+- [x] **LINE-VIS-012**: The line manager level shall show the current habits, the open vacancies with their interview counts, and the review period's goals with their progress.
+- [x] **LINE-VIS-013**: The line manager level shall show each moment's choices without those that name an engineer who is no longer active on the team.
 
 ## Habits
 
-- [ ] **LINE-HABIT-001**: When a run starts, the line manager level shall set night pages to a rotation, 1:1 cadence to fortnightly, routine approvals to you, ceremonies to full and growth focus to nobody.
-- [ ] **LINE-HABIT-002**: When the player changes a habit, the line manager level shall apply the new setting to that week's end-of-week habit effects and to the moments of later weeks, leaving moments already produced unchanged.
-- [ ] **LINE-HABIT-003**: If a habit change names an unknown habit or option, or an engineer who is not active on the team, then the line manager level shall reject it with an error and leave the level state unchanged.
-- [ ] **LINE-HABIT-004**: When a week begins or its end applies and an engineer a habit names is no longer active on the team, the line manager level shall set routine approvals back to you or growth focus back to nobody, and report the change in that week's recap.
-- [ ] **LINE-HABIT-005**: When a week's habit effects apply, the line manager level shall submit them to the simulation core as one batch, each effect carrying its habit's id as its cause.
-- [ ] **LINE-HABIT-010**: When a week's end applies, the line manager level shall resolve each on-call escalation that had no moment that week (because night pages is set to you, it arrived while it was, or there was no engineer to put on call) as taken by the player, raising the player's stress for each.
-- [ ] **LINE-HABIT-011**: When on-call escalations arrive and night pages is set to a rotation or to seniors, the line manager level shall make each a moment for the engineer on call: under a rotation, the active engineers in id order, one per week in turn, taking every escalation that week; under seniors, the most skilled active engineer, ties broken by id.
-- [ ] **LINE-HABIT-012**: When a week's habit effects apply, the line manager level shall hold a 1:1 with each engineer due one under the 1:1 cadence (every week; every other week, engineers at even positions in id order in even weeks and odd positions in odd weeks; or never), raising their trust and motivation, recording their want as learned, adding a history entry, and raising the player's stress by a small amount per 1:1 held, summed for the week.
-- [ ] **LINE-HABIT-013**: When routine items arrive and routine approvals is set to you, the line manager level shall resolve each and raise the player's stress by a small amount per item, summed for the week.
-- [ ] **LINE-HABIT-014**: When routine items arrive and routine approvals names an engineer, the line manager level shall resolve each whose difficulty is within that engineer's skill and that the engineer did not raise themselves, raising their stress a little and serving a want for autonomy; resolve the engineer's own items as signed by the player, as when routine approvals is set to you; and leave the rest open to expire.
-- [ ] **LINE-HABIT-015**: When a week's habit effects apply with ceremonies set to full, the line manager level shall raise each engineer's motivation a little, serving a want for stability, and raise the player's stress a little; with ceremonies set to light, it shall raise the risk of each of the team's active projects.
-- [ ] **LINE-HABIT-016**: When a week's habit effects apply with growth focus naming an engineer, the line manager level shall raise that engineer's skill, serving a want for growth, add a history entry, and raise the player's stress.
+- [x] **LINE-HABIT-001**: When a run starts, the line manager level shall set night pages to a rotation, 1:1 cadence to fortnightly, routine approvals to you, ceremonies to full and growth focus to nobody.
+- [x] **LINE-HABIT-002**: When the player changes a habit, the line manager level shall apply the new setting to that week's end-of-week habit effects and to the moments of later weeks, leaving moments already produced unchanged.
+- [x] **LINE-HABIT-003**: If a habit change names an unknown habit or option, or an engineer who is not active on the team, then the line manager level shall reject it with an error and leave the level state unchanged.
+- [x] **LINE-HABIT-004**: When a week begins or its end applies and an engineer a habit names is no longer active on the team, the line manager level shall set routine approvals back to you or growth focus back to nobody, and report the change in that week's recap.
+- [x] **LINE-HABIT-005**: When a week's habit effects apply, the line manager level shall submit them to the simulation core as one batch, each effect carrying its habit's id as its cause.
+- [x] **LINE-HABIT-010**: When a week's end applies, the line manager level shall resolve each on-call escalation that had no moment that week (because night pages is set to you, it arrived while it was, or there was no engineer to put on call) as taken by the player, raising the player's stress for each.
+- [x] **LINE-HABIT-011**: When on-call escalations arrive and night pages is set to a rotation or to seniors, the line manager level shall make each a moment for the engineer on call: under a rotation, the active engineers in id order, one per week in turn, taking every escalation that week; under seniors, the most skilled active engineer, ties broken by id.
+- [x] **LINE-HABIT-012**: When a week's habit effects apply, the line manager level shall hold a 1:1 with each engineer due one under the 1:1 cadence (every week; every other week, engineers at even positions in id order in even weeks and odd positions in odd weeks; or never), raising their trust and motivation, recording their want as learned, adding a history entry, and raising the player's stress by a small amount per 1:1 held, summed for the week.
+- [x] **LINE-HABIT-013**: When routine items arrive and routine approvals is set to you, the line manager level shall resolve each and raise the player's stress by a small amount per item, summed for the week.
+- [x] **LINE-HABIT-014**: When routine items arrive and routine approvals names an engineer, the line manager level shall resolve each whose difficulty is within that engineer's skill and that the engineer did not raise themselves, raising their stress a little and serving a want for autonomy; resolve the engineer's own items as signed by the player, as when routine approvals is set to you; and leave the rest open to expire.
+- [x] **LINE-HABIT-015**: When a week's habit effects apply with ceremonies set to full, the line manager level shall raise each engineer's motivation a little, serving a want for stability, and raise the player's stress a little; with ceremonies set to light, it shall raise the risk of each of the team's active projects.
+- [x] **LINE-HABIT-016**: When a week's habit effects apply with growth focus naming an engineer, the line manager level shall raise that engineer's skill, serving a want for growth, add a history entry, and raise the player's stress.
 
 ## Work
 
-- [ ] **LINE-INBOX-001**: When work arrives, the line manager level shall add work items whose number and kinds depend on the team's active projects, their risk and tech debt, and its engineers, drawing all randomness from the level's own seeded generator and leaving the simulation's generator state unchanged.
-- [ ] **LINE-INBOX-002**: When work arrives while the team has fewer than two active projects and no work intake item is open, the line manager level shall add a work intake item.
-- [ ] **LINE-INBOX-003**: The line manager level shall give each work item a unique id, a kind, a subject, a size, a difficulty, and a last week equal to its arrival week plus its kind's expiry weeks.
-- [ ] **LINE-WORK-001**: The line manager level shall hand release, access and expense approvals to the routine approvals habit, on-call escalations to the night pages habit, and make every design review, customer request and work intake a work moment.
-- [ ] **LINE-WORK-002**: When the line manager level makes a work moment, it shall offer doing it yourself, giving it to the least stressed engineer whose skill band reaches the item's difficulty band, giving it to the least stressed engineer whose skill band falls short of it (ties broken by id), and pushing back, leaving out the item's requester and any suggestion with no engineer to fill it, and for work intake offer taking it on and declining instead.
-- [ ] **LINE-INBOX-004**: When the player does a work item themselves, the line manager level shall resolve it without its consequence and raise the player's stress by an amount that grows with its size.
-- [ ] **LINE-INBOX-005**: When the player gives a work item to an engineer, the line manager level shall raise that engineer's stress, tagged as serving wants for growth and autonomy, add a history entry, and resolve the item.
-- [ ] **LINE-INBOX-006**: When a work item given to an engineer has a difficulty above their skill, the line manager level shall apply the reduced version of its consequence and raise their skill.
-- [ ] **LINE-INBOX-007**: When several work items are given to one engineer in a week, the line manager level shall raise that engineer's stress once for each.
-- [ ] **LINE-WORK-003**: When the player pushes back on a work item, the line manager level shall leave it open to expire at its last week.
-- [ ] **LINE-INBOX-009**: When a week's end applies, the line manager level shall remove each open work item whose last week is the current week, and apply its consequence with a level rule as the cause.
-- [ ] **LINE-INBOX-010**: When a work item's subject is no longer valid (a project no longer active, a requester no longer active on the team), the line manager level shall remove it without its consequence.
-- [ ] **LINE-INBOX-011**: When the player takes on work intake, the line manager level shall start a new project on the team through the simulation core, named from the level's list, and raise the player's stress by its size.
-- [ ] **LINE-INBOX-012**: When the player declines work intake, the line manager level shall lower the player's reputation by less than the work intake's expiry consequence.
-- [ ] **LINE-WORK-005**: When the line manager level makes an on-call moment, it shall offer backing up the engineer on call (a little stress for the player; the engineer's stress rises, and a difficulty above their skill brings the reduced consequence and raises their skill), taking over (the player's stress rises by the escalation's size, with no consequence), and leaving it to them (no cost to the player; the engineer's stress rises, and a difficulty above their skill brings the full consequence).
-- [ ] **LINE-WORK-004**: When a level moment's choice applies, the line manager level shall return a reaction from its templates for that kind of moment and choice, chosen by the personality of the engineer involved where there is one.
+- [x] **LINE-INBOX-001**: When work arrives, the line manager level shall add work items whose number and kinds depend on the team's active projects, their risk and tech debt, and its engineers, drawing all randomness from the level's own seeded generator and leaving the simulation's generator state unchanged.
+- [x] **LINE-INBOX-002**: When work arrives while the team has fewer than two active projects and no work intake item is open, the line manager level shall add a work intake item.
+- [x] **LINE-INBOX-003**: The line manager level shall give each work item a unique id, a kind, a subject, a size, a difficulty, and a last week equal to its arrival week plus its kind's expiry weeks.
+- [x] **LINE-WORK-001**: The line manager level shall hand release, access and expense approvals to the routine approvals habit, on-call escalations to the night pages habit, and make every design review, customer request and work intake a work moment.
+- [x] **LINE-WORK-002**: When the line manager level makes a work moment, it shall offer doing it yourself, giving it to the least stressed engineer whose skill band reaches the item's difficulty band, giving it to the least stressed engineer whose skill band falls short of it (ties broken by id), and pushing back, leaving out the item's requester and any suggestion with no engineer to fill it, and for work intake offer taking it on and declining instead.
+- [x] **LINE-INBOX-004**: When the player does a work item themselves, the line manager level shall resolve it without its consequence and raise the player's stress by an amount that grows with its size.
+- [x] **LINE-INBOX-005**: When the player gives a work item to an engineer, the line manager level shall raise that engineer's stress, tagged as serving wants for growth and autonomy, add a history entry, and resolve the item.
+- [x] **LINE-INBOX-006**: When a work item given to an engineer has a difficulty above their skill, the line manager level shall apply the reduced version of its consequence and raise their skill.
+- [x] **LINE-INBOX-007**: When several work items are given to one engineer in a week, the line manager level shall raise that engineer's stress once for each.
+- [x] **LINE-WORK-003**: When the player pushes back on a work item, the line manager level shall leave it open to expire at its last week.
+- [x] **LINE-INBOX-009**: When a week's end applies, the line manager level shall remove each open work item whose last week is the current week, and apply its consequence with a level rule as the cause.
+- [x] **LINE-INBOX-010**: When a work item's subject is no longer valid (a project no longer active, a requester no longer active on the team), the line manager level shall remove it without its consequence.
+- [x] **LINE-INBOX-011**: When the player takes on work intake, the line manager level shall start a new project on the team through the simulation core, named from the level's list, and raise the player's stress by its size.
+- [x] **LINE-INBOX-012**: When the player declines work intake, the line manager level shall lower the player's reputation by less than the work intake's expiry consequence.
+- [x] **LINE-WORK-005**: When the line manager level makes an on-call moment, it shall offer backing up the engineer on call (a little stress for the player; the engineer's stress rises, and a difficulty above their skill brings the reduced consequence and raises their skill), taking over (the player's stress rises by the escalation's size, with no consequence), and leaving it to them (no cost to the player; the engineer's stress rises, and a difficulty above their skill brings the full consequence).
+- [x] **LINE-WORK-004**: When a level moment's choice applies, the line manager level shall return a reaction from its templates for that kind of moment and choice, chosen by the personality of the engineer involved where there is one.
 
 ## Moments
 
-- [ ] **LINE-MOMENT-001**: When a week begins, the line manager level shall produce its moments for the week, up to its cap, in this order: an on-call moment per escalation the night pages habit gives an engineer; a check-in moment per project due one; an interview moment per open vacancy; and work moments for open items, including those pushed back or left unanswered in earlier weeks, closest to expiring first.
-- [ ] **LINE-MOMENT-002**: The line manager level shall give each moment a day of the week and a time: on-call moments at night, check-in moments on Monday morning, interview moments on Wednesday, and work moments through the week in the order they were made.
-- [ ] **LINE-MOMENT-003**: When the player picks a choice for one of the week's open level moments, the line manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the states unchanged.
-- [ ] **LINE-MOMENT-004**: When a week's end applies, the line manager level shall close each level moment left unanswered as letting it wait: a work item stays open, an interview is skipped, a check-in changes nothing, and an on-call escalation expires with its consequence.
+- [x] **LINE-MOMENT-001**: When a week begins, the line manager level shall produce its moments for the week, up to its cap, in this order: an on-call moment per escalation the night pages habit gives an engineer; a check-in moment per project due one; an interview moment per open vacancy; and work moments for open items, including those pushed back or left unanswered in earlier weeks, closest to expiring first.
+- [x] **LINE-MOMENT-002**: The line manager level shall give each moment a day of the week and a time: on-call moments at night, check-in moments on Monday morning, interview moments on Wednesday, and work moments through the week in the order they were made.
+- [x] **LINE-MOMENT-003**: When the player picks a choice for one of the week's open level moments, the line manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the states unchanged.
+- [x] **LINE-MOMENT-004**: When a week's end applies, the line manager level shall close each level moment left unanswered as letting it wait: a work item stays open, an interview is skipped, a check-in changes nothing, and an on-call escalation expires with its consequence.
 
 ## Project check-ins
 
-- [ ] **LINE-CHECK-001**: When a week begins, the line manager level shall make a project due a check-in if it is one of the team's active projects, is behind schedule, overdue, or has a risk band at or above its tuned check-in band, and has had no check-in moment in the tuned number of weeks before.
-- [ ] **LINE-CHECK-002**: When the line manager level makes a check-in moment, it shall record the week as the project's last check-in and offer re-planning it, cutting scope, moving the deadline, and pushing on.
-- [ ] **LINE-CHECK-003**: When the player re-plans a project at a check-in, the line manager level shall raise the player's stress and lower the project's risk by their tuned amounts.
-- [ ] **LINE-CHECK-004**: When the player cuts a project's scope at a check-in, the line manager level shall reduce its scope by the tuned share of its remaining work, by at least 1, and lower the player's reputation by its tuned amount.
-- [ ] **LINE-CHECK-005**: When the player moves a project's deadline at a check-in, the line manager level shall move it out by the tuned number of weeks and lower the player's reputation by more than cutting scope does.
-- [ ] **LINE-CHECK-006**: When the player pushes on at a check-in, the line manager level shall change nothing.
+- [x] **LINE-CHECK-001**: When a week begins, the line manager level shall make a project due a check-in if it is one of the team's active projects, is behind schedule, overdue, or has a risk band at or above its tuned check-in band, and has had no check-in moment in the tuned number of weeks before.
+- [x] **LINE-CHECK-002**: When the line manager level makes a check-in moment, it shall record the week as the project's last check-in and offer re-planning it, cutting scope, moving the deadline, and pushing on.
+- [x] **LINE-CHECK-003**: When the player re-plans a project at a check-in, the line manager level shall raise the player's stress and lower the project's risk by their tuned amounts.
+- [x] **LINE-CHECK-004**: When the player cuts a project's scope at a check-in, the line manager level shall reduce its scope by the tuned share of its remaining work, by at least 1, and lower the player's reputation by its tuned amount.
+- [x] **LINE-CHECK-005**: When the player moves a project's deadline at a check-in, the line manager level shall move it out by the tuned number of weeks and lower the player's reputation by more than cutting scope does.
+- [x] **LINE-CHECK-006**: When the player pushes on at a check-in, the line manager level shall change nothing.
 
 ## Hiring
 
 - [x] **LINE-HIRE-001**: The line manager level shall set the team's target headcount to its number of engineers when the run starts.
 - [x] **LINE-HIRE-002**: When the simulation has advanced, and when a week begins to commit, if the team's active engineers plus its open vacancies are below its target headcount, the line manager level shall open vacancies until they reach it.
-- [ ] **LINE-HIRE-003**: When a vacancy reaches the required number of interviews, the line manager level shall hire a generated engineer with a personality onto the team through the simulation core and close the vacancy.
-- [ ] **LINE-HIRE-004**: When the player answers an interview moment, the line manager level shall add an interview to the vacancy, raising the player's stress if they interview and the chosen engineer's stress (with a little recognition) if an engineer does, or add none if the player skips.
+- [x] **LINE-HIRE-003**: When a vacancy reaches the required number of interviews, the line manager level shall hire a generated engineer with a personality onto the team through the simulation core and close the vacancy.
+- [x] **LINE-HIRE-004**: When the player answers an interview moment, the line manager level shall add an interview to the vacancy, raising the player's stress if they interview and the chosen engineer's stress (with a little recognition) if an engineer does, or add none if the player skips.
 
 ## Goals
 
-- [ ] **LINE-GOAL-001**: When a review period begins, the line manager level shall set two or three goals for it from its fixed set, according to the team's state and its own generator, offering a ship-by-deadline goal only for an at-risk project whose deadline falls within the period, and recording that deadline in the goal.
-- [ ] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target.
-- [ ] **LINE-GOAL-003**: When the level is assessed for a review, the line manager level shall add each of the period's goals as a measure that is above target when achieved and below target when missed (a ship-by-deadline goal achieved only if the project completed by the deadline the goal recorded), leaving out a goal about an engineer who is no longer on the team and saying so in the recap.
+- [x] **LINE-GOAL-001**: When a review period begins, the line manager level shall set two or three goals for it from its fixed set, according to the team's state and its own generator, offering a ship-by-deadline goal only for an at-risk project whose deadline falls within the period, and recording that deadline in the goal.
+- [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target.
+- [x] **LINE-GOAL-003**: When the level is assessed for a review, the line manager level shall add each of the period's goals as a measure that is above target when achieved and below target when missed (a ship-by-deadline goal achieved only if the project completed by the deadline the goal recorded), leaving out a goal about an engineer who is no longer on the team and saying so in the recap.
 
 ## Recap
 
-- [ ] **LINE-RECAP-001**: When a week's end applies, the line manager level shall report what each habit did, how each level moment was answered and what it led to, which work items expired, and the period's goal progress.
-- [ ] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, with the notes of the history entries recorded for them that week.
+- [x] **LINE-RECAP-001**: When a week's end applies, the line manager level shall report what each habit did, how each level moment was answered and what it led to, which work items expired, and the period's goal progress.
+- [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, with the notes of the history entries recorded for them that week.
 
 ## Reviews and the end of the level
 
@@ -107,11 +107,11 @@ Design: [line-manager-design.md](line-manager-design.md)
 
 ## Turn loop contract
 
-- [ ] **LINE-CONTRACT-005**: The line manager level shall provide the turn loop's career level contract: beginning a week by having work arrive and making its moments, listing the week's moments with their titles and which are open, a moment counting as open only while it can still be answered, taking habit changes as planning commands, applying a moment choice at once with its reaction, ending the week with the habits' weekly effects, expiries and its recap, and supplying its assessment with goals.
+- [x] **LINE-CONTRACT-005**: The line manager level shall provide the turn loop's career level contract: beginning a week by having work arrive and making its moments, listing the week's moments with their titles and which are open, a moment counting as open only while it can still be answered, taking habit changes as planning commands, applying a moment choice at once with its reaction, ending the week with the habits' weekly effects, expiries and its recap, and supplying its assessment with goals.
 
 ## Level state
 
 - [x] **LINE-STATE-001**: The line manager level shall represent its state as plain data that survives serialization to JSON and back without change.
 - [x] **LINE-STATE-002**: The line manager level shall return a new level state from every operation and leave its input states unchanged.
 - [x] **LINE-STATE-003**: When the same operations are applied with the same inputs to states from the same seed, the line manager level shall produce identical results.
-- [ ] **LINE-STATE-004**: The line manager level shall use as causes only action ids listed in the player action catalogue, including those of its habits and its moment choices.
+- [x] **LINE-STATE-004**: The line manager level shall use as causes only action ids listed in the player action catalogue, including those of its habits and its moment choices.

@@ -1,4 +1,4 @@
-import { changePerson, changeTeam, clamp100, depart, gainHeads, leadsTeam, loseHeads, personRatings, planFrom, record, type Ctx } from './core';
+import { changePerson, changeTeam, clamp100, cloneState, depart, gainHeads, leadsTeam, loseHeads, personRatings, planFrom, record, type Ctx } from './core';
 import {
   PERFORMANCE_LEVELS,
   RATINGS,
@@ -258,7 +258,7 @@ function apply(ctx: Ctx, e: Effect) {
 // @spec SIM-PERF-002, SIM-PERF-003, SIM-PERF-004, SIM-PERF-005, SIM-PERF-006, SIM-PERF-008, SIM-PERF-009, SIM-PERF-012
 // @spec SIM-PERF-013, SIM-PERF-014, SIM-PERF-015, SIM-PERF-016, SIM-PERF-018
 export function applyEffects(state: SimState, effects: Effect[]): ApplyEffectsResult {
-  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  const ctx: Ctx = { s: cloneState(state), log: [] };
   // People whose PIP a rate effect in this batch failed, with that effect's cause; removed once the batch is applied.
   const failedPips = new Map<string, Cause>();
   for (const [index, effect] of effects.entries()) {

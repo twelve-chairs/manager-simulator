@@ -1,7 +1,8 @@
 import { RATINGS, behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import { reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
-import { LINE_TUNING } from './tuning';
+import { goalStatus } from './goals';
+import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import type { Assessment, Measure } from '../../review';
 import type { LineState, Scorecard } from './types';
 
@@ -46,7 +47,7 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
 
   const engineers = teamEngineers(level, sim).map((id) => sim.people[id]!);
   const hadOneOnOne = engineers.filter((p) =>
-    p.history.some((h) => h.cause.kind === 'action' && h.cause.actionId === 'line-manager.one-on-one' && before(h.week, week, LINE_TUNING.recentOneOnOneWeeks)),
+    p.history.some((h) => h.cause.kind === 'action' && h.cause.actionId === HABIT_CAUSE.oneOnOnes && before(h.week, week, LINE_TUNING.recentOneOnOneWeeks)),
   ).length;
 
   return {
@@ -62,11 +63,16 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
 }
 
 /** The measures a review scores, with the level's targets, and whether promotion is possible yet. */
-// @spec LINE-END-004, LINE-END-007
+// @spec LINE-END-004, LINE-END-007, LINE-GOAL-003
 export function assess(level: LineState, sim: SimState): Assessment {
   const card = scorecard(level, sim);
   const t = LINE_TUNING.review;
-  const measure = (id: keyof typeof t, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
+  const measure = (id: Exclude<keyof typeof t, 'goal'>, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
+  // A goal about an engineer who has left no longer counts.
+  const goals = level.goals
+    .map((g) => ({ g, status: goalStatus(g, level, sim) }))
+    .filter((x) => !x.status.dropped)
+    .map(({ g, status }): Measure => ({ id: `goal:${g.id}`, value: status.achieved ? 1 : 0, ...t.goal, better: 'higher' }));
   return {
     measures: [
       measure('completedOnTime', card.delivery.completedOnTime, 'higher'),
@@ -76,6 +82,7 @@ export function assess(level: LineState, sim: SimState): Assessment {
       measure('motivation', card.teamHealth.motivation, 'higher'),
       measure('stress', card.teamHealth.stress, 'lower'),
       measure('oneOnOneShare', card.teamHealth.oneOnOneShare, 'higher'),
+      ...goals,
     ],
     promotionPossible: card.promotionPossible,
   };

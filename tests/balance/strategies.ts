@@ -1,6 +1,6 @@
-import { ACTIONS, LINE_TUNING, type LinePlanCommand, type NewEntry, type View } from '../../src/levels/line-manager';
+import type { View } from '../../src/levels/line-manager';
 import type { Command } from '../../src/loop';
-import type { Seen, Strategy } from './harness';
+import type { Moment, Seen, Strategy } from './harness';
 
 /** The better choice in each line manager situation, as sound practice judges it. Onboarding situations have none. */
 export const BETTER_CHOICES: Record<string, string> = {
@@ -17,121 +17,117 @@ export const BETTER_CHOICES: Record<string, string> = {
   'quiet-overload': 'time-off',
 };
 
-const plan = (command: LinePlanCommand): Command => ({ kind: 'plan', command });
-const MAX_HOURS = LINE_TUNING.weeklyHours + LINE_TUNING.overtimeCapHours;
+/** A band, as the view gives it: 2 is "okay" energy and "busy" stress. */
+const OKAY = 2;
 
-/** Answers every open situation with the choice `pick` makes from those offered. */
-const answer = (seen: Seen, pick: (situationId: string, choiceIds: string[]) => string): Command[] =>
-  seen.presented
-    .filter((p) => p.status === 'open')
-    .map((p) => ({ kind: 'answer', presentationId: p.presentation.id, choiceId: pick(p.presentation.situationId, p.presentation.choices.map((c) => c.id)) }));
-
-const requester = (d: View['inbox'][number]) => (d.subject.kind === 'person' ? d.subject.id : undefined);
+const habit = (name: string, value: string): Command => ({ kind: 'plan', command: { kind: 'habit', habit: name, value } });
+const has = (m: Moment, id: string) => m.choices.some((c) => c.id === id);
+const first = (m: Moment) => m.choices[0]!.id;
+const last = (m: Moment) => m.choices.at(-1)!.id;
+const isIntake = (m: Moment) => has(m, 'take');
 
 /** Engineers in order of least stress, ties broken by id. */
 const byStress = (view: View) => [...view.people].sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
 
-export const idle: Strategy = { name: 'idle', naive: true, play: () => [] };
+/** The offered give: or ask: choices, as engineer ids, least stressed first. */
+function offered(seen: Seen, m: Moment, prefix: 'give:' | 'ask:'): View['people'] {
+  const ids = new Set(m.choices.filter((c) => c.id.startsWith(prefix)).map((c) => c.id.slice(prefix.length)));
+  return byStress(seen.view).filter((p) => ids.has(p.id));
+}
+
+export const idle: Strategy = { name: 'idle', naive: true, choose: () => 'wait' };
 
 export const hero: Strategy = {
   name: 'hero',
   naive: true,
-  play(seen) {
-    let hours = seen.view.plannedHours;
-    const commands: Command[] = [];
-    for (const d of seen.view.inbox) {
-      if (hours + d.hours > MAX_HOURS) continue;
-      hours += d.hours;
-      commands.push(plan({ kind: 'decide', demandId: d.id, decision: d.type === 'workIntake' ? { kind: 'accept' } : { kind: 'handle' } }));
-    }
-    return [...commands, ...answer(seen, (_, choices) => choices[0]!)];
+  habits: (seen) => (seen.week === 0 ? [habit('nightPages', 'me'), habit('approvals', 'me')] : []),
+  choose(_, m) {
+    if (m.source === 'situation' || m.kind === 'checkIn') return first(m);
+    if (m.kind === 'onCall') return 'takeOver';
+    if (isIntake(m)) return 'take';
+    return 'self';
   },
 };
 
 export const delegator: Strategy = {
   name: 'delegator',
   naive: true,
-  play(seen) {
-    let hours = seen.view.plannedHours;
-    const commands: Command[] = [];
-    for (const d of seen.view.inbox) {
-      if (d.type === 'workIntake') {
-        if (hours + d.hours <= MAX_HOURS) {
-          hours += d.hours;
-          commands.push(plan({ kind: 'decide', demandId: d.id, decision: { kind: 'accept' } }));
-        }
-        continue;
-      }
-      const to = byStress(seen.view).find((p) => p.id !== requester(d));
-      if (to) commands.push(plan({ kind: 'decide', demandId: d.id, decision: { kind: 'delegate', to: to.id } }));
-    }
-    return [...commands, ...answer(seen, (_, choices) => choices[0]!)];
+  choose(seen, m) {
+    if (m.source === 'situation' || m.kind === 'checkIn') return first(m);
+    if (m.kind === 'onCall') return 'leave';
+    if (isIntake(m)) return 'take';
+    const prefix = m.kind === 'interview' ? 'ask:' : 'give:';
+    const to = offered(seen, m, prefix)[0];
+    return to ? `${prefix}${to.id}` : 'wait';
   },
 };
 
-export const contrarian: Strategy = { name: 'contrarian', naive: true, play: (seen) => answer(seen, (_, choices) => choices.at(-1)!) };
+export const contrarian: Strategy = {
+  name: 'contrarian',
+  naive: true,
+  choose(_, m) {
+    if (m.source === 'situation' || m.kind === 'checkIn') return last(m);
+    if (m.kind === 'onCall') return 'leave';
+    if (m.kind === 'interview') return 'skip';
+    if (isIntake(m)) return 'decline';
+    return 'pushBack';
+  },
+};
+
+/** Habits a careful manager settles into: coach whoever a goal or their own want says to; routine approvals stay with them. */
+function soundHabitChanges(seen: Seen): Command[] {
+  const { view } = seen;
+  const commands: Command[] = [];
+  // A "Help <name> grow" goal names who to coach; the goal is in the view as text, as the player reads it.
+  const goalPerson = view.people.find((p) => view.goals.some((g) => g.text === `Help ${p.name} grow`));
+  const growth =
+    goalPerson ?? view.people.find((p) => p.want === 'growth') ?? [...view.people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0];
+  if (growth && view.habits.growth !== growth.id) commands.push(habit('growth', growth.id));
+  return commands;
+}
 
 /** What a careful line manager does with what they can see; the rules are described in the balance design doc. */
-export const sound: Strategy = {
-  name: 'sound',
+function soundChoice(seen: Seen, m: Moment): string {
+  const { view } = seen;
+  const rested = view.player.energy >= OKAY;
+  if (m.source === 'situation') return has(m, BETTER_CHOICES[m.situationId!] ?? '') ? BETTER_CHOICES[m.situationId!]! : first(m);
+  if (m.kind === 'onCall') {
+    const onCall = view.people.find((p) => p.id === m.personId);
+    return onCall && m.difficulty !== undefined && onCall.skill >= m.difficulty ? 'leave' : 'backUp';
+  }
+  if (m.kind === 'checkIn') {
+    const p = view.projects.find((x) => x.id === m.projectId);
+    if (p && p.schedule !== 'onSchedule' && view.player.reputation >= OKAY) return 'cutScope';
+    return rested ? 'replan' : 'pushOn';
+  }
+  if (m.kind === 'interview') {
+    if (rested) return 'self';
+    const asked = offered(seen, m, 'ask:')[0];
+    return asked ? `ask:${asked.id}` : 'skip';
+  }
+  if (isIntake(m)) return view.projects.length < 2 && rested ? 'take' : 'decline';
+  const givable = offered(seen, m, 'give:');
+  const able = givable.find((p) => m.difficulty === undefined || p.skill >= m.difficulty);
+  if (able) return `give:${able.id}`;
+  if (rested) return 'self';
+  // Tired, with no one able: a stretch for someone with room lands part of the consequence; pushing back lands all of it.
+  const stretch = givable.find((p) => p.stress <= OKAY);
+  return stretch ? `give:${stretch.id}` : 'pushBack';
+}
+
+export const sound: Strategy = { name: 'sound', naive: false, habits: soundHabitChanges, choose: soundChoice };
+
+/** Sound practice with 1:1s every week and light ceremonies: a measurement of how much the habits matter. */
+export const soundHabits: Strategy = {
+  name: 'sound-habits',
   naive: false,
-  play(seen) {
-    const { view } = seen;
-    const commands: Command[] = [];
-    let hours = view.plannedHours;
-    const budget = LINE_TUNING.weeklyHours;
-    const add = (entry: NewEntry) => {
-      const cost = ACTIONS[entry.action].hours;
-      if (hours + cost > budget) return;
-      hours += cost;
-      commands.push(plan({ kind: 'calendar', add: [entry] }));
-    };
-
-    // Situations first: their choices apply at once and can change the team the plan is for.
-    commands.push(...answer(seen, (id, choices) => (choices.includes(BETTER_CHOICES[id] ?? '') ? BETTER_CHOICES[id]! : choices[0]!)));
-
-    // Inbox: on-call personally. Otherwise handle it yourself while your week has room, unless delegating it would
-    // serve the person's want; once out of room, delegate within reach, spreading the load; leave the rest.
-    const load = new Map<string, number>();
-    const reach = (d: View['inbox'][number]) =>
-      byStress(view).filter((p) => p.id !== requester(d) && p.skill >= d.difficulty && p.stress <= 2 && (load.get(p.id) ?? 0) < 2);
-    const delegateTo = (d: View['inbox'][number], to: string) => {
-      load.set(to, (load.get(to) ?? 0) + 1);
-      commands.push(plan({ kind: 'decide', demandId: d.id, decision: { kind: 'delegate', to } }));
-    };
-    const handle = (d: View['inbox'][number]) => {
-      hours += d.hours;
-      commands.push(plan({ kind: 'decide', demandId: d.id, decision: d.type === 'workIntake' ? { kind: 'accept' } : { kind: 'handle' } }));
-    };
-    for (const d of view.inbox) {
-      if (d.type === 'workIntake' || d.type === 'onCall') {
-        if (hours + d.hours <= budget + (d.type === 'onCall' ? LINE_TUNING.overtimeCapHours : 0)) handle(d);
-        continue;
-      }
-      const candidates = reach(d);
-      const growing = candidates.find((p) => p.want === 'growth' || p.want === 'autonomy');
-      if (growing) delegateTo(d, growing.id);
-      else if (hours + d.hours <= budget) handle(d);
-      else if (candidates[0]) delegateTo(d, candidates[0].id);
-    }
-
-    // Calendar: recover when stretched, interview for vacancies, plan risky projects, then serve known wants in turn.
-    // Everyone gets a fortnightly 1:1, including people hired after the default calendar was set up.
-    const withOneOnOne = new Set(view.calendar.filter((e) => e.action === 'line-manager.one-on-one' && e.cadence !== 'once').map((e) => ('id' in e.target ? e.target.id : '')));
-    for (const p of view.people) if (!withOneOnOne.has(p.id)) add({ action: 'line-manager.one-on-one', target: { kind: 'person', id: p.id }, cadence: 'biweekly' });
-    if (view.player.stress >= 3) add({ action: 'line-manager.recovery', target: { kind: 'player' }, cadence: 'once' });
-    for (const v of view.vacancies) add({ action: 'line-manager.interview', target: { kind: 'vacancy', id: v.id }, cadence: 'once' });
-    for (const p of view.projects) if (p.risk >= 3) add({ action: 'line-manager.project-planning', target: { kind: 'project', id: p.id }, cadence: 'once' });
-    const people = view.people;
-    if (people.length > 0) {
-      const p = people[seen.week % people.length]!;
-      const target = { kind: 'person' as const, id: p.id };
-      if (p.want === 'growth') add({ action: 'line-manager.coaching', target, cadence: 'once' });
-      if (p.want === 'recognition') add({ action: 'line-manager.recognition', target, cadence: 'once' });
-    }
-    if (view.people.some((p) => p.stress >= 3) && seen.week % 4 === 0) add({ action: 'line-manager.team-event', target: { kind: 'team', id: 't1' }, cadence: 'once' });
+  habits(seen) {
+    const commands = soundHabitChanges(seen);
+    if (seen.view.habits.oneOnOnes !== 'weekly') commands.push(habit('oneOnOnes', 'weekly'));
+    if (seen.view.habits.ceremonies !== 'light') commands.push(habit('ceremonies', 'light'));
     return commands;
   },
+  choose: soundChoice,
 };
 
-export const STRATEGIES: Strategy[] = [idle, hero, delegator, contrarian, sound];
+export const STRATEGIES: Strategy[] = [idle, hero, delegator, contrarian, sound, soundHabits];

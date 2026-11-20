@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { LEVEL, LINE_TUNING, NAMES, arriveDemands, scorecard, view } from '../../../src/levels/line-manager';
+import { LEVEL, LINE_TUNING, NAMES, beginWeek, scorecard, view } from '../../../src/levels/line-manager';
+import { PERSONALITIES } from '../../../src/personalities';
 import { behindScheduleProjects, overdueProjects } from '../../../src/sim';
-import { commit, engineers, nextWeek, projects, run, seeds, teamOf } from './fixtures';
+import { PLAYER_ACTION_IDS } from '../../../src/actions';
+import { choose, end, engineers, habit, nextWeek, projects, run, seeds, teamOf } from './fixtures';
 
 
 describe('starting organization', () => {
-  // @spec LINE-ORG-001
+  // @spec LINE-ORG-001, LINE-ORG-004
   it('generates one player-led team of five engineers and two projects, one at risk', () => {
     for (const seed of seeds(10)) {
       const { sim } = run(seed);
@@ -18,6 +20,8 @@ describe('starting organization', () => {
       expect(people.every((p) => p.role === 'engineer')).toBe(true);
       for (const field of ['skill', 'motivation', 'stress'] as const) expect(new Set(people.map((p) => p[field])).size).toBeGreaterThan(1);
       expect(new Set(people.map((p) => p.want)).size).toBeGreaterThan(1);
+      expect(new Set(people.map((p) => p.personality)).size).toBeGreaterThanOrEqual(3);
+      for (const p of people) expect(PERSONALITIES).toContain(p.personality);
       const team = projects(sim).map((id) => sim.projects[id]!);
       expect(team).toHaveLength(2);
       expect(new Set(team.map((p) => p.risk)).size).toBe(2);
@@ -48,7 +52,33 @@ describe('starting organization', () => {
 describe('level parameters', () => {
   // @spec LINE-WEEK-001
   it('declares its id, time step, situation limit and review cadence', () => {
-    expect(LEVEL).toEqual({ id: 'line-manager', weeksPerStep: 1, situationLimit: 2, reviewEveryWeeks: 13 });
+    expect(LEVEL).toMatchObject({ id: 'line-manager', weeksPerStep: 1, reviewEveryWeeks: 13 });
+    expect(LEVEL.situationLimit).toBeGreaterThan(0);
+  });
+});
+
+describe('causes', () => {
+  // @spec LINE-STATE-004
+  it('uses only action ids from the player action catalogue', () => {
+    const used = new Set<string>();
+    for (const seed of seeds(6)) {
+      let { level, sim } = run(seed);
+      level = habit(habit(level, sim, 'approvals', engineers(sim)[0]!), sim, 'growth', engineers(sim)[1]!);
+      for (let week = 0; week < 8; week++) {
+        level = beginWeek({ ...level, vacancies: week === 0 ? [{ id: 'v-test', interviews: 0 }] : level.vacancies }, sim);
+        level = { ...level, habits: { ...level.habits, nightPages: week % 3 === 0 ? 'me' : 'rotation' } };
+        for (const m of level.moments.filter((x) => x.status === 'open')) {
+          const r = choose(level, sim, m.id, m.choices[(seed + week) % m.choices.length]!.id);
+          r.log.forEach((x) => x.cause.kind === 'action' && used.add(x.cause.actionId));
+          ({ level, sim } = r);
+        }
+        const ended = end(level, sim);
+        ended.log.forEach((x) => x.cause.kind === 'action' && used.add(x.cause.actionId));
+        ({ level, sim } = nextWeek(level, sim));
+      }
+    }
+    expect(used.size).toBeGreaterThan(5);
+    for (const id of used) expect(PLAYER_ACTION_IDS).toContain(id);
   });
 });
 
@@ -56,8 +86,9 @@ describe('purity and determinism', () => {
   // @spec LINE-STATE-001
   it('keeps a state that survives JSON unchanged', () => {
     let { level, sim } = run(3);
-    level = arriveDemands(level, sim);
-    ({ level, sim } = commit(level, sim));
+    level = beginWeek(level, sim);
+    const open = level.moments.find((m) => m.status === 'open');
+    if (open) ({ level, sim } = choose(level, sim, open.id, open.choices[0]!.id));
     ({ level, sim } = nextWeek(level, sim));
     expect(JSON.parse(JSON.stringify(level))).toEqual(level);
   });
@@ -66,11 +97,13 @@ describe('purity and determinism', () => {
   it('leaves its inputs unchanged', () => {
     const { level, sim } = run(3);
     const before = structuredClone({ level, sim });
-    const arrived = arriveDemands(level, sim);
+    const arrived = beginWeek(level, sim);
     view(arrived, sim);
     scorecard(arrived, sim);
-    commit(arrived, sim);
+    end(arrived, sim);
     nextWeek(arrived, sim);
+    const open = arrived.moments.find((m) => m.status === 'open');
+    if (open) choose(arrived, sim, open.id, open.choices[0]!.id);
     expect({ level, sim }).toEqual(before);
     expect(arrived).not.toBe(level);
   });
@@ -81,10 +114,11 @@ describe('purity and determinism', () => {
       let { level, sim } = run(5);
       const trace: unknown[] = [];
       for (let week = 0; week < 6; week++) {
-        level = arriveDemands(level, sim);
-        const committed = commit(level, sim);
-        trace.push(committed.report);
-        ({ level, sim } = nextWeek(committed.level, committed.sim));
+        level = beginWeek(level, sim);
+        for (const m of level.moments.filter((x) => x.status === 'open')) ({ level, sim } = choose(level, sim, m.id, m.choices[0]!.id));
+        const next = nextWeek(level, sim);
+        trace.push(next.recap);
+        ({ level, sim } = next);
       }
       return { level, sim, trace, team: teamOf(sim) };
     };

@@ -10,6 +10,7 @@ import {
   type PerformanceLevel,
   type SimState,
 } from '../sim';
+import { PERSONALITIES } from '../personalities';
 import type { RoleKind } from './types';
 
 /** What a property's values are, which decides the operators and literals it can be compared with. */
@@ -40,6 +41,7 @@ const PROPERTIES: Record<Subject, Record<string, PropertyType>> = {
     stress: NUMBER,
     trust: NUMBER,
     want: WANTS,
+    personality: enumOf('personality', PERSONALITIES),
     role: enumOf('role', ['engineer', 'manager']),
     performance: RATING,
     plan: PLANS,
@@ -104,7 +106,7 @@ const ledTeam = (sim: SimState, personId: string) =>
     });
 
 /** The value of a property of the entity with the given id, or undefined when it has none. */
-// @spec SIT-COND-006, SIT-COND-012
+// @spec SIT-COND-006, SIT-COND-012, SIT-COND-015
 export function propertyValue(sim: SimState, subject: Subject, id: string, property: string): Value {
   switch (subject) {
     case 'person': {
@@ -118,6 +120,7 @@ export function propertyValue(sim: SimState, subject: Subject, id: string, prope
         case 'stress':
         case 'trust':
         case 'want':
+        case 'personality':
         case 'role':
         case 'performance':
         case 'lowMotivationWeeks':

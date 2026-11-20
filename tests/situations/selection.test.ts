@@ -191,7 +191,7 @@ describe('presenting', () => {
   });
 
   // @spec SIT-SEL-010
-  it('returns presentation id, situation id, bindings, text and offered choices', () => {
+  it('returns presentation id, situation id, bindings, day and time, text and offered choices', () => {
     const s = about('s', ONLY_E1);
     s.choices.push({
       id: 'hidden',
@@ -201,10 +201,14 @@ describe('presenting', () => {
     });
     const p = select(engine(), fresh(), [s]).presented[0]!;
     expect(typeof p.id).toBe('string');
+    expect([0, 1, 2, 3, 4]).toContain(p.day);
+    expect(['morning', 'afternoon']).toContain(p.time);
     expect(p).toEqual({
       id: p.id,
       situationId: 's',
       bindings: { engineer: 'e1' },
+      day: p.day,
+      time: p.time,
       text: 'e1 looks tired.',
       choices: [{ id: 'talk', label: 'Talk to e1' }],
     });
@@ -242,5 +246,42 @@ describe('presenting', () => {
     const next = select(first.engine, patch(sim, (s) => (s.week = 3)), []);
     expect(debriefsSince(next.engine, 0)).toEqual([{ week: 2, situationId: 's', bindings: { engineer: 'e1' }, status: 'ignored' }]);
     expect(resolve(next.engine, sim, [about('s', ONLY_E1)], first.presented[0]!, 'talk').kind).toBe('error');
+  });
+});
+
+describe('place in the week', () => {
+  const placed = (overrides: Record<string, unknown>, seed: number) => {
+    const s = plain('s', overrides as never);
+    return select(engine(seed), fresh(seed), [s]).presented[0]!;
+  };
+
+  // @spec SIT-SEL-015
+  it('keeps an authored day and time', () => {
+    for (const seed of seeds(10)) expect(placed({ day: 'thursday', time: 'night' }, seed)).toMatchObject({ day: 3, time: 'night' });
+  });
+
+  // @spec SIT-SEL-015
+  it('draws a weekday and a morning or afternoon for whatever is not authored', () => {
+    const days = new Set<number>();
+    const times = new Set<string>();
+    for (const seed of seeds(60)) {
+      const p = placed({}, seed);
+      days.add(p.day);
+      times.add(p.time);
+      expect(placed({ day: 'friday' }, seed).day).toBe(4);
+      expect(['morning', 'afternoon']).toContain(placed({ day: 'friday' }, seed).time);
+      expect(placed({ time: 'night' }, seed).time).toBe('night');
+    }
+    expect([...days].sort()).toEqual([0, 1, 2, 3, 4]);
+    expect([...times].sort()).toEqual(['afternoon', 'morning']);
+  });
+
+  // @spec SIT-SEL-015, SIT-SEL-011
+  it('draws placements after the selection, so authoring a time leaves who is selected unchanged', () => {
+    for (const seed of seeds(20)) {
+      const pick = (authored: boolean) =>
+        select(engine(seed), fresh(seed), [plain('a', (authored ? { day: 'monday', time: 'morning' } : {}) as never), plain('b'), plain('c')], 2).presented.map((p) => [p.situationId, p.bindings]);
+      expect(pick(true)).toEqual(pick(false));
+    }
   });
 });

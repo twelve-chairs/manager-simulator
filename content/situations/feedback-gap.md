@@ -17,6 +17,40 @@ choices:
   - id: direct
     label: "Give {engineer} specific feedback on what isn't landing"
     outcomes:
+      - id: lands-blunt
+        when:
+          all:
+            - { value: engineer.trust, atLeast: 50 }
+            - { value: engineer.personality, is: blunt }
+        effects:
+          - type: value
+            target: engineer
+            field: skill
+            amount: 3
+            historyNote: Got straight feedback on their work
+          - type: value
+            target: engineer
+            field: motivation
+            amount: -2
+        aftermath: "\"Finally, someone says it straight.\" {engineer} rewrites the pull request that afternoon."
+        debrief: "Blunt people often want feedback the way they give it: direct, and without padding. It lands best that way."
+      - id: lands-anxious
+        when:
+          all:
+            - { value: engineer.trust, atLeast: 50 }
+            - { value: engineer.personality, is: anxious }
+        effects:
+          - type: value
+            target: engineer
+            field: skill
+            amount: 3
+            historyNote: Got specific feedback on their work
+          - type: value
+            target: engineer
+            field: motivation
+            amount: -2
+        aftermath: "{engineer} thanks you, then asks twice whether they're in trouble. They aren't, and you say so."
+        debrief: "Anxious people hear feedback louder than it is said. Say what is going well too, and say plainly that the problem is small."
       - id: lands
         when:
           value: engineer.trust

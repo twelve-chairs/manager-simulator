@@ -10,7 +10,7 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-STATE-004**: The simulation core shall draw all randomness from a seeded generator whose state is stored in the simulation state.
 - [x] **SIM-STATE-005**: When the simulation core iterates over people, teams or projects, it shall process them in ascending id order.
 - [x] **SIM-STATE-006**: When an effect or rule would set a 0–100 bounded value below 0 or above 100, the simulation core shall clamp it to 0 or 100 respectively.
-- [ ] **SIM-STATE-008**: When the starting organization or a hire gives a person a personality, the simulation core shall keep it on the person, and no simulation rule shall read it.
+- [x] **SIM-STATE-008**: When the starting organization or a hire gives a person a personality, the simulation core shall keep it on the person, and no simulation rule shall read it.
 - [x] **SIM-STATE-007**: The simulation core shall model only the player's own organization, treating every team in the state as under the player.
 
 ## Game time

@@ -1,6 +1,7 @@
 import { applyEffects, nextRandom as random, type Cause, type Effect, type SimState, type ValueTarget } from '../sim';
 import { candidatesOf, evaluateCondition, type EvalContext } from './conditions';
 import { render } from './text';
+import { DAYS } from './types';
 import type {
   DebriefRecord,
   EngineState,
@@ -94,7 +95,7 @@ function isEligible(s: EngineState, sim: SimState, situation: Situation, level: 
 
 /** Selects up to `limit` situations for the career level, closing any still open from an earlier selection as ignored. */
 // @spec SIT-COND-014
-// @spec SIT-SEL-001, SIT-SEL-002, SIT-SEL-003, SIT-SEL-006, SIT-SEL-007, SIT-SEL-008, SIT-SEL-009, SIT-SEL-010, SIT-SEL-012, SIT-SEL-013
+// @spec SIT-SEL-001, SIT-SEL-002, SIT-SEL-003, SIT-SEL-006, SIT-SEL-007, SIT-SEL-008, SIT-SEL-009, SIT-SEL-010, SIT-SEL-012, SIT-SEL-013, SIT-SEL-015
 // @spec SIT-STATE-002, SIT-STATE-003, SIT-STATE-005
 export function selectSituations(
   engine: EngineState,
@@ -136,8 +137,14 @@ export function selectSituations(
       const id = `presentation-${s.presentationCount}`;
       s.open.push({ id, situationId: situation.id, week: sim.week, bindings });
       for (const role of situation.roles) if (role.kind === 'person') boundPeople.add(bindings[role.name]!);
-      presented.push({ id, situationId: situation.id, bindings: { ...bindings }, text: render(situation.text, sim, bindings, kinds), choices });
+      presented.push({ id, situationId: situation.id, bindings: { ...bindings }, day: 0, time: 'morning', text: render(situation.text, sim, bindings, kinds), choices });
     }
+  }
+  // Placed only once the selection is made, so authoring a situation's time never changes which situations are selected.
+  for (const p of presented) {
+    const situation = situations.find((x) => x.id === p.situationId)!;
+    p.day = situation.day ? DAYS.indexOf(situation.day) : Math.floor(random(s) * DAYS.length);
+    p.time = situation.time ?? (random(s) < 0.5 ? 'morning' : 'afternoon');
   }
   return { engine: s, presented };
 }

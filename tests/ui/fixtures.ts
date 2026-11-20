@@ -49,9 +49,9 @@ export function step(r: Run, command: Command): Run {
 
 export const level = (r: Run) => r.level as LineState;
 
-/** Ends weeks until the run leaves the planning phase or `n` weeks have passed. */
+/** Ends weeks until the run leaves the week phase or `n` weeks have passed. */
 export function endWeeks(r: Run, n: number): Run {
   let x = r;
-  for (let i = 0; i < n && x.phase === 'planning'; i++) x = step(x, { kind: 'endWeek' });
+  for (let i = 0; i < n && x.phase === 'week'; i++) x = step(x, { kind: 'endWeek' });
   return x;
 }

@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { lineManagerLevel, type LineState } from '../../src/levels/line-manager';
-import { apply, newRun, replay, type Command, type Run } from '../../src/loop';
-import { debriefsSince, selectSituations } from '../../src/situations';
+import { apply, newRun, replay, type AnyLevel, type Command, type Run } from '../../src/loop';
+import { debriefsSince, selectSituations, type Situation } from '../../src/situations';
 import { advance } from '../../src/sim';
 import { conductReview } from '../../src/review';
-import { CONTENT, deps, endWeeks, step, stubReview } from './fixtures';
+import { plain } from '../situations/fixtures';
+import { CONTENT, answerCurrent, choicesOf, current, deps, endWeeks, step, stubReview, waitUntil } from './fixtures';
 
 const L = lineManagerLevel;
 const start = (seed = 1, d = deps()) => newRun(seed, CONTENT, d);
 const level = (run: Run) => run.level as LineState;
+const TIME_RANK = { morning: 0, afternoon: 1, night: 2 } as const;
 
 /** Expects a command to fail and leave the run unchanged. */
-function expectRefused(run: Run, command: Command, d = deps()) {
+function expectRefused(run: Run, command: Command, d = deps(), content = CONTENT) {
   const before = structuredClone(run);
-  const result = apply(run, command, CONTENT, d);
+  const result = apply(run, command, content, d);
   expect(result.ok).toBe(false);
   expect(run).toEqual(before);
   return result;
@@ -21,23 +23,24 @@ function expectRefused(run: Run, command: Command, d = deps()) {
 
 describe('the run', () => {
   // @spec LOOP-RUN-001
-  it('starts week 0 of the lowest level in planning, with situations and no last week', () => {
+  it('starts week 0 of the lowest level in the week phase, with its moments and no last week', () => {
     const run = start(3);
     const { sim, level: initial } = L.start(3);
     const begun = L.beginWeek(initial, sim);
-    expect(run).toMatchObject({ seed: 3, levelId: 'line-manager', phase: 'planning', lastWeek: null, review: null, ending: null, commands: [] });
+    expect(run).toMatchObject({ seed: 3, levelId: 'line-manager', phase: 'week', lastWeek: null, review: null, ending: null, commands: [] });
+    expect(run).not.toHaveProperty('plan');
     expect(run.sim).toEqual(sim);
     expect(run.level).toEqual(begun);
-    expect(run.plan).toEqual(L.emptyPlan());
     expect(run.presented.length).toBeGreaterThan(0);
     expect(run.presented.length).toBeLessThanOrEqual(L.params.situationLimit);
-    expect(run.presented.every((p) => p.status === 'open')).toBe(true);
+    expect(run.week.length).toBe(L.moments(begun, sim).length + run.presented.length);
+    expect(run.week.every((m) => m.status === 'open')).toBe(true);
   });
 
   // @spec LOOP-RUN-002
   it('survives JSON unchanged', () => {
     let run = endWeeks(start(), 3);
-    run = step(run, { kind: 'answer', presentationId: run.presented[0]!.presentation.id, choiceId: run.presented[0]!.presentation.choices[0]!.id });
+    run = answerCurrent(run);
     expect(JSON.parse(JSON.stringify(run))).toEqual(run);
   });
 
@@ -46,7 +49,9 @@ describe('the run', () => {
     const run = start();
     const before = structuredClone(run);
     step(run, { kind: 'endWeek' });
-    step(run, { kind: 'answer', presentationId: run.presented[0]!.presentation.id, choiceId: run.presented[0]!.presentation.choices[0]!.id });
+    answerCurrent(run);
+    step(run, { kind: 'wait' });
+    step(run, { kind: 'plan', command: { kind: 'habit', habit: 'ceremonies', value: 'light' } });
     expect(run).toEqual(before);
   });
 
@@ -57,21 +62,20 @@ describe('the run', () => {
     const failed = apply(run, { kind: 'acknowledge' }, CONTENT, deps());
     expect(failed.ok).toBe(false);
     expect(failed.run.commands).toEqual([{ kind: 'endWeek' }]);
-    run = step(run, { kind: 'endWeek' });
-    expect(run.commands).toEqual([{ kind: 'endWeek' }, { kind: 'endWeek' }]);
+    run = step(run, { kind: 'wait' });
+    expect(run.commands).toEqual([{ kind: 'endWeek' }, { kind: 'wait' }]);
   });
 
   // @spec LOOP-RUN-005
   it('replays a run from its seed, content and commands', () => {
     let run = start(9);
-    for (let week = 0; week < 15; week++) {
+    for (let week = 0; week < 15 && run.phase !== 'ended'; week++) {
       if (run.phase === 'review') run = step(run, { kind: 'acknowledge' });
-      const open = run.presented.find((p) => p.status === 'open');
-      if (open) run = step(run, { kind: 'answer', presentationId: open.presentation.id, choiceId: open.presentation.choices[0]!.id });
-      const demand = level(run).inbox[0];
-      if (demand && demand.type !== 'workIntake') run = step(run, { kind: 'plan', command: { kind: 'decide', demandId: demand.id, decision: { kind: 'handle' } } });
+      if (week === 2) run = step(run, { kind: 'plan', command: { kind: 'habit', habit: 'oneOnOnes', value: 'weekly' } });
+      for (let i = 0; current(run) && i < 6; i++) run = i % 3 === 2 ? step(run, { kind: 'wait' }) : answerCurrent(run, week + i);
       run = step(run, { kind: 'endWeek' });
     }
+    expect(run.commands.length).toBeGreaterThan(30);
     expect(replay(9, CONTENT, deps(), run.commands)).toEqual(run);
   });
 });
@@ -79,66 +83,116 @@ describe('the run', () => {
 describe('commands', () => {
   // @spec LOOP-CMD-001
   it('refuses commands the phase does not allow', () => {
-    const planning = start();
-    expectRefused(planning, { kind: 'acknowledge' });
-    const review = endWeeks(planning, 13);
+    const week = start();
+    expectRefused(week, { kind: 'acknowledge' });
+    const review = endWeeks(week, 13);
     expect(review.phase).toBe('review');
-    expectRefused(review, { kind: 'endWeek' });
-    expectRefused(review, { kind: 'plan', command: { kind: 'clear', demandId: 'x' } });
-    const ended = step(endWeeks(start(1, deps(stubReview('managedOut').review)), 13, deps(stubReview('managedOut').review)), { kind: 'acknowledge' }, deps(stubReview('managedOut').review));
+    for (const command of [{ kind: 'endWeek' }, { kind: 'wait' }, { kind: 'plan', command: { kind: 'habit', habit: 'ceremonies', value: 'light' } }] as Command[]) expectRefused(review, command);
+    const managedOut = deps(stubReview('managedOut').review);
+    const ended = step(endWeeks(start(1, managedOut), 13, managedOut), { kind: 'acknowledge' }, managedOut);
     expect(ended.phase).toBe('ended');
-    for (const command of [{ kind: 'endWeek' }, { kind: 'acknowledge' }] as Command[]) expectRefused(ended, command);
+    for (const command of [{ kind: 'endWeek' }, { kind: 'acknowledge' }, { kind: 'wait' }] as Command[]) expectRefused(ended, command);
 
     // a run from a tampered save is refused, not thrown on
-    expectRefused({ ...planning, phase: 'paused' as never }, { kind: 'endWeek' });
-    expectRefused({ ...planning, levelId: 'director' }, { kind: 'endWeek' });
-    expectRefused(planning, { kind: 'plan', command: null });
+    expectRefused({ ...week, phase: 'paused' as never }, { kind: 'endWeek' });
+    expectRefused({ ...week, levelId: 'director' }, { kind: 'endWeek' });
+    expectRefused(week, { kind: 'plan', command: null });
   });
 
   // @spec LOOP-CMD-002
-  it('passes plan commands to the level and refuses ones it rejects', () => {
+  it('passes plan commands to the level at once and refuses ones it rejects', () => {
     const run = start();
-    const e = Object.keys(run.sim.people).sort()[0]!;
-    const command = { kind: 'calendar', add: [{ action: 'line-manager.coaching', target: { kind: 'person', id: e }, cadence: 'once' }] };
+    const command = { kind: 'habit', habit: 'ceremonies', value: 'light' };
     const planned = step(run, { kind: 'plan', command });
-    const direct = L.updatePlan(run.level as LineState, run.sim, run.plan as never, command as never);
+    const direct = L.plan(level(run), run.sim, command);
     if (!direct.ok) throw new Error(direct.error);
     expect(planned.level).toEqual(direct.level);
-    expect(planned.plan).toEqual(direct.plan);
-    expectRefused(run, { kind: 'plan', command: { kind: 'decide', demandId: 'missing', decision: { kind: 'handle' } } });
+    expect(planned.sim).toEqual(run.sim);
+    expectRefused(run, { kind: 'plan', command: { kind: 'habit', habit: 'coffee', value: 'yes' } });
   });
 
   // @spec LOOP-CMD-003
-  it('resolves answers at once and records the aftermath, or the expiry', () => {
-    const run = start();
-    const open = run.presented[0]!;
-    const answered = step(run, { kind: 'answer', presentationId: open.presentation.id, choiceId: open.presentation.choices[0]!.id });
-    const record = answered.presented.find((p) => p.presentation.id === open.presentation.id)!;
-    expect(record.status).toBe('answered');
-    expect(typeof record.aftermath).toBe('string');
+  it('applies a level moment’s choice through the level and records its reaction', () => {
+    const run = waitUntil(start(), 'level');
+    const m = current(run)!;
+    const choiceId = choicesOf(run, m)[0]!;
+    const answered = step(run, { kind: 'answer', momentId: m.id, choiceId });
+    const direct = L.choose(level(run), run.sim, m.id, choiceId);
+    if (!direct.ok) throw new Error(direct.error);
+    expect(answered.level).toEqual(direct.level);
+    expect(answered.sim).toEqual(direct.sim);
+    expect(answered.week.find((x) => x.id === m.id)).toMatchObject({ status: 'answered', text: direct.reaction });
+  });
+
+  // @spec LOOP-CMD-003
+  it('resolves a situation through the engine and records its aftermath, or its expiry', () => {
+    const run = waitUntil(start(), 'situation');
+    const m = current(run)!;
+    const answered = answerCurrent(run);
+    expect(answered.week.find((x) => x.id === m.id)!.status).toBe('answered');
+    expect(typeof answered.week.find((x) => x.id === m.id)!.text).toBe('string');
     expect(answered.engine).not.toEqual(run.engine);
 
     // a situation about someone who has since left expires
     const personalOnly = [CONTENT[2]!];
-    const about = newRun(1, personalOnly, deps());
+    const about = waitUntil(newRun(1, personalOnly, deps()), 'situation', deps(), personalOnly);
     const personal = about.presented[0]!;
     const gone = structuredClone(about);
-    gone.sim.people[personal.presentation.bindings.engineer!]!.status = 'departed';
-    const expired = step(gone, { kind: 'answer', presentationId: personal.presentation.id, choiceId: 'talk' }, deps(), personalOnly);
-    expect(expired.presented[0]!.status).toBe('expired');
+    gone.sim.people[personal.bindings.engineer!]!.status = 'departed';
+    const expired = step(gone, { kind: 'answer', momentId: personal.id, choiceId: 'talk' }, deps(), personalOnly);
+    expect(expired.week.find((x) => x.id === personal.id)!.status).toBe('expired');
   });
 
   // @spec LOOP-CMD-004
-  it('refuses answers the situation engine rejects', () => {
+  it('refuses answers the level or the situation engine rejects', () => {
+    const lvl = waitUntil(start(), 'level');
+    expectRefused(lvl, { kind: 'answer', momentId: current(lvl)!.id, choiceId: 'no-such-choice' });
+    const sit = waitUntil(start(), 'situation');
+    expectRefused(sit, { kind: 'answer', momentId: current(sit)!.id, choiceId: 'no-such-choice' });
+  });
+
+  // @spec LOOP-CMD-006
+  it('refuses answering or waiting on anything but the current moment', () => {
     const run = start();
-    expectRefused(run, { kind: 'answer', presentationId: run.presented[0]!.presentation.id, choiceId: 'no-such-choice' });
-    expectRefused(run, { kind: 'answer', presentationId: 'no-such-presentation', choiceId: 'ok' });
+    const later = run.week[1]!;
+    expectRefused(run, { kind: 'answer', momentId: later.id, choiceId: choicesOf(run, later)[0]! });
+    expectRefused(run, { kind: 'answer', momentId: 'no-such-moment', choiceId: 'self' });
+    let done = run;
+    while (current(done)) done = step(done, { kind: 'wait' });
+    expectRefused(done, { kind: 'wait' });
+    expectRefused(done, { kind: 'answer', momentId: run.week[0]!.id, choiceId: choicesOf(run, run.week[0]!)[0]! });
+  });
+
+  // @spec LOOP-CMD-007, LOOP-WEEK-009
+  it('lets the current moment wait without telling the level or the engine', () => {
+    const run = start();
+    const [first, second] = run.week as [Run['week'][number], Run['week'][number]];
+    expect(current(run)).toEqual(first);
+    const waited = step(run, { kind: 'wait' });
+    expect(waited.week[0]!.status).toBe('waited');
+    expect({ level: waited.level, sim: waited.sim, engine: waited.engine }).toEqual({ level: run.level, sim: run.sim, engine: run.engine });
+    expect(current(waited)!.id).toBe(second.id);
+  });
+
+  // @spec LOOP-CMD-008
+  it('expires a later level moment the level no longer reports open after an answer', () => {
+    // a level that reports one later moment closed, as if the current answer had made it impossible
+    const closed = new Set<string>();
+    const closing: AnyLevel = { ...L, moments: (l: LineState, s) => L.moments(l, s).map((m) => (closed.has(m.id) ? { ...m, open: false } : m)) };
+    const d = { ...deps(), levels: [closing] };
+    const run = waitUntil(newRun(1, CONTENT, d), 'level', d);
+    const target = run.week.find((x) => x.source === 'level' && x.status === 'open' && x.id !== current(run)!.id)!;
+    closed.add(target.id);
+    const answered = answerCurrent(run, 0, d);
+    expect(answered.week.find((x) => x.id === target.id)!.status).toBe('expired');
+    expect(answered.week.filter((x) => x.source === 'situation').map((x) => x.status)).toEqual(run.week.filter((x) => x.source === 'situation').map((x) => x.status));
   });
 
   // @spec LOOP-CMD-005
-  it('ends a week with situations unanswered, which close as ignored', () => {
+  it('ends a week with moments still open, marking them waited; situations close as ignored', () => {
     const run = start();
     const next = step(run, { kind: 'endWeek' });
+    expect(next.lastWeek!.moments.every((m) => m.status === 'waited')).toBe(true);
     expect(debriefsSince(next.engine, 0).map((r) => r.status)).toEqual(run.presented.map(() => 'ignored'));
   });
 });
@@ -146,37 +200,53 @@ describe('commands', () => {
 describe('a week', () => {
   // @spec LOOP-WEEK-001
   it('refuses to end a week the level rejects', () => {
-    let run = start();
-    const e = Object.keys(run.sim.people).sort()[0]!;
-    const coaching = { action: 'line-manager.coaching', target: { kind: 'person', id: e }, cadence: 'once' };
-    run = step(run, { kind: 'plan', command: { kind: 'calendar', add: Array.from({ length: 40 }, () => coaching) } });
-    expectRefused(run, { kind: 'endWeek' });
+    const failing: AnyLevel = { ...L, endWeek: () => ({ ok: false, error: 'no' }) };
+    const d = { ...deps(), levels: [failing] };
+    expectRefused(newRun(1, CONTENT, d), { kind: 'endWeek' }, d);
   });
 
   // @spec LOOP-WEEK-002, LOOP-WEEK-005
-  it('commits, advances, runs after-advance, then begins the next week', () => {
+  it('ends the week, advances, runs after-advance, then begins the next week', () => {
     const run = start(2);
     const next = step(run, { kind: 'endWeek' });
-    const committed = L.commit(level(run), run.sim, run.plan as never);
-    if (!committed.ok) throw new Error(committed.error);
-    const advanced = advance(committed.sim, L.params.weeksPerStep).state;
-    const after = L.afterAdvance(committed.level, advanced);
+    const ended = L.endWeek(level(run), run.sim);
+    if (!ended.ok) throw new Error(ended.error);
+    const advanced = advance(ended.sim, L.params.weeksPerStep).state;
+    const after = L.afterAdvance(ended.level, advanced);
     const begun = L.beginWeek(after.level, advanced);
     expect(next.sim.week).toBe(1);
     expect(next.sim).toEqual(advanced);
     expect(next.level).toEqual(begun);
-    expect(next.plan).toEqual(L.emptyPlan());
-    const selected = selectSituations(
-      // the engine after the answers this week: none
-      run.engine,
-      advanced,
-      CONTENT,
-      'line-manager',
-      L.params.situationLimit,
-      { weeksToReview: L.params.reviewEveryWeeks - 1 },
-    );
+    const selected = selectSituations(run.engine, advanced, CONTENT, 'line-manager', L.params.situationLimit, { weeksToReview: L.params.reviewEveryWeeks - 1 });
     expect(next.engine).toEqual(selected.engine);
-    expect(next.presented.map((p) => p.presentation)).toEqual(selected.presented);
+    expect(next.presented).toEqual(selected.presented);
+    const ids = [...L.moments(begun, advanced).map((m) => m.id), ...selected.presented.map((p) => p.id)];
+    expect(next.week.map((m) => m.id).sort()).toEqual(ids.sort());
+  });
+
+  // @spec LOOP-WEEK-008
+  it('orders the week by day and time, the level’s moments first within a slot', () => {
+    const fixed: AnyLevel = {
+      ...L,
+      params: { ...L.params, situationLimit: 2 },
+      moments: () => [
+        { id: 'lm-b', day: 0, time: 'night', open: true },
+        { id: 'lm-a', day: 0, time: 'morning', open: true },
+        { id: 'lm-c', day: 2, time: 'morning', open: true },
+      ],
+    };
+    const content: Situation[] = [plain('s-tue', { day: 'tuesday', time: 'morning' } as never), plain('s-mon-night', { day: 'monday', time: 'night' } as never)];
+    const run = newRun(1, content, { ...deps(), levels: [fixed] });
+    const night = run.presented.find((p) => p.situationId === 's-mon-night')!.id;
+    const tue = run.presented.find((p) => p.situationId === 's-tue')!.id;
+    expect(run.week.map((m) => m.id)).toEqual(['lm-a', 'lm-b', night, tue, 'lm-c']);
+
+    // and a real week is sorted the same way
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const w = start(seed).week;
+      const key = (m: (typeof w)[number]) => m.day * 10 + TIME_RANK[m.time] * 2 + (m.source === 'level' ? 0 : 1);
+      expect(w.map(key)).toEqual([...w.map(key)].sort((a, b) => a - b));
+    }
   });
 
   // @spec LOOP-WEEK-003
@@ -198,22 +268,21 @@ describe('a week', () => {
     const { review, calls } = stubReview();
     const d = deps(review);
     let run = endWeeks(start(1, d), 12, d);
-    expect(run.phase).toBe('planning');
+    expect(run.phase).toBe('week');
     const beforeReview = run;
     run = step(run, { kind: 'endWeek' }, d);
     expect(run.phase).toBe('review');
     expect(run.sim.week).toBe(13);
     expect(calls).toHaveLength(1);
     expect(calls[0]!.levelId).toBe('line-manager');
-    const committed = L.commit(level(beforeReview), beforeReview.sim, beforeReview.plan as never);
-    if (!committed.ok) throw new Error(committed.error);
-    const advanced = advance(committed.sim, 1).state;
-    expect(calls[0]!.assessment).toEqual(L.assess(L.afterAdvance(committed.level, advanced).level, advanced));
+    const ended = L.endWeek(level(beforeReview), beforeReview.sim);
+    if (!ended.ok) throw new Error(ended.error);
+    const advanced = advance(ended.sim, 1).state;
+    expect(calls[0]!.assessment).toEqual(L.assess(L.afterAdvance(ended.level, advanced).level, advanced));
     // every situation presented since week 0: the closed ones as recorded, the last week's still-open ones as ignored
     const closed = debriefsSince(beforeReview.engine, 0);
-    const stillOpen = beforeReview.presented.map((p) => ({ week: 12, situationId: p.presentation.situationId, bindings: p.presentation.bindings, status: 'ignored' }));
+    const stillOpen = beforeReview.presented.map((p) => ({ week: 12, situationId: p.situationId, bindings: p.bindings, status: 'ignored' }));
     expect(calls[0]!.debriefs).toEqual([...closed, ...stillOpen]);
-    expect(calls[0]!.debriefs.filter((r) => r.week === 12)).toHaveLength(beforeReview.presented.length);
     expect(run.sim.player.reputation).toBe(77);
     expect(run.review).toEqual({ rating: 'meets', outcome: 'continue', score: 0, measures: calls[0]!.assessment.measures.map((m) => ({ ...m, verdict: 'at' })), debriefs: calls[0]!.debriefs });
   });
@@ -253,9 +322,9 @@ describe('a week', () => {
     const content = [4, 12, 16].map(timed);
     let run = newRun(1, content, d);
     // week 0: the review falls after the step that reaches week 13, which ends at week 16
-    expect(run.presented.map((p) => p.presentation.situationId)).toEqual(['in-16']);
+    expect(run.presented.map((p) => p.situationId)).toEqual(['in-16']);
     const weeks: number[] = [];
-    while (run.phase === 'planning') {
+    while (run.phase === 'week') {
       run = step(run, { kind: 'endWeek' }, d, content);
       weeks.push(run.sim.week);
     }
@@ -263,7 +332,7 @@ describe('a week', () => {
     expect(calls).toHaveLength(1);
     run = step(run, { kind: 'acknowledge' }, d, content);
     // week 16: the next review is after the step that reaches week 26, which ends at week 28
-    expect(run.presented.map((p) => p.presentation.situationId)).toEqual(['in-12']);
+    expect(run.presented.map((p) => p.situationId)).toEqual(['in-12']);
     run = endWeeks(run, 5, d);
     expect(run.sim.week).toBe(28);
     expect(run.phase).toBe('review');
@@ -271,15 +340,16 @@ describe('a week', () => {
   });
 
   // @spec LOOP-WEEK-006
-  it('keeps the level report and the week’s aftermaths as last week', () => {
-    let run = start();
-    const open = run.presented[0]!;
-    run = step(run, { kind: 'answer', presentationId: open.presentation.id, choiceId: open.presentation.choices[0]!.id });
-    const aftermath = run.presented[0]!.aftermath!;
-    const committed = L.commit(level(run), run.sim, run.plan as never);
-    if (!committed.ok) throw new Error(committed.error);
+  it('keeps the level’s recap and every moment’s outcome as last week', () => {
+    let run = answerCurrent(start());
+    run = step(run, { kind: 'wait' });
+    const week = run.week.map((m) => ({ ...m, status: m.status === 'open' ? 'waited' : m.status }));
+    const ended = L.endWeek(level(run), run.sim);
+    if (!ended.ok) throw new Error(ended.error);
     run = step(run, { kind: 'endWeek' });
-    expect(run.lastWeek).toEqual({ report: committed.report, aftermaths: [aftermath] });
+    expect(run.lastWeek).toEqual({ recap: ended.recap, moments: week });
+    expect(run.lastWeek!.moments[0]!.status).toBe('answered');
+    expect(run.lastWeek!.moments[1]!.status).toBe('waited');
   });
 
   // @spec LOOP-WEEK-007
@@ -287,11 +357,11 @@ describe('a week', () => {
     const timed = (weeks: number) => ({ ...CONTENT[0]!, id: `review-in-${weeks}`, when: { value: 'review.weeksAway', is: weeks } }) as (typeof CONTENT)[number];
     const content = [timed(13), timed(1)];
     const atStart = newRun(1, content, deps());
-    expect(atStart.presented.map((p) => p.presentation.situationId)).toEqual(['review-in-13']);
+    expect(atStart.presented.map((p) => p.situationId)).toEqual(['review-in-13']);
     let run = atStart;
     for (let i = 0; i < 12; i++) run = step(run, { kind: 'endWeek' }, deps(), content);
     expect(run.sim.week).toBe(12);
-    expect(run.presented.map((p) => p.presentation.situationId)).toEqual(['review-in-1']);
+    expect(run.presented.map((p) => p.situationId)).toEqual(['review-in-1']);
   });
 });
 
@@ -299,10 +369,10 @@ describe('reviews', () => {
   // @spec LOOP-REV-001
   it('begins the next week when a review says continue', () => {
     const run = step(endWeeks(start(), 13), { kind: 'acknowledge' });
-    expect(run.phase).toBe('planning');
+    expect(run.phase).toBe('week');
     expect(run.review).toBeNull();
     expect(run.sim.week).toBe(13);
-    expect(run.presented.length).toBeGreaterThan(0);
+    expect(run.week.length).toBeGreaterThan(0);
   });
 
   // @spec LOOP-REV-002

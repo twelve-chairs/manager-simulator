@@ -1,4 +1,5 @@
 import {
+  cloneState,
   chanceOver,
   changePerson,
   changeTeam,
@@ -139,7 +140,7 @@ function gameTime(ctx: Ctx, weeks: number) {
 // @spec SIM-ADV-009, SIM-ADV-010, SIM-ADV-011, SIM-ADV-012, SIM-ADV-013, SIM-ADV-014, SIM-ADV-015
 // @spec SIM-TIME-002, SIM-TIME-003, SIM-LOG-002, SIM-STATE-007
 export function advance(state: SimState, weeks: number): OperationResult {
-  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  const ctx: Ctx = { s: cloneState(state), log: [] };
   projectWork(ctx, weeks);
   setbacks(ctx, weeks);
   stress(ctx, weeks);

@@ -58,7 +58,7 @@ const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
 
 const STARTING_ORGANIZATION: Cause = { kind: 'rule', ruleId: 'rule.startingOrganization' };
 
-// @spec SIM-STATE-001, SIM-STATE-002, SIM-STATE-003, SIM-STATE-004, SIM-STATE-005, SIM-STATE-006, SIM-TIME-001
+// @spec SIM-STATE-001, SIM-STATE-002, SIM-STATE-003, SIM-STATE-004, SIM-STATE-005, SIM-STATE-006, SIM-STATE-008, SIM-TIME-001
 // @spec SIM-PERF-001, SIM-PERF-020
 export function create(seed: number, org: StartingOrganization): SimState {
   const people: Person[] = org.people.map(({ performance, ...p }) => ({

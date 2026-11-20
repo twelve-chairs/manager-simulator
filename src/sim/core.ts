@@ -24,6 +24,26 @@ export interface Ctx {
 
 export const sortedIds = (record: Record<string, unknown>) => Object.keys(record).sort();
 
+const copyEach = <T>(record: Record<string, T>, copy: (x: T) => T): Record<string, T> =>
+  Object.fromEntries(Object.entries(record).map(([id, x]) => [id, copy(x)]));
+
+/**
+ * A copy of the state for one operation to change. History and rating entries are only ever appended or replaced
+ * whole, never edited, so the lists are copied and their entries shared; everything else is copied in full. Deep-copying
+ * every entry on every operation was most of a long run's time.
+ */
+// @spec SIM-STATE-002
+export function cloneState(s: SimState): SimState {
+  return {
+    week: s.week,
+    rngState: s.rngState,
+    player: { ...s.player, ratingHistory: [...s.player.ratingHistory] },
+    people: copyEach(s.people, (p) => ({ ...p, history: [...p.history], ...(p.departure && { departure: { ...p.departure } }) })),
+    teams: structuredClone(s.teams),
+    projects: copyEach(s.projects, (p) => ({ ...p })),
+  };
+}
+
 export const clamp100 = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
 
 /** mulberry32: a small, fast, seedable generator whose whole state is one 32-bit integer, advanced in place. */

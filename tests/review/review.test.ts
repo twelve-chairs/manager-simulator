@@ -81,7 +81,7 @@ describe('the rating', () => {
     const week13 = patch(strong, (s) => {
       s.week = 13;
       Object.values(s.projects).forEach((p) => (p.progress = p.scope - 1));
-      Object.values(s.people).forEach((p) => p.history.push({ week: 12, cause: { kind: 'action', actionId: 'line-manager.one-on-one' }, note: '1:1' }));
+      Object.values(s.people).forEach((p) => p.history.push({ week: 12, cause: { kind: 'action', actionId: 'line-manager.habit.one-on-ones' }, note: '1:1' }));
     });
     const a = lineManagerLevel.assess(l, week13);
     const result = review(week13, a);

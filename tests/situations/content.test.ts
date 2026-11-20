@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { compileDirectory, compileSituations } from '../../scripts/compile-situations';
 import { loadContent, type Situation } from '../../src/situations';
+import { PERSONALITIES } from '../../src/personalities';
 import { rejectionOf, sit, valid } from './fixtures';
 
 const FILE = `---
@@ -255,7 +256,7 @@ describe('loading and validation', () => {
     ).toMatch(/history/);
     valid(roleWhere({ value: 'engineer.performance', below: { value: 'engineer.correspondingRating' } }));
     valid(roleWhere({ value: 'engineer.want', in: ['growth', 'autonomy'] }));
-    valid(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', withinWeeks: 4, is: 0 }));
+    valid(roleWhere({ history: 'engineer', action: 'line-manager.habit.one-on-ones', withinWeeks: 4, is: 0 }));
   });
 
   // @spec SIT-CONTENT-016
@@ -310,9 +311,9 @@ describe('loading and validation', () => {
   // @spec SIT-CONTENT-020, SIT-CONTENT-021
   it('rejects history actions combined with situations, or not in the catalogue', () => {
     const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
-    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', situation: 'x', is: 0 }))).toMatch(/action/);
-    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-one', choice: 'x', is: 0 }))).toMatch(/action/);
-    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.one-on-ones', is: 0 }))).toMatch(/one-on-ones/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.habit.one-on-ones', situation: 'x', is: 0 }))).toMatch(/action/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.habit.one-on-ones', choice: 'x', is: 0 }))).toMatch(/action/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', action: 'line-manager.habit.one-on-one', is: 0 }))).toMatch(/one-on-one/);
     valid(roleWhere({ history: 'engineer', action: 'line-manager.delegate', withinWeeks: 8, atLeast: 2 }));
   });
 
@@ -344,5 +345,33 @@ describe('loading and validation', () => {
     const s = sit();
     s.choices[0]!.outcomes[0]!.effects = [{ type: 'rate', target: 'player', rating: 'meets' } as never];
     expect(rejectionOf(s)).toMatch(/player/);
+  });
+});
+
+describe('place in the week and personality', () => {
+  // @spec SIT-CONTENT-024
+  it('rejects a day or time the format does not define', () => {
+    for (const [field, value] of [['day', 'saturday'], ['day', 3], ['day', 'Monday'], ['time', 'evening'], ['time', '']] as const) {
+      expect(rejectionOf(sit({ [field]: value } as never))).toMatch(field);
+    }
+    valid(sit({ day: 'monday', time: 'night' } as never), sit({ id: 'friday-only', day: 'friday' } as never), sit({ id: 'night-only', time: 'night' } as never));
+  });
+
+  // @spec SIT-CONTENT-025
+  it('rejects personalities that are not in the catalogue', () => {
+    const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
+    expect(rejectionOf(roleWhere({ value: 'engineer.personality', is: 'ambitous' }))).toMatch(/ambitous/);
+    expect(rejectionOf(roleWhere({ value: 'engineer.personality', in: ['quiet', 'grumpy'] }))).toMatch(/grumpy/);
+    expect(rejectionOf(roleWhere({ value: 'engineer.personality', above: 'quiet' }))).toMatch(/above/);
+    for (const trait of PERSONALITIES) valid(roleWhere({ value: 'engineer.personality', is: trait }));
+    valid(roleWhere({ value: 'engineer.personality', in: ['quiet', 'anxious'] }));
+    valid(
+      sit({
+        roles: [
+          { name: 'engineer', kind: 'person' },
+          { name: 'peer', kind: 'person', where: { value: 'peer.personality', is: { value: 'engineer.personality' } } } as never,
+        ],
+      }),
+    );
   });
 });

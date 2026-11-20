@@ -43,6 +43,8 @@ export interface Person {
   stress: number;
   trust: number;
   want: Want;
+  /** A trait the career level gives the person; no simulation rule reads it. */
+  personality?: string;
   performance: PerformanceLevel;
   joinedWeek: number;
   wantServedWeek: number;
@@ -115,6 +117,7 @@ export interface NewPerson {
   stress: number;
   trust: number;
   want: Want;
+  personality?: string;
 }
 
 export interface NewProject {

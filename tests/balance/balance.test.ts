@@ -1,8 +1,9 @@
 /// <reference types="node" />
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/loop';
+import type { Moment } from './harness';
 import { BALANCE_TUNING, DEPS, playRun, realContent, runScore, summarize, table, type Seen, type Strategy, type Summary } from './harness';
-import { BETTER_CHOICES, STRATEGIES, idle, sound } from './strategies';
+import { BETTER_CHOICES, STRATEGIES, idle, sound, soundHabits } from './strategies';
 
 const CONTENT = realContent();
 const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 20) }, (_, i) => i + 1);
@@ -29,21 +30,51 @@ describe('playing runs', () => {
   });
 
   // @spec BAL-PLAY-002
-  it('shows strategies only what the player sees', () => {
+  it('lets strategies set habits each week, then decide each moment, seeing only what the player sees', () => {
+    const calls: string[] = [];
     const seen: Seen[] = [];
-    const recorder: Strategy = { name: 'recorder', naive: true, play: (s) => (seen.push(s), []) };
-    playRun(recorder, 2, CONTENT);
-    expect(seen.length).toBeGreaterThan(0);
+    const moments: Moment[] = [];
+    const recorder: Strategy = {
+      name: 'recorder',
+      naive: true,
+      habits: (s) => (calls.push(`habits ${s.week}`), seen.push(s), []),
+      choose: (s, m) => (calls.push(`moment ${s.week}`), seen.push(s), moments.push(m), m.choices[0]!.id),
+    };
+    const result = playRun(recorder, 2, CONTENT);
+    expect(calls[0]).toBe('habits 0');
+    // habits once at the start of every week played, before that week's moments
+    for (let week = 0; week < result.weeks; week++) {
+      const first = calls.findIndex((c) => c.endsWith(` ${week}`));
+      expect(calls[first]).toBe(`habits ${week}`);
+      expect(calls.filter((c) => c === `habits ${week}`)).toHaveLength(1);
+    }
+    expect(moments.length).toBeGreaterThan(result.weeks);
     for (const s of seen) {
-      expect(Object.keys(s).sort()).toEqual(['plan', 'presented', 'reviews', 'view', 'week']);
+      expect(Object.keys(s).sort()).toEqual(['reviews', 'view', 'week']);
       expect(JSON.stringify(s)).not.toMatch(/"trust"|"rngState"|"history"/);
     }
+    for (const m of moments) {
+      expect(m.choices.length).toBeGreaterThan(0);
+      expect(['level', 'situation']).toContain(m.source);
+      expect(JSON.stringify(m)).not.toMatch(/"trust"|"rngState"|"history"|"bindings"/);
+    }
+    expect(moments.some((m) => m.source === 'situation' && m.situationId)).toBe(true);
+    expect(moments.some((m) => m.source === 'level' && m.kind === 'work' && m.difficulty !== undefined)).toBe(true);
+  });
+
+  // @spec BAL-PLAY-002
+  it('lets a moment wait when the strategy says so, and ends the week when none is open', () => {
+    const waiter: Strategy = { name: 'waiter', naive: true, choose: () => 'wait' };
+    const result = playRun(waiter, 2, CONTENT);
+    expect(result.weeks).toBeGreaterThan(1);
   });
 
   // @spec BAL-PLAY-004
   it('fails with the strategy, seed and week when a command is refused', () => {
-    const broken: Strategy = { name: 'broken', naive: true, play: () => [{ kind: 'acknowledge' } as Command] };
-    expect(() => playRun(broken, 3, CONTENT)).toThrow(/broken, seed 3, week 0: acknowledge refused/);
+    const broken: Strategy = { name: 'broken', naive: true, choose: () => 'not-a-choice' };
+    expect(() => playRun(broken, 3, CONTENT)).toThrow(/broken, seed 3, week 0: answer refused/);
+    const badHabit: Strategy = { name: 'bad-habit', naive: true, habits: () => [{ kind: 'acknowledge' } as Command], choose: () => 'wait' };
+    expect(() => playRun(badHabit, 3, CONTENT)).toThrow(/bad-habit, seed 3, week 0: acknowledge refused/);
   });
 
   // @spec BAL-PLAY-005
@@ -62,6 +93,20 @@ describe('better choices', () => {
 });
 
 describe('measures', () => {
+  // @spec BAL-MEASURE-003
+  // It reads the shared measurement, which the first test to ask for it plays, so it needs the checks' time limit.
+  it('reports sound practice with other habits, outside every check', { timeout: Math.max(120_000, SEEDS.length * STRATEGIES.length * 1_000) }, () => {
+    expect(soundHabits.naive).toBe(false);
+    expect(STRATEGIES.map((s) => s.name)).toContain(soundHabits.name);
+    const view = { people: [], projects: [], habits: { nightPages: 'rotation', oneOnOnes: 'fortnightly', approvals: 'me', ceremonies: 'full', growth: 'nobody' } };
+    const commands = soundHabits.habits!({ week: 0, view: view as never, reviews: [] });
+    expect(commands).toEqual(expect.arrayContaining([
+      { kind: 'plan', command: { kind: 'habit', habit: 'oneOnOnes', value: 'weekly' } },
+      { kind: 'plan', command: { kind: 'habit', habit: 'ceremonies', value: 'light' } },
+    ]));
+    expect(naive().map((n) => n.strategy)).not.toContain(soundHabits.name);
+  });
+
   // @spec BAL-MEASURE-002
   it('scores runs over six review slots, counting missed slots by how the run ended', () => {
     expect(runScore({ ending: null, ratings: ['meets', 'meets', 'meets', 'meets', 'meets', 'meets'] })).toBe(2);

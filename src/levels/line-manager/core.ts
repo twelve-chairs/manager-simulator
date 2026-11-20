@@ -1,7 +1,8 @@
-import { nextRandom, type NewPerson, type NewProject, type SimState, type Want } from '../../sim';
+import { nextRandom, type Cause, type Effect, type NewPerson, type NewProject, type SimState, type Want } from '../../sim';
 import { NAMES } from './names';
+import { PERSONALITIES } from '../../personalities';
 import { LINE_TUNING } from './tuning';
-import type { LineState, Target } from './types';
+import type { LineState, WorkItem } from './types';
 
 export const WANTS: readonly Want[] = ['growth', 'recognition', 'stability', 'autonomy'];
 
@@ -26,23 +27,22 @@ export const teamProjects = (level: LineState, sim: SimState): string[] =>
     .filter((id) => sim.projects[id]!.status === 'active' && sim.projects[id]!.teamId === level.teamId)
     .sort();
 
-/** Why a target is not valid now, or undefined when it is. */
-export function invalidTarget(level: LineState, sim: SimState, target: Target): string | undefined {
-  switch (target.kind) {
-    case 'player':
-      return undefined;
-    case 'person':
-      return teamEngineers(level, sim).includes(target.id) ? undefined : `${target.id} is no longer an active engineer on the team`;
-    case 'team':
-      return target.id === level.teamId ? undefined : `${target.id} is not the player's team`;
+export const isEngineer = (level: LineState, sim: SimState, id: string) => teamEngineers(level, sim).includes(id);
+
+/** Whether a work item's subject still exists in a form it can be about. */
+// @spec LINE-INBOX-010
+export function subjectValid(level: LineState, sim: SimState, item: WorkItem): boolean {
+  switch (item.subject.kind) {
     case 'project':
-      return teamProjects(level, sim).includes(target.id) ? undefined : `${target.id} is no longer an active project of the team`;
-    case 'vacancy':
-      return level.vacancies.some((v) => v.id === target.id) ? undefined : `vacancy ${target.id} is no longer open`;
+      return teamProjects(level, sim).includes(item.subject.id);
+    case 'person':
+      return teamEngineers(level, sim).includes(item.subject.id);
+    case 'team':
+      return item.subject.id === level.teamId;
   }
 }
 
-/** Opens or closes vacancies so that active engineers plus vacancies match the target headcount. */
+/** Opens vacancies until active engineers plus vacancies reach the target headcount. */
 // @spec LINE-HIRE-002
 export function reconcileVacancies(level: LineState, sim: SimState) {
   const short = level.targetHeadcount - teamEngineers(level, sim).length;
@@ -50,7 +50,6 @@ export function reconcileVacancies(level: LineState, sim: SimState) {
     level.counters.vacancy += 1;
     level.vacancies.push({ id: `v${level.counters.vacancy}`, interviews: 0 });
   }
-  if (level.vacancies.length > Math.max(0, short)) level.vacancies = level.vacancies.slice(0, Math.max(0, short));
 }
 
 /** A name from the list that is not taken; once the list runs out, a listed name with a number. */
@@ -62,7 +61,8 @@ function unusedName(level: LineState, list: readonly string[], taken: readonly s
 export const peopleNames = (sim: SimState) => Object.values(sim.people).map((p) => p.name);
 export const projectNames = (sim: SimState) => Object.values(sim.projects).map((p) => p.name);
 
-/** A new engineer whose name nobody in `taken` has. */
+/** A new engineer with a personality, whose name nobody in `taken` has. */
+// @spec LINE-ORG-004
 export function generatePerson(level: LineState, taken: readonly string[]): NewPerson {
   level.counters.person += 1;
   return {
@@ -74,6 +74,7 @@ export function generatePerson(level: LineState, taken: readonly string[]): NewP
     stress: randomInt(level, 15, 50),
     trust: randomInt(level, 40, 70),
     want: pick(level, WANTS),
+    personality: pick(level, PERSONALITIES),
   };
 }
 
@@ -93,6 +94,29 @@ export function generateProject(level: LineState, taken: readonly string[], team
 export const atRiskRisk = (level: LineState) => randomInt(level, LINE_TUNING.atRiskProjectRisk, 85);
 export const calmRisk = (level: LineState) => randomInt(level, 5, LINE_TUNING.atRiskProjectRisk - 20);
 
-/** Whether an entry runs in the given week. */
-export const runsIn = (entry: { cadence: string; startWeek: number }, week: number) =>
-  entry.cadence !== 'biweekly' || (week >= entry.startWeek && (week - entry.startWeek) % 2 === 0);
+export const action = (actionId: string): Cause => ({ kind: 'action', actionId });
+export const rule = (ruleId: string): Cause => ({ kind: 'rule', ruleId });
+
+export const personEffect = (id: string, field: string, amount: number, cause: Cause, extra: { serves?: Want[]; note?: string } = {}): Effect => ({
+  type: 'value',
+  target: { kind: 'person', id },
+  field,
+  amount,
+  cause,
+  ...(extra.serves && { wantTags: { serves: extra.serves } }),
+  ...(extra.note && { historyNote: extra.note }),
+});
+export const projectEffect = (id: string, field: string, amount: number, cause: Cause): Effect => ({ type: 'value', target: { kind: 'project', id }, field, amount, cause });
+export const playerEffect = (field: string, amount: number, cause: Cause): Effect => ({ type: 'value', target: { kind: 'player' }, field, amount, cause });
+
+/** Joins names into a phrase: "Ada", "Ada and Carmen", "Ada, Carmen and Dario". */
+export function listOf(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+}
+
+export const nameOf = (sim: SimState, id: string) => sim.people[id]?.name ?? id;
+
+/** The band a 0–100 value falls in; every banded value uses this one scale. */
+// @spec LINE-VIS-009
+export const band = (value: number): number => LINE_TUNING.bandEdges.filter((edge) => value >= edge).length;

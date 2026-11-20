@@ -25,8 +25,8 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-021**: The situation engine shall treat a situation as invalid if a `history` condition's `action` is not in the player action catalogue.
 - [x] **SIT-CONTENT-022**: The situation engine shall treat a situation as invalid if a role is named `player`, `week`, `review` or `it`.
 - [x] **SIT-CONTENT-023**: The situation engine shall treat a situation as invalid if a condition in it nests more than 32 levels deep, counting each `all`, `any`, `not` and `count` as a level, and shall report it as invalid without throwing however deep the nesting.
-- [ ] **SIT-CONTENT-024**: The situation engine shall treat a situation as invalid if its `day` is not one of `monday` to `friday`, or its `time` is not `morning`, `afternoon` or `night`.
-- [ ] **SIT-CONTENT-025**: The situation engine shall treat a situation as invalid if a condition compares `personality` with a literal, or gives `in` a list item, that is not in the personality catalogue.
+- [x] **SIT-CONTENT-024**: The situation engine shall treat a situation as invalid if its `day` is not one of `monday` to `friday`, or its `time` is not `morning`, `afternoon` or `night`.
+- [x] **SIT-CONTENT-025**: The situation engine shall treat a situation as invalid if a condition compares `personality` with a literal, or gives `in` a list item, that is not in the personality catalogue.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 
@@ -45,7 +45,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-COND-009**: When evaluating a `presented` condition, the situation engine shall count the times that situation was presented within the last `withinWeeks` weeks (ever, when it is absent), and compare the count to the operand, including the current presentation when evaluated inside a presented situation's choices or outcomes.
 - [x] **SIT-COND-012**: The situation engine shall give a person, team or project its id as its `id` property, a team led by a person that person's id as its `leader`, and a team led by the player or by no one no `leader` value.
 - [x] **SIT-COND-014**: When selection or resolution is given the weeks until the next review, the situation engine shall give `review.weeksAway` that number, and no value when it is not given.
-- [ ] **SIT-COND-015**: The situation engine shall give a person their personality as their `personality` property, and no value when they have none.
+- [x] **SIT-COND-015**: The situation engine shall give a person their personality as their `personality` property, and no value when they have none.
 - [x] **SIT-COND-010**: The situation engine shall evaluate conditions without changing the simulation or engine state.
 
 ## Selecting situations
@@ -62,8 +62,8 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-SEL-007**: The situation engine shall select at most the limit given for the turn, and none when the limit is 0 or less.
 - [x] **SIT-SEL-008**: The situation engine shall not bind the same person into two situations selected in the same turn, re-binding a later situation without the people already bound, or skipping it when it cannot be re-bound.
 - [x] **SIT-SEL-009**: When a situation is selected, the situation engine shall record it as presented in the current game week and as open until it is resolved or ignored.
-- [ ] **SIT-SEL-010**: When a situation is selected, the situation engine shall return a presentation id unique within the run, its situation id, its bindings, its day and time, its rendered text and the labels of the choices whose `availableIf` holds.
-- [ ] **SIT-SEL-015**: When a situation is selected, the situation engine shall place it on its `day` and at its `time` where the situation sets them, and draw from its generator any it does not set: a day from Monday to Friday, and a time of morning or afternoon.
+- [x] **SIT-SEL-010**: When a situation is selected, the situation engine shall return a presentation id unique within the run, its situation id, its bindings, its day and time, its rendered text and the labels of the choices whose `availableIf` holds.
+- [x] **SIT-SEL-015**: When a situation is selected, the situation engine shall place it on its `day` and at its `time` where the situation sets them, and draw from its generator any it does not set: a day from Monday to Friday, and a time of morning or afternoon.
 - [x] **SIT-SEL-011**: The situation engine shall draw all its randomness from a seeded generator held in the engine state, and leave the simulation's generator state unchanged.
 
 ## Resolving a choice

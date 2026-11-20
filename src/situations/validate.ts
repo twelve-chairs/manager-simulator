@@ -13,7 +13,7 @@ import { PLAYER_ACTION_IDS } from '../actions';
 import { OPERATORS } from './conditions';
 import { WEEK_TYPE, propertyType, type PropertyType } from './properties';
 import { PLACEHOLDER, PLACEHOLDER_PROPERTIES } from './text';
-import type { ContentError, RoleKind, Situation } from './types';
+import { DAYS, TIMES, type ContentError, type RoleKind, type Situation } from './types';
 
 class Invalid extends Error {}
 
@@ -339,7 +339,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
 // ---- situations ----
 
 const SITUATION_FIELDS = ['id', 'title', 'levels', 'priority', 'roles', 'choices', 'text'] as const;
-const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'once', 'when'] as const;
+const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'once', 'when', 'day', 'time'] as const;
 
 function checkSituation(x: unknown): Situation {
   const o = object(x, '', 'a situation', SITUATION_FIELDS, OPTIONAL_SITUATION_FIELDS);
@@ -352,6 +352,8 @@ function checkSituation(x: unknown): Situation {
   if (Object.hasOwn(o, 'cooldownWeeks') && finite(o, 'cooldownWeeks', '') < 0) fail('cooldownWeeks', 'must not be negative');
   if (Object.hasOwn(o, 'once') && typeof o.once !== 'boolean') fail('once', 'must be true or false');
   if (Object.hasOwn(o, 'when')) checkCondition(o.when, { roles: {} }, 'when');
+  if (Object.hasOwn(o, 'day')) oneOf(o.day, DAYS, 'day', 'a weekday');
+  if (Object.hasOwn(o, 'time')) oneOf(o.time, TIMES, 'time', 'a time of day');
 
   const roles: Record<string, RoleKind> = {};
   const forms: Record<string, string> = {};
@@ -407,6 +409,7 @@ export type ValidationResult = { ok: true; situation: Situation } | { ok: false;
 
 /** Validates each item of a bundle; results line up with the input. Executes nothing from the content. */
 // @spec SIT-CONTENT-004, SIT-CONTENT-005, SIT-CONTENT-006, SIT-CONTENT-007, SIT-CONTENT-008, SIT-CONTENT-009, SIT-CONTENT-010
+// @spec SIT-CONTENT-024, SIT-CONTENT-025
 // @spec SIT-CONTENT-012, SIT-CONTENT-013, SIT-CONTENT-014, SIT-CONTENT-016, SIT-CONTENT-017, SIT-CONTENT-018, SIT-CONTENT-019
 // @spec SIT-CONTENT-020, SIT-CONTENT-021, SIT-CONTENT-022, SIT-CONTENT-023
 export function validateBundle(items: unknown[]): ValidationResult[] {

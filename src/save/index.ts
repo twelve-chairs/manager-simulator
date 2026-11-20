@@ -2,7 +2,8 @@ import { apply, newRun, type Command, type Dependencies, type Run } from '../loo
 import type { Situation } from '../situations';
 
 export const SAVE_FORMAT = 'manager-simulator-save';
-export const SAVE_VERSION = 1;
+/** Version 2 records the week as a sequence of moments, answered by `momentId`. */
+export const SAVE_VERSION = 2;
 /** The largest save accepted, as text or as a file. */
 export const MAX_SAVE_BYTES = 5 * 1024 * 1024;
 const MAX_TEXT = MAX_SAVE_BYTES;
@@ -49,10 +50,11 @@ function commandError(c: unknown, i: number): string | undefined {
   if (!isObject(c)) return `${where} is not an object`;
   switch (c.kind) {
     case 'endWeek':
+    case 'wait':
     case 'acknowledge':
       return hasExactly(c, ['kind']) ? undefined : `${where} has unexpected fields`;
     case 'answer':
-      return hasExactly(c, ['kind', 'presentationId', 'choiceId']) && typeof c.presentationId === 'string' && typeof c.choiceId === 'string'
+      return hasExactly(c, ['kind', 'momentId', 'choiceId']) && typeof c.momentId === 'string' && typeof c.choiceId === 'string'
         ? undefined
         : `${where} is not a valid answer`;
     case 'plan':

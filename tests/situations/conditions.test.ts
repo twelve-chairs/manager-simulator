@@ -357,6 +357,25 @@ describe('review timing', () => {
   });
 });
 
+describe('personality', () => {
+  // @spec SIT-COND-015
+  it('gives a person their personality, and no value when they have none', () => {
+    const sim = patch(fresh(), (s) => (s.people.e1!.personality = 'quiet'));
+    check(sim, { engineer: 'e1', other: 'e2' }, [
+      [{ value: 'engineer.personality', is: 'quiet' }, true],
+      [{ value: 'engineer.personality', isNot: 'quiet' }, false],
+      [{ value: 'engineer.personality', in: ['blunt', 'quiet'] }, true],
+      // e2 has no personality: every comparison fails except isNot
+      [{ value: 'other.personality', is: 'quiet' }, false],
+      [{ value: 'other.personality', in: ['quiet'] }, false],
+      [{ value: 'other.personality', isNot: 'quiet' }, true],
+      [{ value: 'other.personality', is: { value: 'engineer.personality' } }, false],
+    ]);
+    const same = patch(sim, (s) => (s.people.e2!.personality = 'quiet'));
+    check(same, { engineer: 'e1', other: 'e2' }, [[{ value: 'other.personality', is: { value: 'engineer.personality' } }, true]]);
+  });
+});
+
 describe('purity', () => {
   // @spec SIT-COND-010
   it('changes neither the simulation nor the engine state', () => {

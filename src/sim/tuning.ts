@@ -12,7 +12,7 @@ export const TUNING = {
   /** Work units one average engineer completes per week. */
   workPerPersonPerWeek: 2,
   /** Weekly setback chance for a project at 100 risk and 100 tech debt. */
-  setbackChancePerWeek: 0.15,
+  setbackChancePerWeek: 0.11,
   /** Share of scope lost in a setback. */
   setbackProgressLoss: 0.1,
   /** Stress added to a team by a setback. */
@@ -44,7 +44,7 @@ export const TUNING = {
   /** Weekly reputation change per project on track (positive) or in trouble (negative). */
   reputationPerProjectPerWeek: 1,
   /** Weekly player stress rise per team in trouble. */
-  playerStressPerTroubledTeamPerWeek: 2,
+  playerStressPerTroubledTeamPerWeek: 1,
   /** Weekly player stress recovery when no team is in trouble. */
-  playerStressRecoveryPerWeek: 1,
+  playerStressRecoveryPerWeek: 4,
 } as const;

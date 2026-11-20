@@ -4,6 +4,7 @@ title: Quiet in the 1:1
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+day: friday
 roles:
   - name: engineer
     kind: person

@@ -1,8 +1,9 @@
-/** Words for bands 0 to 4, per kind of value. Skill and demand difficulty share words so they compare directly. */
+/** Words for bands 0 to 4, per kind of value. Skill and work difficulty share words so they compare directly. */
 // @spec UI-BAND-001
 export const BAND_WORDS = {
   motivation: ['struggling', 'flat', 'fine', 'good', 'energized'],
   stress: ['calm', 'steady', 'busy', 'strained', 'overwhelmed'],
+  energy: ['running on fumes', 'tired', 'okay', 'good', 'fresh'],
   skill: ['learning', 'developing', 'capable', 'strong', 'expert'],
   risk: ['low', 'moderate', 'elevated', 'high', 'severe'],
   reputation: ['poor', 'mixed', 'fair', 'good', 'excellent'],

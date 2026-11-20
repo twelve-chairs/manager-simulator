@@ -4,6 +4,8 @@ title: "Onboarding: your first day"
 levels: [line-manager]
 priority: urgent
 once: true
+day: monday
+time: morning
 when:
   value: week
   is: 0
@@ -14,15 +16,15 @@ choices:
     outcomes:
       - id: answered
         effects: []
-        aftermath: "\"Keep the projects on track and don't lose anyone. That's most of it.\""
-        debrief: "Your first review reads delivery, retention and team health. Your calendar and your inbox are how you move them."
+        aftermath: "\"Keep the projects on track and don't lose anyone. And the goals I've set you for the quarter.\""
+        debrief: "Your review reads delivery, retention, team health and the quarter's goals. Your habits and what you do in each moment are how you move them."
   - id: got-it
     label: Say you've got it from here
     outcomes:
       - id: noted
         effects: []
         aftermath: "\"Good. My door's open.\""
-        debrief: "Your first review reads delivery, retention and team health. Your calendar and your inbox are how you move them."
+        debrief: "Your review reads delivery, retention, team health and the quarter's goals. Your habits and what you do in each moment are how you move them."
 ---
 
-Your manager stops by on your first day. "The team's yours now. You have forty hours a week, and they go faster than you think. Your calendar already has a 1:1 with everyone every other week, and the team's ceremonies. Look at it before you add anything. When you're done planning, end the week. I'll check in again next week."
+Your manager stops by on your first morning. "The team's yours now. Your habits handle the routine: who takes the night pages, how often you hold 1:1s, who signs off approvals. The rest comes to you, a few moments a week. Deal with what matters, and let some things wait. What wears you down is what you take on yourself, so watch your energy."

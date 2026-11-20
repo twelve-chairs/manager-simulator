@@ -4,6 +4,7 @@ title: Paged at 2 a.m.
 levels: [line-manager]
 priority: urgent
 cooldownWeeks: 6
+time: night
 roles:
   - name: project
     kind: project

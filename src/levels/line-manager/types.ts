@@ -1,65 +1,68 @@
 import type { ChangeLogEntry, PerformanceLevel, Role, SimState, Want } from '../../sim';
 
-export type ActionId =
-  | 'line-manager.one-on-one'
-  | 'line-manager.coaching'
-  | 'line-manager.recognition'
-  | 'line-manager.training'
-  | 'line-manager.ceremonies'
-  | 'line-manager.project-planning'
-  | 'line-manager.scope-negotiation'
-  | 'line-manager.team-event'
-  | 'line-manager.interview'
-  | 'line-manager.recovery';
+export type WorkKind = 'approval' | 'expense' | 'designReview' | 'customerRequest' | 'onCall' | 'workIntake';
 
-export type TargetKind = 'person' | 'team' | 'project' | 'vacancy' | 'player';
-export type Target = { kind: 'person' | 'team' | 'project' | 'vacancy'; id: string } | { kind: 'player' };
-
-/** Every week, every other week from the start week, or this week only. */
-export type Cadence = 'weekly' | 'biweekly' | 'once';
-
-export interface NewEntry {
-  action: ActionId;
-  target: Target;
-  cadence: Cadence;
-  /** For an every-other-week entry: this week (the default) or the next. */
-  startWeek?: number;
-}
-
-export interface CalendarEntry {
+/** Hands-on work for the team: routine items go to a habit, the rest become moments. */
+export interface WorkItem {
   id: string;
-  action: ActionId;
-  target: Target;
-  cadence: Cadence;
-  startWeek: number;
-}
-
-export type DemandType = 'approval' | 'designReview' | 'customerRequest' | 'onCall' | 'expense' | 'workIntake';
-
-export interface Demand {
-  id: string;
-  type: DemandType;
+  kind: WorkKind;
   subject: { kind: 'project' | 'person' | 'team'; id: string };
-  hours: number;
+  /** How much work it is: what doing it yourself costs, and how hard its consequence lands. */
+  size: number;
   /** 0–100, on the same scale as skill. */
   difficulty: number;
   arrivedWeek: number;
-  /** The last week the demand can be decided; left undecided through it, it expires. */
+  /** The last week it can be dealt with; still open through it, it expires. */
   lastWeek: number;
 }
 
-export type Decision = { kind: 'handle' } | { kind: 'delegate'; to: string } | { kind: 'accept' } | { kind: 'decline' };
+export type HabitId = 'nightPages' | 'oneOnOnes' | 'approvals' | 'ceremonies' | 'growth';
 
-/** The week's pending plan: a decision for each inbox demand the player has decided. */
-export interface LinePlan {
-  decisions: Record<string, Decision>;
+export interface Habits {
+  nightPages: 'rotation' | 'me' | 'seniors';
+  oneOnOnes: 'fortnightly' | 'weekly' | 'whenNeeded';
+  /** `me`, or the id of the engineer who signs routine approvals. */
+  approvals: string;
+  ceremonies: 'full' | 'light';
+  /** `nobody`, or the id of the engineer being coached. */
+  growth: string;
 }
 
-/** A planning command: edit the calendar, decide a demand, or clear a decision. */
-export type LinePlanCommand =
-  | { kind: 'calendar'; add?: NewEntry[]; remove?: string[] }
-  | { kind: 'decide'; demandId: string; decision: Decision }
-  | { kind: 'clear'; demandId: string };
+export interface MomentChoice {
+  id: string;
+  label: string;
+}
+
+/** A scene the level contributes to the week: work to decide, an interview, a project check-in, or a night page for the engineer on call. */
+export interface LevelMoment {
+  id: string;
+  kind: 'work' | 'interview' | 'checkIn' | 'onCall';
+  /** The work item, vacancy or project the moment is about. */
+  ref: string;
+  /** The engineer on call, for an on-call moment. */
+  personId?: string;
+  week: number;
+  /** 0 is Monday, 4 is Friday. */
+  day: number;
+  time: 'morning' | 'afternoon' | 'night';
+  choices: MomentChoice[];
+  status: 'open' | 'answered' | 'waited';
+  /** What happened, once answered or let wait. */
+  outcome?: string;
+}
+
+export type GoalKind = 'shipOnTime' | 'onSchedule' | 'keepEveryone' | 'growSomeone' | 'lowerStress';
+
+export interface Goal {
+  id: string;
+  kind: GoalKind;
+  periodStart: number;
+  projectId?: string;
+  personId?: string;
+  /** The value at the start of the period, for goals measured as a change; for a ship-by-deadline goal, the deadline when it was set. */
+  startValue?: number;
+  target?: number;
+}
 
 export interface Vacancy {
   id: string;
@@ -70,35 +73,54 @@ export interface LineState {
   rngState: number;
   teamId: string;
   targetHeadcount: number;
-  calendar: CalendarEntry[];
-  inbox: Demand[];
+  habits: Habits;
+  items: WorkItem[];
+  moments: LevelMoment[];
   vacancies: Vacancy[];
   /** Person id to the want the player learned at a 1:1, and the week. */
   learnedWants: Record<string, { want: Want; week: number }>;
   /** Project id to the week it completed. */
   completions: Record<string, number>;
+  /** Project id to the week of its last check-in moment. */
+  checkIns: Record<string, number>;
   /** Consecutive weeks the player's stress has been at or above the burnout threshold. */
   burnoutWeeks: number;
+  goals: Goal[];
+  /** The first week of the review period the goals belong to; -1 before any are set. */
+  goalsPeriod: number;
+  /** Habit fall-backs made when the week began, for that week's recap. */
+  habitNotes: string[];
+  /** Each engineer's motivation and stress when the week began, so the recap can say who changed; week -1 before any week has begun. */
+  weekStart: { week: number; people: Record<string, { motivation: number; stress: number }> };
   /** Counters for generated ids. */
-  counters: { entry: number; demand: number; vacancy: number; person: number; project: number };
+  counters: { item: number; vacancy: number; person: number; project: number; moment: number; goal: number };
 }
 
-export interface CommitReport {
-  hours: number;
-  overtime: number;
-  dropped: { entryId: string; reason: string }[];
-  delegations: { demandId: string; to: string; succeeded: boolean }[];
-  undelegated: { demandId: string; reason: string }[];
-  /** Decisions on demands whose subject was gone, which had nothing to act on. */
-  voided: { demandId: string; reason: string }[];
-  expired: string[];
-  /** Each demand named above, by type and subject, so the report reads after the demand has left the inbox. */
-  demands: Record<string, Pick<Demand, 'type' | 'subject'>>;
+/** What the level reports at the end of a week. */
+export interface Recap {
+  habits: string[];
+  habitChanges: string[];
+  moments: { momentId: string; ref: string; text: string }[];
+  expired: { itemId: string; kind: WorkKind; subject: WorkItem['subject'] }[];
+  goals: { id: string; text: string }[];
+  people: { personId: string; name: string; changes: string[]; notes: string[] }[];
 }
 
-export type CommitResult =
-  | { ok: true; level: LineState; sim: SimState; log: ChangeLogEntry[]; report: CommitReport }
-  | { ok: false; error: string };
+export type LevelResult<T> = ({ ok: true } & T) | { ok: false; error: string };
+
+export interface ChoiceResult {
+  level: LineState;
+  sim: SimState;
+  log: ChangeLogEntry[];
+  reaction: string;
+}
+
+export interface WeekResult {
+  level: LineState;
+  sim: SimState;
+  log: ChangeLogEntry[];
+  recap: Recap;
+}
 
 /** A coarse reading of a 0–100 value: 0 is the lowest band. */
 export type Band = number;
@@ -109,11 +131,14 @@ export interface View {
     name: string;
     role: Role;
     tenureWeeks: number;
+    personality: string | undefined;
     performance: PerformanceLevel;
     motivation: Band;
     stress: Band;
     skill: Band;
     want: Want | 'unknown';
+    /** Their three latest history notes, newest first. */
+    memory: string[];
   }[];
   projects: {
     id: string;
@@ -125,13 +150,11 @@ export interface View {
     risk: Band;
     techDebt: Band;
   }[];
-  player: { reputation: Band; stress: Band };
-  calendar: CalendarEntry[];
+  player: { energy: Band; reputation: Band };
+  habits: Habits;
   vacancies: Vacancy[];
-  inbox: { id: string; type: DemandType; subject: Demand['subject']; hours: number; lastWeek: number; difficulty: Band }[];
-  /** Hours of the calendar entries that run this week and the demands the plan handles or accepts. */
-  plannedHours: number;
-  overtime: number;
+  goals: { id: string; text: string; progress: string }[];
+  moments: (Omit<LevelMoment, 'week'> & { title: string; text: string; difficulty?: Band })[];
 }
 
 export interface Scorecard {

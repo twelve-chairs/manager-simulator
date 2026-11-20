@@ -52,6 +52,11 @@ export interface Choice {
   outcomes: Outcome[];
 }
 
+export const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+export type Day = (typeof DAYS)[number];
+export const TIMES = ['morning', 'afternoon', 'night'] as const;
+export type TimeOfDay = (typeof TIMES)[number];
+
 export interface Situation {
   id: string;
   title: string;
@@ -61,6 +66,10 @@ export interface Situation {
   cooldownWeeks?: number;
   once?: boolean;
   when?: Condition;
+  /** The day of the week it falls on, when authored. */
+  day?: Day;
+  /** The time of day it falls at, when authored. */
+  time?: TimeOfDay;
   roles: SituationRole[];
   choices: Choice[];
   /** The body: the text presented to the player. */
@@ -108,6 +117,9 @@ export interface Presentation {
   id: string;
   situationId: string;
   bindings: Record<string, string>;
+  /** 0 is Monday, 4 is Friday. */
+  day: number;
+  time: TimeOfDay;
   text: string;
   choices: { id: string; label: string }[];
 }
