@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report security issues privately through GitHub: on the repository's **Security** tab, choose **Report a vulnerability**. That opens a private advisory only the maintainer can see. Please don't open a public issue for a security problem.
+Please report security issues privately through GitHub: [report a vulnerability](https://github.com/twelve-chairs/manager-simulator/security/advisories/new), or on the repository's **Security** tab, choose **Report a vulnerability**. That opens a private advisory only the maintainer can see. Please don't open a public issue for a security problem.
 
 A useful report says what the issue is, how to reproduce it (a save file, a situation file or steps in the game), and what an attacker could do with it.
 
