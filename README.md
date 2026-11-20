@@ -2,6 +2,8 @@
 
 A browser game about the career of a software engineering manager: from line manager, to senior manager (managing managers), to director and above (overseeing whole organizations). Each career level plays as a different game, and the situations are written so that sound management practice tends to work better, making the game something of a training simulator.
 
+**Play it at https://twelve-chairs.github.io/manager-simulator/** (deployed from `main` for playtesting).
+
 The design is in [docs/high-level-design.md](docs/high-level-design.md).
 
 ## Status
@@ -47,6 +49,7 @@ npm run balance     # play 200 seeded runs per scripted strategy and print the b
 | `tests/situations/` | Situation engine tests |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
 | `scripts/` | Build-time tools, such as the situation content compiler |
+| `.github/workflows/deploy.yml` | Builds, tests and publishes the game to GitHub Pages on every push to `main` |
 | `vite.config.ts` | Build configuration, including the plugin that compiles situations into the page |
 | `docs/high-level-design.md` | Project-level design |
 | `docs/intent/` | Component designs and their requirements (EARS specs) |
