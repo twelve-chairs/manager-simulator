@@ -77,7 +77,7 @@ npm run typecheck   # check types
 npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
-Every push to `main` is typechecked, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/).
+Every push to `main` is typechecked, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, and Dependabot keeps the dev tools and pinned actions up to date.
 
 ## Layout
 
@@ -96,7 +96,9 @@ Every push to `main` is typechecked, tested, built and published to [GitHub Page
 | `tests/` | Tests for each component, beside the folders above (`tests/sim/`, `tests/levels/`, and so on) |
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools, such as the situation content compiler |
-| `.github/workflows/deploy.yml` | Builds, tests and publishes the game to GitHub Pages on every push to `main` |
+| `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to GitHub Pages from `main` |
+| `.github/workflows/codeql.yml` | CodeQL code scanning |
+| `.github/dependabot.yml` | Weekly dependency and action updates |
 | `vite.config.ts` | Build configuration, including the plugin that compiles situations into the page |
 | `docs/high-level-design.md` | Project-level design |
 | `docs/intent/` | Component designs and their requirements (EARS specs) |

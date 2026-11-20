@@ -1,9 +1,12 @@
-# Builds the game and publishes it to GitHub Pages on every push to main.
+# Typechecks, tests and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
+# push to main only.
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
 name: Deploy to GitHub Pages
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -11,7 +14,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages
+  # Pull requests check in their own group, so they never queue behind or hold up a deploy.
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'pages' }}
   cancel-in-progress: false
 
 jobs:
@@ -30,13 +34,16 @@ jobs:
       - run: npm test
       # The site is served from /manager-simulator/, so asset paths need that prefix.
       - run: npm run build -- --base=/manager-simulator/
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       pages: write

@@ -53,6 +53,8 @@ Place the annotation at the *entry point of the behavior's implementation graph*
 
 - Commit with `/commit` (`.claude/skills/commit/`): it checks the arrow, runs `npm run typecheck` and `npm test`, scans for secrets, reviews the diff against `.claude/rules/security.md`, commits per `.claude/rules/commit-messages.md`, and pushes.
 - `npm test` includes the balance checks (`tests/balance/`): scripted strategies play seeded runs, and sound practice must beat every naive strategy. A change to tuning, rules or situation content can fail them. Fix the game's tuning or content first; loosening a balance threshold needs its own justification. A new situation needs an entry in the harness's better-choice table. `npm run balance` prints the full table.
-- Every push to `main` runs the typecheck, the tests and the build in GitHub Actions and publishes the game to GitHub Pages; a failing check stops the deploy. Actions in `.github/workflows/` are pinned to commit SHAs.
+- Every push to `main` runs the typecheck, the tests and the build in GitHub Actions and publishes the game to GitHub Pages; a failing check stops the deploy. Pull requests to `main` run the same checks without publishing. Actions in `.github/workflows/` are pinned to commit SHAs.
+- CodeQL scans the TypeScript on pushes and pull requests to `main` and weekly; findings are on the repository's Security tab. Treat a new finding like a failing test.
+- Dependabot opens weekly grouped pull requests for the npm dev tools and the pinned actions, a week after each release. Merge one only once its checks pass, and read the release notes of anything that runs in CI.
 - Audit the whole repo with `/security-audit` (`.claude/skills/security-audit/`) before a release or deployment.
 - The repository is public: no secrets, no real people's data, no employer-confidential material.
