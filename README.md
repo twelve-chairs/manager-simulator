@@ -11,10 +11,10 @@ A browser game about the career of a software engineering manager, where the peo
 [![Deploy](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml)
 [![Status: early development](https://img.shields.io/badge/status-early%20development-orange)](#status)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/twelve-chairs/manager-simulator/badge)](https://scorecard.dev/viewer/?uri=github.com/twelve-chairs/manager-simulator)
-[![Last commit](https://img.shields.io/github/last-commit/twelve-chairs/manager-simulator)](https://github.com/twelve-chairs/manager-simulator/commits/main)
-[![Top language](https://img.shields.io/github/languages/top/twelve-chairs/manager-simulator)](https://github.com/twelve-chairs/manager-simulator)
-[![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](package.json)
-[![Tracking: none](https://img.shields.io/badge/tracking-none-brightgreen)](#private-by-design)
+[![CodeQL](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml)
+[![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
+[![Security rating](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
+[![Reliability rating](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
 
 </div>
 
