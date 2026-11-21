@@ -119,6 +119,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-EVAL-003**: When the line manager level does not rate an engineer at the end of a review period because the rating would be their third low rating in a row, it shall hold a final evaluation moment for them, on Monday afternoon of the next week, offering to rate them on what they delivered, which lets them go through the simulation core, and to give them one more quarter.
 - [x] **LINE-EVAL-004**: When the player gives an engineer one more quarter, or leaves their final evaluation moment unanswered at the week's end, the line manager level shall record no rating for them for the period just ended and add the note "Given one more quarter".
 - [x] **LINE-EVAL-005**: When the line manager level holds a final evaluation, its recap for the last week of the period shall name the engineer as waiting for the player's decision.
+- [x] **LINE-EVAL-006**: Where a line manager situation offers to rate an engineer on what they delivered, and that rating would be a low one while the engineer is on an improvement plan, the choice offered shall be labelled as letting them go ("…, and let them go"), and the unlabelled rating shall not be offered.
 
 ## Turn loop contract
 

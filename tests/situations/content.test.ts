@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { compileDirectory, compileSituations } from '../../scripts/compile-situations';
-import { loadContent, type Situation } from '../../src/situations';
+import { createEngine, evaluateCondition, loadContent, type Situation } from '../../src/situations';
+import { startRun } from '../../src/levels/line-manager';
+import type { Rating } from '../../src/sim';
+import { realContent } from '../balance/harness';
+import { patch } from '../sim/fixtures';
 import { PERSONALITIES } from '../../src/personalities';
 import { rejectionOf, sit, valid } from './fixtures';
 
@@ -373,5 +377,29 @@ describe('place in the week and personality', () => {
         ],
       }),
     );
+  });
+});
+
+describe('rating someone on an improvement plan', () => {
+  // @spec LINE-EVAL-006
+  it('labels the honest evaluation as letting them go, and only then, when it would be their third low rating', () => {
+    const evaluation = realContent().find((x) => x.id === 'quarterly-evaluation')!;
+    const { sim } = startRun(1);
+    const who = Object.keys(sim.people).sort()[0]!;
+    const offered = (state: typeof sim) =>
+      evaluation.choices
+        .filter((c) => !c.availableIf || evaluateCondition(c.availableIf, { sim: state, engine: createEngine(1), bindings: { engineer: who }, kinds: { engineer: 'person' } }))
+        .map((c) => c.label.replace('{engineer}', 'X'));
+    const weak = (plan: Rating[]) =>
+      patch(sim, (s) => {
+        Object.assign(s.people[who]!, { skill: 5, motivation: 10, stress: 95 });
+        s.people[who]!.history.push(...plan.map((rating, i) => ({ week: i, cause: { kind: 'rule' as const, ruleId: 'x' }, rating })));
+      });
+    const onPlan = offered(weak(['partial', 'below']));
+    expect(onPlan.some((l) => l.endsWith(', and let them go'))).toBe(true);
+    expect(onPlan).not.toContain('Rate X on what they actually delivered');
+    const notYet = offered(weak(['partial']));
+    expect(notYet).toContain('Rate X on what they actually delivered');
+    expect(notYet.some((l) => l.includes('let them go'))).toBe(false);
   });
 });

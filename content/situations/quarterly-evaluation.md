@@ -23,6 +23,35 @@ roles:
             value: engineer.correspondingRating
             is: meets
 choices:
+  # On an improvement plan, a low rating is the third in a row and ends their job: the label says so.
+  - id: honest-let-go
+    label: "Rate {engineer} on what they actually delivered, and let them go"
+    availableIf:
+      all:
+        - value: engineer.plan
+          is: pip
+        - value: engineer.correspondingRating
+          in: [below, partial]
+    outcomes:
+      - id: partial
+        when:
+          value: engineer.correspondingRating
+          is: partial
+        effects:
+          - type: rate
+            target: engineer
+            rating: partial
+            historyNote: Rated on what they delivered
+        aftermath: "You rate {engineer} partially meets. It's their third low rating in a row, and they're let go."
+        debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
+      - id: below
+        effects:
+          - type: rate
+            target: engineer
+            rating: below
+            historyNote: Rated on what they delivered
+        aftermath: "You rate {engineer} below expectations. It's their third low rating in a row, and they're let go."
+        debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
   - id: keep-the-peace
     label: "Rate {engineer} meets, to keep the peace"
     outcomes:
@@ -36,6 +65,13 @@ choices:
         debrief: "Rating everyone the same feels kind, but it tells strong people their work didn't count and hides problems until they are bigger."
   - id: honest
     label: "Rate {engineer} on what they actually delivered"
+    availableIf:
+      not:
+        all:
+          - value: engineer.plan
+            is: pip
+          - value: engineer.correspondingRating
+            in: [below, partial]
     outcomes:
       - id: outstanding
         when:
