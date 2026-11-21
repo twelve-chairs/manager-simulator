@@ -148,6 +148,26 @@ describe('the header', () => {
   });
 });
 
+describe('the header at the edge of burnout', () => {
+  // @spec UI-WEEK-012, UI-WEEK-013
+  it('says the player is at the edge, and counts the weeks they ended there toward burnout', () => {
+    const r = structuredClone(playing());
+    r.sim.player.stress = 85;
+    let root = makeApp({ run: r }).root;
+    expect(text(root, '[data-field=energy]')).toBe('running on fumes');
+    expect(root.querySelector('[data-field=burnout]')).toBeNull();
+    r.sim.player.stress = 92;
+    root = makeApp({ run: r }).root;
+    expect(text(root, '[data-field=energy]')).toBe('at the edge');
+    expect(root.querySelector('[data-field=burnout]')).toBeNull();
+    level(r).burnoutWeeks = 1;
+    expect(text(makeApp({ run: r }).root, '[data-field=burnout]')).toBe("You've ended 1 week at the edge. 4 in a row and you burn out.");
+    level(r).burnoutWeeks = 3;
+    r.sim.player.stress = 70;
+    expect(text(makeApp({ run: r }).root, '[data-field=burnout]')).toBe("You've ended 3 weeks at the edge. 4 in a row and you burn out.");
+  });
+});
+
 describe('the header while the recap shows', () => {
   // @spec UI-WEEK-001, UI-WEEK-011
   it('shows the week the recap is about, then the new week once it is closed', () => {

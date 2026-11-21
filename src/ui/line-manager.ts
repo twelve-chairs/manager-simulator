@@ -257,7 +257,7 @@ export const lineManagerRenderer: LevelRenderer = {
   recap,
   status: (view) => {
     const v = view as View;
-    return { energy: v.player.energy, reputation: v.player.reputation, goals: v.goals };
+    return { energy: v.player.energy, reputation: v.player.reputation, goals: v.goals, edge: v.player.edge };
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,

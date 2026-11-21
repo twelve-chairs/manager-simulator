@@ -24,6 +24,8 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-WEEK-008**: When a choice for a moment applies, the UI shall show a change chip for each band in the level's view that differs from before the command (a person's motivation or stress, the player's energy or reputation, or a project's risk or tech debt) and for each person who left or joined the team, each naming who or what changed and marked good or bad for the player (lower stress, risk and tech debt are good; someone leaving is bad).
 - [x] **UI-WEEK-010**: When a choice for a moment applies, the UI shall show a change chip, marked neither good nor bad, with the newest memory note of each person who gained one from the command and has no band chip from it.
 - [x] **UI-WEEK-011**: The UI shall show every week number counting from 1, game week *w* as week *w* + 1: the header's week, a heading or button about a week that has ended or is starting (the recap's heading, Start week, the review's heading, the ended screen), and the line manager's project deadlines.
+- [x] **UI-WEEK-012**: When the week screen is shown while the level says the player is at the burnout threshold, the UI shall show their energy word as "at the edge" in place of the band word.
+- [x] **UI-WEEK-013**: When the week screen is shown after the player has ended one or more consecutive weeks at the burnout threshold, the UI shall show under the energy a warning with that count and how many end the run ("You've ended 1 week at the edge. 4 in a row and you burn out.").
 - [x] **UI-WEEK-009**: The UI shall keep whether the player has read the latest reaction, started week 0 and closed the latest recap only as page state, never in the run or the save, so a reload never shows a reaction again.
 
 ## Help

@@ -1,6 +1,7 @@
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import { band, isEngineer, nameOf, teamEngineers, teamProjects } from './core';
 import { goalStatus } from './goals';
+import { LINE_TUNING } from './tuning';
 import { WORK_LABELS } from './work';
 import type { LevelMoment, LineState, View } from './types';
 
@@ -80,7 +81,12 @@ export function view(level: LineState, sim: SimState): View {
         techDebt: band(p.techDebt),
       };
     }),
-    player: { energy: band(100 - sim.player.stress), reputation: band(sim.player.reputation) },
+    player: {
+      energy: band(100 - sim.player.stress),
+      reputation: band(sim.player.reputation),
+      // @spec LINE-VIS-015
+      edge: { at: sim.player.stress >= LINE_TUNING.burnoutThreshold, weeks: level.burnoutWeeks, limit: LINE_TUNING.burnoutWeeks },
+    },
     habits: { ...level.habits },
     vacancies: structuredClone(level.vacancies),
     goals: level.goals.map((g) => {

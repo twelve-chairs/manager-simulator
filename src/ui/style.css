@@ -110,3 +110,4 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(
 
 .measures .numbers { display: block; color: var(--muted); font-size: 0.78rem; }
 .ceiling { color: var(--bad); }
+.burnout { color: var(--bad); font-weight: 600; margin: 4px 0 0; }

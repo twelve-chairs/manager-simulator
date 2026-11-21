@@ -3,6 +3,14 @@ import { band, view } from '../../../src/levels/line-manager';
 import { begin, end, engineers, habit, nextWeek, patch, projects, quietRun, run, withItem } from './fixtures';
 
 describe('the player view', () => {
+  // @spec LINE-VIS-015
+  it('shows whether the player is at the burnout threshold, the weeks in a row they ended there, and the limit', () => {
+    const { level, sim } = run(1);
+    const at = (stress: number) => patch(sim, (s) => (s.player.stress = stress));
+    expect(view({ ...level, burnoutWeeks: 2 }, at(90)).player.edge).toEqual({ at: true, weeks: 2, limit: 4 });
+    expect(view({ ...level, burnoutWeeks: 0 }, at(89)).player.edge).toEqual({ at: false, weeks: 0, limit: 4 });
+  });
+
   // @spec LINE-VIS-014
   it('sums up the career: projects shipped on time, who joined and who left', () => {
     const { level, sim } = run(2);
@@ -88,7 +96,8 @@ describe('the player view', () => {
   // @spec LINE-VIS-006
   it('shows the player’s energy and reputation only as bands', () => {
     const { level, sim } = run(2);
-    expect(view(level, sim).player).toEqual({ energy: band(100 - sim.player.stress), reputation: band(sim.player.reputation) });
+    const { energy, reputation } = view(level, sim).player;
+    expect({ energy, reputation }).toEqual({ energy: band(100 - sim.player.stress), reputation: band(sim.player.reputation) });
   });
 
   // @spec LINE-VIS-011

@@ -168,7 +168,12 @@ export interface View {
     risk: Band;
     techDebt: Band;
   }[];
-  player: { energy: Band; reputation: Band };
+  player: {
+    energy: Band;
+    reputation: Band;
+    /** Burnout: whether stress is at the threshold now, the weeks in a row ended there, and how many end the run. */
+    edge: { at: boolean; weeks: number; limit: number };
+  };
   habits: Habits;
   vacancies: Vacancy[];
   goals: { id: string; text: string; progress: string }[];

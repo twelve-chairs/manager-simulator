@@ -72,7 +72,7 @@ export interface LevelRenderer {
   moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined;
   chips(before: unknown, after: unknown): Chip[];
   recap(run: Run, recap: unknown): Child;
-  status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[] };
+  status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[]; edge?: { at: boolean; weeks: number; limit: number } };
   /** A measure's name on the review screen, when the level names it (a goal by its text). */
   measureName(view: unknown, id: string): string | undefined;
   /** A measure's value in words on the review screen, when the level knows the measure. */
@@ -371,7 +371,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   /** The header: the week, the review, the days, energy, reputation and goals. */
-  // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011
+  // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011, UI-WEEK-012, UI-WEEK-013
   function weekScreen(ctx: ScreenContext, renderer: LevelRenderer) {
     const { run } = ctx;
     const status = renderer.status(ctx.view);
@@ -387,8 +387,11 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         { class: 'status' },
         h('div', { class: 'week-number' }, 'Week ', h('strong', { 'data-field': 'week' }, week), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
         h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': i < now ? 'past' : i === now ? 'now' : 'ahead' }, d.slice(0, 3)))),
-        h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, bandWord('energy', status.energy)),
+        h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, status.edge?.at ? 'at the edge' : bandWord('energy', status.energy)),
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
+        status.edge && status.edge.weeks > 0
+          ? h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${status.edge.weeks} ${status.edge.weeks === 1 ? 'week' : 'weeks'} at the edge. ${status.edge.limit} in a row and you burn out.`)
+          : null,
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
       h(
