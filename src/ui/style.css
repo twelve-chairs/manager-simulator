@@ -1,4 +1,5 @@
-/* A header across the top, the scene in the middle with the team beside it. System fonts only: the page loads nothing from elsewhere. */
+/* A header across the top, the scene in the middle with the team beside it, on a faint circuit-board background.
+   System fonts only: the page loads nothing from elsewhere. */
 :root {
   --bg: #eef1f4;
   --surface: #ffffff;
@@ -10,6 +11,9 @@
   --good: #1f8a5b;
   --bad: #c2413a;
   --chip: #f4f6f9;
+  /* The background pattern's colour and strength. */
+  --pattern: #5d6878;
+  --pattern-strength: 0.16;
   --display: "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
   font-family: system-ui, "Segoe UI", sans-serif;
@@ -21,11 +25,26 @@
   :root {
     --bg: #141922; --surface: #1d2430; --ink: #e8edf4; --muted: #9aa6b6; --line: #2e3848;
     --accent: #f0ac2e; --accent-ink: #f0ac2e; --good: #4cc48e; --bad: #f07a72; --chip: #252e3c;
+    --pattern: #9aa6b6; --pattern-strength: 0.12;
     color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); }
+/* The page colour is on the root only: a body background would cover the pattern wherever there is content. */
+body { margin: 0; }
+/* The circuit board: one image used as a mask over the theme's pattern colour, so it follows light and dark mode.
+   It is a file, not inlined, so the Content-Security-Policy allows it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--pattern);
+  -webkit-mask: url('./assets/circuit.svg') repeat;
+  mask: url('./assets/circuit.svg') repeat;
+  opacity: var(--pattern-strength);
+  pointer-events: none;
+}
 #app { max-width: 68rem; margin: 0 auto; padding: 1.5rem max(16px, env(safe-area-inset-left, 0px)); }
 h1, h2, h3 { font-family: var(--display); line-height: 1.2; margin: 0 0 0.4rem; }
 h2:focus, h1:focus { outline: none; }

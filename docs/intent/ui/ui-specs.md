@@ -62,4 +62,5 @@ Design: [ui-design.md](ui-design.md)
 
 - [x] **UI-CONTENT-001**: When the page starts, the UI shall load the compiled situation bundle through the situation engine, listing invalid situations' errors on the page in the development build and dropping them silently in the production build.
 - [x] **UI-BUILD-002**: When the game is built for production, the build shall put a Content-Security-Policy `<meta>` tag first in the page's head with the policy the UI design sets, which allows no inline script, no `eval` and no network connections.
+- [x] **UI-BUILD-003**: When the game is built, the build shall emit every image the page uses as its own file, and inline none into the page, its stylesheets or its scripts as a `data:` URL, which the Content-Security-Policy's `img-src 'self'` would block.
 - [x] **UI-BUILD-001**: When the game is built, the build shall compile the situations in `content/situations/` into the bundle, fail on an invalid situation, and emit static files with no inline script.

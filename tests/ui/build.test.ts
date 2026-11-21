@@ -55,6 +55,18 @@ describe('the build', () => {
     expect(content).not.toMatch(/unsafe-inline|unsafe-eval/);
   });
 
+  // @spec UI-BUILD-003
+  it('ships images as files, never inlined as data: URLs the policy would block', { timeout: 60_000 }, () => {
+    const out = mkdtempSync(join(tmpdir(), 'build-'));
+    build(out);
+    const built = files(out);
+    for (const f of built.filter((x) => /\.(html|css|js)$/.test(x))) expect({ file: f, inlined: /data:image\//.test(readFileSync(f, 'utf8')) }).toEqual({ file: f, inlined: false });
+    const css = built.filter((f) => f.endsWith('.css')).map((f) => readFileSync(f, 'utf8')).join('\n');
+    const images = [...css.matchAll(/url\(\s*["']?([^"')]+\.svg)["']?\s*\)/g)].map((m) => m[1]!);
+    expect(images.length).toBeGreaterThan(0);
+    for (const url of images) expect(built.some((f) => f.endsWith(url.replace(/^.*\//, '')))).toBe(true);
+  });
+
   // @spec UI-BUILD-001
   it('fails on an invalid situation', { timeout: 60_000 }, () => {
     const bad = mkdtempSync(join(tmpdir(), 'situations-'));

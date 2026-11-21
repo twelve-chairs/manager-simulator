@@ -68,5 +68,7 @@ function contentSecurityPolicy(): Plugin {
 
 export default defineConfig({
   plugins: [situations(), contentSecurityPolicy()],
-  build: { sourcemap: false, modulePreload: { polyfill: false } },
+  // Assets are never inlined as data: URLs, which the policy's img-src 'self' would block.
+  // @spec UI-BUILD-003
+  build: { sourcemap: false, modulePreload: { polyfill: false }, assetsInlineLimit: 0 },
 });

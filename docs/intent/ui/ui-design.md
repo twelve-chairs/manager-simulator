@@ -43,6 +43,10 @@ The screen follows the run's phase:
 
 The scene, header and recap are a shell shared by every level; the team panel, habits panel, the words beside a moment's choices and the level's part of the recap come from a renderer per career level, working from the level's view.
 
+## Look
+
+The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, tiled across the background. It is drawn as a mask over a theme colour, so one image follows light and dark mode, and it stays faint behind the scene and the cards, which are opaque, so text keeps its contrast. The pattern ships as its own image file: the build never inlines an image into the stylesheet as a `data:` URL, which the page's Content-Security-Policy (`img-src 'self'`) would block.
+
 ## Change Chips
 
 After a choice applies, the UI compares the level's view before and after the command and shows a chip for each band that moved: a person's motivation or stress ("Dario: less motivated"), the player's energy and reputation, and a project's risk or tech debt; and a chip for each person who left the team or joined it. A rise that is good for the player reads as good and a fall as bad, whatever the number did: less stress is good news. The comparison reads bands the view already shows, so it adds no rule and reveals nothing the player could not see by comparing the panels.
@@ -128,6 +132,7 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | What changed | Chips from comparing the view's bands before and after a choice, after the reaction | Numbers changed; no chips | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. |
 | Habits | Set before Monday in week 0, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
 | Seed choice | Drawn from the browser's cryptographic random source and displayed | A fixed seed; the clock | A visible random seed gives a fresh run each time and still lets a run be reproduced; the clock and `Math.random` are kept out of the game. |
+| Background | A circuit-board pattern as a CSS mask over a theme colour, served as a file | A coloured image per theme; a CSS-only pattern of gradients; a photo | One small image serves both themes. Gradients can draw a grid but not traces and chips, and a photo is heavy and fights the text. Serving it as a file keeps the strict CSP: an inlined `data:` image would be blocked. |
 | Linter | oxlint with its type-aware companion, oxlint-tsgolint | ESLint with typescript-eslint; Biome | typescript-eslint supports only TypeScript before 6.1, and the project builds with TypeScript 7; ESLint would need a second, older TypeScript and so lint against a different compiler. oxlint runs ESLint's core rules and ports of typescript-eslint's without TypeScript's JavaScript API, and its type-aware rules are built on TypeScript 7. Biome has no type-aware rules. |
 | Invalid content | Dropped; listed on the page only in the development build | Always listed; failing to start | Players should not see authoring errors; authors should. The build already fails on invalid content, so this only matters for a bundle edited by hand. |
 
