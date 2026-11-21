@@ -16,6 +16,7 @@ function checkInReason(sim: SimState, projectId: string): string {
 
 /** A moment's heading and the scene it sets. */
 export function describeMoment(level: LineState, sim: SimState, m: LevelMoment): { title: string; text: string; difficulty?: number } {
+  if (m.kind === 'finalEvaluation') return { title: `Final evaluation: ${nameOf(sim, m.ref)}`, text: `${nameOf(sim, m.ref)} is on an improvement plan, and this quarter's work would be their third low rating in a row. A third ends the plan. It's your call.` };
   if (m.kind === 'interview') return { title: 'Interview', text: 'A candidate for the open role is in the building this afternoon. Who talks to them?' };
   if (m.kind === 'checkIn') {
     const p = sim.projects[m.ref];

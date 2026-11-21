@@ -455,6 +455,9 @@ describe('line manager panels', () => {
     const assigned = structuredClone(r);
     (assigned.lastWeek!.recap as { assigned: { projectId: string; name: string }[] }).assigned = [{ projectId: 'p9', name: 'Ledger sync' }];
     expect(text(makeApp({ run: assigned }).root, '[data-part=recap-assigned] li')).toBe('Your manager assigned Ledger sync to the team.');
+    const held = structuredClone(r);
+    (held.lastWeek!.recap as { held: { personId: string; name: string }[] }).held = [{ personId: 'e1', name: 'Wen Albrecht' }];
+    expect(text(makeApp({ run: held }).root, '[data-part=recap-held] li')).toBe("Wen Albrecht's final evaluation waits for you on Monday.");
   });
 });
 

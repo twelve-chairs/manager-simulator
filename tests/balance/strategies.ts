@@ -42,7 +42,7 @@ export const hero: Strategy = {
   naive: true,
   habits: (seen) => (seen.week === 0 ? [habit('nightPages', 'me'), habit('approvals', 'me')] : []),
   choose(_, m) {
-    if (m.source === 'situation' || m.kind === 'checkIn') return first(m);
+    if (m.source === 'situation' || m.kind === 'checkIn' || m.kind === 'finalEvaluation') return first(m);
     if (m.kind === 'onCall') return 'takeOver';
     if (isIntake(m)) return 'take';
     return 'self';
@@ -53,7 +53,7 @@ export const delegator: Strategy = {
   name: 'delegator',
   naive: true,
   choose(seen, m) {
-    if (m.source === 'situation' || m.kind === 'checkIn') return first(m);
+    if (m.source === 'situation' || m.kind === 'checkIn' || m.kind === 'finalEvaluation') return first(m);
     if (m.kind === 'onCall') return 'leave';
     if (isIntake(m)) return 'take';
     const prefix = m.kind === 'interview' ? 'ask:' : 'give:';
@@ -66,7 +66,7 @@ export const contrarian: Strategy = {
   name: 'contrarian',
   naive: true,
   choose(_, m) {
-    if (m.source === 'situation' || m.kind === 'checkIn') return last(m);
+    if (m.source === 'situation' || m.kind === 'checkIn' || m.kind === 'finalEvaluation') return last(m);
     if (m.kind === 'onCall') return 'leave';
     if (m.kind === 'interview') return 'skip';
     if (isIntake(m)) return 'decline';
@@ -91,6 +91,8 @@ function soundChoice(seen: Seen, m: Moment): string {
   const { view } = seen;
   const rested = view.player.energy >= OKAY;
   if (m.source === 'situation') return has(m, BETTER_CHOICES[m.situationId!] ?? '') ? BETTER_CHOICES[m.situationId!]! : first(m);
+  // Someone still delivering poorly at the end of an improvement plan is weighing on the team.
+  if (m.kind === 'finalEvaluation') return 'letGo';
   if (m.kind === 'onCall') {
     const onCall = view.people.find((p) => p.id === m.personId);
     return onCall && m.difficulty !== undefined && onCall.skill >= m.difficulty ? 'leave' : 'backUp';

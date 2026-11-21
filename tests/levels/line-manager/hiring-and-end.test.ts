@@ -447,3 +447,72 @@ describe('evaluations at the end of a review period', () => {
     for (const p of ended.recap.people) expect(p.notes.some((n) => n.startsWith('Rated '))).toBe(false);
   });
 });
+
+describe('final evaluations', () => {
+  /** The last week of a period, with one engineer on an improvement plan (two low ratings) who is delivering poorly. */
+  function onAPlan() {
+    const q = quietRun(1);
+    const [who] = engineers(q.sim) as [string];
+    const sim = patch(q.sim, (s) => {
+      s.week = 25;
+      Object.assign(s.people[who]!, { skill: 5, motivation: 10, stress: 95, performance: 'partial' });
+      s.people[who]!.history.push(
+        { week: 9, cause: { kind: 'situation', situationId: 'quarterly-evaluation', choiceId: 'honest' }, rating: 'below' },
+        { week: 12, cause: { kind: 'rule', ruleId: 'line-manager.evaluation' }, rating: 'partial' },
+      );
+    });
+    // the rating on what they delivered would be their third low one in a row
+    expect(['below', 'partial']).toContain(correspondingRating(sim, who));
+    return { level: q.level, sim, who };
+  }
+
+  // @spec LINE-EVAL-001, LINE-EVAL-003, LINE-EVAL-005
+  it('holds a third low rating back for a final evaluation moment on Monday afternoon, and says so in the recap', () => {
+    const { level, sim, who } = onAPlan();
+    const ended = end(level, sim);
+    expect(ended.sim.people[who]!.status).toBe('active');
+    expect(ended.sim.people[who]!.history.filter((h) => h.week === 25 && h.rating)).toEqual([]);
+    expect(ended.recap.evaluations.map((e) => e.personId)).not.toContain(who);
+    expect(ended.recap.held).toEqual([{ personId: who, name: sim.people[who]!.name }]);
+    const next = begin(ended.level, patch(ended.sim, (s) => (s.week = 26)));
+    const m = next.moments.find((x) => x.kind === 'finalEvaluation')!;
+    expect(m).toMatchObject({ ref: who, day: 0, time: 'afternoon' });
+    expect(m.choices.map((c) => c.id)).toEqual(['letGo', 'oneMoreQuarter']);
+  });
+
+  /** The final evaluation moment, in the week after it was held. */
+  function heldMoment() {
+    const { level, sim, who } = onAPlan();
+    const ended = end(level, sim);
+    const week = patch(ended.sim, (s) => (s.week = 26));
+    const begun = begin(ended.level, week);
+    return { begun, sim: week, who, moment: begun.moments.find((x) => x.kind === 'finalEvaluation')! };
+  }
+
+  // @spec LINE-EVAL-003
+  it('lets the engineer go when the player rates them on what they delivered', () => {
+    const { begun, sim, who, moment } = heldMoment();
+    const chosen = choose(begun, sim, moment.id, 'letGo');
+    expect(chosen.sim.people[who]!.status).toBe('departed');
+    expect(chosen.sim.people[who]!.departure?.reason).toBe('fired');
+  });
+
+  // @spec LINE-EVAL-004
+  it('records no rating and notes one more quarter, whether chosen or left unanswered', () => {
+    const { begun, sim, who, moment } = heldMoment();
+    const kept = choose(begun, sim, moment.id, 'oneMoreQuarter');
+    const check = (s: SimState) => {
+      expect(s.people[who]!.status).toBe('active');
+      expect(s.people[who]!.history.filter((h) => h.week === 26 && h.rating)).toEqual([]);
+      expect(s.people[who]!.history.some((h) => h.note === 'Given one more quarter')).toBe(true);
+    };
+    check(kept.sim);
+    check(end(begun, sim).sim);
+  });
+
+  // @spec LINE-MOMENT-001
+  it('puts a final evaluation first among the week’s moments', () => {
+    const { begun } = heldMoment();
+    expect(begun.moments[0]!.kind).toBe('finalEvaluation');
+  });
+});

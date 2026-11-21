@@ -14,6 +14,7 @@ function answerable(level: LineState, sim: SimState, m: LevelMoment): boolean {
   if (m.status !== 'open') return false;
   if (m.kind === 'interview') return level.vacancies.some((v) => v.id === m.ref);
   if (m.kind === 'checkIn') return sim.projects[m.ref]?.status === 'active' && sim.projects[m.ref]!.teamId === level.teamId;
+  if (m.kind === 'finalEvaluation') return isEngineer(level, sim, m.ref) && level.heldEvaluations.some((h) => h.personId === m.ref);
   const item = level.items.find((i) => i.id === m.ref);
   if (!item || !subjectValid(level, sim, item)) return false;
   return m.kind !== 'onCall' || isEngineer(level, sim, m.personId!);

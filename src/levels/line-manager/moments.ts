@@ -1,7 +1,7 @@
-import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type SimState } from '../../sim';
-import { action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
+import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type Rating, type SimState } from '../../sim';
+import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
 import { reaction } from './reactions';
-import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL } from './tuning';
+import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL } from './tuning';
 import { FELL_SHORT, WORK_LABELS, consequence, workChoices } from './work';
 import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, WorkItem } from './types';
 
@@ -49,6 +49,21 @@ function interviewChoices(level: LineState, sim: SimState): MomentChoice[] {
 
 /** Adds this week's level moments, up to the cap, for work, vacancies and night pages that have none yet this week. Mutates `s`. */
 // @spec LINE-MOMENT-001, LINE-MOMENT-002, LINE-WEEK-002, LINE-WORK-001, LINE-HABIT-010
+/** Ratings that count toward an improvement plan. */
+export const LOW: readonly Rating[] = ['below', 'partial'];
+
+/** Keeping someone for another quarter: no rating, and a note that says so. */
+export const oneMoreQuarter = (id: string): Effect => personEffect(id, 'motivation', 0, action(FINAL_EVALUATION), { note: 'Given one more quarter' });
+
+/** A final evaluation's choices: rate them on what they delivered and let them go, or one more quarter. */
+function finalEvaluationChoices(sim: SimState, id: string, rating: Rating): MomentChoice[] {
+  const name = sim.people[id]!.name;
+  return [
+    { id: 'letGo', label: `Rate ${name} ${RATING_WORDS[rating]} on what they delivered, and let them go` },
+    { id: 'oneMoreQuarter', label: `Give ${name} one more quarter` },
+  ];
+}
+
 export function addMoments(s: LineState, sim: SimState) {
   const week = sim.week;
   s.moments = s.moments.filter((m) => m.week === week);
@@ -62,7 +77,13 @@ export function addMoments(s: LineState, sim: SimState) {
   };
   const open = (kinds: readonly string[]) => s.items.filter((i) => kinds.includes(i.kind) && !covered.has(i.id) && subjectValid(s, sim, i));
 
-  // Night pages first: they cannot wait for another week.
+  // @spec LINE-EVAL-003
+  // Final evaluations first: someone's job depends on them.
+  for (const held of s.heldEvaluations.filter((h) => !covered.has(h.personId) && sim.people[h.personId]?.status === 'active')) {
+    if (room <= 0) break;
+    make({ kind: 'finalEvaluation', ref: held.personId, day: 0, time: 'afternoon', choices: finalEvaluationChoices(sim, held.personId, held.rating) });
+  }
+  // Night pages next: they cannot wait for another week.
   const onCall = onCallEngineer(s, sim);
   if (onCall) {
     for (const [i, item] of open(['onCall']).entries()) {
@@ -110,7 +131,20 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   const engineer = (id: string) => sim.people[id]!;
   const gone = (id: string) => `${sim.people[id]?.name ?? id} is no longer on the team`;
 
-  if (moment.kind === 'checkIn') {
+  if (moment.kind === 'finalEvaluation') {
+    const id = moment.ref;
+    const held = s.heldEvaluations.find((h) => h.personId === id);
+    if (!held || !isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
+    if (choiceId === 'letGo') {
+      // The third low rating in a row: the simulation ends their plan and they leave.
+      effects.push({ type: 'rate', target: { kind: 'person', id }, rating: held.rating, cause: action(FINAL_EVALUATION), historyNote: `Rated ${RATING_WORDS[held.rating]} on what they delivered` });
+      text = `You rate ${engineer(id).name} ${RATING_WORDS[held.rating]} and let them go. It's a short, hard conversation.`;
+    } else {
+      effects.push(oneMoreQuarter(id));
+      text = `You give ${engineer(id).name} one more quarter. They know what it means.`;
+    }
+    s.heldEvaluations = s.heldEvaluations.filter((h) => h.personId !== id);
+  } else if (moment.kind === 'checkIn') {
     const p = sim.projects[moment.ref];
     if (!p || !teamProjects(s, sim).includes(moment.ref)) return { ok: false, error: `project ${moment.ref} is no longer active` };
     const c = LINE_TUNING.checkIn;

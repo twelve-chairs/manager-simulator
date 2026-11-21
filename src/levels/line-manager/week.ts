@@ -1,8 +1,8 @@
-import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, type Effect, type HistoryEntry, type Rating, type SimState } from '../../sim';
-import { action, band, calmRisk, generateProject, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
+import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type Effect, type HistoryEntry, type SimState } from '../../sim';
+import { RATING_WORDS, action, band, calmRisk, generateProject, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
-import { addMoments } from './moments';
+import { LOW, addMoments, oneMoreQuarter } from './moments';
 import { HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
 import { EXPIRED, arriveWork, consequence } from './work';
 import type { LevelResult, LineState, Recap, WeekResult } from './types';
@@ -34,8 +34,6 @@ export function openMoments(level: LineState, sim: SimState): LineState {
 const EVALUATION = 'line-manager.evaluation';
 const ASSIGNED = 'line-manager.assigned-project';
 
-/** Ratings in words, as the level writes them in notes and the recap. */
-export const RATING_WORDS: Record<Rating, string> = { below: 'below expectations', partial: 'partially meets', meets: 'meets', exceeds: 'exceeds', outstanding: 'outstanding' };
 
 /** Each distinct note once, in order, with how many times it recurred when more than once. */
 function counted(notes: string[]): string[] {
@@ -46,13 +44,13 @@ function counted(notes: string[]): string[] {
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
 // @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-END-010, LINE-END-012, LINE-INBOX-002, LINE-INBOX-013
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-INBOX-002, LINE-INBOX-013
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
   const week = sim.week;
   const t = LINE_TUNING.habits;
   const effects: Effect[] = [];
-  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [], assigned: [] };
+  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [], assigned: [], held: [] };
   reconcileVacancies(s, sim);
   recap.habitChanges.push(...s.habitNotes, ...fallBack(s, sim));
   s.habitNotes = [];
@@ -63,8 +61,10 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   for (const m of s.moments.filter((x) => x.week === week)) {
     if (m.status === 'open') {
       m.status = 'waited';
-      m.outcome = m.kind === 'onCall' ? 'Nobody picked up the page.' : m.kind === 'interview' ? 'No interview this week.' : 'It waits for another week.';
+      m.outcome = m.kind === 'onCall' ? 'Nobody picked up the page.' : m.kind === 'interview' ? 'No interview this week.' : m.kind === 'finalEvaluation' ? 'They get one more quarter.' : 'It waits for another week.';
       if (m.kind === 'onCall') expireNow.add(m.ref);
+      // A final evaluation left unanswered gives them one more quarter.
+      if (m.kind === 'finalEvaluation' && sim.people[m.ref]?.status === 'active') effects.push(oneMoreQuarter(m.ref));
     }
     recap.moments.push({ momentId: m.id, ref: m.ref, text: m.outcome ?? '' });
   }
@@ -123,6 +123,12 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
       const ratedThisPeriod = p.history.some((h) => h.rating && h.week >= periodStart && !(h.cause.kind === 'rule' && h.cause.ruleId === STARTING_ORGANIZATION_RULE));
       const rating = correspondingRating(sim, id);
       if (p.joinedWeek > periodStart || ratedThisPeriod || !rating) continue;
+      // A third low rating in a row would let them go: that is the player's decision, in a final evaluation.
+      if (planOf(sim, { kind: 'person', id }) === 'pip' && LOW.includes(rating)) {
+        s.heldEvaluations.push({ personId: id, rating });
+        recap.held.push({ personId: id, name: p.name });
+        continue;
+      }
       effects.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule(EVALUATION), historyNote: `Rated ${RATING_WORDS[rating]} on what they delivered` });
       recap.evaluations.push({ personId: id, name: p.name, rating });
     }
@@ -132,6 +138,9 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
   let after = applied.state;
   const log = [...applied.log];
+
+  // Final evaluations from last period are settled this week, answered or not.
+  s.heldEvaluations = s.heldEvaluations.filter((h) => !s.moments.some((m) => m.week === week && m.kind === 'finalEvaluation' && m.ref === h.personId));
 
   // Weeks the team ends with no active project; after a run of them, the player's manager assigns one.
   if (week % LINE_TUNING.reviewEveryWeeks === 0) s.idleWeeks = 0;

@@ -243,6 +243,7 @@ function recap(run: Run, recapValue: unknown): Child {
     part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
     part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
     part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
+    part('recap-held', 'Waiting for you', r.held.map((p) => h('li', { 'data-person': p.personId }, `${p.name}'s final evaluation waits for you on Monday.`))),
     part('recap-assigned', 'New work', r.assigned.map((p) => h('li', {}, `Your manager assigned ${p.name} to the team.`))),
     part('recap-goals', 'Goals', r.goals.map((g) => h('li', {}, g.text))),
   ];

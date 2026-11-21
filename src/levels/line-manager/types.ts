@@ -36,7 +36,7 @@ export interface MomentChoice {
 /** A scene the level contributes to the week: work to decide, an interview, a project check-in, or a night page for the engineer on call. */
 export interface LevelMoment {
   id: string;
-  kind: 'work' | 'interview' | 'checkIn' | 'onCall';
+  kind: 'work' | 'interview' | 'checkIn' | 'onCall' | 'finalEvaluation';
   /** The work item, vacancy or project the moment is about. */
   ref: string;
   /** The engineer on call, for an on-call moment. */
@@ -93,6 +93,8 @@ export interface LineState {
   idleStreak: number;
   /** The last week work intake was declined or expired, if ever. */
   intakeDeclinedWeek: number | null;
+  /** Third low ratings held back at a period's end, for the player to decide in a final evaluation. */
+  heldEvaluations: { personId: string; rating: Rating }[];
   goals: Goal[];
   /** The first week of the review period the goals belong to; -1 before any are set. */
   goalsPeriod: number;
@@ -116,6 +118,8 @@ export interface Recap {
   evaluations: { personId: string; name: string; rating: Rating }[];
   /** Projects the player's manager assigned to an idle team. */
   assigned: { projectId: string; name: string }[];
+  /** Engineers whose final evaluation waits for the player. */
+  held: { personId: string; name: string }[];
 }
 
 export type LevelResult<T> = ({ ok: true } & T) | { ok: false; error: string };

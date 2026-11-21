@@ -142,6 +142,7 @@ export const DO_IT_YOURSELF = 'line-manager.self';
 export const DELEGATE = 'line-manager.delegate';
 export const ACCEPT_INTAKE = 'line-manager.accept-intake';
 export const DECLINE_INTAKE = 'line-manager.decline-intake';
+export const FINAL_EVALUATION = 'line-manager.final-evaluation';
 export const INTERVIEW = 'line-manager.interview';
 export const ON_CALL = 'line-manager.on-call';
 export const CHECK_IN = 'line-manager.check-in';

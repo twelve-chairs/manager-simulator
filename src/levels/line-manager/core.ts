@@ -1,5 +1,5 @@
 import { compareCodeUnits } from '../../sim';
-import { nextRandom, type Cause, type Effect, type NewPerson, type NewProject, type SimState, type Want } from '../../sim';
+import { nextRandom, type Cause, type Effect, type NewPerson, type NewProject, type Rating, type SimState, type Want } from '../../sim';
 import { NAMES } from './names';
 import { PERSONALITIES } from '../../personalities';
 import { LINE_TUNING } from './tuning';
@@ -52,6 +52,9 @@ export function reconcileVacancies(level: LineState, sim: SimState) {
     level.vacancies.push({ id: `v${level.counters.vacancy}`, interviews: 0 });
   }
 }
+
+/** Ratings in words, as the level writes them in notes, recaps and moments. */
+export const RATING_WORDS: Record<Rating, string> = { below: 'below expectations', partial: 'partially meets', meets: 'meets', exceeds: 'exceeds', outstanding: 'outstanding' };
 
 /** An unused name from the list; once all are taken, a listed name with the lowest number from 2 that makes it unused. */
 // @spec LINE-ORG-002

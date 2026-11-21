@@ -38,7 +38,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-LINE-005**: When the week screen is shown for the line manager, the UI shall show each open vacancy with its interview count ("1 interview so far", otherwise "N interviews so far").
 - [x] **UI-LINE-006**: When the week screen is shown for the line manager, the UI shall show a habits panel, folded by default after week 0 and keeping the player's choice to open or close it across redraws, with a control per habit that sends a plan command changing it at once, offering the team's engineers by name for a habit that names one.
 - [x] **UI-LINE-007**: When the current moment is the line manager's, the UI shall show its difficulty as a band word where it has one, and beside each choice that gives the work or an interview to an engineer, that engineer's skill and stress band words.
-- [x] **UI-LINE-008**: When the recap is shown for the line manager, the UI shall show each engineer the level reports, with their band changes and that week's notes, what each habit did and each habit that fell back, each expired work item by its kind and its subject's name, each project the player's manager assigned, and each goal's progress.
+- [x] **UI-LINE-008**: When the recap is shown for the line manager, the UI shall show each engineer the level reports, with their band changes and that week's notes, what each habit did and each habit that fell back, each expired work item by its kind and its subject's name, each project the player's manager assigned, each engineer whose final evaluation waits for the player, and each goal's progress.
 
 ## Saving
 
