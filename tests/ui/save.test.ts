@@ -111,9 +111,15 @@ describe('saving', () => {
     const { root } = app(memoryStorage({ [KEY]: JSON.stringify(toSave(r, FP)) }));
     click(root, '[data-action=export]');
     expect(created).toHaveBeenCalledTimes(1);
+    // on the recap of the second week, the header shows week 2
     expect(clicked[0]!.download).toBe('manager-simulator-3-week-2.json');
     expect(clicked[0]!.getAttribute('href')).toBe('blob:fake');
     await vi.waitFor(() => expect(revoked).toHaveBeenCalledWith('blob:fake'));
+    // once the third week starts, the header and the file name both say week 3
+    click(root, '[data-action=close-recap]');
+    expect(text(root, '[data-field=week]')).toBe('3');
+    click(root, '[data-action=export]');
+    expect(clicked[1]!.download).toBe('manager-simulator-3-week-3.json');
     expect(document.body.querySelector('a[download]')).toBeNull();
   });
 

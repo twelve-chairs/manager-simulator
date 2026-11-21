@@ -186,7 +186,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(toSave(run, fingerprint), null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `manager-simulator-${run.seed}-week-${run.sim.week}.json`;
+    link.download = `manager-simulator-${run.seed}-week-${weekOnScreen(run)}.json`;
     // Some browsers start the download only once the link is in the document, and after click() returns, so the
     // URL is revoked on the next task rather than straight away.
     document.body.append(link);
@@ -418,6 +418,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   const currentMoment = (run: Run) => run.week.find((m) => m.status === 'open');
+
+  /** The week the screen shows: the header's week, or the week a recap, review or ended screen is about. */
+  const weekOnScreen = (run: Run) => shownWeek(run.phase === 'week' && sceneKind(run) !== 'recap' ? run.sim.week : run.sim.week - 1);
 
   /** A game week as the player counts it, from 1. */
   // @spec UI-WEEK-011

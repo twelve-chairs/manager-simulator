@@ -51,7 +51,7 @@ The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, t
 
 ## Week Numbers
 
-Every week number the UI shows (the header, the recap's heading and its Start week button, a project's deadline, the review's heading, the ended screen) counts from 1, per the HLD's *Players count weeks from 1*: game week *w* shows as week *w* + 1. A heading about a week that has ended names that week, so the recap after game week 0 reads "How week 1 went" and the review held after game week 12 reads "Week 13 review". The exported save's file name uses the game week, as the save does.
+Every week number the UI shows (the header, the recap's heading and its Start week button, a project's deadline, the review's heading, the ended screen) counts from 1, per the HLD's *Players count weeks from 1*: game week *w* shows as week *w* + 1. A heading about a week that has ended names that week, so the recap after game week 0 reads "How week 1 went" and the review held after game week 12 reads "Week 13 review". The exported save's file name is read by the player too, so it names the week the screen shows (the header's week, or the week the recap, review or ended screen is about); the save's contents keep game weeks.
 
 ## Change Chips
 

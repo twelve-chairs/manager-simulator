@@ -49,7 +49,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-SAVE-003**: When a restored run was rebuilt, the UI shall show a notice saying how many of its commands still applied, until the player's next command.
 - [x] **UI-SAVE-004**: If a saved run in storage fails to load, then the UI shall show the start screen with a message and leave the stored save in place until a new run begins.
 - [x] **UI-SAVE-005**: If storage cannot be read or written, then the UI shall keep playing without saving, show a notice once, and remove the stored save if it can.
-- [x] **UI-SAVE-006**: When the player exports from a run screen, the UI shall download the save as a JSON file named `manager-simulator-<seed>-week-<week>.json`, through an object URL it revokes after the download starts.
+- [x] **UI-SAVE-006**: When the player exports from a run screen, the UI shall download the save as a JSON file named `manager-simulator-<seed>-week-<week>.json`, `<week>` being the week the screen shows (the header's week on the week screen, the week a recap, review or ended screen is about), through an object URL it revokes after the download starts.
 - [x] **UI-SAVE-007**: When the player imports a save file from the start screen, or from a run screen and confirms replacing the current run, the UI shall restore it, and if it loads, replace the current run with it, save it and show it; if it fails, show a message and leave the current run as it was.
 - [x] **UI-SAVE-008**: When the player discards from a run screen and confirms, the UI shall remove the stored save and show the start screen with a new seed; if they cancel, the run and its save stay as they were.
 
