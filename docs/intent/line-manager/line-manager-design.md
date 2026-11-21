@@ -36,7 +36,7 @@ The player sees what a manager of this team would see, which is less than the si
 | Want | Unknown until the player has held a 1:1 with that person; known from then on |
 | Trust | Not shown |
 | Performance level | Exactly |
-| What they remember | Their most recent notable history entries, as short lines in their own terms; a habit's routine notes, such as each 1:1, are left out, since they come every week and would crowd out what happened between you |
+| What they remember | Their most recent notable history entries, as short lines in their own terms; a habit's routine notes, such as each 1:1, are left out, since they come every week and would crowd out what happened between you; a note repeated back to back shows once with its count, as in the recap |
 | Project progress, deadline, schedule status | Exactly |
 | Project risk and tech debt | A coarse band |
 | The player's energy and reputation | A coarse band |

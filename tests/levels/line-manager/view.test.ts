@@ -118,6 +118,12 @@ describe('the player view', () => {
       for (const week of [6, 7, 8]) st.people[a]!.history.push({ week, cause: { kind: 'action', actionId: 'line-manager.habit.one-on-ones' }, note: '1:1' });
     });
     expect(view(level, withOneOnOnes).people.find((p) => p.id === a)!.memory).toEqual(['four', 'three', 'two']);
+    // a note repeated back to back shows once with its count, leaving room for older ones
+    const repeated = patch(s, (st) => {
+      for (const week of [6, 7]) st.people[a]!.history.push({ week, cause: { kind: 'rule', ruleId: 'x' }, note: 'Took on a design review' });
+      for (const week of [8, 9, 10]) st.people[a]!.history.push({ week, cause: { kind: 'rule', ruleId: 'x' }, note: 'Handled a night page' });
+    });
+    expect(view(level, repeated).people.find((p) => p.id === a)!.memory).toEqual(['Handled a night page, 3 times', 'Took on a design review, twice', 'four']);
   });
 
   // @spec LINE-VIS-012

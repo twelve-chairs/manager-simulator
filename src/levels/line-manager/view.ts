@@ -13,6 +13,17 @@ const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
 // @spec LINE-VIS-011
 const remembered = (history: HistoryEntry[]) => history.filter((h) => h.note && !(h.cause.kind === 'action' && habitCauses.has(h.cause.actionId)));
 
+/** Notes, newest first, with a note repeated back to back shown once with how many times. */
+function collapsed(notes: string[]): string[] {
+  const lines: { note: string; times: number }[] = [];
+  for (const note of notes) {
+    const last = lines.at(-1);
+    if (last?.note === note) last.times++;
+    else lines.push({ note, times: 1 });
+  }
+  return lines.map(({ note, times }) => (times === 1 ? note : `${note}, ${times === 2 ? 'twice' : `${times} times`}`));
+}
+
 /** Why a project is due a check-in, as the rest of a sentence about it: the first that holds of overdue, behind schedule and high risk. */
 // @spec LINE-CHECK-007
 function checkInReason(sim: SimState, projectId: string): string {
@@ -66,11 +77,9 @@ export function view(level: LineState, sim: SimState): View {
         stress: band(p.stress),
         skill: band(p.skill),
         want: Object.hasOwn(level.learnedWants, id) ? level.learnedWants[id]!.want : ('unknown' as const),
-        memory: remembered(p.history)
-          .slice(-3)
-          .reverse()
-          .map((h) => h.note!),
+        memory: collapsed(remembered(p.history).map((h) => h.note!).reverse()).slice(0, 3),
         notes: remembered(p.history).length,
+        lastNote: remembered(p.history).at(-1)?.note ?? null,
       };
     }),
     projects: teamProjects(level, sim).map((id) => {

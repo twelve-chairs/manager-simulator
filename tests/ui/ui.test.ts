@@ -308,6 +308,12 @@ describe('the scene', () => {
     const chip = chips.find((c) => c.dataset.chip === `person:${who}:note`)!;
     expect(chip.textContent).toBe(`${r.sim.people[who]!.name}: ${note}`);
     expect(chip.dataset.tone).toBe('neutral');
+    // the same note again: the chip shows the note itself, not the card's count
+    const again = structuredClone(r);
+    again.sim.people[who]!.history.push({ week: 0, cause: { kind: 'rule', ruleId: 'x' }, note });
+    const second = makeApp({ run: again }).root;
+    click(second, `[data-scene] [data-choice="${give.id}"]`);
+    expect(text(second, `[data-scene] [data-chip="person:${who}:note"]`)).toBe(`${r.sim.people[who]!.name}: ${note}`);
   });
 
   // @spec UI-WEEK-008

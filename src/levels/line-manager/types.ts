@@ -157,6 +157,8 @@ export interface View {
     memory: string[];
     /** How many history notes they have, so a new note shows even when it repeats an earlier one. */
     notes: number;
+    /** Their newest remembered note, as recorded, without the count the memory adds to a repeat. */
+    lastNote: string | null;
   }[];
   projects: {
     id: string;

@@ -165,7 +165,7 @@ function chips(before: unknown, after: unknown): Chip[] {
     move(`person:${p.id}:motivation`, p.name, p.motivation, q.motivation, true, 'more motivated', 'less motivated');
     move(`person:${p.id}:stress`, p.name, p.stress, q.stress, false, 'more stressed', 'less stressed');
     const banded = p.motivation !== q.motivation || p.stress !== q.stress;
-    if (!banded && q.notes > p.notes && q.memory[0]) out.push({ key: `person:${p.id}:note`, text: `${p.name}: ${q.memory[0]}`, tone: 'neutral' });
+    if (!banded && q.notes > p.notes && q.lastNote) out.push({ key: `person:${p.id}:note`, text: `${p.name}: ${q.lastNote}`, tone: 'neutral' });
   }
   const was = new Set(a.people.map((p) => p.id));
   for (const q of b.people) if (!was.has(q.id)) out.push({ key: `person:${q.id}:joined`, text: `${q.name}: joined the team`, tone: 'good' });
