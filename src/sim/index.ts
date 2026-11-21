@@ -56,7 +56,9 @@ export const RULE_ORDER = [
 const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
   Object.fromEntries([...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).map((x) => [x.id, x]));
 
-const STARTING_ORGANIZATION: Cause = { kind: 'rule', ruleId: 'rule.startingOrganization' };
+/** The rule recorded as the cause of the ratings a simulation starts with. */
+export const STARTING_ORGANIZATION_RULE = 'rule.startingOrganization';
+const STARTING_ORGANIZATION: Cause = { kind: 'rule', ruleId: STARTING_ORGANIZATION_RULE };
 
 // @spec SIM-STATE-001, SIM-STATE-002, SIM-STATE-003, SIM-STATE-004, SIM-STATE-005, SIM-STATE-006, SIM-STATE-008, SIM-TIME-001
 // @spec SIM-PERF-001, SIM-PERF-020

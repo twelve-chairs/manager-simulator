@@ -80,7 +80,7 @@ export interface Run {
   lastWeek: { recap: unknown; moments: WeekMoment[] } | null;
   /** A conducted review waiting to be acknowledged: everything the review returned but the simulation state. */
   review: Omit<ReviewResult, 'sim'> | null;
-  ending: 'burnout' | 'managedOut' | 'completed' | null;
+  ending: 'burnout' | 'managedOut' | 'stayed' | 'completed' | null;
   commands: Command[];
 }
 

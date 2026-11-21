@@ -4,17 +4,24 @@ title: Evaluation due
 levels: [line-manager]
 priority: normal
 weight: 3
+cooldownWeeks: 9
 when:
   value: review.weeksAway
   atMost: 4
 roles:
   - name: engineer
     kind: person
+    # Only an engineer whose fair rating isn't meets: for anyone else, keeping the peace and rating honestly are the same choice.
+    # Everyone else is rated on what they delivered at the end of the quarter.
     where:
-      history: engineer
-      situation: quarterly-evaluation
-      withinWeeks: 10
-      is: 0
+      all:
+        - history: engineer
+          situation: quarterly-evaluation
+          withinWeeks: 10
+          is: 0
+        - not:
+            value: engineer.correspondingRating
+            is: meets
 choices:
   - id: keep-the-peace
     label: "Rate {engineer} meets, to keep the peace"

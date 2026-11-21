@@ -1,5 +1,5 @@
-import { applyEffects, type Effect, type HistoryEntry, type SimState } from '../../sim';
-import { action, band, nameOf, personEffect, playerEffect, reconcileVacancies, subjectValid, teamEngineers } from './core';
+import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, type Effect, type HistoryEntry, type Rating, type SimState } from '../../sim';
+import { action, band, nameOf, personEffect, playerEffect, reconcileVacancies, rule, subjectValid, teamEngineers } from './core';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { addMoments } from './moments';
@@ -31,15 +31,27 @@ export function openMoments(level: LineState, sim: SimState): LineState {
   return s;
 }
 
+const EVALUATION = 'line-manager.evaluation';
+
+/** Ratings in words, as the level writes them in notes and the recap. */
+export const RATING_WORDS: Record<Rating, string> = { below: 'below expectations', partial: 'partially meets', meets: 'meets', exceeds: 'exceeds', outstanding: 'outstanding' };
+
+/** Each distinct note once, in order, with how many times it recurred when more than once. */
+function counted(notes: string[]): string[] {
+  const times = new Map<string, number>();
+  for (const n of notes) times.set(n, (times.get(n) ?? 0) + 1);
+  return [...times].map(([n, k]) => (k === 1 ? n : `${n}, ${k === 2 ? 'twice' : `${k} times`}`));
+}
+
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
 // @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
   const week = sim.week;
   const t = LINE_TUNING.habits;
   const effects: Effect[] = [];
-  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [] };
+  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [] };
   reconcileVacancies(s, sim);
   recap.habitChanges.push(...s.habitNotes, ...fallBack(s, sim));
   s.habitNotes = [];
@@ -101,6 +113,19 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const gone = new Set(recap.expired.map((e) => e.itemId));
   s.items = s.items.filter((i) => !gone.has(i.id));
 
+  // The last week of a review period: everyone not yet rated this period is rated on what they delivered.
+  if ((week + 1) % LINE_TUNING.reviewEveryWeeks === 0) {
+    const periodStart = week + 1 - LINE_TUNING.reviewEveryWeeks;
+    for (const id of teamEngineers(s, sim)) {
+      const p = sim.people[id]!;
+      const ratedThisPeriod = p.history.some((h) => h.rating && h.week >= periodStart && !(h.cause.kind === 'rule' && h.cause.ruleId === STARTING_ORGANIZATION_RULE));
+      const rating = correspondingRating(sim, id);
+      if (p.joinedWeek > periodStart || ratedThisPeriod || !rating) continue;
+      effects.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule(EVALUATION), historyNote: `Rated ${RATING_WORDS[rating]} on what they delivered` });
+      recap.evaluations.push({ personId: id, name: p.name, rating });
+    }
+  }
+
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
   const after = applied.state;
@@ -114,14 +139,16 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const start = s.weekStart.week === week ? s.weekStart.people : {};
   const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
   const fromHabit = (h: HistoryEntry) => h.cause.kind === 'action' && habitCauses.has(h.cause.actionId);
+  // The evaluations have their own list in the recap.
+  const fromEvaluation = (h: HistoryEntry) => h.cause.kind === 'rule' && h.cause.ruleId === EVALUATION;
   for (const id of teamEngineers(s, after)) {
     const p = after.people[id]!;
     const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress };
     const changes: string[] = [];
     if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
     if (band(p.stress) !== band(was.stress)) changes.push(band(p.stress) > band(was.stress) ? 'more stressed' : 'less stressed');
-    const thisWeek = p.history.filter((h) => h.week === week && h.note);
-    if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: thisWeek.map((h) => h.note!) });
+    const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
+    if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }
   return { ok: true, level: s, sim: after, log: applied.log, recap };
 }

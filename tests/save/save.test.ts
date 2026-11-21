@@ -131,7 +131,9 @@ describe('restoring', () => {
 
   // @spec SAVE-RESTORE-001, SAVE-RESTORE-002
   it('stops replaying at week 1,040, so a crafted save cannot freeze the page', { timeout: 30_000 }, () => {
-    // 13 weeks then an acknowledge, over and over: a run that only idles can last far past any real one
+    // 13 weeks then an acknowledge, over and over. The line manager's last review ends a real run at week 156, so this
+    // plays a level with no last review: the limit guards against any level, or a tampered save, that runs on.
+    const endless: Dependencies = { ...DEPS, levels: [{ ...lineManagerLevel, assess: (l, sim) => ({ ...lineManagerLevel.assess(l, sim), lastReview: false }) }] };
     const commands: Save['commands'] = [];
     while (commands.length < 10_000) {
       for (let i = 0; i < 13; i++) commands.push({ kind: 'endWeek' });
@@ -142,7 +144,7 @@ describe('restoring', () => {
     const fingerprint = contentFingerprint(content);
     const long: Save = { ...valid(), seed: 1, content: fingerprint, commands: commands.slice(0, 10_000) };
     const started = performance.now();
-    const result = restore(long, content, DEPS, fingerprint);
+    const result = restore(long, content, endless, fingerprint);
     const took = performance.now() - started;
     expect(result.run.sim.week).toBe(1040);
     expect(result.applied).toBeLessThan(long.commands.length);

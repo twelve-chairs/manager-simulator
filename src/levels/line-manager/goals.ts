@@ -74,7 +74,7 @@ export function goalStatus(goal: Goal, level: LineState, sim: SimState): GoalSta
       const active = teamProjects(level, sim);
       const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
       const fine = active.filter((id) => !troubled.has(id)).length;
-      return { text: 'Keep every project on schedule', progress: `${fine} of ${active.length} on schedule`, achieved: fine === active.length, dropped: false };
+      return { text: 'Keep every project on schedule', progress: active.length ? `${fine} of ${active.length} on schedule` : 'No projects running', achieved: fine === active.length, dropped: false };
     }
     case 'keepEveryone': {
       const quits = Object.values(sim.people).filter((p) => p.teamId === level.teamId && p.departure?.reason === 'quit' && p.departure.week >= goal.periodStart);

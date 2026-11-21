@@ -1,4 +1,4 @@
-import type { ChangeLogEntry, PerformanceLevel, Role, SimState, Want } from '../../sim';
+import type { ChangeLogEntry, PerformanceLevel, Rating, Role, SimState, Want } from '../../sim';
 
 export type WorkKind = 'approval' | 'expense' | 'designReview' | 'customerRequest' | 'onCall' | 'workIntake';
 
@@ -104,6 +104,8 @@ export interface Recap {
   expired: { itemId: string; kind: WorkKind; subject: WorkItem['subject'] }[];
   goals: { id: string; text: string }[];
   people: { personId: string; name: string; changes: string[]; notes: string[] }[];
+  /** Engineers the level rated at the end of a review period, on what they delivered. */
+  evaluations: { personId: string; name: string; rating: Rating }[];
 }
 
 export type LevelResult<T> = ({ ok: true } & T) | { ok: false; error: string };

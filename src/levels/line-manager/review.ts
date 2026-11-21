@@ -1,6 +1,6 @@
 import { compareCodeUnits } from '../../sim';
 import { RATINGS, behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
-import { reconcileVacancies, teamEngineers, teamProjects } from './core';
+import { band, reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
 import { goalStatus } from './goals';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
@@ -63,8 +63,11 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
   };
 }
 
-/** The measures a review scores, with the level's targets, and whether promotion is possible yet. */
-// @spec LINE-END-004, LINE-END-007, LINE-GOAL-003
+/** Why a stretched team caps the rating. */
+export const STRETCHED_TEAM = "Your manager won't call it a strong quarter with the team this stretched.";
+
+/** The measures a review scores, with the level's targets, whether promotion is possible yet, whether this is the last review, and any ceiling. */
+// @spec LINE-END-004, LINE-END-007, LINE-END-008, LINE-END-009, LINE-GOAL-003
 export function assess(level: LineState, sim: SimState): Assessment {
   const card = scorecard(level, sim);
   const t = LINE_TUNING.review;
@@ -86,5 +89,7 @@ export function assess(level: LineState, sim: SimState): Assessment {
       ...goals,
     ],
     promotionPossible: card.promotionPossible,
+    lastReview: sim.week >= LINE_TUNING.lastReview * LINE_TUNING.reviewEveryWeeks,
+    ...(band(card.teamHealth.stress) >= LINE_TUNING.stretchedTeamBand ? { ceiling: { rating: 'meets' as const, reason: STRETCHED_TEAM } } : {}),
   };
 }

@@ -14,13 +14,17 @@ export interface Measure {
 export type Verdict = 'below' | 'at' | 'above';
 export type ScoredMeasure = Measure & { verdict: Verdict };
 
-/** What a career level hands the review: its measures and whether promotion is possible yet. */
+/** What a career level hands the review: its measures, whether promotion is possible yet, whether this is its last review, and any ceiling on the rating. */
 export interface Assessment {
   measures: Measure[];
   promotionPossible: boolean;
+  /** The level's last review: a player not promoted here stays at this level, and the run ends. */
+  lastReview?: boolean;
+  /** The highest rating the level allows this quarter, and why. */
+  ceiling?: { rating: Rating; reason: string };
 }
 
-export type ReviewOutcome = 'continue' | 'promote' | 'managedOut';
+export type ReviewOutcome = 'continue' | 'promote' | 'managedOut' | 'stayed';
 
 export interface ReviewInput {
   levelId: string;
@@ -37,5 +41,7 @@ export interface ReviewResult {
   /** The average verdict, from −1 (all below) to 1 (all above). */
   score: number;
   measures: ScoredMeasure[];
+  /** Present when the level's ceiling lowered the rating. */
+  ceilingReason?: string;
   debriefs: DebriefRecord[];
 }

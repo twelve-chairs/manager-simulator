@@ -32,7 +32,7 @@ Four principles shape it:
 | presented | The situations presented this week |
 | last week | The recap of the week just ended: the level's recap and what happened to each of the week's moments; empty until the first week ends |
 | review | In the `review` phase, the review's result waiting to be acknowledged: rating, outcome, each measure with its verdict, the score, and the quarter's debrief records |
-| ending | In the `ended` phase, why the run ended: `burnout`, `managedOut` or `completed` |
+| ending | In the `ended` phase, why the run ended: `burnout`, `managedOut`, `stayed` or `completed` |
 | commands | Every command applied successfully, in order; a command that failed changed nothing and is not recorded |
 
 ## Phases and Commands
@@ -71,7 +71,7 @@ A run begins with week 0 in the week phase. **Beginning a week**:
 
 Whenever the loop selects or resolves situations, it tells the situation engine how many weeks remain until the next review is held: the weeks to the end of the step that reaches the next multiple of the cadence. With a one-week step, that is the cadence less the weeks since the last review. Content can then time evaluations to the review cycle.
 
-**Acknowledge** applies the review's result: `continue` begins the next week; `managedOut` ends the run; `promote` moves the run to the next career level, or ends it as `completed` when the player is at the highest level the game has.
+**Acknowledge** applies the review's result: `continue` begins the next week; `managedOut` ends the run; `stayed` ends the run, the player having reached the level's last review unpromoted; `promote` moves the run to the next career level, or ends it as `completed` when the player is at the highest level the game has.
 
 ## Career Level Contract
 

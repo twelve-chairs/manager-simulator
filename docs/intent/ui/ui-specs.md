@@ -57,8 +57,9 @@ Design: [ui-design.md](ui-design.md)
 
 ## Review and end
 
-- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, or managed out), the rating, the score, each measure with its value, target and verdict, a goal measure named by its goal's text, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
-- [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, or completed), show the final week's recap, and offer a button that returns to the start screen with a new seed.
+- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, staying a line manager, or managed out), the rating, the ceiling's reason when the review returned one, the score, each measure with its name, its value in words, its verdict in words and, in secondary text, its number, target and tolerance, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened (its debrief text when resolved, or that it was ignored or expired), and an Acknowledge button that sends the acknowledge command.
+- [x] **UI-LINE-009**: When the review screen is shown for the line manager, the UI shall name its measures projects shipped on time, projects on schedule, people who quit, team motivation, team stress, 1:1s held and your reputation, a goal by its text, and give their values in words: counts as numbers or none, shares as all, none or a percentage, motivation, stress and reputation as band words, and a goal as met or missed.
+- [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, stayed a line manager, or completed), show the final week's recap, and offer a button that returns to the start screen with a new seed.
 
 ## Content and build
 

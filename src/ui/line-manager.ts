@@ -1,4 +1,4 @@
-import { WORK_LABELS, type Habits, type HabitId, type Recap, type View } from '../levels/line-manager';
+import { RATING_WORDS, WORK_LABELS, band, type Habits, type HabitId, type Recap, type View } from '../levels/line-manager';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
@@ -181,7 +181,42 @@ function chips(before: unknown, after: unknown): Chip[] {
   return out;
 }
 
-/** The line manager's part of the recap: people, habits, what slipped, goals. */
+/** The line manager's review measures by name. */
+// @spec UI-LINE-009
+const MEASURE_NAMES: Record<string, string> = {
+  completedOnTime: 'Projects shipped on time',
+  onScheduleShare: 'Projects on schedule',
+  regrettedQuits: 'People who quit',
+  motivation: 'Team motivation',
+  stress: 'Team stress',
+  oneOnOneShare: '1:1s held',
+  reputation: 'Your reputation',
+};
+
+/** A line manager review measure's value in words: counts, shares, bands, and a goal met or missed. */
+// @spec UI-LINE-009
+function measureValue(_view: unknown, id: string, value: number): string | undefined {
+  // A share short of all, or above none, never rounds to 100% or 0%.
+  const share = (all: string) => (value >= 1 ? all : value <= 0 ? 'none' : `${Math.min(99, Math.max(1, Math.round(value * 100)))}%`);
+  if (id.startsWith('goal:')) return value >= 1 ? 'met' : 'missed';
+  switch (id) {
+    case 'completedOnTime':
+    case 'regrettedQuits':
+      return value === 0 ? 'none' : String(value);
+    case 'onScheduleShare':
+      return share('all');
+    case 'oneOnOneShare':
+      return share('everyone');
+    case 'motivation':
+    case 'stress':
+    case 'reputation':
+      return bandWord(id, band(value));
+    default:
+      return undefined;
+  }
+}
+
+/** The line manager's part of the recap: people, evaluations, habits, what slipped, goals. */
 // @spec UI-LINE-008
 function recap(run: Run, recapValue: unknown): Child {
   const r = recapValue as Recap;
@@ -190,6 +225,7 @@ function recap(run: Run, recapValue: unknown): Child {
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
   return [
     part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
+    part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
     part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
     part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
     part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
@@ -207,5 +243,6 @@ export const lineManagerRenderer: LevelRenderer = {
     const v = view as View;
     return { energy: v.player.energy, reputation: v.player.reputation, goals: v.goals };
   },
-  measureName: (view, id) => (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
+  measureName: (view, id) => MEASURE_NAMES[id] ?? (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
+  measureValue,
 };

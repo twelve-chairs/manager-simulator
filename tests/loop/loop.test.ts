@@ -398,6 +398,13 @@ describe('reviews', () => {
     expect(run).toMatchObject({ phase: 'ended', ending: 'managedOut' });
   });
 
+  // @spec LOOP-REV-004
+  it('ends the run as stayed after the level’s last review', () => {
+    const d = deps(stubReview('stayed').review);
+    const run = step(endWeeks(start(1, d), 13, d), { kind: 'acknowledge' }, d);
+    expect(run).toMatchObject({ phase: 'ended', ending: 'stayed' });
+  });
+
   // @spec LOOP-REV-003
   it('ends the run as completed on promotion past the highest level', () => {
     const d = deps(stubReview('promote').review);

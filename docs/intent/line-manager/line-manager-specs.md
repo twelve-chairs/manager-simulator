@@ -89,13 +89,13 @@ Design: [line-manager-design.md](line-manager-design.md)
 ## Goals
 
 - [x] **LINE-GOAL-001**: When a review period begins, the line manager level shall set two or three goals for it from its fixed set, according to the team's state and its own generator, offering a ship-by-deadline goal only for an at-risk project whose deadline falls within the period, and recording that deadline in the goal.
-- [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target, with any week number in it shown counting from 1 (game week *w* as week *w* + 1).
+- [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target, with any week number in it shown counting from 1 (game week *w* as week *w* + 1), and the on-schedule goal's progress as "No projects running" when the team has no active projects.
 - [x] **LINE-GOAL-003**: When the level is assessed for a review, the line manager level shall add each of the period's goals as a measure that is above target when achieved and below target when missed (a ship-by-deadline goal achieved only if the project completed by the deadline the goal recorded), leaving out a goal about an engineer who is no longer on the team and saying so in the recap.
 
 ## Recap
 
 - [x] **LINE-RECAP-001**: When a week's end applies, the line manager level shall report what each habit did, how each level moment was answered and what it led to, which work items expired, and the period's goal progress.
-- [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, or who gained a history note that week whose cause is not a habit, with the notes of the history entries recorded for them that week.
+- [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, or who gained a history note that week whose cause is neither a habit nor the end-of-period evaluation, with each distinct note recorded for them that week once, leaving out the evaluation's note, which the recap's evaluations list carries, and how many times it was recorded when more than once.
 
 ## Reviews and the end of the level
 
@@ -106,6 +106,10 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-END-005**: When the simulation has advanced, if the player's stress has been at or above the burnout threshold for four consecutive weeks, then the line manager level shall report that the player has burned out.
 - [x] **LINE-END-006**: When the simulation has advanced, the line manager level shall record the week in which each of the team's projects became completed.
 - [x] **LINE-END-007**: When the level is assessed for a review, the line manager level shall report as measures the projects completed on time and the on-schedule share (higher is better), the quits rated meets or above (lower is better), the average motivation (higher is better), the average stress (lower is better) and the 1:1 share (higher is better), each with the target and tolerance its tuning sets, leaving out the on-schedule share when the team has no active projects.
+- [x] **LINE-END-008**: When the level is assessed for a review, the line manager level shall report that it is the level's last review at week 156 (the twelfth review), and not before.
+- [x] **LINE-END-009**: When the level is assessed for a review while the team's average stress is in the overwhelmed band, the line manager level shall set a rating ceiling of `meets` with the reason "Your manager won't call it a strong quarter with the team this stretched."
+- [x] **LINE-EVAL-001**: When the last week of a review period ends, the line manager level shall rate each active engineer who has been on the team since the period began and has no rating recorded in the period other than the starting organization's at their corresponding rating, with the note "Rated <rating> on what they delivered", the rating in words (below expectations, partially meets, meets, exceeds, outstanding).
+- [x] **LINE-EVAL-002**: When the line manager level rates engineers at the end of a review period, its recap for that week shall name each engineer it rated and the rating.
 
 ## Turn loop contract
 

@@ -112,13 +112,13 @@ function quarterDebriefs(run: Run): DebriefRecord[] {
 }
 
 /** Applies a review's outcome. */
-// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003
+// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003, LOOP-REV-004
 function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies): Outcome {
   const outcome = run.review!.outcome;
   run.review = null;
-  if (outcome === 'managedOut') {
+  if (outcome === 'managedOut' || outcome === 'stayed') {
     run.phase = 'ended';
-    run.ending = 'managedOut';
+    run.ending = outcome;
   } else if (outcome === 'promote' && deps.levels.indexOf(level) === deps.levels.length - 1) {
     run.phase = 'ended';
     run.ending = 'completed';

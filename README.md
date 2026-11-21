@@ -43,7 +43,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Status
 
-**Early development, and playable from start to finish.** The first career level, **line manager**, runs in the browser from your first day to promotion, burnout or being managed out:
+**Early development, and playable from start to finish.** The first career level, **line manager**, runs in the browser from your first day to promotion, burnout, being managed out, or three years in without the promotion:
 
 - a week of short scenes: design reviews, customer requests, night pages, interviews, project check-ins, and authored story situations;
 - five standing habits, quarterly goals from your manager and a review every 13 weeks;

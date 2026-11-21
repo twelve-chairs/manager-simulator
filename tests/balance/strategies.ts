@@ -107,7 +107,7 @@ function soundChoice(seen: Seen, m: Moment): string {
   }
   if (isIntake(m)) return view.projects.length < 2 && rested ? 'take' : 'decline';
   const givable = offered(seen, m, 'give:');
-  const able = givable.find((p) => m.difficulty === undefined || p.skill >= m.difficulty);
+  const able = givable.find((p) => (m.difficulty === undefined || p.skill >= m.difficulty) && p.stress <= OKAY);
   if (able) return `give:${able.id}`;
   if (rested) return 'self';
   // Tired, with no one able: a stretch for someone with room lands part of the consequence; pushing back lands all of it.

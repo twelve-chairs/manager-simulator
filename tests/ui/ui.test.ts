@@ -492,6 +492,58 @@ describe('review and end', () => {
     expect(state.screen === 'run' && state.run.phase).toBe('week');
   });
 
+  // @spec UI-REVIEW-001, UI-LINE-009
+  it('names each measure and gives its value and verdict in words, with the numbers secondary', () => {
+    const r = structuredClone(endWeeks(run(), 13));
+    const review = r.review!;
+    review.measures = [
+      { id: 'completedOnTime', value: 2, target: 0, tolerance: 0, better: 'higher', verdict: 'above' },
+      { id: 'onScheduleShare', value: 1, target: 0.75, tolerance: 0.15, better: 'higher', verdict: 'above' },
+      { id: 'regrettedQuits', value: 0, target: 0, tolerance: 0, better: 'lower', verdict: 'at' },
+      { id: 'motivation', value: 77.2, target: 65, tolerance: 10, better: 'higher', verdict: 'above' },
+      { id: 'stress', value: 62, target: 35, tolerance: 10, better: 'lower', verdict: 'below' },
+      { id: 'oneOnOneShare', value: 0.8, target: 0.9, tolerance: 0.08, better: 'higher', verdict: 'below' },
+      { id: 'reputation', value: 88, target: 55, tolerance: 10, better: 'higher', verdict: 'above' },
+      ...review.measures.filter((m) => m.id.startsWith('goal:')).map((m) => ({ ...m, value: 1, verdict: 'above' as const })),
+    ];
+    const { root } = makeApp({ run: r });
+    const row = (id: string) => $(root, `[data-measure="${id}"]`);
+    const shown = (id: string) => [text(row(id), '[data-field=name]'), text(row(id), '[data-field=value]'), text(row(id), '[data-field=verdict]')];
+    expect(shown('completedOnTime')).toEqual(['Projects shipped on time', '2', 'above target']);
+    expect(shown('onScheduleShare')).toEqual(['Projects on schedule', 'all', 'above target']);
+    expect(shown('regrettedQuits')).toEqual(['People who quit', 'none', 'on target']);
+    expect(shown('motivation')).toEqual(['Team motivation', word('motivation', 77.2), 'above target']);
+    expect(shown('stress')).toEqual(['Team stress', word('stress', 62), 'below target']);
+    expect(shown('oneOnOneShare')).toEqual(['1:1s held', '80%', 'below target']);
+    expect(shown('reputation')).toEqual(['Your reputation', word('reputation', 88), 'above target']);
+    const goal = review.measures.find((m) => m.id.startsWith('goal:'));
+    if (goal) expect(text(row(goal.id), '[data-field=value]')).toBe('met');
+    expect(text(row('motivation'), '[data-field=numbers]')).toBe('77.2; aim 65 ± 10, higher is better');
+    // a share short of all, or above none, never rounds to 100% or 0%
+    review.measures = review.measures.map((m) => (m.id === 'oneOnOneShare' ? { ...m, value: 0.996 } : m.id === 'onScheduleShare' ? { ...m, value: 0.004 } : m));
+    const nearly = makeApp({ run: r }).root;
+    expect(text($(nearly, '[data-measure=oneOnOneShare]'), '[data-field=value]')).toBe('99%');
+    expect(text($(nearly, '[data-measure=onScheduleShare]'), '[data-field=value]')).toBe('1%');
+    expect($$(root, '[data-measure] [data-field=target]')).toHaveLength(0);
+  });
+
+  // @spec UI-REVIEW-001
+  it('says when a ceiling held the rating down, and what staying a line manager means', () => {
+    const r = structuredClone(endWeeks(run(), 13));
+    r.review!.ceilingReason = "Your manager won't call it a strong quarter with the team this stretched.";
+    expect(text(makeApp({ run: r }).root, '[data-field=ceiling]')).toBe(r.review!.ceilingReason);
+    expect(makeApp({ run: endWeeks(run(), 13) }).root.querySelector('[data-field=ceiling]')).toBeNull();
+    r.review!.outcome = 'stayed';
+    expect(text(makeApp({ run: r }).root, '[data-field=outcome]')).toMatch(/line manager/i);
+  });
+
+  // @spec UI-END-001
+  it('says the run ended with the player staying a line manager', () => {
+    const last = answerAndEnd(playing());
+    const { root } = makeApp({ run: { ...last, phase: 'ended' as const, ending: 'stayed' as const } });
+    expect(text(root, '[data-field=ending]')).toMatch(/line manager/i);
+  });
+
   // @spec UI-END-001
   it('says why the run ended, shows the final week’s recap, and starts over with a new seed', () => {
     const last = answerAndEnd(playing());

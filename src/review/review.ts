@@ -25,8 +25,8 @@ function ratingFor(score: number): Rating {
 const exceedsOrBetter = (r: Rating) => RATINGS.indexOf(r) >= RATINGS.indexOf('exceeds');
 
 /** Scores the quarter, rates the player and decides whether the run continues, the player is promoted, or managed out. */
-// @spec REVIEW-MEASURE-002, REVIEW-RATE-001, REVIEW-RATE-003, REVIEW-OUT-001, REVIEW-OUT-002, REVIEW-OUT-003
-// @spec REVIEW-RESULT-001, REVIEW-RESULT-002
+// @spec REVIEW-MEASURE-002, REVIEW-RATE-001, REVIEW-RATE-003, REVIEW-RATE-004, REVIEW-OUT-001, REVIEW-OUT-002, REVIEW-OUT-003
+// @spec REVIEW-OUT-004, REVIEW-RESULT-001, REVIEW-RESULT-002
 export function conductReview(input: ReviewInput): ReviewResult {
   const { reputation } = REVIEW_TUNING;
   const measures: ScoredMeasure[] = [
@@ -34,7 +34,10 @@ export function conductReview(input: ReviewInput): ReviewResult {
     { id: 'reputation', value: input.sim.player.reputation, target: reputation.target, tolerance: reputation.tolerance, better: 'higher' as const },
   ].map((m) => ({ ...m, verdict: verdictOf(m) }));
   const score = measures.reduce((sum, m) => sum + POINTS[m.verdict], 0) / measures.length;
-  const rating = ratingFor(score);
+  const scored = ratingFor(score);
+  const { ceiling } = input.assessment;
+  const capped = ceiling !== undefined && RATINGS.indexOf(scored) > RATINGS.indexOf(ceiling.rating);
+  const rating = capped ? ceiling.rating : scored;
 
   const previous = input.sim.player.ratingHistory.at(-1)?.rating;
   const rated = applyEffects(input.sim, [{ type: 'rate', target: { kind: 'player' }, rating, cause: { kind: 'rule', ruleId: 'review.quarterly' } }]);
@@ -45,6 +48,8 @@ export function conductReview(input: ReviewInput): ReviewResult {
       ? 'managedOut'
       : input.assessment.promotionPossible && previous !== undefined && exceedsOrBetter(previous) && exceedsOrBetter(rating)
         ? 'promote'
-        : 'continue';
-  return { sim: rated.state, rating, outcome, score, measures, debriefs: structuredClone(input.debriefs) };
+        : input.assessment.lastReview
+          ? 'stayed'
+          : 'continue';
+  return { sim: rated.state, rating, outcome, score, measures, ...(capped ? { ceilingReason: ceiling.reason } : {}), debriefs: structuredClone(input.debriefs) };
 }

@@ -6,7 +6,7 @@ export { NAMES } from './names';
 export { LEVEL, startRun } from './start';
 export { setHabit } from './habits';
 export { chooseMoment } from './moments';
-export { beginWeek, endWeek, openMoments } from './week';
+export { RATING_WORDS, beginWeek, endWeek, openMoments } from './week';
 export { afterAdvance, assess, scorecard } from './review';
 export { band, view } from './view';
 export { lineManagerLevel } from './contract';

@@ -75,6 +75,8 @@ export interface LevelRenderer {
   status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[] };
   /** A measure's name on the review screen, when the level names it (a goal by its text). */
   measureName(view: unknown, id: string): string | undefined;
+  /** A measure's value in words on the review screen, when the level knows the measure. */
+  measureValue(view: unknown, id: string, value: number): string | undefined;
 }
 
 const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer };
@@ -93,11 +95,15 @@ const OUTCOMES = {
   continue: 'You are continuing in your role.',
   promote: 'You are being promoted.',
   managedOut: 'You are being managed out.',
+  stayed: 'This was your last review as a line manager. Three years in, the promotion never came.',
 } as const;
+
+const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
 
 const ENDINGS = {
   burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
+  stayed: 'You stayed a line manager. Three years went by without the promotion.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 } as const;
 
@@ -529,18 +535,20 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('h1', { 'data-part': 'heading', tabindex: -1 }, `Week ${shownWeek(ctx.run.sim.week - 1)} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
+      review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
       h(
         'table',
         { class: 'measures' },
-        h('tr', {}, h('th', {}, 'Measure'), h('th', {}, 'Value'), h('th', {}, 'Target'), h('th', {}, 'Verdict')),
+        h('tr', {}, h('th', {}, 'Measure'), h('th', {}, 'Result'), h('th', {}, 'Verdict')),
         review.measures.map((m) =>
           h(
             'tr',
             { 'data-measure': m.id },
             h('td', { 'data-field': 'name' }, renderer.measureName(ctx.view, m.id) ?? m.id),
-            h('td', { 'data-field': 'value' }, round(m.value)),
-            h('td', { 'data-field': 'target' }, `${round(m.target)} ± ${round(m.tolerance)} (${m.better} is better)`),
-            h('td', { 'data-field': 'verdict' }, m.verdict),
+            h('td', {},
+              h('span', { 'data-field': 'value' }, renderer.measureValue(ctx.view, m.id, m.value) ?? round(m.value)),
+              h('small', { 'data-field': 'numbers', class: 'numbers' }, `${round(m.value)}; aim ${round(m.target)} ± ${round(m.tolerance)}, ${m.better} is better`)),
+            h('td', { 'data-field': 'verdict' }, VERDICTS[m.verdict]),
           ),
         ),
       ),
@@ -631,7 +639,7 @@ function meter(value: number, max: number): HTMLElement {
   return m;
 }
 
-const round = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+const round = (n: number) => String(Math.round(n * 100) / 100);
 
 /** The data attributes that identify a control and the row it sits in, so it can be found again after a redraw. */
 const CONTROL_KEYS = ['data-input', 'data-action', 'data-choice', 'data-habit'];

@@ -107,3 +107,6 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(
 .save { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.9rem; }
 .save button { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; margin-right: 6px; }
 .import { margin: 0 0.5rem; }
+
+.measures .numbers { display: block; color: var(--muted); font-size: 0.78rem; }
+.ceiling { color: var(--bad); }

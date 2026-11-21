@@ -37,4 +37,5 @@ Design: [turn-loop-design.md](turn-loop-design.md)
 
 - [x] **LOOP-REV-001**: When a review with the outcome `continue` is acknowledged, the turn loop shall begin the next week.
 - [x] **LOOP-REV-002**: When a review with the outcome `managedOut` is acknowledged, the turn loop shall end the run with the ending `managedOut`.
+- [x] **LOOP-REV-004**: When a review with the outcome `stayed` is acknowledged, the turn loop shall end the run with the ending `stayed`.
 - [x] **LOOP-REV-003**: When a review with the outcome `promote` is acknowledged at the highest career level the turn loop is given, the turn loop shall end the run with the ending `completed`.

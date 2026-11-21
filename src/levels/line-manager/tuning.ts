@@ -17,6 +17,10 @@ export const LINE_TUNING = {
   /** Most level moments in one week, so a week stays a handful of scenes. */
   levelMomentCap: 5,
   reviewEveryWeeks: 13,
+  /** The level's last review is its twelfth: three years at a review every 13 weeks. */
+  lastReview: 12,
+  /** Average team stress band (overwhelmed) at or above which a review's rating is capped at meets. */
+  stretchedTeamBand: 4,
 
   habits: {
     /** Player stress per night page taken personally, per unit of the page's size. */

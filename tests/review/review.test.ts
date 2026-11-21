@@ -128,6 +128,32 @@ describe('the outcome', () => {
   });
 });
 
+describe('a ceiling and the last review', () => {
+  const STRETCHED = 'the team is stretched';
+  const capped = (a: Assessment): Assessment => ({ ...a, ceiling: { rating: 'meets', reason: STRETCHED } });
+
+  // @spec REVIEW-RATE-004
+  it('caps the rating at the level’s ceiling, and says why only when it lowered the rating', () => {
+    const strong = review(neutral(), capped(assessment(Array(6).fill('above'))));
+    expect(strong.rating).toBe('meets');
+    expect(strong.ceilingReason).toBe(STRETCHED);
+    const weak = review(neutral(), capped(assessment(['below', 'below', 'below'])));
+    expect(weak.rating).not.toBe('meets');
+    expect(weak.ceilingReason).toBeUndefined();
+    // a capped rating counts as the rating, so it breaks a run of strong reviews
+    expect(review(rated(neutral(), ['exceeds']), capped(assessment(Array(6).fill('above'), true))).outcome).toBe('continue');
+  });
+
+  // @spec REVIEW-OUT-004, REVIEW-OUT-003
+  it('ends with stayed at the level’s last review, unless the player is promoted or managed out', () => {
+    const last = (a: Assessment): Assessment => ({ ...a, lastReview: true });
+    expect(review(rated(neutral(), ['meets']), last(assessment(['at', 'at']))).outcome).toBe('stayed');
+    expect(review(rated(neutral(), ['exceeds']), last(assessment(Array(6).fill('above'), true))).outcome).toBe('promote');
+    expect(review(rated(neutral(), ['partial', 'partial']), last(assessment(['below', 'below', 'below']))).outcome).toBe('managedOut');
+    expect(review(rated(neutral(), ['meets']), assessment(['at', 'at'])).outcome).toBe('continue');
+  });
+});
+
 describe('the result', () => {
   // @spec REVIEW-RESULT-001
   it('returns the rating, outcome, score, scored measures and the debriefs given', () => {

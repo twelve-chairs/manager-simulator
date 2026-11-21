@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, scorecard, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
-import { behindScheduleProjects, overdueProjects, type SimState } from '../../../src/sim';
+import { behindScheduleProjects, correspondingRating, overdueProjects, type SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
 
 const depart = (sim: SimState, ids: string[], reason: 'quit' | 'fired' = 'quit', week = sim.week) =>
@@ -130,6 +130,22 @@ describe('scorecard', () => {
     expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
   });
 
+  // @spec LINE-END-008
+  it('says the review at week 156, the twelfth, is the level’s last', () => {
+    const { level, sim } = run(1);
+    expect(assess(level, patch(sim, (s) => (s.week = 143))).lastReview).toBe(false);
+    expect(assess(level, patch(sim, (s) => (s.week = 156))).lastReview).toBe(true);
+  });
+
+  // @spec LINE-END-009
+  it('caps the rating at meets while the team is overwhelmed, and not before', () => {
+    const { level, sim } = run(1);
+    const stressed = (value: number) => patch(sim, (s) => { s.week = 13; engineers(s).forEach((id) => (s.people[id]!.stress = value)); });
+    expect(assess(level, stressed(79)).ceiling).toBeUndefined();
+    expect(assess(level, stressed(80)).ceiling).toEqual({ rating: 'meets', reason: "Your manager won't call it a strong quarter with the team this stretched." });
+    expect(assess(level, stressed(95)).ceiling?.rating).toBe('meets');
+  });
+
   // @spec LINE-END-001
   it('has no on-schedule share when the team has no active projects', () => {
     const { level, sim } = run(1);
@@ -207,6 +223,14 @@ describe('goals', () => {
     const v = view(begun, sim);
     expect(v.goals.map((g) => g.id)).toEqual(begun.goals.map((g) => g.id));
     for (const g of v.goals) expect(typeof g.progress).toBe('string');
+  });
+
+  // @spec LINE-GOAL-002
+  it('says no projects are running rather than counting none on schedule', () => {
+    const q = quietRun(1);
+    const idle = patch(q.sim, (s) => Object.values(s.projects).forEach((p) => (p.status = 'completed')));
+    const level: LineState = { ...q.level, goals: [{ id: 'g-sched', kind: 'onSchedule', periodStart: 0 }] };
+    expect(view(level, idle).goals[0]!.progress).toBe('No projects running');
   });
 
   // @spec LINE-GOAL-002
@@ -292,6 +316,27 @@ describe('recap', () => {
   });
 
   // @spec LINE-RECAP-002
+  it('lists a note recorded more than once that week once, with how many times', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    let level = q.level;
+    for (const id of ['r1', 'r2']) level = withItem(level, { kind: 'designReview', subject: { kind: 'project', id: p }, difficulty: 10, lastWeek: q.sim.week + 3, id }).level;
+    let begun = begin(level, q.sim);
+    const give = (ref: string) => momentFor(begun, ref).choices.find((c) => c.id.startsWith('give:'))!.id;
+    const who = give('r1').slice('give:'.length);
+    let sim = q.sim;
+    for (const ref of ['r1', 'r2']) {
+      const m = momentFor(begun, ref);
+      const choice = m.choices.find((c) => c.id === `give:${who}`) ?? m.choices.find((c) => c.id.startsWith('give:'))!;
+      const chosen = choose(begun, sim, m.id, choice.id);
+      begun = chosen.level;
+      sim = chosen.sim;
+    }
+    const entry = end(begun, sim).recap.people.find((x) => x.personId === who)!;
+    expect(entry.notes.filter((n) => n.startsWith('Took on a design review'))).toEqual(['Took on a design review, twice']);
+  });
+
+  // @spec LINE-RECAP-002
   it('reports someone a moment left a note on, though no band changed, but not someone with only a habit’s note', () => {
     const q = quietRun(1);
     const p = projects(q.sim)[0]!;
@@ -308,5 +353,52 @@ describe('recap', () => {
     expect(ended.recap.people.map((x) => x.personId)).toEqual([who]);
     expect(ended.recap.people[0]).toMatchObject({ changes: [] });
     expect(ended.recap.people[0]!.notes.length).toBeGreaterThan(0);
+  });
+});
+
+describe('evaluations at the end of a review period', () => {
+  const lastWeekOfPeriod = () => {
+    const q = quietRun(1);
+    return { ...q, sim: patch(q.sim, (s) => (s.week = 12)) };
+  };
+
+  // @spec LINE-EVAL-001
+  it('rates everyone not rated this period on what they delivered, ignoring the starting organization’s ratings', () => {
+    const { level, sim } = lastWeekOfPeriod();
+    const [already, ...rest] = engineers(sim) as [string, ...string[]];
+    // one engineer had their evaluation this period; another joined mid-period
+    const s0 = patch(sim, (s) => {
+      s.people[already]!.history.push({ week: 10, cause: { kind: 'situation', situationId: 'quarterly-evaluation', choiceId: 'honest' }, rating: 'meets', note: 'Rated on what they delivered' });
+      s.people[rest[0]!]!.joinedWeek = 5;
+    });
+    const ended = end(level, s0);
+    const ratedNow = (id: string) => ended.sim.people[id]!.history.filter((h) => h.week === 12 && h.rating);
+    expect(ratedNow(already)).toEqual([]);
+    expect(ratedNow(rest[0]!)).toEqual([]);
+    for (const id of rest.slice(1)) {
+      const [entry] = ratedNow(id);
+      expect(entry!.rating).toBe(correspondingRating(s0, id));
+      expect(entry!.note).toMatch(/^Rated (below expectations|partially meets|meets|exceeds|outstanding) on what they delivered$/);
+    }
+    // not in any other week
+    const midPeriod = end(level, patch(s0, (s) => (s.week = 11)));
+    expect(engineers(midPeriod.sim).every((id) => !midPeriod.sim.people[id]!.history.some((h) => h.week === 11 && h.rating))).toBe(true);
+  });
+
+  // @spec LINE-EVAL-002
+  it('names each engineer it rated, with the rating, in that week’s recap', () => {
+    const { level, sim } = lastWeekOfPeriod();
+    const ended = end(level, sim);
+    expect(ended.recap.evaluations.map((e) => e.personId).sort()).toEqual([...engineers(sim)].sort());
+    for (const e of ended.recap.evaluations) expect(e).toMatchObject({ name: sim.people[e.personId]!.name, rating: correspondingRating(sim, e.personId) });
+    expect(end(quietRun(1).level, quietRun(1).sim).recap.evaluations).toEqual([]);
+  });
+
+  // @spec LINE-RECAP-002
+  it('leaves the evaluations out of the recap’s people, since they have their own list', () => {
+    const { level, sim } = lastWeekOfPeriod();
+    const ended = end(level, sim);
+    expect(ended.recap.evaluations.length).toBeGreaterThan(0);
+    for (const p of ended.recap.people) expect(p.notes.some((n) => n.startsWith('Rated '))).toBe(false);
   });
 });

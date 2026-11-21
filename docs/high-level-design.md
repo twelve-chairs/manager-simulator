@@ -38,7 +38,7 @@ At the line manager level, hands-on operational and technical-lead duties (appro
 
 ### Progression and failure
 
-Every person the player manages has a **performance level**, a rating distinct from their skill that evaluations set and calibrations argue over. The player has a **scorecard** of manager KPIs for their current level (for a line manager, say, delivery, retention and team health; for a director, budget, attrition and strategic outcomes). The player advances through periodic performance reviews that read their scorecard. A run can end through promotion past the top level, through being managed out, or through burnout.
+Every person the player manages has a **performance level**, a rating distinct from their skill that evaluations set and calibrations argue over. The player has a **scorecard** of manager KPIs for their current level (for a line manager, say, delivery, retention and team health; for a director, budget, attrition and strategic outcomes). The player advances through periodic performance reviews that read their scorecard. A run can end through promotion past the top level, through being managed out, through burnout, or by reaching a level's last review without a promotion: each level lasts a few years at most, as a real role does before a manager moves up or settles where they are.
 
 ## Target Users
 
