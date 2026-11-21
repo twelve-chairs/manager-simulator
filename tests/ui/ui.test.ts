@@ -156,16 +156,33 @@ describe('the header at the edge of burnout', () => {
     r.sim.player.stress = 85;
     let root = makeApp({ run: r }).root;
     expect(text(root, '[data-field=energy]')).toBe('running on fumes');
-    expect(root.querySelector('[data-field=burnout]')).toBeNull();
+    // before a week has ended at the edge, the earlier warning shows (UI-WEEK-014), not the count
+    expect(text(root, '[data-field=burnout]')).toBe("You're close to the edge. Take something off your plate.");
     r.sim.player.stress = 92;
     root = makeApp({ run: r }).root;
     expect(text(root, '[data-field=energy]')).toBe('at the edge');
-    expect(root.querySelector('[data-field=burnout]')).toBeNull();
+    expect(text(root, '[data-field=burnout]')).not.toMatch(/You've ended/);
     level(r).burnoutWeeks = 1;
     expect(text(makeApp({ run: r }).root, '[data-field=burnout]')).toBe("You've ended 1 week at the edge. 4 in a row and you burn out.");
     level(r).burnoutWeeks = 3;
     r.sim.player.stress = 70;
     expect(text(makeApp({ run: r }).root, '[data-field=burnout]')).toBe("You've ended 3 weeks at the edge. 4 in a row and you burn out.");
+  });
+});
+
+describe('the header close to the edge', () => {
+  // @spec UI-WEEK-014
+  it('warns while energy is running on fumes, before any week has ended at the edge', () => {
+    const r = structuredClone(playing());
+    const warningAt = (stress: number, weeks = 0) => {
+      r.sim.player.stress = stress;
+      level(r).burnoutWeeks = weeks;
+      return makeApp({ run: r }).root.querySelector('[data-field=burnout]')?.textContent ?? null;
+    };
+    expect(warningAt(70)).toBeNull();
+    expect(warningAt(85)).toBe("You're close to the edge. Take something off your plate.");
+    expect(warningAt(92)).toBe("You're close to the edge. Take something off your plate.");
+    expect(warningAt(92, 1)).toBe("You've ended 1 week at the edge. 4 in a row and you burn out.");
   });
 });
 

@@ -33,6 +33,7 @@ export function openMoments(level: LineState, sim: SimState): LineState {
 
 const EVALUATION = 'line-manager.evaluation';
 const ASSIGNED = 'line-manager.assigned-project';
+const REST = 'line-manager.rest';
 
 
 /** Each distinct note once, in order, with how many times it recurred when more than once. */
@@ -44,7 +45,7 @@ function counted(notes: string[]): string[] {
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
 // @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-INBOX-002, LINE-INBOX-013
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-END-013, LINE-INBOX-002, LINE-INBOX-013
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
   const week = sim.week;
@@ -133,6 +134,10 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
       recap.evaluations.push({ personId: id, name: p.name, rating });
     }
   }
+
+  // A quiet week, with no choice that raised the player's stress, lets them recover.
+  if (!s.tookOnWork) effects.push(playerEffect('stress', -LINE_TUNING.restRecovery, rule(REST)));
+  s.tookOnWork = false;
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };

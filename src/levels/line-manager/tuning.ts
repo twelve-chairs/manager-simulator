@@ -29,6 +29,8 @@ export const LINE_TUNING = {
   intakeWaitWeeks: 3,
   /** Consecutive idle weeks after which the player's manager assigns the team a project. */
   assignAfterIdleWeeks: 4,
+  /** Extra player stress recovered in a quiet week, one with no choice that raised the player's stress. */
+  restRecovery: 6,
 
   habits: {
     /** Player stress per night page taken personally, per unit of the page's size. */

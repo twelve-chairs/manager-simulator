@@ -26,6 +26,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-WEEK-011**: The UI shall show every week number counting from 1, game week *w* as week *w* + 1: the header's week, a heading or button about a week that has ended or is starting (the recap's heading, Start week, the review's heading, the ended screen), and the line manager's project deadlines.
 - [x] **UI-WEEK-012**: When the week screen is shown while the level says the player is at the burnout threshold, the UI shall show their energy word as "at the edge" in place of the band word.
 - [x] **UI-WEEK-013**: When the week screen is shown after the player has ended one or more consecutive weeks at the burnout threshold, the UI shall show under the energy a warning with that count and how many end the run ("You've ended 1 week at the edge. 4 in a row and you burn out.").
+- [x] **UI-WEEK-014**: When the week screen is shown while the player's energy band is running on fumes and no week has ended at the burnout threshold, the UI shall show under the energy the warning "You're close to the edge. Take something off your plate."
 - [x] **UI-WEEK-009**: The UI shall keep whether the player has read the latest reaction, started week 0 and closed the latest recap only as page state, never in the run or the save, so a reload never shows a reaction again.
 
 ## Help

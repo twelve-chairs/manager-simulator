@@ -375,7 +375,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   /** The header: the week, the review, the days, energy, reputation and goals. */
-  // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011, UI-WEEK-012, UI-WEEK-013
+  // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011, UI-WEEK-012, UI-WEEK-013, UI-WEEK-014
   function weekScreen(ctx: ScreenContext, renderer: LevelRenderer) {
     const { run } = ctx;
     const status = renderer.status(ctx.view);
@@ -395,7 +395,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
         status.edge && status.edge.weeks > 0
           ? h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${status.edge.weeks} ${status.edge.weeks === 1 ? 'week' : 'weeks'} at the edge. ${status.edge.limit} in a row and you burn out.`)
-          : null,
+          : status.edge && status.energy === 0
+            ? h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.")
+            : null,
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
       h(

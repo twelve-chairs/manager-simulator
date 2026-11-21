@@ -95,6 +95,8 @@ export interface LineState {
   intakeDeclinedWeek: number | null;
   /** Third low ratings held back at a period's end, for the player to decide in a final evaluation. */
   heldEvaluations: { personId: string; rating: Rating }[];
+  /** Whether a choice in the level's moments raised the player's stress this week; a week without one is quiet. */
+  tookOnWork: boolean;
   goals: Goal[];
   /** The first week of the review period the goals belong to; -1 before any are set. */
   goalsPeriod: number;

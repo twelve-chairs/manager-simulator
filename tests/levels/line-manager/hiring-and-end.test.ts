@@ -130,6 +130,23 @@ describe('scorecard', () => {
     expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
   });
 
+  // @spec LINE-END-013
+  it('adds rest recovery to a week in which no choice of the player’s raised their stress', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const quiet = end(q.level, q.sim).sim.player.stress;
+    const { level: withWork, id } = withItem(q.level, { kind: 'designReview', subject: { kind: 'project', id: p }, difficulty: 10, lastWeek: q.sim.week + 3 });
+    const begun = begin(withWork, q.sim);
+    const did = choose(begun, q.sim, momentFor(begun, id).id, 'self');
+    const cost = did.sim.player.stress - q.sim.player.stress;
+    expect(cost).toBeGreaterThan(0);
+    // the busy week ends without the rest recovery the quiet one had
+    expect(end(did.level, did.sim).sim.player.stress - cost - quiet).toBe(LINE_TUNING.restRecovery);
+    // giving the work away keeps the week quiet
+    const gave = choose(begun, q.sim, momentFor(begun, id).id, momentFor(begun, id).choices.find((c) => c.id.startsWith('give:'))!.id);
+    expect(end(gave.level, gave.sim).sim.player.stress).toBe(quiet);
+  });
+
   // @spec LINE-END-012
   it('counts the weeks the team ends with no active project, from zero again each review period', () => {
     const q = quietRun(1);

@@ -233,6 +233,8 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the choice: ${applied.error.message}` };
+  // A choice that costs the player energy ends the week's chance of being quiet.
+  if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.tookOnWork = true;
   moment.status = 'answered';
   moment.outcome = text;
   return { ok: true, level: s, sim: applied.state, log: applied.log, reaction: text };

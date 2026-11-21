@@ -35,6 +35,7 @@ export function startRun(seed: number): { sim: SimState; level: LineState } {
     idleStreak: 0,
     intakeDeclinedWeek: null,
     heldEvaluations: [],
+    tookOnWork: false,
     goals: [],
     goalsPeriod: -1,
     habitNotes: [],
