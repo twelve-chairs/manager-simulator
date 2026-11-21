@@ -58,7 +58,7 @@ A run begins with week 0 in the week phase. **Beginning a week**:
 
 1. The level begins the week and supplies its moments, each with an id, a day and a time.
 2. The situation engine selects situations for the level, up to its limit, each with a day and a time.
-3. The loop orders them into the week's sequence: by day, then by time (morning, afternoon, night). Within one day and time, urgent situations come first, then the level's moments, in the order the level gave them, and then the other situations; situations keep the order the engine selected them in. An urgent situation is one its author marked as needing the player before anything else, such as the first morning's onboarding or a 2 a.m. outage, so it leads its slot rather than queuing behind routine work.
+3. The loop orders them into the week's sequence: by day, then by time (morning, afternoon, night). Within one day and time, urgent situations come first, then the level's moments, in the order the level gave them, and then the other situations; situations keep the order the engine selected them in. An urgent situation is one its author marked as needing the player before anything else, such as the first morning's onboarding, so it leads its slot rather than queuing behind routine work.
 
 **End week** then does, in order:
 
