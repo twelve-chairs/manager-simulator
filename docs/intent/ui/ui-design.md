@@ -16,9 +16,31 @@ Four principles shape it:
 - **Text, never HTML.** Every string from content, the simulation or the player reaches the page through `textContent` or an attribute set as text. The UI never parses HTML from a string, so a situation file or a name cannot inject markup or script.
 - **No runtime dependencies.** The page is built from plain DOM calls through a small helper. A framework would add the project's first runtime dependency for screens that are mostly lists, buttons and selects.
 
+## The Start Screen
+
+The start screen sells the game's core idea, that every promotion is a new job, by showing the climb itself. In order, it shows:
+
+1. The game's name, and the line **Every promotion is a new job.**
+2. The pitch: "Start with a team of five engineers and a pager. Earn your way to managing managers, then a whole organization, and learn a new job at every step."
+3. Two buttons: **Start a new game**, the primary button, which begins a run; and **Load a saved game**, a secondary button that opens the browser's file picker for an exported save and loads it as the start screen's import does (see *Saving*). The file input itself is hidden behind that button; a bare "Choose File" control reads as a form, not a game.
+4. The **career ladder**: one rung per career level, drawn bottom to top so the player sees the climb from where they start. Each rung names the level, who the player manages there and how long a turn lasts, and says **Playable now** when the game has that level's module or **Coming later** when it does not. The playable rung is drawn in the accent colour; the others are muted.
+5. In small print, the disclaimer and the version.
+
+| Rung | You manage | Each turn is |
+|---|---|---|
+| Line manager | a team of five engineers | a week |
+| Senior manager | several teams, through their managers | a month |
+| Director and above | an organization | a quarter |
+
+A rung reads as two sentences under its name: "You manage a team of five engineers. Each turn is a week." 
+
+The rungs follow the HLD's table of career levels. Which rungs are playable is read from the levels the game was started with, not written into the text, so a level lights up when its module ships. Each rung names the level modules it stands for: line manager is `line-manager`, senior manager is `senior-manager`, and director and above is `director` and any other level module, since that rung may span several levels (such as director and VP); a rung is playable when the game has any of its modules. The ladder is an ordered list from line manager upward; only the drawing runs bottom to top, so a screen reader reads the climb in order.
+
+On a wide screen the pitch and buttons sit on the left and the ladder on the right, on an opaque panel so the background pattern stays behind it; at phone width they stack, ladder below the buttons. The page has no animation: the ladder is the one strong element, and everything around it stays quiet.
+
 ## The Disclaimer
 
-The start screen carries this text, in small print below the button and the import control, readable in both themes and at phone width:
+The start screen carries this text, in small print below the career ladder, readable in both themes and at phone width:
 
 > Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.
 
@@ -38,7 +60,7 @@ Situation text may use Markdown emphasis, `*like this*` or `_like this_`, and no
 
 The screen follows the run's phase:
 
-- **Start**: the game's name and a line on what the player does, a button to begin, **Import**, and a disclaimer: the game is fiction, its outcomes are simplified for play, and it is not advice (see *The Disclaimer*). The game's version is shown beneath it in small print (see *Versions*). The seed is not shown.
+- **Start**: the page a new player lands on, which has to make them want to play: the whole career climb, which levels can be played, **Start a new game** and **Load a saved game**, and in small print the disclaimer and the version (see *The Start Screen*). The seed is not shown.
 - **Week** (week phase): a header and a team panel around a **scene**, the one place the player's attention goes. The scene shows, in order:
   1. **Before Monday**, in the first week only, until the player starts the week: the habits with a line on what each does, and the How to play section, so the player sets how they run the team before anything arrives.
   2. **Last week's recap**, set at the weekend, after a week has ended, until the player closes it with **Start week N** (see *The Recap*).
@@ -89,7 +111,7 @@ The UI wires the save component (see [Save / load](../save/save-design.md)) to t
 - When the page starts, it loads the saved run from storage, if there is one, and shows it, so a reload resumes where the player was. With no save, or one that fails to load, it shows the start screen, with a message when a save failed.
 - After every command that applies, and when a run begins, it saves.
 - A notice under the header says when a loaded run was rebuilt (how many of its commands still applied) or when saving is not possible; it stays until the next command.
-- Every run screen has a small save area with **Export**, **Import** and **Discard and start over**; the start screen has **Import**. Discarding, and importing over the current run, each show a confirmation (**Yes** and **Cancel** buttons in the save area) before anything is replaced or removed.
+- Every run screen has a small save area with **Export save**, **Load a saved game** and **Discard and start over**; the start screen has **Load a saved game** too. Loading is the same action everywhere, under the same name: a button that opens the browser's file picker, with the file input hidden behind it. Discarding, and importing over the current run, each show a confirmation (**Yes** and **Cancel** buttons in the save area) before anything is replaced or removed.
 - If writing a save fails, the UI also removes the stored save if it can, so a reload does not resume a run from before the failure.
 
 Storage is passed to the app rather than reached for directly, so tests can supply their own and the app works when the browser's storage is missing.
@@ -156,6 +178,8 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | Seed on screen | Not shown; carried in the save and the exported file's name | Shown on the start and ended screens | A number with no meaning to the player makes the game read like a debug build. A run is reproduced from its save, which holds the seed and every command, so showing the seed alone adds nothing for a bug report. |
 | Version scheme | `v<major>.<minor>.<commit count> (<short hash>)`, stamped by the build from git | Semantic version bumped by hand; the CI run number; the date; a git tag or release per deploy | A hand bump is forgotten, and two deploys then share a number. The CI run number also counts pull-request runs and restarts with a renamed workflow. A date is not unique within a day. A tag or release per deploy needs the workflow to write to the repository, which the deploy otherwise does not. The commit count rises with every push to `main`, and the hash points to the exact commit. |
 | Where the version shows | In small print on the start screen | A footer on every screen; only in the page's source | The start screen is where every run begins and ends up again; a footer on every screen competes with the scene. Hidden in the source, a player could not quote it. |
+| Start screen | A career ladder of every level, marked playable or coming later, beside the pitch and two named buttons | A promotion email from the player's new boss; an org chart that grows on load | The ladder shows the game's core idea, a new job at every level, rather than telling it, and grows as levels ship. The email is atmospheric but only tells the climb; an animated org chart is the most eye-catching and the hardest to keep legible at phone width. |
+| Rungs not yet built | Shown, marked **Coming later** | Hidden until playable | The climb is the promise of the game; hiding the upper levels makes it read as a line-manager game. Marking them keeps the page honest about what can be played today. |
 | Disclaimer placement | On the start screen, always | A dismissable banner; a separate about page | A banner is dismissed unread and an about page is never opened; small print on the screen every run starts from is seen without getting in the way. |
 | Background | A circuit-board pattern as a CSS mask over a theme colour, served as a file | A coloured image per theme; a CSS-only pattern of gradients; a photo | One small image serves both themes. Gradients can draw a grid but not traces and chips, and a photo is heavy and fights the text. Serving it as a file keeps the strict CSP: an inlined `data:` image would be blocked. |
 | End-to-end tests | Playwright against the production build, in Chromium | Only unit tests in `happy-dom`; Vitest's browser mode | `happy-dom` has no Content-Security-Policy and no real asset loading, so a blocked background or script would pass every unit test. Playwright serves the real build; Vitest's browser mode tests modules, not the deployed page. |

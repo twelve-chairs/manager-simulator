@@ -27,6 +27,27 @@ export type SaveStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 export const SAVE_KEY = 'manager-simulator.save';
 
+/** The start screen's pitch: the whole climb, not only the level that can be played today. */
+const PITCH =
+  'Start with a team of five engineers and a pager. Earn your way to managing managers, then a whole organization, and learn a new job at every step.';
+
+/** A rung of the start screen's career ladder, and the level modules it stands for (none listed: any other level). */
+interface Rung {
+  level: string;
+  manages: string;
+  turn: string;
+  levels?: string[];
+}
+
+/** The career ladder, from where a run starts upward (the HLD's career levels). */
+const LADDER: Rung[] = [
+  { level: 'Line manager', manages: 'a team of five engineers', turn: 'a week', levels: ['line-manager'] },
+  { level: 'Senior manager', manages: 'several teams, through their managers', turn: 'a month', levels: ['senior-manager'] },
+  // Director and above may span several levels (director, VP): any level module the lower rungs don't name.
+  { level: 'Director and above', manages: 'an organization', turn: 'a quarter' },
+];
+const LOWER_RUNG_LEVELS = new Set(LADDER.flatMap((r) => r.levels ?? []));
+
 /** What the start screen says the game is not (the HLD's non-goals, on the page). */
 export const DISCLAIMER =
   "Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.";
@@ -211,10 +232,13 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   let pendingImport: Pick<File, 'size' | 'text'> | null = null;
   let confirmingDiscard = false;
 
-  function importControl(): Child {
-    return h('label', { class: 'import' }, 'Import a save: ', h('input', {
+  /** Load a saved game: a button that opens the picker of a file input hidden behind it, the same on every screen. */
+  // @spec UI-SAVE-009
+  function loadControl(className?: string): Child {
+    const input = h('input', {
       type: 'file',
       accept: '.json,application/json',
+      hidden: true,
       'data-input': 'import',
       onChange: (e: Event) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -225,7 +249,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           render();
         } else startImport(file);
       },
-    }));
+    });
+    return [h('button', { 'data-action': 'load', class: className, onClick: () => input.click() }, 'Load a saved game'), input];
   }
 
   function startImport(file: Pick<File, 'size' | 'text'>) {
@@ -298,7 +323,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-panel': 'save', class: 'save' },
       h('button', { 'data-action': 'export', onClick: () => exportSave(run) }, 'Export save'),
-      importControl(),
+      loadControl(),
       h('button', { 'data-action': 'discard', onClick: () => {
         confirmingDiscard = true;
         pendingImport = null;
@@ -362,25 +387,58 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   /** The start screen. The seed is drawn here but never shown: it means nothing to a player, and travels in the save. */
-  // @spec UI-SHELL-006, UI-SHELL-007, UI-SHELL-008
+  // @spec UI-SHELL-006, UI-SHELL-007, UI-SHELL-008, UI-SHELL-009, UI-SHELL-010, UI-SHELL-011
   function startScreen(seed: number) {
+    const has = new Set(options.deps.levels.map((l) => l.params.id));
+    const playable = (rung: Rung) => (rung.levels ? rung.levels.some((id) => has.has(id)) : [...has].some((id) => !LOWER_RUNG_LEVELS.has(id)));
     return h(
       'section',
       { 'data-screen': 'start', class: 'start' },
-      h('h1', {}, 'Manager Simulator'),
-      h('p', {}, 'You lead a team of five engineers. Keep them, keep your projects on track, and earn your promotion.'),
-      h('button', { 'data-action': 'begin', onClick: () => {
+      h(
+        'div',
+        { class: 'start-pitch' },
+        h('h1', {}, 'Manager Simulator'),
+        h('p', { 'data-part': 'tagline', class: 'tagline' }, 'Every promotion is a new job.'),
+        h('p', { 'data-part': 'pitch', class: 'pitch' }, PITCH),
+        h('div', { class: 'start-actions' }, startButton(seed), loadControl('secondary')),
+      ),
+      h(
+        'ol',
+        { 'data-part': 'ladder', class: 'ladder', 'aria-label': 'The career ladder' },
+        LADDER.map((rung) => {
+          const open = playable(rung);
+          return h(
+            'li',
+            { 'data-state': open ? 'playable' : 'coming' },
+            h('span', { class: 'rung-node', 'aria-hidden': 'true' }),
+            h(
+              'div',
+              { class: 'rung' },
+              h('h2', { 'data-field': 'level' }, rung.level),
+              h('p', { 'data-part': 'rung-text' }, `You manage ${rung.manages}. Each turn is ${rung.turn}.`),
+              h('p', { 'data-field': 'status', class: 'status-tag' }, open ? 'Playable now' : 'Coming later'),
+            ),
+          );
+        }),
+      ),
+      h(
+        'footer',
+        { class: 'start-print' },
+        h('p', { 'data-part': 'disclaimer', class: 'disclaimer' }, DISCLAIMER),
+        h('p', { 'data-field': 'version', class: 'version' }, `Version ${options.version}`),
+      ),
+    );
+  }
+
+  function startButton(seed: number) {
+    return h('button', { 'data-action': 'begin', class: 'primary', onClick: () => {
         state = { screen: 'run', run: newRun(seed, options.content, options.deps) };
         error = null;
         notice = null;
         resetPage();
         save(state.run);
         render();
-      } }, 'Begin'),
-      importControl(),
-      h('p', { 'data-part': 'disclaimer', class: 'disclaimer' }, DISCLAIMER),
-      h('p', { 'data-field': 'version', class: 'version' }, `Version ${options.version}`),
-    );
+      } }, 'Start a new game');
   }
 
   /** The header: the week, the review, the days, energy, reputation and goals. */

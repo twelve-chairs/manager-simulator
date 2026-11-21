@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { band, lineManagerLevel, type LineState, type View } from '../../src/levels/line-manager';
-import type { AnyLevel, Run } from '../../src/loop';
+import type { AnyLevel, Dependencies, Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
 import { current, waitUntil } from '../loop/fixtures';
@@ -68,6 +68,46 @@ describe('the page', () => {
       expect(root.textContent).not.toContain(String(seed));
       expect(root.querySelector('[data-field=seed]')).toBeNull();
     }
+  });
+
+  // @spec UI-SHELL-009
+  it('pitches the climb on the start screen, with buttons to start a new game and load a saved one', () => {
+    const { root, app } = makeApp();
+    expect(text(root, '[data-part=tagline]')).toBe('Every promotion is a new job.');
+    expect(text(root, '[data-part=pitch]')).toBe(
+      'Start with a team of five engineers and a pager. Earn your way to managing managers, then a whole organization, and learn a new job at every step.',
+    );
+    expect(text(root, '[data-action=load]')).toBe('Load a saved game');
+    // the file input is hidden behind the button, which opens its picker
+    const input = $(root, '[data-input=import]') as HTMLInputElement;
+    expect(input.hidden).toBe(true);
+    let opened = 0;
+    input.click = () => void opened++;
+    click(root, '[data-action=load]');
+    expect(opened).toBe(1);
+    expect(text(root, '[data-action=begin]')).toBe('Start a new game');
+    click(root, '[data-action=begin]');
+    expect(app.state().screen).toBe('run');
+  });
+
+  // @spec UI-SHELL-010
+  it('shows the career ladder from line manager up', () => {
+    const rungs = $$(makeApp().root, 'ol[data-part=ladder] > li').map((li) => [text(li, '[data-field=level]'), text(li, '[data-part=rung-text]')]);
+    expect(rungs).toEqual([
+      ['Line manager', 'You manage a team of five engineers. Each turn is a week.'],
+      ['Senior manager', 'You manage several teams, through their managers. Each turn is a month.'],
+      ['Director and above', 'You manage an organization. Each turn is a quarter.'],
+    ]);
+  });
+
+  // @spec UI-SHELL-011
+  it('marks the rungs the game has a level for as playable, and the rest as coming later', () => {
+    const statuses = (deps: Dependencies) => $$(makeApp({ deps }).root, '[data-part=ladder] [data-field=status]').map((s) => s.textContent);
+    expect(statuses(DEPS)).toEqual(['Playable now', 'Coming later', 'Coming later']);
+    const as = (id: string) => ({ ...lineManagerLevel, params: { ...lineManagerLevel.params, id } }) as unknown as AnyLevel;
+    expect(statuses({ ...DEPS, levels: [lineManagerLevel, as('senior-manager')] })).toEqual(['Playable now', 'Playable now', 'Coming later']);
+    // director and above may span several levels: any of them lights the rung
+    expect(statuses({ ...DEPS, levels: [lineManagerLevel, as('vp')] })).toEqual(['Playable now', 'Coming later', 'Playable now']);
   });
 
   // @spec UI-SHELL-002

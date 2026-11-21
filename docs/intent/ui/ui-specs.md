@@ -11,6 +11,10 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-SHELL-005**: When the scene changes (after an answer, a wait, Continue, starting the week, closing the recap or ending the week), the UI shall move keyboard focus to the heading of the week screen's scene, or of the review or ended screen; after a habit change it shall keep focus on that habit's control.
 - [x] **UI-SHELL-006**: When the start screen is shown, the UI shall show the disclaimer text the UI design sets.
 - [x] **UI-SHELL-007**: When the start screen is shown, the UI shall show "Version " followed by the version the build stamped.
+- [x] **UI-SHELL-009**: When the start screen is shown, the UI shall show the line "Every promotion is a new job.", the pitch the UI design sets, a **Start a new game** button that begins a run, and a **Load a saved game** button that opens the file picker for a save to import.
+- [x] **UI-SAVE-009**: When a run screen is shown, the UI shall offer the import of UI-SAVE-007 as a **Load a saved game** button that opens the file picker, beside **Export save** and **Discard and start over**.
+- [x] **UI-SHELL-010**: When the start screen is shown, the UI shall show the career ladder as an ordered list from line manager to director and above, each rung with its level name, "You manage" followed by who the player manages, and "Each turn is" followed by the length of a turn, as the UI design's table sets them.
+- [x] **UI-SHELL-011**: When the start screen shows the career ladder, the UI shall mark a rung **Playable now** when the game was started with any of the level modules the UI design assigns to that rung, and **Coming later** otherwise.
 - [x] **UI-SHELL-008**: The UI shall not show a run's seed on any screen.
 - [x] **UI-TEXT-002**: When the UI shows situation text, it shall show each span wrapped in `*` or `_` as an emphasized element whose text is set as text, and show an unmatched marker as written.
 - [x] **UI-TEXT-001**: The UI shall put every string from content, the simulation or the player on the page only as text nodes or as attributes set as text, and shall never parse HTML from a string.

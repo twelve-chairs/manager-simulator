@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contentFingerprint, toSave } from '../../src/save';
 import { createApp } from '../../src/ui/app';
-import { $, CONTENT, DEPS, click, endWeeks, run, step, text } from './fixtures';
+import { $, $$, CONTENT, DEPS, click, endWeeks, run, step, text } from './fixtures';
 
 const KEY = 'manager-simulator.save';
 const FP = contentFingerprint(CONTENT);
@@ -121,6 +121,20 @@ describe('saving', () => {
     click(root, '[data-action=export]');
     expect(clicked[1]!.download).toBe('manager-simulator-3-week-3.json');
     expect(document.body.querySelector('a[download]')).toBeNull();
+  });
+
+  // @spec UI-SAVE-009
+  it('offers loading a saved game from a run screen as a button beside export and discard', () => {
+    const { root } = app(memoryStorage({ [KEY]: JSON.stringify(toSave(run(2), FP)) }));
+    expect($(root, '[data-screen]').dataset.screen).toBe('week');
+    const panel = $(root, '[data-panel=save]');
+    expect($$(panel, 'button').map((b) => b.textContent)).toEqual(['Export save', 'Load a saved game', 'Discard and start over']);
+    const input = $(panel, '[data-input=import]') as HTMLInputElement;
+    expect(input.hidden).toBe(true);
+    let opened = 0;
+    input.click = () => void opened++;
+    click(panel, '[data-action=load]');
+    expect(opened).toBe(1);
   });
 
   // @spec UI-SAVE-007

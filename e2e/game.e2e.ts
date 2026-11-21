@@ -58,6 +58,18 @@ test('the start screen carries the disclaimer and the built version, and no seed
   await expect(page.locator('[data-field=seed]')).toHaveCount(0);
 });
 
+// @spec UI-SHELL-009, UI-SHELL-010, UI-SHELL-011
+test('the start screen shows the career ladder and two clear buttons', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Start a new game' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Load a saved game' })).toBeVisible();
+  await expect(page.locator('[data-part=ladder] > li')).toHaveCount(3);
+  await expect(page.locator('[data-part=ladder] [data-field=status]').first()).toHaveText('Playable now');
+  // the climb is drawn bottom to top: line manager sits lowest
+  const top = async (i: number) => (await page.locator('[data-part=ladder] > li').nth(i).boundingBox())!.y;
+  expect(await top(0)).toBeGreaterThan(await top(2));
+});
+
 // @spec UI-SHELL-001, UI-WEEK-002, UI-WEEK-004, UI-WEEK-006, UI-WEEK-007
 test('plays a week by mouse: a moment, its reaction, the end of the week and the recap', async ({ page }) => {
   const problems = watch(page);
