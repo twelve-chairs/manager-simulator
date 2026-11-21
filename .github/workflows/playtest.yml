@@ -1,0 +1,29 @@
+# Plays whole runs of the game weekly with scripted players and checks every screen (npm run playtest), against the
+# production build. It neither blocks nor publishes anything: a failure shows on the Actions tab.
+# Actions are pinned to commit SHAs (tags noted beside them), and the job only reads the repository.
+name: Playtest
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      # No installed package needs a lifecycle script on Linux, so none is allowed to run.
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run playtest

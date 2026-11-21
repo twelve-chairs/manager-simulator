@@ -10,8 +10,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "balance": "BALANCE_SEEDS=200 vitest run tests/balance --silent=false",
-    "lint": "oxlint --type-aware --deny-warnings src tests scripts e2e",
-    "test:e2e": "playwright test"
+    "lint": "oxlint --type-aware --deny-warnings src tests scripts e2e playtest",
+    "test:e2e": "playwright test",
+    "playtest": "playwright test --config playwright.playtest.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
