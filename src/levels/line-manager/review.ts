@@ -82,8 +82,12 @@ export function assess(level: LineState, sim: SimState): Assessment {
   return {
     measures: [
       measure('completedOnTime', card.delivery.completedOnTime, 'higher'),
-      // A team with nothing to deliver has no on-schedule share to reward or punish.
-      ...(card.delivery.onScheduleShare === null ? [] : [measure('onScheduleShare', card.delivery.onScheduleShare, 'higher')]),
+      // A team between projects has no on-schedule share to reward or punish, unless it spent most of the quarter with none.
+      ...(card.delivery.onScheduleShare !== null
+        ? [measure('onScheduleShare', card.delivery.onScheduleShare, 'higher')]
+        : level.idleWeeks > LINE_TUNING.idleQuarterWeeks
+          ? [measure('onScheduleShare', 0, 'higher')]
+          : []),
       measure('regrettedQuits', card.retention.quitsRatedMeetsOrAbove, 'lower'),
       measure('motivation', card.teamHealth.motivation, 'higher'),
       measure('stress', card.teamHealth.stress, 'lower'),

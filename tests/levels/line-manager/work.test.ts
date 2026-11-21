@@ -46,6 +46,45 @@ describe('arrivals', () => {
     expect(beginWeek({ ...level, items: [] }, sim).items.filter((i) => i.kind === 'workIntake')).toHaveLength(0);
   });
 
+  // @spec LINE-INBOX-002
+  it('waits three weeks after work intake is declined or let expire before offering more', () => {
+    const q = quietRun(1);
+    const one = patch(q.sim, (s) => { s.week = 4; s.projects[projects(q.sim)[0]!]!.status = 'completed'; });
+    const { level, id } = withItem(q.level, { kind: 'workIntake', subject: { kind: 'team', id: teamOf(one) }, size: 2, lastWeek: 4 });
+    const l = begin(level, one);
+    const intake = (lv: typeof l, week: number) => beginWeek({ ...lv, items: [] }, patch(one, (s) => (s.week = week))).items.filter((i) => i.kind === 'workIntake');
+    const declined = choose(l, one, momentFor(l, id).id, 'decline').level;
+    for (const week of [5, 6, 7]) expect(intake(declined, week)).toHaveLength(0);
+    expect(intake(declined, 8)).toHaveLength(1);
+    // letting it expire counts the same
+    const expired = end(l, one).level;
+    expect(intake(expired, 7)).toHaveLength(0);
+    expect(intake(expired, 8)).toHaveLength(1);
+  });
+
+  // @spec LINE-INBOX-013
+  it('has the player’s manager assign a project after four weeks in a row with none', () => {
+    const q = quietRun(1);
+    const idle = patch(q.sim, (s) => Object.values(s.projects).forEach((p) => (p.status = 'completed')));
+    let level = q.level;
+    let sim = idle;
+    for (let week = 1; week <= 3; week++) {
+      const ended = end(level, patch(sim, (s) => (s.week = week)));
+      expect(ended.recap.assigned).toEqual([]);
+      level = ended.level;
+      sim = ended.sim;
+    }
+    const fourth = end(level, patch(sim, (s) => (s.week = 4)));
+    const added = projects(fourth.sim);
+    expect(added).toHaveLength(1);
+    expect(NAMES.projects).toContain(fourth.sim.projects[added[0]!]!.name);
+    expect(fourth.recap.assigned).toEqual([{ projectId: added[0], name: fourth.sim.projects[added[0]!]!.name }]);
+    // a week with a project breaks the run of idle weeks
+    const busy = end({ ...level, idleStreak: 2 }, patch(q.sim, (s) => (s.week = 4)));
+    expect(busy.recap.assigned).toEqual([]);
+    expect(busy.level.idleStreak).toBe(0);
+  });
+
   // @spec LINE-INBOX-003
   it('gives items unique ids, a kind, subject, size, difficulty and last week from their kind', () => {
     const ids: string[] = [];

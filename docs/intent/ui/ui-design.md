@@ -65,6 +65,7 @@ The recap tells the story of the week just ended, from the run's last week:
 - **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed");
 - **Habits**: what each habit did and any habit that fell back because its engineer left;
 - **What slipped**: work that expired, by its kind and what it was about;
+- **New work**: a project the player's manager assigned to an idle team;
 - **Goals**: each goal's progress.
 
 ## Saving

@@ -74,7 +74,10 @@ export function goalStatus(goal: Goal, level: LineState, sim: SimState): GoalSta
       const active = teamProjects(level, sim);
       const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
       const fine = active.filter((id) => !troubled.has(id)).length;
-      return { text: 'Keep every project on schedule', progress: active.length ? `${fine} of ${active.length} on schedule` : 'No projects running', achieved: fine === active.length, dropped: false };
+      // @spec LINE-GOAL-004
+      // With nothing running, the goal holds only if the team was not idle for most of the quarter.
+      const achieved = active.length ? fine === active.length : level.idleWeeks <= LINE_TUNING.idleQuarterWeeks;
+      return { text: 'Keep every project on schedule', progress: active.length ? `${fine} of ${active.length} on schedule` : 'No projects running', achieved, dropped: false };
     }
     case 'keepEveryone': {
       const quits = Object.values(sim.people).filter((p) => p.teamId === level.teamId && p.departure?.reason === 'quit' && p.departure.week >= goal.periodStart);

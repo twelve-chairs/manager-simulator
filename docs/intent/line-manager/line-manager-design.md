@@ -72,6 +72,8 @@ A **work moment** presents the item in a sentence and offers, at most:
 - **Give it to** each of up to two engineers the level suggests (the least stressed whose skill band reaches the item's difficulty, and the least stressed who would be stretched by it): their stress rises and wants for growth or autonomy are served; if the item's difficulty is above their skill, it is a stretch: it resolves with a reduced consequence and their skill rises;
 - **Push back or let it wait**: nothing now; the item stays and expires at its last week with its consequence (a slipped project, a lost bit of reputation, a frustrated requester). Work intake offers **take it on** and **decline** instead.
 
+After the player declines work intake, or lets it expire, the next offer waits a few weeks (a tuning value), so saying no is not met with the same scene every week. A team that ends several weeks in a row with no active project (a tuning value) is not left idle: the player's manager assigns it a new project, and that week's recap says so. A team that ends more than half a review period's weeks with no active project is scored on it at the review: the on-schedule share counts as none rather than being left out, and the on-schedule goal counts as missed. Otherwise a player who declines all new work would face no measure at all for having nothing to deliver.
+
 Each choice gets a short reaction from the level's templates, written for the person involved and their personality where there is one.
 
 ## Hiring

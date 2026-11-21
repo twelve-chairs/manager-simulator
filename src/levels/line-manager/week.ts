@@ -1,5 +1,5 @@
 import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, type Effect, type HistoryEntry, type Rating, type SimState } from '../../sim';
-import { action, band, nameOf, personEffect, playerEffect, reconcileVacancies, rule, subjectValid, teamEngineers } from './core';
+import { action, band, calmRisk, generateProject, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { addMoments } from './moments';
@@ -32,6 +32,7 @@ export function openMoments(level: LineState, sim: SimState): LineState {
 }
 
 const EVALUATION = 'line-manager.evaluation';
+const ASSIGNED = 'line-manager.assigned-project';
 
 /** Ratings in words, as the level writes them in notes and the recap. */
 export const RATING_WORDS: Record<Rating, string> = { below: 'below expectations', partial: 'partially meets', meets: 'meets', exceeds: 'exceeds', outstanding: 'outstanding' };
@@ -45,13 +46,13 @@ function counted(notes: string[]): string[] {
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
 // @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-END-010
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-END-010, LINE-END-012, LINE-INBOX-002, LINE-INBOX-013
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
   const week = sim.week;
   const t = LINE_TUNING.habits;
   const effects: Effect[] = [];
-  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [] };
+  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [], assigned: [] };
   reconcileVacancies(s, sim);
   recap.habitChanges.push(...s.habitNotes, ...fallBack(s, sim));
   s.habitNotes = [];
@@ -109,6 +110,7 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   for (const item of s.items.filter((i) => i.lastWeek <= week || expireNow.has(i.id))) {
     effects.push(...consequence(item, 1, EXPIRED));
     recap.expired.push({ itemId: item.id, kind: item.kind, subject: { ...item.subject } });
+    if (item.kind === 'workIntake') s.intakeDeclinedWeek = week;
   }
   const gone = new Set(recap.expired.map((e) => e.itemId));
   s.items = s.items.filter((i) => !gone.has(i.id));
@@ -128,7 +130,24 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
-  const after = applied.state;
+  let after = applied.state;
+  const log = [...applied.log];
+
+  // Weeks the team ends with no active project; after a run of them, the player's manager assigns one.
+  if (week % LINE_TUNING.reviewEveryWeeks === 0) s.idleWeeks = 0;
+  if (teamProjects(s, after).length === 0) {
+    s.idleWeeks++;
+    s.idleStreak++;
+  } else s.idleStreak = 0;
+  if (s.idleStreak >= LINE_TUNING.assignAfterIdleWeeks) {
+    const project = generateProject(s, projectNames(after), s.teamId, week, calmRisk(s));
+    const started = applyEffects(after, [{ type: 'startProject', project, cause: rule(ASSIGNED) }]);
+    if (!started.ok) return { ok: false, error: `the simulation rejected the assigned project: ${started.error.message}` };
+    after = started.state;
+    log.push(...started.log);
+    recap.assigned.push({ projectId: project.id, name: project.name });
+    s.idleStreak = 0;
+  }
 
   // Weeks the team ends overwhelmed, counted afresh each review period.
   const team = teamEngineers(s, after);
@@ -156,5 +175,5 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }
-  return { ok: true, level: s, sim: after, log: applied.log, recap };
+  return { ok: true, level: s, sim: after, log, recap };
 }

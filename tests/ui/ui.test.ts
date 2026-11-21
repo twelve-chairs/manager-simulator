@@ -451,6 +451,10 @@ describe('line manager panels', () => {
     expect($$(root, '[data-part=recap-habits] li').map((li) => li.textContent)).toEqual(recap.habits);
     expect($$(root, '[data-part=recap-slipped] li')).toHaveLength(recap.expired.length);
     expect($$(root, '[data-part=recap-goals] li').map((li) => li.textContent)).toEqual(recap.goals.map((g) => g.text));
+    // a project the player's manager assigned to an idle team
+    const assigned = structuredClone(r);
+    (assigned.lastWeek!.recap as { assigned: { projectId: string; name: string }[] }).assigned = [{ projectId: 'p9', name: 'Ledger sync' }];
+    expect(text(makeApp({ run: assigned }).root, '[data-part=recap-assigned] li')).toBe('Your manager assigned Ledger sync to the team.');
   });
 });
 

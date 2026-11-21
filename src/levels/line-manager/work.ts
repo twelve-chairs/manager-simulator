@@ -38,7 +38,9 @@ function addItem(level: LineState, sim: SimState, kind: WorkKind, subject: WorkI
 export function arriveWork(s: LineState, sim: SimState) {
   s.items = s.items.filter((d) => subjectValid(s, sim, d));
   const projects = teamProjects(s, sim);
-  if (projects.length < 2 && !s.items.some((d) => d.kind === 'workIntake')) addItem(s, sim, 'workIntake', { kind: 'team', id: s.teamId });
+  // After a no, the next offer waits, so declining is not met with the same scene every week.
+  const waiting = s.intakeDeclinedWeek !== null && sim.week - s.intakeDeclinedWeek <= LINE_TUNING.intakeWaitWeeks;
+  if (projects.length < 2 && !waiting && !s.items.some((d) => d.kind === 'workIntake')) addItem(s, sim, 'workIntake', { kind: 'team', id: s.teamId });
 
   const rate = LINE_TUNING.arrivals;
   for (const id of projects) {

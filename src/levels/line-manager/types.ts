@@ -87,6 +87,12 @@ export interface LineState {
   burnoutWeeks: number;
   /** Weeks of the current review period the team ended overwhelmed. */
   overwhelmedWeeks: number;
+  /** Weeks of the current review period the team ended with no active project. */
+  idleWeeks: number;
+  /** Consecutive weeks the team has ended with no active project. */
+  idleStreak: number;
+  /** The last week work intake was declined or expired, if ever. */
+  intakeDeclinedWeek: number | null;
   goals: Goal[];
   /** The first week of the review period the goals belong to; -1 before any are set. */
   goalsPeriod: number;
@@ -108,6 +114,8 @@ export interface Recap {
   people: { personId: string; name: string; changes: string[]; notes: string[] }[];
   /** Engineers the level rated at the end of a review period, on what they delivered. */
   evaluations: { personId: string; name: string; rating: Rating }[];
+  /** Projects the player's manager assigned to an idle team. */
+  assigned: { projectId: string; name: string }[];
 }
 
 export type LevelResult<T> = ({ ok: true } & T) | { ok: false; error: string };

@@ -130,6 +130,28 @@ describe('scorecard', () => {
     expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
   });
 
+  // @spec LINE-END-012
+  it('counts the weeks the team ends with no active project, from zero again each review period', () => {
+    const q = quietRun(1);
+    const idle = (week: number) => patch(q.sim, (s) => { s.week = week; Object.values(s.projects).forEach((p) => (p.status = 'completed')); });
+    expect(end({ ...q.level, idleWeeks: 2 }, idle(5)).level.idleWeeks).toBe(3);
+    expect(end({ ...q.level, idleWeeks: 2 }, patch(q.sim, (s) => (s.week = 5))).level.idleWeeks).toBe(2);
+    expect(end({ ...q.level, idleWeeks: 9 }, idle(13)).level.idleWeeks).toBe(1);
+  });
+
+  // @spec LINE-END-007, LINE-GOAL-004
+  it('scores a quarter mostly without projects: no share counts as none, and the on-schedule goal is missed', () => {
+    const { level, sim } = run(1);
+    const idle = patch(sim, (s) => { s.week = 13; Object.values(s.projects).forEach((p) => (p.status = 'completed')); });
+    const goals: Goal[] = [{ id: 'g-sched', kind: 'onSchedule', periodStart: 0 }];
+    const share = (l: LineState) => assess(l, idle).measures.find((m) => m.id === 'onScheduleShare');
+    const goal = (l: LineState) => assess(l, idle).measures.find((m) => m.id === 'goal:g-sched')!.value;
+    expect(share({ ...level, goals, idleWeeks: 6 })).toBeUndefined();
+    expect(goal({ ...level, goals, idleWeeks: 6 })).toBe(1);
+    expect(share({ ...level, goals, idleWeeks: 7 })?.value).toBe(0);
+    expect(goal({ ...level, goals, idleWeeks: 7 })).toBe(0);
+  });
+
   // @spec LINE-END-010
   it('counts the weeks the team ends overwhelmed, from zero again each review period', () => {
     const q = quietRun(1);

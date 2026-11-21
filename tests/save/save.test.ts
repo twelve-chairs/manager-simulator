@@ -131,15 +131,19 @@ describe('restoring', () => {
 
   // @spec SAVE-RESTORE-001, SAVE-RESTORE-002
   it('stops replaying at week 1,040, so a crafted save cannot freeze the page', { timeout: 30_000 }, () => {
-    // 13 weeks then an acknowledge, over and over. The line manager's last review ends a real run at week 156, so this
-    // plays a level with no last review: the limit guards against any level, or a tampered save, that runs on.
-    const endless: Dependencies = { ...DEPS, levels: [{ ...lineManagerLevel, assess: (l, sim) => ({ ...lineManagerLevel.assess(l, sim), lastReview: false }) }] };
+    // 13 weeks then an acknowledge, over and over. A real idle run ends (burned out, managed out, or at the last review),
+    // so this plays with a review that always continues and no burnout: the limit guards against any level, or a
+    // tampered save, that runs on.
+    const endless: Dependencies = {
+      levels: [{ ...lineManagerLevel, afterAdvance: (l, sim) => ({ ...lineManagerLevel.afterAdvance(l, sim), burnedOut: false }) }],
+      review: (input) => ({ ...conductReview(input), outcome: 'continue' }),
+    };
     const commands: Save['commands'] = [];
     while (commands.length < 10_000) {
       for (let i = 0; i < 13; i++) commands.push({ kind: 'endWeek' });
       commands.push({ kind: 'acknowledge' });
     }
-    // the real content: with it, this seed's idle run keeps going for thousands of weeks
+    // the real content, so replay does the work a real run would
     const content = realContent();
     const fingerprint = contentFingerprint(content);
     const long: Save = { ...valid(), seed: 1, content: fingerprint, commands: commands.slice(0, 10_000) };

@@ -23,6 +23,12 @@ export const LINE_TUNING = {
   stretchedTeamBand: 4,
   /** Overwhelmed weeks in a review period beyond which the rating is capped at partial: more than half of 13. */
   overloadedWeeks: 6,
+  /** Idle weeks in a review period beyond which no projects counts against the player: more than half of 13. */
+  idleQuarterWeeks: 6,
+  /** Weeks after work intake is declined or expires before more is offered. */
+  intakeWaitWeeks: 3,
+  /** Consecutive idle weeks after which the player's manager assigns the team a project. */
+  assignAfterIdleWeeks: 4,
 
   habits: {
     /** Player stress per night page taken personally, per unit of the page's size. */

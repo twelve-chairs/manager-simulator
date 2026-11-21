@@ -183,6 +183,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
       resolve(s, item);
     } else if (choiceId === 'decline') {
       effects.push(playerEffect('reputation', LINE_TUNING.work.declineIntakeReputation, action(DECLINE_INTAKE)));
+      s.intakeDeclinedWeek = sim.week;
       text = reaction('decline', thing);
       resolve(s, item);
     } else {
