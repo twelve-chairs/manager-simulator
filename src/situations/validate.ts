@@ -339,7 +339,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
 // ---- situations ----
 
 const SITUATION_FIELDS = ['id', 'title', 'levels', 'priority', 'roles', 'choices', 'text'] as const;
-const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'once', 'when', 'day', 'time'] as const;
+const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'once', 'when', 'day', 'time', 'waitDebrief'] as const;
 
 function checkSituation(x: unknown): Situation {
   const o = object(x, '', 'a situation', SITUATION_FIELDS, OPTIONAL_SITUATION_FIELDS);
@@ -354,6 +354,13 @@ function checkSituation(x: unknown): Situation {
   if (Object.hasOwn(o, 'when')) checkCondition(o.when, { roles: {} }, 'when');
   if (Object.hasOwn(o, 'day')) oneOf(o.day, DAYS, 'day', 'a weekday');
   if (Object.hasOwn(o, 'time')) oneOf(o.time, TIMES, 'time', 'a time of day');
+  // @spec SIT-CONTENT-026
+  // No outcome bound the roles when a situation was let wait, so its lesson for waiting names no one.
+  if (Object.hasOwn(o, 'waitDebrief')) {
+    const lesson = o.waitDebrief;
+    if (typeof lesson !== 'string' || lesson.trim() === '') fail('waitDebrief', 'must be a non-empty string');
+    else if (/\{[^}]*\}/.test(lesson)) fail('waitDebrief', 'must not contain a placeholder');
+  }
 
   const roles: Record<string, RoleKind> = {};
   const forms: Record<string, string> = {};

@@ -4,6 +4,7 @@ title: A promotion case
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 26
+waitDebrief: "Someone who asks about promotion and hears nothing draws their own conclusion. Even \"not yet, and here's what it takes\" beats silence."
 roles:
   - name: engineer
     kind: person

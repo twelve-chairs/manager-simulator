@@ -4,6 +4,7 @@ title: Always online
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 8
+waitDebrief: "Midnight messages are a warning before burnout. Waiting until someone says they're struggling usually means waiting too long."
 roles:
   - name: engineer
     kind: person

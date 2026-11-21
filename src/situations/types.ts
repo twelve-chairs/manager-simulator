@@ -74,6 +74,8 @@ export interface Situation {
   choices: Choice[];
   /** The body: the text presented to the player. */
   text: string;
+  /** What letting it wait teaches, shown at the review when the player let it wait. */
+  waitDebrief?: string;
 }
 
 export interface ContentError {

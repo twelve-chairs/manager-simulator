@@ -4,17 +4,18 @@ import { conductReview } from '../../src/review';
 import type { ContentError } from '../../src/situations';
 import { createApp } from '../../src/ui/app';
 import { CONTENT } from '../loop/fixtures';
+import type { Situation } from '../../src/situations';
 
 export { CONTENT };
 
 export const DEPS: Dependencies = { levels: [lineManagerLevel], review: conductReview };
 
-export function makeApp(options: { run?: Run; seeds?: number[]; contentErrors?: ContentError[]; showContentErrors?: boolean; deps?: Dependencies; attach?: boolean } = {}) {
+export function makeApp(options: { run?: Run; seeds?: number[]; content?: Situation[]; contentErrors?: ContentError[]; showContentErrors?: boolean; deps?: Dependencies; attach?: boolean } = {}) {
   const root = document.createElement('div');
   if (options.attach) document.body.replaceChildren(root);
   const seeds = [...(options.seeds ?? [42, 43, 44])];
   const app = createApp(root, {
-    content: CONTENT,
+    content: options.content ?? CONTENT,
     contentErrors: options.contentErrors ?? [],
     showContentErrors: options.showContentErrors ?? false,
     deps: options.deps ?? DEPS,

@@ -90,6 +90,13 @@ describe('better choices', () => {
     }
   });
 
+  // @spec BAL-CHOICE-003
+  it('has a lesson for letting it wait in every line manager situation but onboarding', () => {
+    for (const s of CONTENT.filter((x) => x.levels.includes('line-manager') && !x.id.startsWith('onboarding-'))) {
+      expect({ situation: s.id, has: typeof s.waitDebrief === 'string' }).toEqual({ situation: s.id, has: true });
+    }
+  });
+
   // @spec BAL-CHOICE-002
   it('keeps the better choice from sitting first, or last, in most situations', () => {
     const listed = CONTENT.filter((s) => Object.hasOwn(BETTER_CHOICES, s.id));

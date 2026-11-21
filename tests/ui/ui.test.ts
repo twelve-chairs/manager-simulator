@@ -5,7 +5,8 @@ import type { AnyLevel, Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
 import { current, waitUntil } from '../loop/fixtures';
-import { $, $$, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
+import { $, $$, CONTENT, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
+import { sit } from '../situations/fixtures';
 
 const L = lineManagerLevel;
 const word = (kind: keyof typeof BAND_WORDS, value: number) => BAND_WORDS[kind][band(value)];
@@ -521,7 +522,7 @@ describe('review and end', () => {
     const debriefs = $$(root, '[data-debrief]');
     expect(debriefs).toHaveLength(r.review!.debriefs.length);
     expect(text(debriefs.at(-1)!, '[data-field=title]')).toBe('retired-situation');
-    expect(text(debriefs.at(-1)!, '[data-field=status]')).toBe('ignored');
+    expect(text(debriefs.at(-1)!, '[data-field=status]')).toBe('You let it wait');
     click(root, '[data-action=acknowledge]');
     const state = app.state();
     expect(state.screen === 'run' && state.run.phase).toBe('week');
@@ -570,6 +571,23 @@ describe('review and end', () => {
     expect(makeApp({ run: endWeeks(run(), 13) }).root.querySelector('[data-field=ceiling]')).toBeNull();
     r.review!.outcome = 'stayed';
     expect(text(makeApp({ run: r }).root, '[data-field=outcome]')).toMatch(/line manager/i);
+  });
+
+  // @spec UI-REVIEW-001
+  it('says what happened to each situation in words, with the lesson for letting it wait', () => {
+    const r = structuredClone(endWeeks(run(), 13));
+    const content = [...CONTENT, sit({ id: 'waited-on', title: 'Waited on', waitDebrief: 'Waiting has a cost.' })];
+    r.review!.debriefs = [
+      { week: 3, situationId: 'about-someone', bindings: {}, status: 'resolved', debrief: 'Talking helps.' },
+      { week: 4, situationId: 'waited-on', bindings: {}, status: 'ignored' },
+      { week: 5, situationId: 'about-someone', bindings: {}, status: 'ignored' },
+      { week: 6, situationId: 'about-someone', bindings: {}, status: 'expired' },
+    ];
+    const items = $$(makeApp({ run: r, content }).root, '[data-debrief]');
+    expect(items.map((d) => text(d, '[data-field=status]'))).toEqual(['You dealt with it', 'You let it wait', 'You let it wait', 'It passed before you got to it']);
+    expect(text(items[0]!, '[data-field=text]')).toBe('Talking helps.');
+    expect(text(items[1]!, '[data-field=text]')).toBe('Waiting has a cost.');
+    expect(items[2]!.querySelector('[data-field=text]')).toBeNull();
   });
 
   // @spec UI-END-002, UI-LINE-010

@@ -4,6 +4,7 @@ title: Time to pay down debt
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+waitDebrief: "Debt that's acknowledged but never scheduled keeps growing, and the engineer who raised it stops raising things."
 roles:
   - name: project
     kind: project

@@ -6,6 +6,7 @@ priority: normal
 when:
   value: week
   atLeast: 5
+waitDebrief: "A new starter left to find their own way loses weeks, and often decides early whether the team has room for them."
 roles:
   - name: newcomer
     kind: person

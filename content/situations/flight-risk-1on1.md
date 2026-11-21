@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 day: friday
+waitDebrief: "Quiet in a 1:1 is a signal. Left alone, it usually turns into a resignation you didn't see coming."
 roles:
   - name: engineer
     kind: person

@@ -4,6 +4,7 @@ title: Friction in code review
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+waitDebrief: "Conflict in code review rarely settles itself. Left alone, it hardens into how two people work, and the team learns to route around it."
 roles:
   - name: a
     kind: person

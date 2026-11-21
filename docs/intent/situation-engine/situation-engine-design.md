@@ -78,6 +78,7 @@ A build step compiles every situation file into one JSON content bundle that the
 | `weight` | Relative chance of selection among situations of the same priority; default 1 |
 | `cooldownWeeks` | Weeks after it is presented before it can be presented again; default 0 |
 | `once` | When true, presented at most once per run |
+| `waitDebrief` | Optional: what letting the situation wait teaches, shown at the review when the player let it wait; one plain line with no placeholders, since no outcome bound the roles |
 | `when` | Optional condition on the state as a whole (no roles) |
 | `day` | Optional day of the week it falls on: `monday` to `friday` |
 | `time` | Optional time of day: `morning`, `afternoon` or `night` |

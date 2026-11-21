@@ -8,6 +8,7 @@ cooldownWeeks: 9
 when:
   value: review.weeksAway
   atMost: 4
+waitDebrief: "Skipping an evaluation spares no one. The rating still lands at the quarter's end, without the conversation that makes it useful."
 roles:
   - name: engineer
     kind: person

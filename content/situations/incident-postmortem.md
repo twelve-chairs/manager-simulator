@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 6
 time: morning
+waitDebrief: "An outage nobody looks back at tends to happen again. The cause is easiest to find while everyone still remembers it."
 roles:
   - name: project
     kind: project

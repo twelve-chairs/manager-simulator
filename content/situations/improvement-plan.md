@@ -4,6 +4,7 @@ title: Writing the improvement plan
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+waitDebrief: "An improvement plan left blank isn't a kindness. Without clear goals and real support, the person can't succeed and the plan can't be fair."
 roles:
   - name: engineer
     kind: person

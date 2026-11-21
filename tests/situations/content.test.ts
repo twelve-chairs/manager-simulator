@@ -243,6 +243,14 @@ describe('loading and validation', () => {
     expect(errors).toHaveLength(1);
   });
 
+  // @spec SIT-CONTENT-026
+  it('takes an optional wait debrief: a plain, non-empty line with no placeholders', () => {
+    expect(loadContent([sit({ waitDebrief: 'Waiting has a cost.' })]).errors).toEqual([]);
+    expect(rejectionOf(sit({ waitDebrief: '' }))).toMatch(/waitDebrief/);
+    expect(rejectionOf(sit({ waitDebrief: 3 } as never))).toMatch(/waitDebrief/);
+    expect(rejectionOf(sit({ waitDebrief: 'Ask {engineer} later.' }))).toMatch(/waitDebrief/);
+  });
+
   // @spec SIT-CONTENT-013
   it('rejects bad weights, cooldowns, literal types, in-lists, rating levels and history subjects', () => {
     const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });

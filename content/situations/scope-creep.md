@@ -4,6 +4,7 @@ title: Just one more feature
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 8
+waitDebrief: "A request left unanswered gets answered for you, usually by the team quietly absorbing the extra work."
 roles:
   - name: project
     kind: project

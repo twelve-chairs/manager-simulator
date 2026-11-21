@@ -102,6 +102,9 @@ const OUTCOMES = {
 
 const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
 
+/** What happened to a situation, in the words the recap uses. */
+const DEBRIEF_STATUS = { resolved: 'You dealt with it', ignored: 'You let it wait', expired: 'It passed before you got to it' } as const;
+
 const ENDINGS = {
   burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
@@ -132,6 +135,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     drafts.clear();
   };
   const titles = new Map(options.content.map((s) => [s.id, s.title]));
+  const waitDebriefs = new Map(options.content.flatMap((s) => (s.waitDebrief ? [[s.id, s.waitDebrief] as const] : [])));
   const fingerprint = contentFingerprint(options.content);
 
   /** Writes the run's save; a storage failure is reported once, and the game plays on unsaved. */
@@ -570,8 +574,12 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             { 'data-debrief': true },
             h('strong', { 'data-field': 'title' }, titles.get(d.situationId) ?? d.situationId),
             ' — ',
-            h('span', { 'data-field': 'status' }, d.status),
-            d.status === 'resolved' ? h('p', { 'data-field': 'text' }, d.debrief ?? '') : null,
+            h('span', { 'data-field': 'status' }, DEBRIEF_STATUS[d.status]),
+            d.status === 'resolved'
+              ? h('p', { 'data-field': 'text' }, d.debrief ?? '')
+              : d.status === 'ignored' && waitDebriefs.has(d.situationId)
+                ? h('p', { 'data-field': 'text' }, waitDebriefs.get(d.situationId))
+                : null,
           ),
         ),
       ),
