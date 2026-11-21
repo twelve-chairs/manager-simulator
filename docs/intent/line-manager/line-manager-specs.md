@@ -5,7 +5,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 ## Starting organization
 
 - [x] **LINE-ORG-001**: When a run starts, the line manager level shall generate from the seed one team led by the player with five active engineers of varied skill, motivation, stress, wants and personalities, at least three of the personalities different, and two active projects on that team, one on schedule and one at risk.
-- [x] **LINE-ORG-002**: The line manager level shall take the names of generated people and projects from its fixed list of fictional names, and shall not give two people in a run the same name.
+- [x] **LINE-ORG-002**: The line manager level shall take the names of generated people and projects from its fixed list of fictional names, and shall not give two people, or two projects, in a run the same name; once every listed name is taken, it shall add to a listed name the lowest number from 2 up that makes it unused ("Settings redesign 2").
 - [x] **LINE-ORG-003**: When runs are started from the same seed, the line manager level shall generate identical simulation and level states.
 - [x] **LINE-ORG-004**: The line manager level shall give every engineer it generates, at the start or on hiring, one personality from the personality catalogue.
 

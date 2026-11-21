@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { LEVEL, LINE_TUNING, NAMES, beginWeek, scorecard, view } from '../../../src/levels/line-manager';
+import { generateProject } from '../../../src/levels/line-manager/core';
 import { PERSONALITIES } from '../../../src/personalities';
 import { behindScheduleProjects, overdueProjects } from '../../../src/sim';
 import { PLAYER_ACTION_IDS } from '../../../src/actions';
@@ -40,6 +41,18 @@ describe('starting organization', () => {
       for (const p of Object.values(sim.projects)) expect(NAMES.projects).toContain(p.name);
       expect(new Set(names).size).toBe(names.length);
     }
+  });
+
+  // @spec LINE-ORG-002
+  it('numbers a repeated name from 2 once every listed name is taken', () => {
+    const { level } = run(1);
+    const l = structuredClone(level);
+    const taken: string[] = [...NAMES.projects];
+    for (let i = 0; i < NAMES.projects.length; i++) taken.push(generateProject(l, taken, 't1', 0, 10).name);
+    // the first repeat of each name is its second, never a running count
+    expect(taken.slice(NAMES.projects.length).sort()).toEqual(NAMES.projects.map((n) => `${n} 2`).sort());
+    expect(generateProject(l, taken, 't1', 0, 10).name).toMatch(/ 3$/);
+    expect(new Set(taken).size).toBe(taken.length);
   });
 
   // @spec LINE-ORG-003

@@ -53,10 +53,13 @@ export function reconcileVacancies(level: LineState, sim: SimState) {
   }
 }
 
-/** A name from the list that is not taken; once the list runs out, a listed name with a number. */
-function unusedName(level: LineState, list: readonly string[], taken: readonly string[], n: number): string {
-  const free = list.filter((name) => !taken.includes(name));
-  return free.length > 0 ? pick(level, free) : `${pick(level, list)} ${n}`;
+/** An unused name from the list; once all are taken, a listed name with the lowest number from 2 that makes it unused. */
+// @spec LINE-ORG-002
+function unusedName(level: LineState, list: readonly string[], taken: readonly string[]): string {
+  for (let n = 1; ; n++) {
+    const free = list.map((name) => (n === 1 ? name : `${name} ${n}`)).filter((name) => !taken.includes(name));
+    if (free.length > 0) return pick(level, free);
+  }
 }
 
 export const peopleNames = (sim: SimState) => Object.values(sim.people).map((p) => p.name);
@@ -68,7 +71,7 @@ export function generatePerson(level: LineState, taken: readonly string[]): NewP
   level.counters.person += 1;
   return {
     id: `e${level.counters.person}`,
-    name: unusedName(level, NAMES.people, taken, level.counters.person),
+    name: unusedName(level, NAMES.people, taken),
     role: 'engineer',
     skill: randomInt(level, 30, 80),
     motivation: randomInt(level, 40, 80),
@@ -83,7 +86,7 @@ export function generateProject(level: LineState, taken: readonly string[], team
   level.counters.project += 1;
   return {
     id: `pr${level.counters.project}`,
-    name: unusedName(level, NAMES.projects, taken, level.counters.project),
+    name: unusedName(level, NAMES.projects, taken),
     teamId,
     scope: randomInt(level, 80, 140),
     risk,
