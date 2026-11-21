@@ -4,7 +4,7 @@
 
 **You just got promoted. Now five engineers, two projects and a pager are yours.**
 
-A browser game about the career of a software engineering manager, where the people remember what you did and good management actually wins.
+A game about the career of a software engineering manager, where the people remember what you did and good management actually wins.
 
 [![Play now](https://img.shields.io/badge/%E2%96%B6%20play%20now-in%20your%20browser-d98e04?style=for-the-badge)](https://twelve-chairs.github.io/manager-simulator/)
 

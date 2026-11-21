@@ -1,6 +1,6 @@
 # Security and Privacy Rule
 
-Manager Simulator is a browser game that runs entirely on the player's machine:
+Manager Simulator is a game that runs entirely on the player's machine:
 no server, no accounts, no online services (HLD § Non-Goals). The repository is
 **public**. Every change is checked against this list before it is committed;
 the `/commit` skill reviews the diff against it. **A violation blocks the
