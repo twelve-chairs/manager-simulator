@@ -41,7 +41,7 @@ choices:
           - type: rate
             target: engineer
             rating: partial
-            historyNote: Rated on what they delivered
+            historyNote: Rated partially meets on what they delivered
         aftermath: "You rate {engineer} partially meets. It's their third low rating in a row, and they're let go."
         debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
       - id: below
@@ -49,7 +49,7 @@ choices:
           - type: rate
             target: engineer
             rating: below
-            historyNote: Rated on what they delivered
+            historyNote: Rated below expectations on what they delivered
         aftermath: "You rate {engineer} below expectations. It's their third low rating in a row, and they're let go."
         debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
   - id: keep-the-peace
@@ -81,7 +81,7 @@ choices:
           - type: rate
             target: engineer
             rating: outstanding
-            historyNote: Rated on what they delivered
+            historyNote: Rated outstanding on what they delivered
           - type: value
             target: engineer
             field: motivation
@@ -98,7 +98,7 @@ choices:
           - type: rate
             target: engineer
             rating: exceeds
-            historyNote: Rated on what they delivered
+            historyNote: Rated exceeds on what they delivered
           - type: value
             target: engineer
             field: motivation
@@ -115,7 +115,7 @@ choices:
           - type: rate
             target: engineer
             rating: meets
-            historyNote: Rated on what they delivered
+            historyNote: Rated meets on what they delivered
         aftermath: "You rate {engineer} meets. Solid, and you say so."
         debrief: "An evaluation that matches what someone delivered is one they can trust and act on."
       - id: partial
@@ -126,7 +126,7 @@ choices:
           - type: rate
             target: engineer
             rating: partial
-            historyNote: Rated on what they delivered
+            historyNote: Rated partially meets on what they delivered
         aftermath: "You rate {engineer} partially meets, and walk through what would change it."
         debrief: "A low rating with clear reasons and a path forward is fairer than a kind one that hides the problem."
       - id: below
@@ -134,7 +134,7 @@ choices:
           - type: rate
             target: engineer
             rating: below
-            historyNote: Rated on what they delivered
+            historyNote: Rated below expectations on what they delivered
         aftermath: "You rate {engineer} below expectations. It's a hard conversation."
         debrief: "A low rating with clear reasons and a path forward is fairer than a kind one that hides the problem."
 ---

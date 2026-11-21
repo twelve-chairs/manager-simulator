@@ -1,11 +1,17 @@
-import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
+import { behindScheduleProjects, overdueProjects, type HistoryEntry, type SimState } from '../../sim';
 import { band, isEngineer, nameOf, teamEngineers, teamProjects } from './core';
 import { goalStatus } from './goals';
-import { LINE_TUNING } from './tuning';
+import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import { WORK_LABELS } from './work';
 import type { LevelMoment, LineState, View } from './types';
 
 export { band };
+
+const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
+
+/** The history an engineer remembers: entries with a note, leaving out a habit's routine notes such as each 1:1. */
+// @spec LINE-VIS-011
+const remembered = (history: HistoryEntry[]) => history.filter((h) => h.note && !(h.cause.kind === 'action' && habitCauses.has(h.cause.actionId)));
 
 /** Why a project is due a check-in, as the rest of a sentence about it: the first that holds of overdue, behind schedule and high risk. */
 // @spec LINE-CHECK-007
@@ -60,12 +66,11 @@ export function view(level: LineState, sim: SimState): View {
         stress: band(p.stress),
         skill: band(p.skill),
         want: Object.hasOwn(level.learnedWants, id) ? level.learnedWants[id]!.want : ('unknown' as const),
-        memory: p.history
-          .filter((h) => h.note)
+        memory: remembered(p.history)
           .slice(-3)
           .reverse()
           .map((h) => h.note!),
-        notes: p.history.filter((h) => h.note).length,
+        notes: remembered(p.history).length,
       };
     }),
     projects: teamProjects(level, sim).map((id) => {

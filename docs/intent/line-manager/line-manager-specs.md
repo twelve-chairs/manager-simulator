@@ -23,7 +23,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-VIS-005**: The line manager level shall show each of the team's active projects with its progress, deadline and whether it is on schedule, behind or overdue, and its risk and tech debt only as bands.
 - [x] **LINE-VIS-006**: The line manager level shall show the player's energy, the inverse of their stress, and their reputation only as bands.
 - [x] **LINE-VIS-009**: The line manager level shall map every banded value to the same scale of bands over 0–100.
-- [x] **LINE-VIS-011**: The line manager level shall show, for each engineer, the notes of their three most recent history entries that carry one, newest first.
+- [x] **LINE-VIS-011**: The line manager level shall show, for each engineer, the notes of their three most recent history entries that carry one and whose cause is not a habit, newest first.
 - [x] **LINE-VIS-012**: The line manager level shall show the current habits, the open vacancies with their interview counts, and the review period's goals with their progress.
 - [x] **LINE-VIS-013**: The line manager level shall show each moment's choices without those that name an engineer who is no longer active on the team.
 - [x] **LINE-VIS-014**: The line manager level shall show a career summary: the number of the team's projects completed by their deadline over the run, each engineer who joined the team after it started, and each engineer who left it with whether they quit, were let go or moved.
@@ -121,6 +121,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-EVAL-004**: When the player gives an engineer one more quarter, or leaves their final evaluation moment unanswered at the week's end, the line manager level shall record no rating for them for the period just ended and add the note "Given one more quarter".
 - [x] **LINE-EVAL-005**: When the line manager level holds a final evaluation, its recap for the last week of the period shall name the engineer as waiting for the player's decision.
 - [x] **LINE-EVAL-006**: Where a line manager situation offers to rate an engineer on what they delivered, and that rating would be a low one while the engineer is on an improvement plan, the choice offered shall be labelled as letting them go ("…, and let them go"), and the unlabelled rating shall not be offered.
+- [x] **LINE-EVAL-007**: Where a line manager situation rates an engineer and records a note, the note shall name the rating given ("Rated partially meets on what they delivered").
 
 ## Turn loop contract
 

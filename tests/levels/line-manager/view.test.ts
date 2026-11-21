@@ -113,6 +113,11 @@ describe('the player view', () => {
       h.push({ week: 5, cause: { kind: 'rule', ruleId: 'x' }, note: 'four' });
     });
     expect(view(level, s).people.find((p) => p.id === a)!.memory).toEqual(['four', 'three', 'two']);
+    // a habit's routine notes, such as a 1:1, are left out
+    const withOneOnOnes = patch(s, (st) => {
+      for (const week of [6, 7, 8]) st.people[a]!.history.push({ week, cause: { kind: 'action', actionId: 'line-manager.habit.one-on-ones' }, note: '1:1' });
+    });
+    expect(view(level, withOneOnOnes).people.find((p) => p.id === a)!.memory).toEqual(['four', 'three', 'two']);
   });
 
   // @spec LINE-VIS-012

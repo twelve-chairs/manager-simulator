@@ -403,3 +403,19 @@ describe('rating someone on an improvement plan', () => {
     expect(notYet.some((l) => l.includes('let them go'))).toBe(false);
   });
 });
+
+describe('notes from ratings', () => {
+  // @spec LINE-EVAL-007
+  it('names the rating in every note a line manager situation records with a rating', () => {
+    const words: Record<string, string> = { below: 'below expectations', partial: 'partially meets', meets: 'meets', exceeds: 'exceeds', outstanding: 'outstanding' };
+    const rated = realContent()
+      .filter((s) => s.levels.includes('line-manager'))
+      .flatMap((s) => s.choices.flatMap((c) => c.outcomes.flatMap((o) => o.effects.map((e) => ({ where: `${s.id}/${c.id}/${o.id}`, e })))))
+      .filter(({ e }) => e.type === 'rate' && e.historyNote !== undefined);
+    expect(rated.length).toBeGreaterThan(0);
+    for (const { where, e } of rated) {
+      const r = e as { rating: string; historyNote: string };
+      expect({ where, note: r.historyNote.includes(words[r.rating]!) }).toEqual({ where, note: true });
+    }
+  });
+});
