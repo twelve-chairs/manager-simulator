@@ -10,7 +10,7 @@ export { CONTENT };
 
 export const DEPS: Dependencies = { levels: [lineManagerLevel], review: conductReview };
 
-export function makeApp(options: { run?: Run; seeds?: number[]; content?: Situation[]; contentErrors?: ContentError[]; showContentErrors?: boolean; deps?: Dependencies; attach?: boolean } = {}) {
+export function makeApp(options: { run?: Run; seeds?: number[]; content?: Situation[]; contentErrors?: ContentError[]; showContentErrors?: boolean; deps?: Dependencies; attach?: boolean; version?: string } = {}) {
   const root = document.createElement('div');
   if (options.attach) document.body.replaceChildren(root);
   const seeds = [...(options.seeds ?? [42, 43, 44])];
@@ -20,6 +20,7 @@ export function makeApp(options: { run?: Run; seeds?: number[]; content?: Situat
     showContentErrors: options.showContentErrors ?? false,
     deps: options.deps ?? DEPS,
     newSeed: () => seeds.shift() ?? 99,
+    version: options.version ?? 'v0.0.1 (0000000)',
     ...(options.run && { run: options.run }),
   });
   return { root, app };

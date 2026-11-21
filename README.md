@@ -52,6 +52,10 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 **Next up:** the senior manager level (managing managers), then director and above, where whole organizations become the people you look after.
 
+## Fiction, not advice
+
+Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.
+
 ## Private by design
 
 The game runs entirely in your browser. There are no accounts, no servers, no analytics and no network requests, and the page's Content-Security-Policy makes the browser enforce that. Your saved run stays on your machine. Found a security problem? See [SECURITY.md](SECURITY.md) for how to report it privately.
@@ -62,6 +66,7 @@ Plain TypeScript and the DOM: no framework and no runtime dependencies.
 
 - **A deterministic simulation** of people, teams, projects and your standing. A run is fully reproducible from its seed and your choices, which is also how saves work.
 - **Authored situations** written as Markdown files, compiled to data at build time and validated against a schema. Their outcomes are chosen by the state of the team, never by dice.
+- **A version on every deploy**, shown on the start screen as `v<major>.<minor>.<commit count> (<commit>)`, so a report can be traced to the exact build.
 - **[Linked-intent development](AGENTS.md):** every change flows from the design docs, through requirements and tests, to code. Start with the [high-level design](docs/high-level-design.md).
 
 ## Development
@@ -103,7 +108,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `playtest/` | Playtests: scripted players of different styles play whole runs from fixed seeds, with every screen checked |
 | `.mcp.json` | A Playwright MCP server for AI-assisted exploratory testing in a real browser |
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs to check that sound management outperforms naive habits |
-| `scripts/` | Build-time tools, such as the situation content compiler |
+| `scripts/` | Build-time tools: the situation content compiler and the version stamp |
 | `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to GitHub Pages from `main` |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |
 | `.github/workflows/scorecard.yml` | OpenSSF Scorecard, which publishes the score behind the README badge |

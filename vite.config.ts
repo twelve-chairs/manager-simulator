@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { compileSituations } from './scripts/compile-situations';
+import { buildVersion, git } from './scripts/version';
 
 /** Where situation files live; the build test points this elsewhere to check that invalid content fails the build. */
 // Resolved from this file, not the working directory, so the build finds content however Vite is started.
@@ -66,9 +67,14 @@ function contentSecurityPolicy(): Plugin {
   };
 }
 
-export default defineConfig({
+const ROOT = dirname(fileURLToPath(import.meta.url));
+const PACKAGE_VERSION = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
+
+export default defineConfig(({ command }) => ({
   plugins: [situations(), contentSecurityPolicy()],
+  // @spec UI-BUILD-004, UI-BUILD-005, UI-BUILD-006
+  define: { __APP_VERSION__: JSON.stringify(buildVersion(command, PACKAGE_VERSION, git(ROOT))) },
   // Assets are never inlined as data: URLs, which the policy's img-src 'self' would block.
   // @spec UI-BUILD-003
   build: { sourcemap: false, modulePreload: { polyfill: false }, assetsInlineLimit: 0 },
-});
+}));

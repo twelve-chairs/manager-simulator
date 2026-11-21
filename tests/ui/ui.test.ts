@@ -32,14 +32,42 @@ function atWorkMoment(): Run {
 
 describe('the page', () => {
   // @spec UI-SHELL-001
-  it('starts on the start screen with a seed, and begins a run from it', () => {
+  it('starts on the start screen with a new seed, and begins a run from it', () => {
     const { root, app } = makeApp();
     expect($(root, '[data-screen]').dataset.screen).toBe('start');
-    expect(text(root, '[data-field=seed]')).toBe('42');
     click(root, '[data-action=begin]');
     expect($(root, '[data-screen]').dataset.screen).toBe('week');
     const state = app.state();
     expect(state.screen === 'run' && state.run.seed).toBe(42);
+  });
+
+  // @spec UI-SHELL-006
+  it('shows the disclaimer on the start screen', () => {
+    const { root } = makeApp();
+    expect(text(root, '[data-part=disclaimer]')).toBe(
+      "Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.",
+    );
+  });
+
+  // @spec UI-SHELL-007
+  it('shows the version the build stamped on the start screen', () => {
+    const { root } = makeApp({ version: 'v0.1.142 (93face2)' });
+    expect(text(root, '[data-field=version]')).toBe('Version v0.1.142 (93face2)');
+  });
+
+  // @spec UI-SHELL-008
+  it('shows the seed on no screen', () => {
+    const seed = 3141592653;
+    const start = makeApp({ seeds: [seed] }).root;
+    expect($(start, '[data-screen]').dataset.screen).toBe('start');
+    const week = playing(seed);
+    const review = endWeeks(run(seed), 13);
+    expect(review.phase).toBe('review');
+    const ended = { ...review, phase: 'ended' as const, ending: 'burnout' as const, review: null };
+    for (const root of [start, makeApp({ run: week }).root, makeApp({ run: review }).root, makeApp({ run: ended }).root]) {
+      expect(root.textContent).not.toContain(String(seed));
+      expect(root.querySelector('[data-field=seed]')).toBeNull();
+    }
   });
 
   // @spec UI-SHELL-002
@@ -641,12 +669,14 @@ describe('review and end', () => {
   it('says why the run ended, shows the final week’s recap, and starts over with a new seed', () => {
     const last = answerAndEnd(playing());
     const ended = { ...last, phase: 'ended' as const, ending: 'burnout' as const };
-    const { root } = makeApp({ run: ended, seeds: [7] });
+    const { root, app } = makeApp({ run: ended, seeds: [7] });
     expect(text(root, '[data-field=ending]')).toMatch(/burn/i);
     expect($$(root, '[data-part=recap-moments] li')).toHaveLength(last.lastWeek!.moments.length);
     click(root, '[data-action=new-run]');
     expect($(root, '[data-screen]').dataset.screen).toBe('start');
-    expect(text(root, '[data-field=seed]')).toBe('7');
+    click(root, '[data-action=begin]');
+    const state = app.state();
+    expect(state.screen === 'run' && state.run.seed).toBe(7);
   });
 });
 

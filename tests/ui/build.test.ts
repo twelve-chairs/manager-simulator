@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { buildVersion, git } from '../../scripts/version';
 
 const ROOT = join(import.meta.dirname, '../..');
 
@@ -65,6 +66,18 @@ describe('the build', () => {
     const images = [...css.matchAll(/url\(\s*["']?([^"')]+\.svg)["']?\s*\)/g)].map((m) => m[1]!);
     expect(images.length).toBeGreaterThan(0);
     for (const url of images) expect(built.some((f) => f.endsWith(url.replace(/^.*\//, '')))).toBe(true);
+  });
+
+  // @spec UI-BUILD-004, UI-BUILD-005
+  it('stamps the version git and package.json give into the page', { timeout: 60_000 }, () => {
+    const out = mkdtempSync(join(tmpdir(), 'build-'));
+    build(out);
+    const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string };
+    // In a full clone this is the real version; a shallow one is stamped unversioned, so the test holds in both.
+    const expected = buildVersion('build', version, git(ROOT));
+    const js = files(out).filter((f) => f.endsWith('.js')).map((f) => readFileSync(f, 'utf8')).join('\n');
+    // The minifier may quote it either way, so look for the text itself.
+    expect(js).toContain(expected);
   });
 
   // @spec UI-BUILD-001

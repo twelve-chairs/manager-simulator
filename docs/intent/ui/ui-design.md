@@ -16,6 +16,20 @@ Four principles shape it:
 - **Text, never HTML.** Every string from content, the simulation or the player reaches the page through `textContent` or an attribute set as text. The UI never parses HTML from a string, so a situation file or a name cannot inject markup or script.
 - **No runtime dependencies.** The page is built from plain DOM calls through a small helper. A framework would add the project's first runtime dependency for screens that are mostly lists, buttons and selects.
 
+## The Disclaimer
+
+The start screen carries this text, in small print below the button and the import control, readable in both themes and at phone width:
+
+> Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.
+
+It says on the page what the HLD's non-goals say in the design: the game teaches through play and makes no claim that its outcomes predict real ones. It sits on the start screen because every run begins there and a returning player passes it again whenever a run ends.
+
+## Versions
+
+Every build is stamped with a version, so a player's report or a screenshot can be traced to the code that produced it. The version is `v<major>.<minor>.<count> (<commit>)`: the major and minor numbers come from `package.json`'s `version` field and are raised by hand when the game changes in a way worth naming; `<count>` is the number of commits in the history being built, so every push to `main` deploys a higher number than the last; `<commit>` is the short hash of that commit. The start screen shows it as "Version v0.1.142 (93face2)".
+
+The build reads the count and hash from git. A build without the whole history (no git, or a shallow clone, which would count too few commits) is stamped `unversioned` rather than given a wrong number, and the development server shows `development`. The deploy and playtest workflows check out the whole history so that what they build carries a real version.
+
 ## Emphasis in Situation Text
 
 Situation text may use Markdown emphasis, `*like this*` or `_like this_`, and nothing else. The UI shows emphasis as italic by splitting the string and wrapping each emphasized span in an `em` element whose text is set with `textContent`. This is not HTML parsing: no other markup has any meaning, and an unmatched marker shows as written.
@@ -24,7 +38,7 @@ Situation text may use Markdown emphasis, `*like this*` or `_like this_`, and no
 
 The screen follows the run's phase:
 
-- **Start**: a new run's seed, shown so a run can be reproduced, and a button to begin.
+- **Start**: the game's name and a line on what the player does, a button to begin, **Import**, and a disclaimer: the game is fiction, its outcomes are simplified for play, and it is not advice (see *The Disclaimer*). The game's version is shown beneath it in small print (see *Versions*). The seed is not shown.
 - **Week** (week phase): a header and a team panel around a **scene**, the one place the player's attention goes. The scene shows, in order:
   1. **Before Monday**, in the first week only, until the player starts the week: the habits with a line on what each does, and the How to play section, so the player sets how they run the team before anything arrives.
   2. **Last week's recap**, set at the weekend, after a week has ended, until the player closes it with **Start week N** (see *The Recap*).
@@ -39,7 +53,7 @@ The screen follows the run's phase:
 - **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. A card gives tenure as "1 week here" or "N weeks here". Below the cards, open vacancies with their interview counts ("1 interview so far"), and the team's projects with progress against scope, deadline, schedule status as words (on schedule, behind, overdue), and risk and tech debt as words.
 - **Habits panel**, on every week screen, folded away by default after the first week: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
 - **Review** (review phase): the outcome in plain words (continuing, promoted, staying a line manager after the last review, or being managed out), so the player knows what acknowledging will do; the rating, and the ceiling's reason when one held it down; each measure by a plain name, its value in words and its verdict in words ("above target"), with the number and target in small print beside it for players who want them (a goal is named by its text, and its value is met or missed); the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened in the words the recap uses: "You dealt with it" with its debrief text, "You let it wait" with the situation's lesson for waiting when it has one, or "It passed before you got to it"), and an **Acknowledge** button.
-- **Ended**: why the run ended (burnout, managed out, stayed a line manager, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap, which is what explains a burnout, and a button to start a new run.
+- **Ended**: why the run ended (burnout, managed out, stayed a line manager, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap, which is what explains a burnout, and a button to start a new run. The seed is not shown here either.
 
 The level's renderer names its review measures and puts their values into words ("Team stress: strained", "Projects on schedule: all"), since only the level knows what each measure is.
 
@@ -122,7 +136,7 @@ Every control sends one turn loop command. If the loop returns an error (a habit
 
 Situation content is compiled from `content/situations/` into a JSON bundle at build time and imported by the page. At start the page loads it through the situation engine, which drops invalid situations; in the development build their errors are listed on the page, and in the production build they are dropped silently.
 
-A new run's seed is drawn from the browser's cryptographic random source and shown on the start screen. The seed only chooses where the run starts; everything after is deterministic from it, so the page needs no other randomness and no clock.
+A new run's seed is drawn from the browser's cryptographic random source. The page never shows it: to a player it is a meaningless number. It travels in the save, and in an exported save's file name, which keeps exports from different runs from overwriting each other, so a run can still be reproduced from the save a player sends. The seed only chooses where the run starts; everything after is deterministic from it, so the page needs no other randomness and no clock.
 
 ## Build
 
@@ -138,7 +152,11 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | Reactions | Shown after each choice until the player presses Continue | Shown above the next moment | Reading the reaction is the payoff of the choice; moving on at once buries it. |
 | What changed | Chips from comparing the view's bands before and after a choice, after the reaction, plus a chip for a new memory note when no band moved | Numbers changed; no chips; band chips only; a chip for every value change | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. Band chips alone hid real costs, such as an engineer struggling through a night page without changing band; a chip per value change would be noise every week, and the note is the person's own account of what happened, which the tenet favours. |
 | Habits | Set before Monday in the first week, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
-| Seed choice | Drawn from the browser's cryptographic random source and displayed | A fixed seed; the clock | A visible random seed gives a fresh run each time and still lets a run be reproduced; the clock and `Math.random` are kept out of the game. |
+| Seed choice | Drawn from the browser's cryptographic random source | A fixed seed; the clock | A random seed gives a fresh run each time; the clock and `Math.random` are kept out of the game. |
+| Seed on screen | Not shown; carried in the save and the exported file's name | Shown on the start and ended screens | A number with no meaning to the player makes the game read like a debug build. A run is reproduced from its save, which holds the seed and every command, so showing the seed alone adds nothing for a bug report. |
+| Version scheme | `v<major>.<minor>.<commit count> (<short hash>)`, stamped by the build from git | Semantic version bumped by hand; the CI run number; the date; a git tag or release per deploy | A hand bump is forgotten, and two deploys then share a number. The CI run number also counts pull-request runs and restarts with a renamed workflow. A date is not unique within a day. A tag or release per deploy needs the workflow to write to the repository, which the deploy otherwise does not. The commit count rises with every push to `main`, and the hash points to the exact commit. |
+| Where the version shows | In small print on the start screen | A footer on every screen; only in the page's source | The start screen is where every run begins and ends up again; a footer on every screen competes with the scene. Hidden in the source, a player could not quote it. |
+| Disclaimer placement | On the start screen, always | A dismissable banner; a separate about page | A banner is dismissed unread and an about page is never opened; small print on the screen every run starts from is seen without getting in the way. |
 | Background | A circuit-board pattern as a CSS mask over a theme colour, served as a file | A coloured image per theme; a CSS-only pattern of gradients; a photo | One small image serves both themes. Gradients can draw a grid but not traces and chips, and a photo is heavy and fights the text. Serving it as a file keeps the strict CSP: an inlined `data:` image would be blocked. |
 | End-to-end tests | Playwright against the production build, in Chromium | Only unit tests in `happy-dom`; Vitest's browser mode | `happy-dom` has no Content-Security-Policy and no real asset loading, so a blocked background or script would pass every unit test. Playwright serves the real build; Vitest's browser mode tests modules, not the deployed page. |
 | Playtests | Whole runs played by scripted players in the browser, on request and weekly, against the local build or a deployed copy | Playing runs by hand; folding them into the end-to-end suite | Hand-played runs found most of the game's playability problems but are slow and easy to skip; in the end-to-end suite they would slow every commit. Fixed seeds keep every failure replayable. |

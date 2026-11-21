@@ -4,11 +4,14 @@ Design: [ui-design.md](ui-design.md)
 
 ## The page
 
-- [x] **UI-SHELL-001**: When the page starts with no saved run, or one that fails to load, the UI shall show the start screen with a new seed drawn from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
+- [x] **UI-SHELL-001**: When the page starts with no saved run, or one that fails to load, the UI shall show the start screen and draw a new seed from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
 - [x] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the week phase, the review screen in the review phase, and the ended screen once the run has ended.
 - [x] **UI-SHELL-003**: When a command applies, the UI shall redraw the whole screen from the new run.
 - [x] **UI-SHELL-004**: If a command returns an error, then the UI shall show the error next to the control that sent it and leave the rest of the screen as it was.
 - [x] **UI-SHELL-005**: When the scene changes (after an answer, a wait, Continue, starting the week, closing the recap or ending the week), the UI shall move keyboard focus to the heading of the week screen's scene, or of the review or ended screen; after a habit change it shall keep focus on that habit's control.
+- [x] **UI-SHELL-006**: When the start screen is shown, the UI shall show the disclaimer text the UI design sets.
+- [x] **UI-SHELL-007**: When the start screen is shown, the UI shall show "Version " followed by the version the build stamped.
+- [x] **UI-SHELL-008**: The UI shall not show a run's seed on any screen.
 - [x] **UI-TEXT-002**: When the UI shows situation text, it shall show each span wrapped in `*` or `_` as an emphasized element whose text is set as text, and show an unmatched marker as written.
 - [x] **UI-TEXT-001**: The UI shall put every string from content, the simulation or the player on the page only as text nodes or as attributes set as text, and shall never parse HTML from a string.
 
@@ -71,4 +74,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-CONTENT-001**: When the page starts, the UI shall load the compiled situation bundle through the situation engine, listing invalid situations' errors on the page in the development build and dropping them silently in the production build.
 - [x] **UI-BUILD-002**: When the game is built for production, the build shall put a Content-Security-Policy `<meta>` tag first in the page's head with the policy the UI design sets, which allows no inline script, no `eval` and no network connections.
 - [x] **UI-BUILD-003**: When the game is built, the build shall emit every image the page uses as its own file, and inline none into the page, its stylesheets or its scripts as a `data:` URL, which the Content-Security-Policy's `img-src 'self'` would block.
+- [x] **UI-BUILD-004**: When the game is built with git and the whole commit history available, the build shall stamp the version `v<major>.<minor>.<count> (<commit>)`, where `<major>` and `<minor>` are the first two numbers of `package.json`'s `version`, `<count>` is the number of commits reachable from the commit being built, and `<commit>` is that commit's short hash.
+- [x] **UI-BUILD-005**: If git is unavailable or the history is shallow when the game is built, then the build shall stamp the version `unversioned`.
+- [x] **UI-BUILD-006**: While the game is served by the development server, the UI shall use the version `development`.
 - [x] **UI-BUILD-001**: When the game is built, the build shall compile the situations in `content/situations/` into the bundle, fail on an invalid situation, and emit static files with no inline script.

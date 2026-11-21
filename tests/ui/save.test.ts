@@ -26,7 +26,7 @@ function memoryStorage(initial: Record<string, string> = {}, broken = false) {
 function app(storage: ReturnType<typeof memoryStorage>, seeds = [42, 43]) {
   const root = document.createElement('div');
   document.body.replaceChildren(root);
-  const a = createApp(root, { content: CONTENT, contentErrors: [], showContentErrors: false, deps: DEPS, newSeed: () => seeds.shift() ?? 99, storage });
+  const a = createApp(root, { content: CONTENT, contentErrors: [], showContentErrors: false, deps: DEPS, newSeed: () => seeds.shift() ?? 99, version: 'v0.0.1 (0000000)', storage });
   return { root, app: a };
 }
 
@@ -201,7 +201,7 @@ describe('saving', () => {
   it('discards the saved run after confirmation and returns to the start screen', () => {
     const r = step(run(3), { kind: 'endWeek' });
     const storage = memoryStorage({ [KEY]: JSON.stringify(toSave(r, FP)) });
-    const { root } = app(storage, [77]);
+    const { root, app: a } = app(storage, [77]);
     click(root, '[data-action=discard]');
     expect($(root, '[data-screen]').dataset.screen).toBe('week');
     expect(storage.data.has(KEY)).toBe(true);
@@ -212,6 +212,8 @@ describe('saving', () => {
     click(root, '[data-action=confirm-discard]');
     expect(storage.data.has(KEY)).toBe(false);
     expect($(root, '[data-screen]').dataset.screen).toBe('start');
-    expect(text(root, '[data-field=seed]')).toBe('77');
+    click(root, '[data-action=begin]');
+    const state = a.state();
+    expect(state.screen === 'run' && state.run.seed).toBe(77);
   });
 });

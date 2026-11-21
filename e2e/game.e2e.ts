@@ -49,6 +49,15 @@ test('loads under its Content-Security-Policy with no violations, nothing from e
   expect(problems).toEqual([]);
 });
 
+// @spec UI-SHELL-006, UI-SHELL-007, UI-BUILD-004
+test('the start screen carries the disclaimer and the built version, and no seed', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-part=disclaimer]')).toContainText('not management, career, legal or HR advice');
+  // CI and local clones have the whole history, so the deployed build carries a real version.
+  await expect(page.locator('[data-field=version]')).toHaveText(/^Version v\d+\.\d+\.\d+ \([0-9a-f]{7,}\)$/);
+  await expect(page.locator('[data-field=seed]')).toHaveCount(0);
+});
+
 // @spec UI-SHELL-001, UI-WEEK-002, UI-WEEK-004, UI-WEEK-006, UI-WEEK-007
 test('plays a week by mouse: a moment, its reaction, the end of the week and the recap', async ({ page }) => {
   const problems = watch(page);

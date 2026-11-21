@@ -14,6 +14,8 @@ export interface AppOptions {
   showContentErrors: boolean;
   deps: Dependencies;
   newSeed: () => number;
+  /** The version the build stamped, shown on the start screen. */
+  version: string;
   /** Start on an existing run instead of the start screen. */
   run?: Run;
   /** Where the run is saved (the browser's localStorage in the game). Without it, the game plays without saving. */
@@ -24,6 +26,10 @@ export interface AppOptions {
 export type SaveStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 export const SAVE_KEY = 'manager-simulator.save';
+
+/** What the start screen says the game is not (the HLD's non-goals, on the page). */
+export const DISCLAIMER =
+  "Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.";
 
 export type AppState = { screen: 'start'; seed: number } | { screen: 'run'; run: Run };
 
@@ -355,13 +361,14 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     );
   }
 
+  /** The start screen. The seed is drawn here but never shown: it means nothing to a player, and travels in the save. */
+  // @spec UI-SHELL-006, UI-SHELL-007, UI-SHELL-008
   function startScreen(seed: number) {
     return h(
       'section',
       { 'data-screen': 'start', class: 'start' },
       h('h1', {}, 'Manager Simulator'),
       h('p', {}, 'You lead a team of five engineers. Keep them, keep your projects on track, and earn your promotion.'),
-      h('p', {}, 'Seed: ', h('span', { 'data-field': 'seed' }, seed)),
       h('button', { 'data-action': 'begin', onClick: () => {
         state = { screen: 'run', run: newRun(seed, options.content, options.deps) };
         error = null;
@@ -371,6 +378,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         render();
       } }, 'Begin'),
       importControl(),
+      h('p', { 'data-part': 'disclaimer', class: 'disclaimer' }, DISCLAIMER),
+      h('p', { 'data-field': 'version', class: 'version' }, `Version ${options.version}`),
     );
   }
 
@@ -611,7 +620,6 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
       h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
-      h('p', {}, `Week ${shownWeek(run.sim.week - 1)}, seed ${run.seed}.`),
       careerSummary(run, view, renderer),
       recapView(run, renderer),
       h('button', { 'data-action': 'new-run', onClick: () => {
