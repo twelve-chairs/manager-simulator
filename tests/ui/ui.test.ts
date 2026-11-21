@@ -407,7 +407,9 @@ describe('line manager panels', () => {
     const r = structuredClone(playing());
     level(r).vacancies = [{ id: 'v1', interviews: 2 }];
     const { root } = makeApp({ run: r });
-    expect(text(root, '[data-panel=vacancies] [data-vacancy=v1] [data-field=interviews]')).toBe('2');
+    expect(text(root, '[data-panel=vacancies] [data-vacancy=v1] [data-field=interviews]')).toBe('2 interviews so far');
+    level(r).vacancies = [{ id: 'v1', interviews: 1 }];
+    expect(text(makeApp({ run: r }).root, '[data-panel=vacancies] [data-vacancy=v1] [data-field=interviews]')).toBe('1 interview so far');
   });
 
   // @spec UI-LINE-006
@@ -535,6 +537,29 @@ describe('review and end', () => {
     expect(makeApp({ run: endWeeks(run(), 13) }).root.querySelector('[data-field=ceiling]')).toBeNull();
     r.review!.outcome = 'stayed';
     expect(text(makeApp({ run: r }).root, '[data-field=outcome]')).toMatch(/line manager/i);
+  });
+
+  // @spec UI-END-002, UI-LINE-010
+  it('sums up the career before the final week: weeks, review ratings, projects, who joined and who left', () => {
+    const last = structuredClone(answerAndEnd(playing()));
+    const ids = Object.keys(last.sim.people).sort();
+    last.sim.player.ratingHistory = [
+      { week: 13, cause: { kind: 'rule', ruleId: 'review.quarterly' }, rating: 'meets' },
+      { week: 26, cause: { kind: 'rule', ruleId: 'review.quarterly' }, rating: 'partial' },
+    ];
+    last.sim.people[ids[0]!]!.joinedWeek = 1;
+    Object.assign(last.sim.people[ids[1]!]!, { status: 'departed', departure: { week: 1, reason: 'quit' } });
+    const ended = { ...last, phase: 'ended' as const, ending: 'stayed' as const };
+    const { root } = makeApp({ run: ended });
+    const career = $(root, '[data-part=career]');
+    expect(text(career, '[data-field=weeks]')).toBe(String(last.sim.week));
+    expect(text(career, '[data-field=ratings]')).toBe('meets, partial');
+    expect(text(career, '[data-field=shipped]')).toMatch(/^\d+$/);
+    expect(text(career, '[data-field=joined]')).toContain(last.sim.people[ids[0]!]!.name);
+    expect(text(career, '[data-field=left]')).toContain(`${last.sim.people[ids[1]!]!.name} (quit)`);
+    // it comes before the final week's recap
+    const all = [...root.querySelectorAll('[data-part=career], [data-part=recap]')].map((e) => (e as HTMLElement).dataset.part);
+    expect(all).toEqual(['career', 'recap']);
   });
 
   // @spec UI-END-001

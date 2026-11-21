@@ -26,6 +26,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-VIS-011**: The line manager level shall show, for each engineer, the notes of their three most recent history entries that carry one, newest first.
 - [x] **LINE-VIS-012**: The line manager level shall show the current habits, the open vacancies with their interview counts, and the review period's goals with their progress.
 - [x] **LINE-VIS-013**: The line manager level shall show each moment's choices without those that name an engineer who is no longer active on the team.
+- [x] **LINE-VIS-014**: The line manager level shall show a career summary: the number of the team's projects completed by their deadline over the run, each engineer who joined the team after it started, and each engineer who left it with whether they quit, were let go or moved.
 
 ## Habits
 
@@ -107,7 +108,9 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-END-006**: When the simulation has advanced, the line manager level shall record the week in which each of the team's projects became completed.
 - [x] **LINE-END-007**: When the level is assessed for a review, the line manager level shall report as measures the projects completed on time and the on-schedule share (higher is better), the quits rated meets or above (lower is better), the average motivation (higher is better), the average stress (lower is better) and the 1:1 share (higher is better), each with the target and tolerance its tuning sets, leaving out the on-schedule share when the team has no active projects.
 - [x] **LINE-END-008**: When the level is assessed for a review, the line manager level shall report that it is the level's last review at week 156 (the twelfth review), and not before.
-- [x] **LINE-END-009**: When the level is assessed for a review while the team's average stress is in the overwhelmed band, the line manager level shall set a rating ceiling of `meets` with the reason "Your manager won't call it a strong quarter with the team this stretched."
+- [x] **LINE-END-009**: When the level is assessed for a review while the team's average stress is in the overwhelmed band, and the team was overwhelmed for no more than half the review period's weeks, the line manager level shall set a rating ceiling of `meets` with the reason "Your manager won't call it a strong quarter with the team this stretched."
+- [x] **LINE-END-010**: When a week's end applies, the line manager level shall count the week as overwhelmed if the team's average stress after it is in the overwhelmed band, counting from zero again in the first week of each review period.
+- [x] **LINE-END-011**: When the level is assessed for a review after the team was overwhelmed for more than half the review period's weeks (7 of 13), the line manager level shall set a rating ceiling of `partial` with the reason "Your team spent most of the quarter overwhelmed."
 - [x] **LINE-EVAL-001**: When the last week of a review period ends, the line manager level shall rate each active engineer who has been on the team since the period began and has no rating recorded in the period other than the starting organization's at their corresponding rating, with the note "Rated <rating> on what they delivered", the rating in words (below expectations, partially meets, meets, exceeds, outstanding).
 - [x] **LINE-EVAL-002**: When the line manager level rates engineers at the end of a review period, its recap for that week shall name each engineer it rated and the rating.
 

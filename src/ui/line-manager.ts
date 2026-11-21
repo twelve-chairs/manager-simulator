@@ -97,7 +97,7 @@ function panels(ctx: ScreenContext): Child {
           'section',
           { 'data-panel': 'vacancies' },
           h('h3', {}, 'Open roles'),
-          h('ul', {}, v.vacancies.map((x) => h('li', { 'data-vacancy': x.id }, 'One open role: ', h('span', { 'data-field': 'interviews' }, x.interviews), ' interviews so far'))),
+          h('ul', {}, v.vacancies.map((x) => h('li', { 'data-vacancy': x.id }, 'One open role: ', h('span', { 'data-field': 'interviews' }, `${x.interviews} ${x.interviews === 1 ? 'interview' : 'interviews'} so far`)))),
         )
       : null,
     h(
@@ -181,6 +181,20 @@ function chips(before: unknown, after: unknown): Chip[] {
   return out;
 }
 
+const LEFT_WORDS: Record<string, string> = { quit: 'quit', fired: 'let go', transferred: 'moved' };
+
+/** The line manager's part of the career summary: projects shipped on time, who joined, who left and why. */
+// @spec UI-LINE-010
+function career(view: unknown): Child {
+  const c = (view as View).career;
+  const names = (xs: string[]) => (xs.length ? xs.join(', ') : 'nobody');
+  return [
+    h('li', {}, 'Projects shipped on time: ', h('span', { 'data-field': 'shipped' }, c.shippedOnTime)),
+    h('li', {}, 'Joined: ', h('span', { 'data-field': 'joined' }, names(c.joined.map((p) => p.name)))),
+    h('li', {}, 'Left: ', h('span', { 'data-field': 'left' }, names(c.left.map((p) => `${p.name} (${LEFT_WORDS[p.reason] ?? p.reason})`)))),
+  ];
+}
+
 /** The line manager's review measures by name. */
 // @spec UI-LINE-009
 const MEASURE_NAMES: Record<string, string> = {
@@ -245,4 +259,5 @@ export const lineManagerRenderer: LevelRenderer = {
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
+  career,
 };

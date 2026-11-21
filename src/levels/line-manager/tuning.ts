@@ -21,6 +21,8 @@ export const LINE_TUNING = {
   lastReview: 12,
   /** Average team stress band (overwhelmed) at or above which a review's rating is capped at meets. */
   stretchedTeamBand: 4,
+  /** Overwhelmed weeks in a review period beyond which the rating is capped at partial: more than half of 13. */
+  overloadedWeeks: 6,
 
   habits: {
     /** Player stress per night page taken personally, per unit of the page's size. */

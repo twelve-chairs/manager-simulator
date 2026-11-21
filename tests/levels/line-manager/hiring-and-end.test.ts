@@ -130,6 +130,29 @@ describe('scorecard', () => {
     expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
   });
 
+  // @spec LINE-END-010
+  it('counts the weeks the team ends overwhelmed, from zero again each review period', () => {
+    const q = quietRun(1);
+    const at = (week: number, stress: number) => patch(q.sim, (s) => { s.week = week; engineers(s).forEach((id) => (s.people[id]!.stress = stress)); });
+    expect(end(q.level, at(3, 95)).level.overwhelmedWeeks).toBe(q.level.overwhelmedWeeks + 1);
+    expect(end({ ...q.level, overwhelmedWeeks: 4 }, at(5, 95)).level.overwhelmedWeeks).toBe(5);
+    expect(end({ ...q.level, overwhelmedWeeks: 4 }, at(5, 30)).level.overwhelmedWeeks).toBe(4);
+    // the first week of a period starts the count again
+    expect(end({ ...q.level, overwhelmedWeeks: 9 }, at(13, 95)).level.overwhelmedWeeks).toBe(1);
+    expect(end({ ...q.level, overwhelmedWeeks: 9 }, at(13, 30)).level.overwhelmedWeeks).toBe(0);
+  });
+
+  // @spec LINE-END-011, LINE-END-009
+  it('caps the rating at partial after a quarter mostly overwhelmed', () => {
+    const { level, sim } = run(1);
+    const calm = patch(sim, (s) => { s.week = 13; engineers(s).forEach((id) => (s.people[id]!.stress = 30)); });
+    const overwhelmed = patch(calm, (s) => engineers(s).forEach((id) => (s.people[id]!.stress = 90)));
+    expect(assess({ ...level, overwhelmedWeeks: 7 }, calm).ceiling).toEqual({ rating: 'partial', reason: 'Your team spent most of the quarter overwhelmed.' });
+    expect(assess({ ...level, overwhelmedWeeks: 7 }, overwhelmed).ceiling?.rating).toBe('partial');
+    expect(assess({ ...level, overwhelmedWeeks: 6 }, overwhelmed).ceiling?.rating).toBe('meets');
+    expect(assess({ ...level, overwhelmedWeeks: 6 }, calm).ceiling).toBeUndefined();
+  });
+
   // @spec LINE-END-008
   it('says the review at week 156, the twelfth, is the level’s last', () => {
     const { level, sim } = run(1);

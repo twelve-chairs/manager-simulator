@@ -45,7 +45,7 @@ function counted(notes: string[]): string[] {
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
 // @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-END-010
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
   const week = sim.week;
@@ -129,6 +129,12 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
   const after = applied.state;
+
+  // Weeks the team ends overwhelmed, counted afresh each review period.
+  const team = teamEngineers(s, after);
+  const teamStress = team.length ? team.reduce((sum, id) => sum + after.people[id]!.stress, 0) / team.length : 0;
+  if (week % LINE_TUNING.reviewEveryWeeks === 0) s.overwhelmedWeeks = 0;
+  if (band(teamStress) >= LINE_TUNING.stretchedTeamBand) s.overwhelmedWeeks++;
 
   for (const goal of s.goals) {
     const status = goalStatus(goal, s, after);

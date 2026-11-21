@@ -3,6 +3,28 @@ import { band, view } from '../../../src/levels/line-manager';
 import { begin, end, engineers, habit, nextWeek, patch, projects, quietRun, run, withItem } from './fixtures';
 
 describe('the player view', () => {
+  // @spec LINE-VIS-014
+  it('sums up the career: projects shipped on time, who joined and who left', () => {
+    const { level, sim } = run(2);
+    const [p1, p2] = projects(sim) as [string, string];
+    const [stayer, quitter, fired] = engineers(sim) as [string, string, string];
+    const later = patch(sim, (s) => {
+      s.week = 40;
+      s.projects[p1]!.deadlineWeek = 30;
+      s.projects[p2]!.deadlineWeek = 20;
+      s.people[stayer]!.joinedWeek = 12;
+      Object.assign(s.people[quitter]!, { status: 'departed', departure: { week: 20, reason: 'quit' } });
+      Object.assign(s.people[fired]!, { status: 'departed', departure: { week: 30, reason: 'fired' } });
+    });
+    const v = view({ ...level, completions: { [p1]: 25, [p2]: 25 } }, later);
+    expect(v.career.shippedOnTime).toBe(1);
+    expect(v.career.joined).toEqual([{ id: stayer, name: later.people[stayer]!.name }]);
+    expect(v.career.left).toEqual([
+      { id: quitter, name: later.people[quitter]!.name, reason: 'quit' },
+      { id: fired, name: later.people[fired]!.name, reason: 'fired' },
+    ]);
+  });
+
   // @spec LINE-VIS-001
   it('shows each active engineer with name, role, tenure, personality and performance level', () => {
     let { level, sim } = run(2);

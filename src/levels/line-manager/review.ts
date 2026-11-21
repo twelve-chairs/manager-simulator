@@ -65,9 +65,11 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
 
 /** Why a stretched team caps the rating. */
 export const STRETCHED_TEAM = "Your manager won't call it a strong quarter with the team this stretched.";
+/** Why a team overwhelmed for most of the quarter caps it lower. */
+export const OVERLOADED_TEAM = 'Your team spent most of the quarter overwhelmed.';
 
 /** The measures a review scores, with the level's targets, whether promotion is possible yet, whether this is the last review, and any ceiling. */
-// @spec LINE-END-004, LINE-END-007, LINE-END-008, LINE-END-009, LINE-GOAL-003
+// @spec LINE-END-004, LINE-END-007, LINE-END-008, LINE-END-009, LINE-END-011, LINE-GOAL-003
 export function assess(level: LineState, sim: SimState): Assessment {
   const card = scorecard(level, sim);
   const t = LINE_TUNING.review;
@@ -90,6 +92,10 @@ export function assess(level: LineState, sim: SimState): Assessment {
     ],
     promotionPossible: card.promotionPossible,
     lastReview: sim.week >= LINE_TUNING.lastReview * LINE_TUNING.reviewEveryWeeks,
-    ...(band(card.teamHealth.stress) >= LINE_TUNING.stretchedTeamBand ? { ceiling: { rating: 'meets' as const, reason: STRETCHED_TEAM } } : {}),
+    ...(level.overwhelmedWeeks > LINE_TUNING.overloadedWeeks
+      ? { ceiling: { rating: 'partial' as const, reason: OVERLOADED_TEAM } }
+      : band(card.teamHealth.stress) >= LINE_TUNING.stretchedTeamBand
+        ? { ceiling: { rating: 'meets' as const, reason: STRETCHED_TEAM } }
+        : {}),
   };
 }

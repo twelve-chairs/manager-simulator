@@ -1,4 +1,4 @@
-import type { ChangeLogEntry, PerformanceLevel, Rating, Role, SimState, Want } from '../../sim';
+import type { ChangeLogEntry, DepartureReason, PerformanceLevel, Rating, Role, SimState, Want } from '../../sim';
 
 export type WorkKind = 'approval' | 'expense' | 'designReview' | 'customerRequest' | 'onCall' | 'workIntake';
 
@@ -85,6 +85,8 @@ export interface LineState {
   checkIns: Record<string, number>;
   /** Consecutive weeks the player's stress has been at or above the burnout threshold. */
   burnoutWeeks: number;
+  /** Weeks of the current review period the team ended overwhelmed. */
+  overwhelmedWeeks: number;
   goals: Goal[];
   /** The first week of the review period the goals belong to; -1 before any are set. */
   goalsPeriod: number;
@@ -159,6 +161,12 @@ export interface View {
   vacancies: Vacancy[];
   goals: { id: string; text: string; progress: string }[];
   moments: (Omit<LevelMoment, 'week'> & { title: string; text: string; difficulty?: Band })[];
+  /** The run so far, for the end of the run. */
+  career: {
+    shippedOnTime: number;
+    joined: { id: string; name: string }[];
+    left: { id: string; name: string; reason: DepartureReason }[];
+  };
 }
 
 export interface Scorecard {

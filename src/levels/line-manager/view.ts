@@ -94,5 +94,24 @@ export function view(level: LineState, sim: SimState): View {
         const gone = (c: { id: string }) => /^(give|ask):/.test(c.id) && !isEngineer(level, sim, c.id.slice(c.id.indexOf(':') + 1));
         return { ...rest, choices: rest.choices.filter((c) => !gone(c)), ...describeMoment(level, sim, m) };
       }),
+    career: career(level, sim),
+  };
+}
+
+/** The run so far: projects shipped by their deadline, who joined the team after it started, and who left and why. */
+// @spec LINE-VIS-014
+function career(level: LineState, sim: SimState): View['career'] {
+  const shippedOnTime = Object.entries(level.completions).filter(([id, when]) => {
+    const p = sim.projects[id];
+    return p !== undefined && when <= p.deadlineWeek;
+  }).length;
+  const members = Object.values(sim.people).filter((p) => p.teamId === level.teamId && p.role === 'engineer');
+  return {
+    shippedOnTime,
+    joined: members.filter((p) => p.joinedWeek > 0).map((p) => ({ id: p.id, name: p.name })),
+    left: members
+      .filter((p) => p.status === 'departed' && p.departure)
+      .sort((a, b) => a.departure!.week - b.departure!.week)
+      .map((p) => ({ id: p.id, name: p.name, reason: p.departure!.reason })),
   };
 }

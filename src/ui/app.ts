@@ -77,6 +77,8 @@ export interface LevelRenderer {
   measureName(view: unknown, id: string): string | undefined;
   /** A measure's value in words on the review screen, when the level knows the measure. */
   measureValue(view: unknown, id: string, value: number): string | undefined;
+  /** The level's lines of the career summary at the end of a run. */
+  career(view: unknown): Child;
 }
 
 const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer };
@@ -571,14 +573,30 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     );
   }
 
+  /** The run's story at its end: weeks played, each review's rating, and the level's part. */
+  // @spec UI-END-002
+  function careerSummary(run: Run, view: unknown, renderer: LevelRenderer): Child {
+    const ratings = run.sim.player.ratingHistory.filter((r) => r.cause.kind === 'rule' && r.cause.ruleId === 'review.quarterly').map((r) => r.rating);
+    return h(
+      'div',
+      { 'data-part': 'career', class: 'career' },
+      h('h2', {}, 'Your career'),
+      h('ul', {},
+        h('li', {}, 'Weeks played: ', h('span', { 'data-field': 'weeks' }, shownWeek(run.sim.week - 1))),
+        h('li', {}, 'Reviews: ', h('span', { 'data-field': 'ratings' }, ratings.length ? ratings.join(', ') : 'none yet')),
+        renderer.career(view)),
+    );
+  }
+
   // @spec UI-END-001
-  function endedScreen(run: Run, renderer: LevelRenderer) {
+  function endedScreen(run: Run, renderer: LevelRenderer, view: unknown) {
     return h(
       'section',
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
       h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
       h('p', {}, `Week ${shownWeek(run.sim.week - 1)}, seed ${run.seed}.`),
+      careerSummary(run, view, renderer),
       recapView(run, renderer),
       h('button', { 'data-action': 'new-run', onClick: () => {
         state = { screen: 'start', seed: options.newSeed() };
@@ -611,7 +629,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       if (!found) screen = unavailableScreen(run);
       else {
         const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts };
-        screen = run.phase === 'week' ? weekScreen(ctx, found.renderer) : run.phase === 'review' ? reviewScreen(ctx, found.renderer) : endedScreen(run, found.renderer);
+        screen = run.phase === 'week' ? weekScreen(ctx, found.renderer) : run.phase === 'review' ? reviewScreen(ctx, found.renderer) : endedScreen(run, found.renderer, ctx.view);
       }
     }
     root.replaceChildren();
