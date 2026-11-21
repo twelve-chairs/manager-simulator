@@ -73,14 +73,15 @@ npm ci              # install dependencies
 npm run dev         # play locally at the address Vite prints
 npm run build       # build the static game into dist/
 npm run preview     # serve the built game
-npm test            # run the tests once
+npm test            # run the unit tests once
+npm run test:e2e    # build the game and play it in Chromium (first run: npx playwright install chromium)
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
 npm run lint        # lint with oxlint, including type-aware rules
 npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
-Every push to `main` is typechecked, linted, tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, OpenSSF Scorecard grades the supply-chain practices, and Dependabot keeps the dev tools and pinned actions up to date.
+Every push to `main` is typechecked, linted, unit- and end-to-end tested, built and published to [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/); pull requests get the same checks. CodeQL scans the code on every push, OpenSSF Scorecard grades the supply-chain practices, and Dependabot keeps the dev tools and pinned actions up to date.
 
 ## Layout
 
@@ -97,6 +98,8 @@ Every push to `main` is typechecked, linted, tested, built and published to [Git
 | `src/personalities.ts` | Personality catalogue: the traits career levels give people, which situation content is checked against |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
 | `tests/` | Tests for each component, beside the folders above (`tests/sim/`, `tests/levels/`, and so on) |
+| `e2e/` | End-to-end tests: the production build played in Chromium with Playwright |
+| `.mcp.json` | A Playwright MCP server for AI-assisted exploratory testing in a real browser |
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools, such as the situation content compiler |
 | `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to GitHub Pages from `main` |

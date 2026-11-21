@@ -10,9 +10,11 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "balance": "BALANCE_SEEDS=200 vitest run tests/balance --silent=false",
-    "lint": "oxlint --type-aware --deny-warnings src tests scripts"
+    "lint": "oxlint --type-aware --deny-warnings src tests scripts e2e",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@types/node": "^24.19.2",
     "happy-dom": "^21.0.4",
     "oxlint": "1.93.0",

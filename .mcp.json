@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.85",
+        "--isolated",
+        "--allowed-origins",
+        "http://localhost:5173;http://localhost:4173;http://localhost:4318;https://twelve-chairs.github.io",
+        "--output-dir",
+        "test-results/playwright-mcp"
+      ]
+    }
+  }
+}

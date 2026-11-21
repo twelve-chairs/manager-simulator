@@ -1,4 +1,4 @@
-# Typechecks, lints, tests and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
+# Typechecks, lints, tests (unit and end-to-end) and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
 # push to main only.
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
 name: Deploy to GitHub Pages
@@ -35,6 +35,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # The end-to-end tests build the game themselves and play it in Chromium under its Content-Security-Policy.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
       # The site is served from /manager-simulator/, so asset paths need that prefix.
       - run: npm run build -- --base=/manager-simulator/
       - if: github.event_name != 'pull_request'
