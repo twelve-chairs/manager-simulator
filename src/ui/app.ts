@@ -48,6 +48,9 @@ const LADDER: Rung[] = [
 ];
 const LOWER_RUNG_LEVELS = new Set(LADDER.flatMap((r) => r.levels ?? []));
 
+/** The game is not open source: the year is that of first publication. */
+const COPYRIGHT = '© 2026 Twelve Chairs Software. All rights reserved.';
+
 /** What the start screen says the game is not (the HLD's non-goals, on the page). */
 export const DISCLAIMER =
   "Manager Simulator is a game. Its people, companies and situations are fictional, and its outcomes are simplified for play. It is not management, career, legal or HR advice; don't use it to make real decisions about real people.";
@@ -387,7 +390,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   /** The start screen. The seed is drawn here but never shown: it means nothing to a player, and travels in the save. */
-  // @spec UI-SHELL-006, UI-SHELL-007, UI-SHELL-008, UI-SHELL-009, UI-SHELL-010, UI-SHELL-011
+  // @spec UI-SHELL-006, UI-SHELL-007, UI-SHELL-008, UI-SHELL-009, UI-SHELL-010, UI-SHELL-011, UI-SHELL-012
   function startScreen(seed: number) {
     const has = new Set(options.deps.levels.map((l) => l.params.id));
     const playable = (rung: Rung) => (rung.levels ? rung.levels.some((id) => has.has(id)) : [...has].some((id) => !LOWER_RUNG_LEVELS.has(id)));
@@ -426,6 +429,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         { class: 'start-print' },
         h('p', { 'data-part': 'disclaimer', class: 'disclaimer' }, DISCLAIMER),
         h('p', { 'data-field': 'version', class: 'version' }, `Version ${options.version}`),
+        h('p', { 'data-part': 'copyright', class: 'version' }, COPYRIGHT),
       ),
     );
   }

@@ -118,3 +118,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `docs/intent/` | Component designs and their requirements (EARS specs) |
 | `docs/decisions/` | Project-level decision records |
 | `docs/references/` | Source material the design draws on |
+
+---
+
+© 2026 Twelve Chairs Software. All rights reserved.

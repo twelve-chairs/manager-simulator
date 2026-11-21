@@ -15,6 +15,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-SAVE-009**: When a run screen is shown, the UI shall offer the import of UI-SAVE-007 as a **Load a saved game** button that opens the file picker, beside **Export save** and **Discard and start over**.
 - [x] **UI-SHELL-010**: When the start screen is shown, the UI shall show the career ladder as an ordered list from line manager to director and above, each rung with its level name, "You manage" followed by who the player manages, and "Each turn is" followed by the length of a turn, as the UI design's table sets them.
 - [x] **UI-SHELL-011**: When the start screen shows the career ladder, the UI shall mark a rung **Playable now** when the game was started with any of the level modules the UI design assigns to that rung, and **Coming later** otherwise.
+- [x] **UI-SHELL-012**: When the start screen is shown, the UI shall show the copyright notice "© 2026 Twelve Chairs Software. All rights reserved."
 - [x] **UI-SHELL-008**: The UI shall not show a run's seed on any screen.
 - [x] **UI-TEXT-002**: When the UI shows situation text, it shall show each span wrapped in `*` or `_` as an emphasized element whose text is set as text, and show an unmatched marker as written.
 - [x] **UI-TEXT-001**: The UI shall put every string from content, the simulation or the player on the page only as text nodes or as attributes set as text, and shall never parse HTML from a string.

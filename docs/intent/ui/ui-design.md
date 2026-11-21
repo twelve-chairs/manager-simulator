@@ -24,7 +24,7 @@ The start screen sells the game's core idea, that every promotion is a new job, 
 2. The pitch: "Start with a team of five engineers and a pager. Earn your way to managing managers, then a whole organization, and learn a new job at every step."
 3. Two buttons: **Start a new game**, the primary button, which begins a run; and **Load a saved game**, a secondary button that opens the browser's file picker for an exported save and loads it as the start screen's import does (see *Saving*). The file input itself is hidden behind that button; a bare "Choose File" control reads as a form, not a game.
 4. The **career ladder**: one rung per career level, drawn bottom to top so the player sees the climb from where they start. Each rung names the level, who the player manages there and how long a turn lasts, and says **Playable now** when the game has that level's module or **Coming later** when it does not. The playable rung is drawn in the accent colour; the others are muted.
-5. In small print, the disclaimer and the version.
+5. In small print, the disclaimer, the version and the copyright notice: **© 2026 Twelve Chairs Software. All rights reserved.** The year is the year the game was first published; the game is not open source, and the repository has no license that grants reuse.
 
 | Rung | You manage | Each turn is |
 |---|---|---|

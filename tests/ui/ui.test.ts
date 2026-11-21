@@ -55,6 +55,11 @@ describe('the page', () => {
     expect(text(root, '[data-field=version]')).toBe('Version v0.1.142 (93face2)');
   });
 
+  // @spec UI-SHELL-012
+  it('shows the copyright notice on the start screen', () => {
+    expect(text(makeApp().root, '[data-part=copyright]')).toBe('© 2026 Twelve Chairs Software. All rights reserved.');
+  });
+
   // @spec UI-SHELL-008
   it('shows the seed on no screen', () => {
     const seed = 3141592653;
