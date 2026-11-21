@@ -34,6 +34,12 @@ const saved = (storage: ReturnType<typeof memoryStorage>) => JSON.parse(storage.
 
 afterEach(() => vi.restoreAllMocks());
 
+/** Ends the week from the scene the page opens on: past Before Monday or the recap, which have no End the week beside them. */
+function endTheWeek(root: ParentNode) {
+  for (const opener of ['[data-action=start-week]', '[data-action=close-recap]']) if (root.querySelector(opener)) click(root, opener);
+  click(root, '[data-action=end-week]');
+}
+
 describe('saving', () => {
   // @spec UI-SHELL-001, UI-SAVE-001
   it('resumes a saved run on load, and shows the start screen without one', () => {
@@ -50,7 +56,7 @@ describe('saving', () => {
     const { root } = app(storage);
     click(root, '[data-action=begin]');
     expect(saved(storage)).toMatchObject({ seed: 42, content: FP, commands: [] });
-    click(root, '[data-action=end-week]');
+    endTheWeek(root);
     expect(saved(storage).commands).toEqual([{ kind: 'endWeek' }]);
   });
 
@@ -60,7 +66,7 @@ describe('saving', () => {
     const stale = { ...toSave(r, 'not-this-content'), commands: [...r.commands, { kind: 'acknowledge' }] };
     const { root } = app(memoryStorage({ [KEY]: JSON.stringify(stale) }));
     expect(text(root, '[data-notice]')).toMatch(/2 of 3/);
-    click(root, '[data-action=end-week]');
+    endTheWeek(root);
     expect(root.querySelector('[data-notice]')).toBeNull();
   });
 
@@ -78,7 +84,7 @@ describe('saving', () => {
     const { root } = app(memoryStorage({}, true));
     click(root, '[data-action=begin]');
     expect(text(root, '[data-notice]')).toMatch(/not be saved/i);
-    click(root, '[data-action=end-week]');
+    endTheWeek(root);
     expect(text(root, '[data-field=week]')).toBe('1');
     expect(root.querySelector('[data-notice]')).toBeNull();
   });
@@ -88,7 +94,7 @@ describe('saving', () => {
     const storage = memoryStorage({ [KEY]: JSON.stringify(toSave(endWeeks(run(3), 2), FP)) });
     const { root } = app(storage);
     storage.failing.writes = true;
-    click(root, '[data-action=end-week]');
+    endTheWeek(root);
     expect(storage.data.has(KEY)).toBe(false);
     expect(text(root, '[data-notice]')).toMatch(/not be saved/i);
   });

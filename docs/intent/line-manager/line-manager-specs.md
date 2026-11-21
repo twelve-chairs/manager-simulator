@@ -67,6 +67,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-002**: The line manager level shall give each moment a day of the week and a time: on-call moments at night, check-in moments on Monday morning, interview moments on Wednesday, and work moments through the week in the order they were made.
 - [x] **LINE-MOMENT-003**: When the player picks a choice for one of the week's open level moments, the line manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the states unchanged.
 - [x] **LINE-MOMENT-004**: When a week's end applies, the line manager level shall close each level moment left unanswered as letting it wait: a work item stays open, an interview is skipped, a check-in changes nothing, and an on-call escalation expires with its consequence.
+- [x] **LINE-MOMENT-005**: When the line manager level describes an on-call moment, its text shall say that a change from the escalation's project has taken production down and name the engineer on call.
 
 ## Project check-ins
 
@@ -76,6 +77,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-CHECK-004**: When the player cuts a project's scope at a check-in, the line manager level shall reduce its scope by the tuned share of its remaining work, by at least 1, and lower the player's reputation by its tuned amount.
 - [x] **LINE-CHECK-005**: When the player moves a project's deadline at a check-in, the line manager level shall move it out by the tuned number of weeks and lower the player's reputation by more than cutting scope does.
 - [x] **LINE-CHECK-006**: When the player pushes on at a check-in, the line manager level shall change nothing.
+- [x] **LINE-CHECK-007**: When the line manager level describes a check-in moment, its text shall name the first of these that holds of the project as the reason: overdue, behind schedule, or a risk band at or above the check-in band.
 
 ## Hiring
 
@@ -87,13 +89,13 @@ Design: [line-manager-design.md](line-manager-design.md)
 ## Goals
 
 - [x] **LINE-GOAL-001**: When a review period begins, the line manager level shall set two or three goals for it from its fixed set, according to the team's state and its own generator, offering a ship-by-deadline goal only for an at-risk project whose deadline falls within the period, and recording that deadline in the goal.
-- [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target.
+- [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target, with any week number in it shown counting from 1 (game week *w* as week *w* + 1).
 - [x] **LINE-GOAL-003**: When the level is assessed for a review, the line manager level shall add each of the period's goals as a measure that is above target when achieved and below target when missed (a ship-by-deadline goal achieved only if the project completed by the deadline the goal recorded), leaving out a goal about an engineer who is no longer on the team and saying so in the recap.
 
 ## Recap
 
 - [x] **LINE-RECAP-001**: When a week's end applies, the line manager level shall report what each habit did, how each level moment was answered and what it led to, which work items expired, and the period's goal progress.
-- [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, with the notes of the history entries recorded for them that week.
+- [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, or who gained a history note that week whose cause is not a habit, with the notes of the history entries recorded for them that week.
 
 ## Reviews and the end of the level
 

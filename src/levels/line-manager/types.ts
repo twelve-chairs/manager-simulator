@@ -139,6 +139,8 @@ export interface View {
     want: Want | 'unknown';
     /** Their three latest history notes, newest first. */
     memory: string[];
+    /** How many history notes they have, so a new note shows even when it repeats an earlier one. */
+    notes: number;
   }[];
   projects: {
     id: string;

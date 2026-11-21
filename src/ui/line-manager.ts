@@ -30,6 +30,9 @@ const NAMES_ENGINEERS = new Set<HabitId>(['approvals', 'growth']);
 
 const viewOf = (ctx: ScreenContext) => ctx.view as View;
 
+/** A project's schedule status in words. */
+const SCHEDULE_WORDS: Record<View['projects'][number]['schedule'], string> = { onSchedule: 'on schedule', behind: 'behind', overdue: 'overdue' };
+
 /** A control per habit, sending a habit change at once. */
 // @spec UI-LINE-006
 function habitControls(ctx: ScreenContext, withHelp: boolean): Child {
@@ -84,7 +87,7 @@ function panels(ctx: ScreenContext): Child {
             'Skill ', h('span', { 'data-field': 'skill' }, bandWord('skill', p.skill)),
             ' · wants ', h('span', { 'data-field': 'want' }, p.want),
             ' · ', h('span', { 'data-field': 'performance' }, p.performance),
-            ' · ', h('span', { 'data-field': 'tenure' }, p.tenureWeeks), ' weeks here'),
+            ' · ', h('span', { 'data-field': 'tenure' }, `${p.tenureWeeks} ${p.tenureWeeks === 1 ? 'week' : 'weeks'} here`)),
           p.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, p.memory.map((note) => h('li', {}, note))) : null,
         ),
       ),
@@ -108,8 +111,8 @@ function panels(ctx: ScreenContext): Child {
           { 'data-project': p.id, class: 'project' },
           h('strong', { 'data-field': 'name' }, p.name),
           h('p', {},
-            h('span', { 'data-field': 'progress' }, `${p.progress} / ${p.scope}`), ' done, due week ', h('span', { 'data-field': 'deadline' }, p.deadlineWeek),
-            ' · ', h('span', { 'data-field': 'schedule' }, p.schedule)),
+            h('span', { 'data-field': 'progress' }, `${p.progress} / ${p.scope}`), ' done, due week ', h('span', { 'data-field': 'deadline' }, p.deadlineWeek + 1),
+            ' · ', h('span', { 'data-field': 'schedule' }, SCHEDULE_WORDS[p.schedule])),
           h('p', {}, 'Risk ', h('span', { 'data-field': 'risk' }, bandWord('risk', p.risk)), ' · tech debt ', h('span', { 'data-field': 'tech-debt' }, bandWord('risk', p.techDebt))),
         ),
       ),
@@ -143,8 +146,8 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
   };
 }
 
-/** A chip per band that moved between two views, and per person who left or joined. */
-// @spec UI-WEEK-008
+/** A chip per band that moved between two views, per person who left or joined, and per new memory note on someone with no band chip. */
+// @spec UI-WEEK-008, UI-WEEK-010
 function chips(before: unknown, after: unknown): Chip[] {
   const a = before as View;
   const b = after as View;
@@ -161,6 +164,8 @@ function chips(before: unknown, after: unknown): Chip[] {
     }
     move(`person:${p.id}:motivation`, p.name, p.motivation, q.motivation, true, 'more motivated', 'less motivated');
     move(`person:${p.id}:stress`, p.name, p.stress, q.stress, false, 'more stressed', 'less stressed');
+    const banded = p.motivation !== q.motivation || p.stress !== q.stress;
+    if (!banded && q.notes > p.notes && q.memory[0]) out.push({ key: `person:${p.id}:note`, text: `${p.name}: ${q.memory[0]}`, tone: 'neutral' });
   }
   const was = new Set(a.people.map((p) => p.id));
   for (const q of b.people) if (!was.has(q.id)) out.push({ key: `person:${q.id}:joined`, text: `${q.name}: joined the team`, tone: 'good' });
@@ -184,7 +189,7 @@ function recap(run: Run, recapValue: unknown): Child {
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
   return [
-    part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, `${p.name}: ${p.changes.join(' and ')}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
+    part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
     part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
     part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
     part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),

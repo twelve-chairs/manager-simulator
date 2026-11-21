@@ -5,7 +5,7 @@ export const HELP_TOPICS = [
   { id: 'habits', title: 'Habits', text: 'Habits are how you run the team every week: who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony there is, and whose growth you focus on. Change them any time.' },
   { id: 'people', title: 'Your people', text: 'Everyone has a personality and remembers what happened between you. 1:1s build trust and reveal what each person wants; people whose wants go unserved lose motivation, and unhappy people leave.' },
   { id: 'energy', title: 'Energy', text: 'Your energy falls with the work you take on and recovers in quiet weeks. Four weeks running on fumes and you burn out.' },
-  { id: 'reviews', title: 'Reviews', text: "Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. Two strong reviews in a row from week 52 earn a promotion; three weak ones in a row and you're out." },
+  { id: 'reviews', title: 'Reviews', text: "Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your fourth review on, two strong reviews in a row earn a promotion; three weak ones in a row and you're out." },
 ] as const;
 
 /** One line of help under each line manager panel's heading. */

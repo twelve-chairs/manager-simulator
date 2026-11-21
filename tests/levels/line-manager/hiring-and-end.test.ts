@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, scorecard, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../../src/sim';
-import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds } from './fixtures';
+import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
 
 const depart = (sim: SimState, ids: string[], reason: 'quit' | 'fired' = 'quit', week = sim.week) =>
   patch(sim, (s) => ids.forEach((id) => Object.assign(s.people[id]!, { status: 'departed', departure: { week, reason } })));
@@ -209,6 +209,14 @@ describe('goals', () => {
     for (const g of v.goals) expect(typeof g.progress).toBe('string');
   });
 
+  // @spec LINE-GOAL-002
+  it('shows a goal’s deadline counting weeks from 1', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const level: LineState = { ...q.level, goals: [{ id: 'g-ship', kind: 'shipOnTime', projectId: p, startValue: 20, periodStart: 0 }] };
+    expect(view(level, q.sim).goals[0]!.progress).toMatch(/due week 21$/);
+  });
+
   // @spec LINE-GOAL-003
   it('scores goals at the review, leaving out a goal about someone who left', () => {
     const { level, sim } = run(1);
@@ -281,5 +289,24 @@ describe('recap', () => {
     const entry = recap.people.find((x) => x.personId === a);
     expect(entry).toBeDefined();
     expect(entry!.notes.length).toBeGreaterThan(0);
+  });
+
+  // @spec LINE-RECAP-002
+  it('reports someone a moment left a note on, though no band changed, but not someone with only a habit’s note', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const { level: withWork, id } = withItem(q.level, { kind: 'designReview', subject: { kind: 'project', id: p }, difficulty: 10, lastWeek: q.sim.week + 3 });
+    const begun = begin(withWork, q.sim);
+    const m = momentFor(begun, id);
+    const give = m.choices.find((c) => c.id.startsWith('give:'))!;
+    const who = give.id.slice('give:'.length);
+    const chosen = choose(begun, q.sim, m.id, give.id);
+    const ended = end(chosen.level, chosen.sim);
+    // the fortnightly 1:1s left notes on others this week, with no band change
+    const habitNoted = engineers(ended.sim).filter((x) => x !== who && ended.sim.people[x]!.history.some((h) => h.week === q.sim.week && h.note));
+    expect(habitNoted.length).toBeGreaterThan(0);
+    expect(ended.recap.people.map((x) => x.personId)).toEqual([who]);
+    expect(ended.recap.people[0]).toMatchObject({ changes: [] });
+    expect(ended.recap.people[0]!.notes.length).toBeGreaterThan(0);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, lineManagerLevel as L } from '../../../src/levels/line-manager';
+import { LINE_TUNING, lineManagerLevel as L, view, type LineState } from '../../../src/levels/line-manager';
 import type { SimState } from '../../../src/sim';
 import { begin, choose, end, patch, projects, quietRun, withItem } from './fixtures';
 
@@ -93,6 +93,39 @@ describe('project check-ins', () => {
   it('changes nothing when the player pushes on', () => {
     const { before, after } = answer('pushOn');
     expect(after.sim).toEqual(before);
+  });
+});
+
+describe('what a check-in and a night page say', () => {
+  const textOf = (level: LineState, sim: SimState, kind: string) => view(level, sim).moments.find((m) => m.kind === kind)!.text;
+
+  // @spec LINE-CHECK-007
+  it('names the one reason a project is due a check-in: overdue, then behind, then high risk', () => {
+    const { level, sim, p } = risky();
+    expect(textOf(begin(level, sim), sim, 'checkIn')).toContain('high risk');
+    const behind = patch(sim, (s) => {
+      s.week = 10;
+      Object.assign(s.projects[p]!, { progress: 0, deadlineWeek: 20 });
+    });
+    expect(textOf(begin(level, behind), behind, 'checkIn')).toContain('behind schedule');
+    const overdue = patch(behind, (s) => (s.projects[p]!.deadlineWeek = 8));
+    const text = textOf(begin(level, overdue), overdue, 'checkIn');
+    expect(text).toContain('overdue');
+    expect(text).not.toContain('behind');
+    expect(text).not.toContain('or at risk');
+  });
+
+  // @spec LINE-MOMENT-005
+  it('says a change from the project took production down, and who is on call', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const l = withItem(q.level, { kind: 'onCall', subject: { kind: 'project', id: p }, size: 8, difficulty: 30, lastWeek: q.sim.week }).level;
+    const begun = begin(l, q.sim);
+    const m = begun.moments.find((x) => x.kind === 'onCall')!;
+    const text = textOf(begun, q.sim, 'onCall');
+    expect(text).toContain(`A change from ${q.sim.projects[p]!.name} has taken production down`);
+    expect(text).toContain(q.sim.people[m.personId!]!.name);
+    expect(text).not.toContain(`${q.sim.projects[p]!.name} is down`);
   });
 });
 

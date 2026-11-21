@@ -28,11 +28,14 @@ function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
   const { engine, presented } = selectSituations(run.engine, run.sim, content, level.params.id, level.params.situationLimit, timingOf(run, level));
   run.engine = engine;
   run.presented = presented;
+  const situation = (p: (typeof presented)[number]): WeekMoment => ({ source: 'situation', id: p.id, day: p.day, time: p.time, title: content.find((x) => x.id === p.situationId)?.title ?? p.situationId, status: 'open' });
+  const urgent = (p: (typeof presented)[number]) => content.find((x) => x.id === p.situationId)?.priority === 'urgent';
   const moments: WeekMoment[] = [
+    ...presented.filter(urgent).map(situation),
     ...level.moments(run.level, run.sim).filter((m) => m.open).map((m): WeekMoment => ({ source: 'level', id: m.id, day: m.day, time: m.time, title: m.title ?? '', status: 'open' })),
-    ...presented.map((p): WeekMoment => ({ source: 'situation', id: p.id, day: p.day, time: p.time, title: content.find((x) => x.id === p.situationId)?.title ?? p.situationId, status: 'open' })),
+    ...presented.filter((p) => !urgent(p)).map(situation),
   ];
-  // The sort is stable and the level's moments come first, so within a slot each source keeps its own order.
+  // The sort is stable, so within a slot urgent situations lead, then the level's moments, then the other situations, each in its own order.
   run.week = moments.sort((a, b) => a.day - b.day || TIME_ORDER[a.time] - TIME_ORDER[b.time]);
   run.phase = 'week';
 }

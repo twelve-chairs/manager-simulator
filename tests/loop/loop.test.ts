@@ -249,6 +249,22 @@ describe('a week', () => {
     }
   });
 
+  // @spec LOOP-WEEK-008
+  it('puts urgent situations ahead of the level’s moments within a slot, and other situations after', () => {
+    const fixed: AnyLevel = {
+      ...L,
+      params: { ...L.params, situationLimit: 2 },
+      moments: () => [{ id: 'lm-a', day: 0, time: 'morning', open: true }],
+    };
+    const content: Situation[] = [
+      plain('s-normal', { day: 'monday', time: 'morning', priority: 'normal' } as never),
+      plain('s-urgent', { day: 'monday', time: 'morning', priority: 'urgent' } as never),
+    ];
+    const run = newRun(1, content, { ...deps(), levels: [fixed] });
+    const id = (situationId: string) => run.presented.find((p) => p.situationId === situationId)!.id;
+    expect(run.week.map((m) => m.id)).toEqual([id('s-urgent'), 'lm-a', id('s-normal')]);
+  });
+
   // @spec LOOP-WEEK-003
   it('ends the run on burnout before a due review', () => {
     const { review, calls } = stubReview();

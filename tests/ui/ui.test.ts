@@ -60,9 +60,9 @@ describe('the page', () => {
   // @spec UI-SHELL-003, UI-WEEK-003
   it('redraws from the new run after a command', () => {
     const { root, app } = makeApp({ run: playing() });
-    expect(text(root, '[data-field=week]')).toBe('0');
+    expect(scene(root)).toBe('moment');
     click(root, '[data-action=end-week]');
-    expect(text(root, '[data-field=week]')).toBe('1');
+    expect(scene(root)).toBe('recap');
     const state = app.state();
     expect(state.screen === 'run' && state.run.commands).toEqual([{ kind: 'wait' }, { kind: 'endWeek' }]);
   });
@@ -136,7 +136,7 @@ describe('the header', () => {
     const r = waitUntil(playing(), 'level');
     const { root } = makeApp({ run: r });
     const v = L.view(level(r), r.sim) as View;
-    expect(text(root, '[data-field=week]')).toBe('0');
+    expect(text(root, '[data-field=week]')).toBe('1');
     expect(text(root, '[data-field=weeks-to-review]')).toBe('13');
     const day = current(r)!.day;
     expect($$(root, '[data-panel=days] [data-day]').map((d) => d.dataset.state)).toEqual([0, 1, 2, 3, 4].map((i) => (i < day ? 'past' : i === day ? 'now' : 'ahead')));
@@ -145,6 +145,39 @@ describe('the header', () => {
     expect([$(root, 'meter[data-meter=energy]').getAttribute('max'), $(root, 'meter[data-meter=energy]').getAttribute('value')]).toEqual(['4', String(v.player.energy)]);
     expect(text(root, '[data-field=reputation]')).toBe(word('reputation', r.sim.player.reputation));
     expect($$(root, '[data-panel=goals] [data-goal]').map((g) => [text(g, '[data-field=text]'), text(g, '[data-field=progress]')])).toEqual(v.goals.map((g) => [g.text, g.progress]));
+  });
+});
+
+describe('the header while the recap shows', () => {
+  // @spec UI-WEEK-001, UI-WEEK-011
+  it('shows the week the recap is about, then the new week once it is closed', () => {
+    const r = answerAndEnd(playing());
+    const { root } = makeApp({ run: r });
+    expect(scene(root)).toBe('recap');
+    expect(text(root, '[data-field=week]')).toBe('1');
+    expect(text(root, '[data-field=weeks-to-review]')).toBe('12');
+    expect(text(root, '[data-scene] [data-part=heading]')).toBe('How week 1 went');
+    expect(text(root, '[data-action=close-recap]')).toBe('Start week 2');
+    click(root, '[data-action=close-recap]');
+    expect(text(root, '[data-field=week]')).toBe('2');
+    expect(text(root, '[data-field=weeks-to-review]')).toBe('12');
+  });
+});
+
+describe('the End the week button beside the scene', () => {
+  // @spec UI-WEEK-003
+  it('shows beside a moment or reaction, and not beside Before Monday, the recap or the week-done scene', () => {
+    const beside = (root: ParentNode) => root.querySelector('[data-action=end-week]') !== null;
+    expect(beside(makeApp({ run: run() }).root)).toBe(false);
+    const { root } = makeApp({ run: waitUntil(playing(), 'level') });
+    expect(beside(root)).toBe(true);
+    $(root, '[data-scene] [data-choice]').click();
+    expect(scene(root)).toBe('reaction');
+    expect(beside(root)).toBe(true);
+    let done = playing();
+    while (current(done)) done = step(done, { kind: 'wait' });
+    expect(beside(makeApp({ run: done }).root)).toBe(false);
+    expect(beside(makeApp({ run: answerAndEnd(playing()) }).root)).toBe(false);
   });
 });
 
@@ -215,6 +248,7 @@ describe('the scene', () => {
     while (current(r)) r = step(r, { kind: 'wait' });
     const { root, app } = makeApp({ run: r });
     expect(scene(root)).toBe('done');
+    expect(text(root, '[data-scene] .where')).toBe('The weekend');
     click(root, '[data-scene] [data-action=finish-week]');
     const state = app.state();
     expect(state.screen === 'run' && state.run.sim.week).toBe(1);
@@ -233,6 +267,27 @@ describe('the scene', () => {
     const chip = chips.find((c) => c.dataset.chip === `person:${who}:stress`)!;
     expect(chip.textContent).toContain(r.sim.people[who]!.name);
     expect(chip.dataset.tone).toBe('bad');
+    // a band chip already shows the choice landed on them, so no note chip
+    expect(chips.some((c) => c.dataset.chip === `person:${who}:note`)).toBe(false);
+  });
+
+  // @spec UI-WEEK-010
+  it('shows a person’s new memory note as a chip, marked neither good nor bad, when no band moved', () => {
+    const r = structuredClone(atWorkMoment());
+    const m = level(r).moments.find((x) => x.id === current(r)!.id)!;
+    const give = m.choices.find((c) => c.id.startsWith('give:'))!;
+    const who = give.id.slice('give:'.length);
+    r.sim.people[who]!.stress = 50; // stays in its band
+    const { root, app } = makeApp({ run: r });
+    click(root, `[data-scene] [data-choice="${give.id}"]`);
+    const state = app.state();
+    const note = state.screen === 'run' ? state.run.sim.people[who]!.history.at(-1)!.note! : '';
+    expect(note).not.toBe('');
+    const chips = $$(root, '[data-scene] [data-chip]');
+    expect(chips.some((c) => c.dataset.chip === `person:${who}:stress`)).toBe(false);
+    const chip = chips.find((c) => c.dataset.chip === `person:${who}:note`)!;
+    expect(chip.textContent).toBe(`${r.sim.people[who]!.name}: ${note}`);
+    expect(chip.dataset.tone).toBe('neutral');
   });
 
   // @spec UI-WEEK-008
@@ -265,10 +320,11 @@ describe('the scene', () => {
     let r = answerAndEnd(playing());
     const { root } = makeApp({ run: r });
     expect(scene(root)).toBe('recap');
+    expect(text(root, '[data-scene] .where')).toBe('The weekend');
     expect($$(root, '[data-part=recap-moments] li').map((li) => li.dataset.moment)).toEqual(r.lastWeek!.moments.map((m) => m.id));
     const answered = r.lastWeek!.moments.find((m) => m.status === 'answered')!;
     expect(text(root, `[data-part=recap-moments] [data-moment="${answered.id}"]`)).toContain(answered.text!);
-    expect(text(root, '[data-action=close-recap]')).toBe('Start week 1');
+    expect(text(root, '[data-action=close-recap]')).toBe('Start week 2');
     click(root, '[data-action=close-recap]');
     expect(scene(root)).toBe('moment');
     // a reload after a moment of the new week has been played does not bring the recap back
@@ -310,7 +366,9 @@ describe('line manager panels', () => {
     expect(text(card, '[data-field=name]')).toBe(p.name);
     expect(text(card, '[data-field=role]')).toBe(p.role);
     expect(text(card, '[data-field=personality]')).toBe(p.personality);
-    expect(text(card, '[data-field=tenure]')).toBe('0');
+    expect(text(card, '[data-field=tenure]')).toBe('0 weeks here');
+    const later = endWeeks(r, 1);
+    expect(text($(makeApp({ run: later }).root, `[data-panel=team] [data-person="${ids[0]}"]`), '[data-field=tenure]')).toBe('1 week here');
     expect(text(card, '[data-field=performance]')).toBe(p.performance);
     expect(text(card, '[data-field=motivation]')).toBe(word('motivation', p.motivation));
     expect(text(card, '[data-field=stress]')).toBe(word('stress', p.stress));
@@ -328,11 +386,20 @@ describe('line manager panels', () => {
       const row = $(root, `[data-project="${id}"]`);
       expect(text(row, '[data-field=name]')).toBe(p.name);
       expect(text(row, '[data-field=progress]')).toBe(`${p.progress} / ${p.scope}`);
-      expect(text(row, '[data-field=deadline]')).toBe(String(p.deadlineWeek));
-      expect(text(row, '[data-field=schedule]')).toBe('onSchedule');
+      expect(text(row, '[data-field=deadline]')).toBe(String(p.deadlineWeek + 1));
+      expect(text(row, '[data-field=schedule]')).toBe('on schedule');
       expect(text(row, '[data-field=risk]')).toBe(word('risk', p.risk));
       expect(text(row, '[data-field=tech-debt]')).toBe(word('risk', p.techDebt));
     }
+    // behind and overdue in words
+    const late = structuredClone(r);
+    const [a, b] = Object.keys(late.sim.projects).sort() as [string, string];
+    late.sim.week = 10;
+    Object.assign(late.sim.projects[a]!, { progress: 0, deadlineWeek: 30 });
+    Object.assign(late.sim.projects[b]!, { deadlineWeek: 5 });
+    const lateRoot = makeApp({ run: late }).root;
+    expect(text($(lateRoot, `[data-project="${a}"]`), '[data-field=schedule]')).toBe('behind');
+    expect(text($(lateRoot, `[data-project="${b}"]`), '[data-field=schedule]')).toBe('overdue');
   });
 
   // @spec UI-LINE-005
@@ -406,6 +473,8 @@ describe('review and end', () => {
     r = structuredClone(r);
     r.review!.debriefs.push({ week: 5, situationId: 'retired-situation', bindings: {}, status: 'ignored' });
     const { root, app } = makeApp({ run: r });
+    // @spec UI-WEEK-011: the review after the thirteenth week
+    expect(text(root, '[data-part=heading]')).toBe('Week 13 review');
     expect(text(root, '[data-field=rating]')).toBe(r.review!.rating);
     expect(text(root, '[data-field=outcome]')).toMatch(/continu/i);
     expect(text(makeApp({ run: { ...r, review: { ...r.review!, outcome: 'managedOut' } } }).root, '[data-field=outcome]')).toMatch(/managed out/i);

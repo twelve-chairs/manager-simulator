@@ -26,18 +26,18 @@ The screen follows the run's phase:
 
 - **Start**: a new run's seed, shown so a run can be reproduced, and a button to begin.
 - **Week** (week phase): a header and a team panel around a **scene**, the one place the player's attention goes. The scene shows, in order:
-  1. **Before Monday**, in week 0 only, until the player starts the week: the habits with a line on what each does, and the How to play section, so the player sets how they run the team before anything arrives.
-  2. **Last week's recap**, after a week has ended, until the player closes it with **Start week N** (see *The Recap*).
+  1. **Before Monday**, in the first week only, until the player starts the week: the habits with a line on what each does, and the How to play section, so the player sets how they run the team before anything arrives.
+  2. **Last week's recap**, set at the weekend, after a week has ended, until the player closes it with **Start week N** (see *The Recap*).
   3. The **current moment** (the turn loop's first open moment): where and when it happens ("Tuesday morning", "Wednesday night"), its title and text, and a button per choice. A line manager moment shows its difficulty as a word where it has one, and a choice that gives work or an interview to an engineer shows that engineer's skill and stress words beside it, so the player can choose without leaving the scene. A **Let it wait** button sends the wait command.
   4. After the player answers, the **reaction**: the moment's reaction or aftermath line, the change chips, a line for each later moment the answer made impossible ("Thursday night's night page has passed"), and **Continue**, which moves on to the next moment. An expired moment says the moment passed because something changed.
-  5. When no moment is open: "That's the week", with **End the week**.
+  5. When no moment is open: "That's the week", set at the weekend, since a Friday night page can come before it, with **End the week**.
 
-  An **End the week** button is also always available beside the scene; ending early lets the rest of the week wait.
+  While a moment or its reaction is showing, an **End the week** button is also available beside the scene; ending early lets the rest of the week wait. The other scenes leave it out: Before Monday and the recap each lead into the week with their own button, and "That's the week" has its own End the week.
 
   Which of these the scene shows is read from the run where it can be: Before Monday and the recap show only until a moment of their week has been answered or let wait, so a reload returns the player to where they were, and a reaction, which only the page remembers, is never shown twice. Whenever the scene changes, keyboard focus moves to the scene's heading (a habit change keeps focus on its control), so a player on the keyboard or a screen reader follows the week from scene to scene.
-- **Header**, on every week screen: the week number and the weeks until the next review; a strip of the five days, marking the current moment's day and the days already past; the player's energy as a meter and a word, and reputation as a word; and the review period's goals, each with its progress.
-- **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. Below the cards, open vacancies with their interview counts, and the team's projects with progress against scope, deadline, schedule status, and risk and tech debt as words.
-- **Habits panel**, on every week screen, folded away by default after week 0: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
+- **Header**, on every week screen: the week number and the weeks until the next review, for the week the scene is about (while the recap shows, the week it recaps, so the weeks to review count from the end of that week); a strip of the five days, marking the current moment's day and the days already past; the player's energy as a meter and a word, and reputation as a word; and the review period's goals, each with its progress.
+- **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. A card gives tenure as "1 week here" or "N weeks here". Below the cards, open vacancies with their interview counts, and the team's projects with progress against scope, deadline, schedule status as words (on schedule, behind, overdue), and risk and tech debt as words.
+- **Habits panel**, on every week screen, folded away by default after the first week: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
 - **Review** (review phase): the outcome in plain words (continuing, promoted, or being managed out), so the player knows what acknowledging will do; the rating, each measure with its value, target and verdict (a goal named by its text), the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened: resolved with its debrief text, ignored, or expired), and an **Acknowledge** button.
 - **Ended**: why the run ended (burnout, managed out, completed), the final week's recap, which is what explains a burnout, and a button to start a new run.
 
@@ -47,15 +47,19 @@ The scene, header and recap are a shell shared by every level; the team panel, h
 
 The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, tiled across the background. It is drawn as a mask over a theme colour, so one image follows light and dark mode, and it stays faint behind the scene and the cards, which are opaque, so text keeps its contrast. The pattern ships as its own image file: the build never inlines an image into the stylesheet as a `data:` URL, which the page's Content-Security-Policy (`img-src 'self'`) would block.
 
+## Week Numbers
+
+Every week number the UI shows (the header, the recap's heading and its Start week button, a project's deadline, the review's heading, the ended screen) counts from 1, per the HLD's *Players count weeks from 1*: game week *w* shows as week *w* + 1. A heading about a week that has ended names that week, so the recap after game week 0 reads "How week 1 went" and the review held after game week 12 reads "Week 13 review". The exported save's file name uses the game week, as the save does.
+
 ## Change Chips
 
-After a choice applies, the UI compares the level's view before and after the command and shows a chip for each band that moved: a person's motivation or stress ("Dario: less motivated"), the player's energy and reputation, and a project's risk or tech debt; and a chip for each person who left the team or joined it. A rise that is good for the player reads as good and a fall as bad, whatever the number did: less stress is good news. The comparison reads bands the view already shows, so it adds no rule and reveals nothing the player could not see by comparing the panels.
+After a choice applies, the UI compares the level's view before and after the command and shows a chip for each band that moved: a person's motivation or stress ("Dario: less motivated"), the player's energy and reputation, and a project's risk or tech debt; and a chip for each person who left the team or joined it. A person with no band chip who gained a memory note from the choice gets a chip with that note ("Ada: struggled through an incident"), so a cost too small to move a band still shows that the choice landed on someone; a note is neither good nor bad, so its chip is marked neither. A rise that is good for the player reads as good and a fall as bad, whatever the number did: less stress is good news. The comparison reads bands the view already shows, so it adds no rule and reveals nothing the player could not see by comparing the panels.
 
 ## The Recap
 
 The recap tells the story of the week just ended, from the run's last week:
 
-- **Your people**: each engineer whose motivation or stress changed band, with what was recorded for them that week; an engineer with no change gets no line;
+- **Your people**: each engineer the level reports for the week (for the line manager, whose motivation or stress changed band, or who gained a memory note from a moment or situation), with what was recorded for them that week;
 - **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed");
 - **Habits**: what each habit did and any habit that fell back because its engineer left;
 - **What slipped**: work that expired, by its kind and what it was about;
@@ -84,7 +88,7 @@ The How to play section and the panel help lines teach the game's controls, not 
 | Habits | Habits are how you run the team every week: who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony there is, and whose growth you focus on. Change them any time. |
 | Your people | Everyone has a personality and remembers what happened between you. 1:1s build trust and reveal what each person wants; people whose wants go unserved lose motivation, and unhappy people leave. |
 | Energy | Your energy falls with the work you take on and recovers in quiet weeks. Four weeks running on fumes and you burn out. |
-| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. Two strong reviews in a row from week 52 earn a promotion; three weak ones in a row and you're out. |
+| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your fourth review on, two strong reviews in a row earn a promotion; three weak ones in a row and you're out. |
 
 | Panel | Help line |
 |---|---|
@@ -129,8 +133,8 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | Level-specific screens | A renderer per career level for its panels, inside a shared shell | One generic renderer for every level | Each level is a different game with different panels; a shared shell keeps the scene, recap, reviews and endings consistent. |
 | The week on screen | One scene at a time, with the team and header around it | Every moment of the week listed at once | A list of the week's moments reads as a form to fill in; one scene at a time, with its reaction before the next, is what made the mockup feel like a game. |
 | Reactions | Shown after each choice until the player presses Continue | Shown above the next moment | Reading the reaction is the payoff of the choice; moving on at once buries it. |
-| What changed | Chips from comparing the view's bands before and after a choice, after the reaction | Numbers changed; no chips | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. |
-| Habits | Set before Monday in week 0, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
+| What changed | Chips from comparing the view's bands before and after a choice, after the reaction, plus a chip for a new memory note when no band moved | Numbers changed; no chips; band chips only; a chip for every value change | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. Band chips alone hid real costs, such as an engineer struggling through a night page without changing band; a chip per value change would be noise every week, and the note is the person's own account of what happened, which the tenet favours. |
+| Habits | Set before Monday in the first week, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
 | Seed choice | Drawn from the browser's cryptographic random source and displayed | A fixed seed; the clock | A visible random seed gives a fresh run each time and still lets a run be reproduced; the clock and `Math.random` are kept out of the game. |
 | Background | A circuit-board pattern as a CSS mask over a theme colour, served as a file | A coloured image per theme; a CSS-only pattern of gradients; a photo | One small image serves both themes. Gradients can draw a grid but not traces and chips, and a photo is heavy and fights the text. Serving it as a file keeps the strict CSP: an inlined `data:` image would be blocked. |
 | End-to-end tests | Playwright against the production build, in Chromium | Only unit tests in `happy-dom`; Vitest's browser mode | `happy-dom` has no Content-Security-Policy and no real asset loading, so a blocked background or script would pass every unit test. Playwright serves the real build; Vitest's browser mode tests modules, not the deployed page. |

@@ -67,7 +67,7 @@ export function goalStatus(goal: Goal, level: LineState, sim: SimState): GoalSta
       const done = level.completions[goal.projectId!];
       const deadline = goal.startValue ?? p?.deadlineWeek ?? 0;
       const achieved = p !== undefined && done !== undefined && done <= deadline;
-      const progress = achieved ? 'Shipped on time' : p ? `${Math.round((100 * p.progress) / p.scope)}% done, due week ${deadline}` : 'Gone';
+      const progress = achieved ? 'Shipped on time' : p ? `${Math.round((100 * p.progress) / p.scope)}% done, due week ${deadline + 1}` : 'Gone';
       return { text: `Ship ${name} by its deadline`, progress, achieved, dropped: false };
     }
     case 'onSchedule': {

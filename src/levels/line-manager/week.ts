@@ -1,4 +1,4 @@
-import { applyEffects, type Effect, type SimState } from '../../sim';
+import { applyEffects, type Effect, type HistoryEntry, type SimState } from '../../sim';
 import { action, band, nameOf, personEffect, playerEffect, reconcileVacancies, subjectValid, teamEngineers } from './core';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
@@ -110,15 +110,18 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     recap.goals.push({ id: goal.id, text: `${status.text}: ${status.progress}.` });
   }
 
-  // Who changed band this week, against how they started it.
+  // Who changed band this week, against how they started it, or gained a note from something other than a habit.
   const start = s.weekStart.week === week ? s.weekStart.people : {};
+  const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
+  const fromHabit = (h: HistoryEntry) => h.cause.kind === 'action' && habitCauses.has(h.cause.actionId);
   for (const id of teamEngineers(s, after)) {
     const p = after.people[id]!;
     const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress };
     const changes: string[] = [];
     if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
     if (band(p.stress) !== band(was.stress)) changes.push(band(p.stress) > band(was.stress) ? 'more stressed' : 'less stressed');
-    if (changes.length) recap.people.push({ personId: id, name: p.name, changes, notes: p.history.filter((h) => h.week === week && h.note).map((h) => h.note!) });
+    const thisWeek = p.history.filter((h) => h.week === week && h.note);
+    if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: thisWeek.map((h) => h.note!) });
   }
   return { ok: true, level: s, sim: after, log: applied.log, recap };
 }

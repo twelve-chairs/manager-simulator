@@ -52,7 +52,7 @@ export interface ScreenContext {
 export interface Chip {
   key: string;
   text: string;
-  tone: 'good' | 'bad';
+  tone: 'good' | 'bad' | 'neutral';
 }
 
 /** A level's moment as the scene shows it. */
@@ -363,11 +363,13 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   /** The header: the week, the review, the days, energy, reputation and goals. */
-  // @spec UI-WEEK-001, UI-WEEK-003
+  // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011
   function weekScreen(ctx: ScreenContext, renderer: LevelRenderer) {
     const { run } = ctx;
     const status = renderer.status(ctx.view);
     const kind = sceneKind(run);
+    // While the recap shows, the header is about the week it recaps, the game week before the run's.
+    const week = shownWeek(kind === 'recap' ? run.sim.week - 1 : run.sim.week);
     const now = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
     return h(
       'section',
@@ -375,7 +377,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h(
         'header',
         { class: 'status' },
-        h('div', { class: 'week-number' }, 'Week ', h('strong', { 'data-field': 'week' }, run.sim.week), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
+        h('div', { class: 'week-number' }, 'Week ', h('strong', { 'data-field': 'week' }, week), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
         h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': i < now ? 'past' : i === now ? 'now' : 'ahead' }, d.slice(0, 3)))),
         h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, bandWord('energy', status.energy)),
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
@@ -386,7 +388,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         { class: 'layout' },
         h('main', { class: 'stage' },
           scene(ctx, renderer, kind),
-          h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => ctx.send({ kind: 'endWeek' }, 'end-week') }, 'End the week'), errorFor('end-week')),
+          kind === 'moment' || kind === 'reaction'
+            ? h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => ctx.send({ kind: 'endWeek' }, 'end-week') }, 'End the week'), errorFor('end-week'))
+            : null,
           kind === 'before-monday' ? null : help(ctx)),
         h('aside', { class: 'side' }, renderer.panels(ctx)),
       ),
@@ -403,6 +407,10 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   const currentMoment = (run: Run) => run.week.find((m) => m.status === 'open');
+
+  /** A game week as the player counts it, from 1. */
+  // @spec UI-WEEK-011
+  const shownWeek = (gameWeek: number) => gameWeek + 1;
 
   const heading = (text: Child) => h('h2', { 'data-part': 'heading', tabindex: -1 }, text);
 
@@ -425,10 +433,10 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         return h(
           'section',
           { 'data-scene': 'recap', class: 'scene recap' },
-          h('p', { class: 'where' }, 'Friday evening'),
-          heading(`How week ${run.sim.week - 1} went`),
+          h('p', { class: 'where' }, 'The weekend'),
+          heading(`How week ${shownWeek(run.sim.week - 1)} went`),
           recapView(run, renderer),
-          h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start week ${run.sim.week}`),
+          h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start week ${shownWeek(run.sim.week)}`),
         );
       case 'reaction': {
         const m = run.week.find((x) => x.id === reaction!.momentId)!;
@@ -476,7 +484,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         return h(
           'section',
           { 'data-scene': 'done', class: 'scene' },
-          h('p', { class: 'where' }, 'Friday afternoon'),
+          h('p', { class: 'where' }, 'The weekend'),
           heading("That's the week"),
           h('p', {}, 'Nothing else needs you this week.'),
           h('button', { 'data-action': 'finish-week', class: 'primary', onClick: () => ctx.send({ kind: 'endWeek' }, 'finish-week') }, 'End the week'),
@@ -518,7 +526,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     return h(
       'section',
       { 'data-screen': 'review', class: 'review' },
-      h('h1', { 'data-part': 'heading', tabindex: -1 }, `Week ${ctx.run.sim.week} review`),
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, `Week ${shownWeek(ctx.run.sim.week - 1)} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
       h(
@@ -562,7 +570,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
       h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
-      h('p', {}, `Week ${run.sim.week}, seed ${run.seed}.`),
+      h('p', {}, `Week ${shownWeek(run.sim.week - 1)}, seed ${run.seed}.`),
       recapView(run, renderer),
       h('button', { 'data-action': 'new-run', onClick: () => {
         state = { screen: 'start', seed: options.newSeed() };

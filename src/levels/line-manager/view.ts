@@ -6,18 +6,27 @@ import type { LevelMoment, LineState, View } from './types';
 
 export { band };
 
+/** Why a project is due a check-in, as the rest of a sentence about it: the first that holds of overdue, behind schedule and high risk. */
+// @spec LINE-CHECK-007
+function checkInReason(sim: SimState, projectId: string): string {
+  if (overdueProjects(sim).some((p) => p.id === projectId)) return 'is overdue';
+  if (behindScheduleProjects(sim).some((p) => p.id === projectId)) return 'is behind schedule';
+  return 'is at high risk';
+}
+
 /** A moment's heading and the scene it sets. */
 export function describeMoment(level: LineState, sim: SimState, m: LevelMoment): { title: string; text: string; difficulty?: number } {
   if (m.kind === 'interview') return { title: 'Interview', text: 'A candidate for the open role is in the building this afternoon. Who talks to them?' };
   if (m.kind === 'checkIn') {
     const p = sim.projects[m.ref];
     const name = p?.name ?? m.ref;
-    return { title: `Check-in: ${name}`, text: `Monday's project check-in. ${name} is ${p && p.deadlineWeek < sim.week ? 'overdue' : 'in trouble or at risk'}. What do you do about it?` };
+    return { title: `Check-in: ${name}`, text: `Monday's project check-in. ${name} ${checkInReason(sim, m.ref)}. What do you do about it?` };
   }
   const item = level.items.find((i) => i.id === m.ref);
   const about = item ? (item.subject.kind === 'project' ? (sim.projects[item.subject.id]?.name ?? '') : nameOf(sim, item.subject.id)) : '';
   const difficulty = item ? { difficulty: band(item.difficulty) } : {};
-  if (m.kind === 'onCall') return { title: 'Night page', text: `${about} is down, and ${nameOf(sim, m.personId!)} is on call.`, ...difficulty };
+  // @spec LINE-MOMENT-005
+  if (m.kind === 'onCall') return { title: 'Night page', text: `A change from ${about} has taken production down, and ${nameOf(sim, m.personId!)} is on call.`, ...difficulty };
   switch (item?.kind) {
     case 'designReview':
       return { title: 'Design review', text: `${about} needs a design reviewed before the team builds on it.`, ...difficulty };
@@ -54,6 +63,7 @@ export function view(level: LineState, sim: SimState): View {
           .slice(-3)
           .reverse()
           .map((h) => h.note!),
+        notes: p.history.filter((h) => h.note).length,
       };
     }),
     projects: teamProjects(level, sim).map((id) => {

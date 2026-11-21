@@ -104,6 +104,7 @@ flowchart TD
 - **Separate mechanics per career level.** One shared mechanic set with a widening scope would be simpler to build and keep players' skills relevant, but it would not deliver the core fantasy that each level is a different job. Level modules over a shared simulation core keep the per-level mechanics separate without needing three separate simulations.
 - **Time step widens with level.** Weeks, months, then quarters, so that a run at each level takes a similar amount of play time while the player's horizon grows the way it does in the real role.
 - **Browser game in TypeScript.** Runs locally in a browser with no install and no server, which suits short sessions and easy sharing for playtests. A desktop or engine-based build would add packaging work with no benefit for a text- and UI-driven game.
+- **Players count weeks from 1.** The simulation counts game weeks from 0, which keeps its arithmetic simple; every week number the player reads (the header, recaps, deadlines, goals, reviews) shows game week *w* as week *w* + 1, so a run starts in week 1 as a player expects. Saves and content conditions use game weeks.
 - **Deterministic simulation core.** Seeded randomness makes runs reproducible, which allows tests of balance and of situation triggers, and makes bugs reproducible.
 - **Situations as data.** Content grows faster than code; keeping situations in data files lets content be written and tuned without touching the simulation.
 
