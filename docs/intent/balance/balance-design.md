@@ -39,6 +39,8 @@ Strategies are measuring instruments: their rules live in this document, not in 
 
 Sound practice needs to know which choice in each situation is the better one. The harness keeps a table mapping each situation id to its better choice's id. Every line manager situation in the content must have an entry naming a choice the situation has, except onboarding situations (ids starting `onboarding-`), which have no better choice; a missing or wrong entry fails the harness, so adding a situation means deciding its better choice. When the table's choice is not offered (its `availableIf` does not hold), sound practice picks the first offered choice.
 
+The naive strategies' first and last picks are honest only if choice order says nothing about which choice is better, and the same holds for a player, who would otherwise learn to pick a position rather than read the scene. Authors place the better choice where the scene reads best, and the harness holds the spread: it fails if more than half of the table's situations list their better choice first, or more than half list it last, in the order the situation file gives its choices.
+
 ## Measures and Checks
 
 For each strategy, the harness plays a set of seeds for up to 78 weeks (six reviews) and, reading the run itself (which strategies never see), records per run: the review ratings, whether the player was promoted (at the line manager, the highest level so far, a promotion completes the run), burned out or managed out, and how many engineers rated meets or above quit. Across runs it reports:
@@ -66,6 +68,7 @@ The test suite runs 20 seeds per strategy and must stay within about 15 seconds;
 | How a strategy plays a week | Habit changes at the start of the week, then one decision per moment as it becomes current | One list of commands for the whole week | The turn loop plays moments in order, and a later moment can depend on an earlier choice; deciding each as it comes is what the player does. |
 | When balance is checked | In the test suite with 20 seeds per strategy, plus a report command with more | Only in the report command | Every commit is checked, so content or tuning changes cannot quietly break balance. |
 | Context-blind choices | First or last offered choice | A hand-labelled "agreeable" choice per situation | Choice order carries no meaning, so first and last are honest stand-ins for a fixed habit, with no extra labelling. |
+| Keeping choice order meaningless | Authors vary where the better choice sits, and a check fails if more than half of situations put it first, or more than half put it last | The situation engine shuffling choices with its seeded generator when it presents them | Shuffling makes position unlearnable but can put choices in an order that reads badly (an "ignore it" before the options it ignores); an authored order with a spread check keeps the reading order in the writer's hands. |
 
 ## Open Questions & Future Decisions
 

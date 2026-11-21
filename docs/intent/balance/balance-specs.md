@@ -13,6 +13,7 @@ Design: [balance-design.md](balance-design.md)
 ## Better choices
 
 - [x] **BAL-CHOICE-001**: The balance harness shall fail if a line manager situation in the content, other than one whose id starts with `onboarding-`, has no entry in the better-choice table, or its entry names a choice the situation does not have.
+- [x] **BAL-CHOICE-002**: The balance harness shall fail if more than half of the situations in the better-choice table list their better choice first among their choices in the situation file, or more than half list it last.
 
 ## Measures
 

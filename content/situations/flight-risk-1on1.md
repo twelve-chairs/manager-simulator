@@ -14,6 +14,14 @@ roles:
         - { value: engineer.weeksSinceWantServed, atLeast: 12 }
         - { value: engineer.motivation, below: 40 }
 choices:
+  - id: move-on
+    label: Keep the 1:1 on project status
+    outcomes:
+      - id: unnoticed
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -5 }
+        aftermath: The 1:1 ends early.
+        debrief: Status updates in a 1:1 leave the real problem untouched.
   - id: ask
     label: Ask what would make the job worth staying for
     outcomes:
@@ -28,14 +36,6 @@ choices:
           - { type: value, target: engineer, field: trust, amount: 5 }
         aftermath: "{engineer} says everything is fine. It isn't."
         debrief: With low trust, a direct question gets a polite non-answer; trust has to be built first.
-  - id: move-on
-    label: Keep the 1:1 on project status
-    outcomes:
-      - id: unnoticed
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -5 }
-        aftermath: The 1:1 ends early.
-        debrief: Status updates in a 1:1 leave the real problem untouched.
 ---
 
 {engineer} answers every question in the 1:1 with a word or two. Their camera is off.

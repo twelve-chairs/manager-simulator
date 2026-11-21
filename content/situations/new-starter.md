@@ -18,6 +18,21 @@ roles:
       value: buddy.tenureWeeks
       atLeast: 5
 choices:
+  - id: docs
+    label: Point them at the wiki
+    outcomes:
+      - id: lost
+        effects:
+          - type: value
+            target: newcomer
+            field: motivation
+            amount: -4
+          - type: value
+            target: newcomer
+            field: stress
+            amount: 4
+        aftermath: "{newcomer} reads the wiki. Half of it is out of date."
+        debrief: "Documentation helps, but a new person needs someone to ask; left alone, they take months longer to be effective."
   - id: buddy-up
     label: "Pair {newcomer} with {buddy} for their first month"
     outcomes:
@@ -44,21 +59,6 @@ choices:
               serves: [recognition]
         aftermath: "{newcomer} ships a small fix in their second week."
         debrief: "A named buddy is the cheapest onboarding there is; it costs the buddy a little time and pays back for months."
-  - id: docs
-    label: Point them at the wiki
-    outcomes:
-      - id: lost
-        effects:
-          - type: value
-            target: newcomer
-            field: motivation
-            amount: -4
-          - type: value
-            target: newcomer
-            field: stress
-            amount: 4
-        aftermath: "{newcomer} reads the wiki. Half of it is out of date."
-        debrief: "Documentation helps, but a new person needs someone to ask; left alone, they take months longer to be effective."
 ---
 
 {newcomer} started this week. Their laptop works; their calendar is empty.

@@ -89,6 +89,14 @@ describe('better choices', () => {
       expect({ situation: s.id, has: s.choices.some((c) => c.id === BETTER_CHOICES[s.id]) }).toEqual({ situation: s.id, has: true });
     }
   });
+
+  // @spec BAL-CHOICE-002
+  it('keeps the better choice from sitting first, or last, in most situations', () => {
+    const listed = CONTENT.filter((s) => Object.hasOwn(BETTER_CHOICES, s.id));
+    const at = (pick: (ids: string[]) => string | undefined) => listed.filter((s) => pick(s.choices.map((c) => c.id)) === BETTER_CHOICES[s.id]).map((s) => s.id);
+    const half = listed.length / 2;
+    expect({ first: at((ids) => ids[0]).length <= half, last: at((ids) => ids.at(-1)).length <= half }).toEqual({ first: true, last: true });
+  });
 });
 
 describe('measures', () => {

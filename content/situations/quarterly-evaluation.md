@@ -16,6 +16,17 @@ roles:
       withinWeeks: 10
       is: 0
 choices:
+  - id: keep-the-peace
+    label: "Rate {engineer} meets, to keep the peace"
+    outcomes:
+      - id: flattened
+        effects:
+          - type: rate
+            target: engineer
+            rating: meets
+            historyNote: Rated meets regardless of results
+        aftermath: "Nobody complains. Nobody learns anything either."
+        debrief: "Rating everyone the same feels kind, but it tells strong people their work didn't count and hides problems until they are bigger."
   - id: honest
     label: "Rate {engineer} on what they actually delivered"
     outcomes:
@@ -83,17 +94,6 @@ choices:
             historyNote: Rated on what they delivered
         aftermath: "You rate {engineer} below expectations. It's a hard conversation."
         debrief: "A low rating with clear reasons and a path forward is fairer than a kind one that hides the problem."
-  - id: keep-the-peace
-    label: "Rate {engineer} meets, to keep the peace"
-    outcomes:
-      - id: flattened
-        effects:
-          - type: rate
-            target: engineer
-            rating: meets
-            historyNote: Rated meets regardless of results
-        aftermath: "Nobody complains. Nobody learns anything either."
-        debrief: "Rating everyone the same feels kind, but it tells strong people their work didn't count and hides problems until they are bigger."
 ---
 
 Evaluations are due before the review. {engineer}'s is next on your list.
