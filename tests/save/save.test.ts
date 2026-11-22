@@ -82,6 +82,10 @@ describe('parsing', () => {
     reject({ ...s, format: 'something-else' });
     reject({ ...s, version: 1 });
     reject({ ...s, version: 3 });
+    // A version that cannot be turned into text must still be rejected, not throw while the error is worded.
+    for (const version of [{ toString: 1 }, { valueOf: 1, toString: 1 }, [], {}, '2', null]) {
+      expect(() => reject({ ...s, version })).not.toThrow();
+    }
     for (const seed of [-1, 1.5, 4294967296, '5', null]) reject({ ...s, seed });
     reject({ ...s, content: 'x'.repeat(65) });
     reject({ ...s, content: 7 });

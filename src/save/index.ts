@@ -80,7 +80,10 @@ export function parseSave(text: string): { ok: true; save: Save } | { ok: false;
   }
   if (!isObject(value) || !hasExactly(value, ['format', 'version', 'seed', 'content', 'commands'])) return { ok: false, error: 'this is not a Manager Simulator save' };
   if (value.format !== SAVE_FORMAT) return { ok: false, error: 'this is not a Manager Simulator save' };
-  if (value.version !== SAVE_VERSION) return { ok: false, error: `save version ${String(value.version)} is not supported` };
+  // Only a number is named in the error: String() on an object from the save can throw (`{"toString": 1}`).
+  if (value.version !== SAVE_VERSION) {
+    return { ok: false, error: typeof value.version === 'number' ? `save version ${value.version} is not supported` : 'the save has an unknown version' };
+  }
   const seed = value.seed;
   if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < 0 || seed > MAX_SEED) return { ok: false, error: 'the save has an invalid seed' };
   if (typeof value.content !== 'string' || value.content.length > MAX_CONTENT) return { ok: false, error: 'the save has an invalid content fingerprint' };
