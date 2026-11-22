@@ -79,6 +79,22 @@ describe('saving', () => {
     expect(storage.data.get(KEY)).toBe('{"format": "nonsense"}');
   });
 
+  // @spec UI-SAVE-004
+  it('shows the start screen with a message when restoring a stored save throws, keeping it', () => {
+    // A level that cannot start the saved run's seed stands in for any unforeseen error while restoring.
+    const level = { ...DEPS.levels[0]!, start: (seed: number) => {
+      if (seed === 7) throw new Error('unforeseen');
+      return DEPS.levels[0]!.start(seed);
+    } };
+    const stored = JSON.stringify(toSave(run(7), FP));
+    const storage = memoryStorage({ [KEY]: stored });
+    const root = document.createElement('div');
+    expect(() => createApp(root, { content: CONTENT, contentErrors: [], showContentErrors: false, deps: { ...DEPS, levels: [level] }, newSeed: () => 42, version: 'v0.0.1 (0000000)', storage })).not.toThrow();
+    expect($(root, '[data-screen]').dataset.screen).toBe('start');
+    expect(text(root, '[data-notice]')).toMatch(/could not be loaded/i);
+    expect(storage.data.get(KEY)).toBe(stored);
+  });
+
   // @spec UI-SAVE-005
   it('keeps playing without saving when storage fails, saying so once', () => {
     const { root } = app(memoryStorage({}, true));

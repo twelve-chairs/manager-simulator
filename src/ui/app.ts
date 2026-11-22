@@ -194,7 +194,15 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       notice = from === 'storage' ? `Your saved run could not be loaded: ${parsed.error}.` : `That file could not be loaded: ${parsed.error}.`;
       return false;
     }
-    const restored = restore(parsed.save, options.content, options.deps, fingerprint);
+    // Restoring never throws by design (SAVE-RESTORE-004); this backstop keeps an unforeseen error from leaving the
+    // page blank at startup or an imported file failing with no message.
+    let restored: ReturnType<typeof restore>;
+    try {
+      restored = restore(parsed.save, options.content, options.deps, fingerprint);
+    } catch {
+      notice = from === 'storage' ? 'Your saved run could not be loaded: it could not be replayed.' : 'That file could not be loaded: it could not be replayed.';
+      return false;
+    }
     state = { screen: 'run', run: restored.run };
     error = null;
     resetPage();
