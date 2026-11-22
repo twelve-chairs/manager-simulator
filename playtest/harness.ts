@@ -1,4 +1,5 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
+import type { Look, PlayEvent } from './metrics';
 
 /** The save the game keeps in the browser's storage, and its format, as the save component writes them. */
 const SAVE_KEY = 'manager-simulator.save';
@@ -67,6 +68,8 @@ export interface PlaySummary {
     endings: string[];
   };
   energyTrail: string[];
+  /** What the player read, clicked and saw, in order, for the success-metric scorecard (playtest/metrics.ts). */
+  events: PlayEvent[];
 }
 
 /** Plays a run in the page, from wherever it is, checking every screen; see `playInPage`. */
@@ -77,8 +80,9 @@ export async function play(page: Page, options: PlayOptions): Promise<PlaySummar
 
 /** Attaches a run's summary to the test report, so a run can be read without replaying it. */
 export async function attachSummary(testInfo: TestInfo, name: string, summary: PlaySummary) {
-  const { violations, ...rest } = summary;
-  await testInfo.attach(name, { body: JSON.stringify({ ...rest, violations: violations.length }, null, 2), contentType: 'application/json' });
+  // The event log is long and the seed replays it, so the report gives only its length.
+  const { violations, events, ...rest } = summary;
+  await testInfo.attach(name, { body: JSON.stringify({ ...rest, violations: violations.length, events: events.length }, null, 2), contentType: 'application/json' });
 }
 
 /**
@@ -99,6 +103,8 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
   const STATUSES = ['You dealt with it', 'You let it wait', 'It passed before you got to it'];
   const BETTER = ['blameless', 'direct', 'ask', 'real-plan', 'honest', 'honest-let-go', 'separately', 'write-it', 'trade', 'sprint', 'buddy-up', 'time-off', 'ask-priorities', 'ask-delegation', 'ask-wants'];
   const COUNTED = /, (twice|\d+ times)$/;
+  /** The titles of the career level's own moments, for the event log; any other moment is a situation. Work items are titled by their kind in lower case ("release approval"). */
+  const LEVEL_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;
 
   const violations = new Set<string>();
   const flag = (where: string, what: string) => violations.add(`${where}: ${what}`);
@@ -111,7 +117,54 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     violations: [],
     seen: { finalEvaluations: [], letGoWarnings: [], assigned: [], held: [], edgeWarnings: [], waitedLessons: 0, waitedWithoutLesson: [], endings: [] },
     energyTrail: [],
+    events: [],
   };
+
+  /** The event log (PLAY-RUN-002): only what the page shows, as the player would see it. */
+  // @spec PLAY-RUN-002, PLAY-CLOCK-001, PLAY-CLOCK-002, PLAY-CLOCK-003
+  const log = summary.events;
+  const readScreens = new Set<string>();
+  /** Words a player reads on a screen: its text nodes, leaving out the panels they only glance at. */
+  function wordsOn(root: HTMLElement | null) {
+    if (!root) return 0;
+    const copy = root.cloneNode(true) as HTMLElement;
+    for (const skip of copy.querySelectorAll('[data-panel=team], [data-panel=habits], [data-panel=projects], .habit, header.status')) skip.remove();
+    const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+    let words = 0;
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) words += (n.textContent ?? '').split(/\s+/).filter(Boolean).length;
+    return words;
+  }
+  const read = (key: string, root: HTMLElement | null) => {
+    if (readScreens.has(key)) return;
+    readScreens.add(key);
+    log.push({ kind: 'read', words: wordsOn(root) });
+  };
+  const press = (el: HTMLElement | null, decision = false) => {
+    if (!el) return;
+    el.click();
+    log.push({ kind: 'click', decision });
+  };
+  let lastLook = '';
+  function look() {
+    const entry: Look = {
+      kind: 'look',
+      week: Number(text('[data-field=week]')),
+      people: qa('[data-panel=team] [data-person]').map((card) => ({
+        name: text('[data-field=name]', card),
+        motivation: text('[data-field=motivation]', card),
+        stress: text('[data-field=stress]', card),
+        memory: qa('[data-part=memory] li', card).map((l) => l.textContent ?? ''),
+      })),
+      projects: qa('[data-project]').map((p) => ({ name: text('[data-field=name]', p), schedule: text('[data-field=schedule]', p), risk: text('[data-field=risk]', p) })),
+      energy: text('[data-field=energy]'),
+      burnout: q('[data-field=burnout]') !== null,
+    };
+    const key = JSON.stringify(entry);
+    if (key !== lastLook) log.push(entry);
+    lastLook = key;
+  }
+  const firstNotes = () => new Map(qa('[data-panel=team] [data-person]').map((card) => [text('[data-field=name]', card), q('[data-part=memory] li', card)?.textContent ?? '']));
+  const uncounted = (line: string) => line.replace(COUNTED, '');
 
   /** Text quality on every leaf of the screen: no placeholders, code names, broken spacing or plural slips. */
   function checkText(where: string) {
@@ -219,6 +272,7 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     const energy = text('[data-field=energy]');
     const rested = ['okay', 'good', 'fresh'].includes(energy);
     const title = text('[data-scene] [data-part=heading]');
+    // The strategies' own rule, kept as their runs were tuned against it: approvals count as situations here.
     const situation = !/^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding)/.test(title);
     const sound = () =>
       by((id) => BETTER.includes(id)) ??
@@ -241,6 +295,8 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
         return ids.includes('decline') ? by((id) => id === 'decline') : sound();
       case 'waiter':
         return situation && random() < 0.5 ? null : sound();
+      // The success-metric playtests' first-timer (PLAY-RUN-003).
+      // @spec PLAY-RUN-003
       case 'mixed': {
         const r = random();
         if (r < 0.1) return null;
@@ -258,7 +314,11 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
 
   if (options.strategy === 'sound' || options.strategy === 'decline' || options.strategy === 'waiter' || options.strategy === 'mixed') setHabit('oneOnOnes', /every week|weekly/i);
   if (options.strategy === 'hero' || options.strategy === 'heavyThenEase') setHabit('nightPages', /you take/i);
-  q('[data-action=start-week]')?.click();
+  if (q('[data-scene]')?.dataset.scene === 'before-monday') {
+    look();
+    read('before-monday', q('[data-scene]'));
+  }
+  press(q('[data-action=start-week]'));
 
   const lastSlot = { week: '', slot: -1 };
   let lastRecapWeek = '';
@@ -267,18 +327,34 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     if (screen === 'review') {
       checkText('review');
       checkReview();
+      const heading = text('[data-part=heading]');
+      if (!readScreens.has(`review|${heading}`)) {
+        read(`review|${heading}`, q('[data-screen]'));
+        log.push({ kind: 'review', week: Number(/\d+/.exec(heading)?.[0] ?? 0), rating: text('[data-field=rating]'), promoted: text('[data-field=outcome]') === 'You are being promoted.' });
+      }
       if (options.until === 'review') return { ...summary, stoppedAt: 'review', violations: [...violations] };
-      q('[data-action=acknowledge]')?.click();
+      press(q('[data-action=acknowledge]'));
       continue;
     }
     if (screen !== 'week') {
       checkText('ended');
       checkEnded();
+      read('ended', q('[data-screen]'));
+      const leftText = text('[data-part=career] [data-field=left]');
+      const left = leftText === 'nobody' ? [] : leftText.split(', ').map((entry) => /^(.*) \((.*)\)$/.exec(entry)).filter((m) => m !== null).map((m) => ({ name: m[1]!, reason: m[2]! }));
+      log.push({ kind: 'ended', ending: summary.ending ?? '', left });
       break;
     }
     const sc = q('[data-scene]')?.dataset.scene ?? '';
     checkText(sc);
     checkWeek(sc, lastSlot);
+    look();
+    const sceneKey = `${text('[data-field=week]')}|${sc}|${text('[data-scene] [data-part=heading]')}|${text('[data-field=when]')}`;
+    if (sc === 'moment' && !readScreens.has(sceneKey)) {
+      const heading = text('[data-scene] [data-part=heading]');
+      log.push({ kind: 'moment', week: Number(text('[data-field=week]')), title: heading, situation: !LEVEL_TITLES.test(heading) });
+    }
+    read(sceneKey, q('[data-scene]'));
     const warning = q('[data-field=burnout]')?.textContent;
     if (warning && !summary.seen.edgeWarnings.includes(warning)) summary.seen.edgeWarnings.push(warning);
     if (options.until === 'edgeWarning' && warning) return { ...summary, stoppedAt: 'edgeWarning', violations: [...violations] };
@@ -292,15 +368,15 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
         summary.seen.held.push(...qa('[data-part=recap-held] li').map((l) => l.textContent ?? ''));
       }
       if (summary.weeks >= options.maxWeeks) return { ...summary, stoppedAt: `week ${summary.weeks}`, violations: [...violations] };
-      q('[data-action=close-recap]')?.click();
+      press(q('[data-action=close-recap]'));
       continue;
     }
     if (sc === 'done') {
-      q('[data-action=finish-week]')?.click();
+      press(q('[data-action=finish-week]'));
       continue;
     }
     if (sc === 'reaction') {
-      q('[data-action=continue]')?.click();
+      press(q('[data-action=continue]'));
       continue;
     }
     if (sc !== 'moment') {
@@ -318,8 +394,26 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
       if (options.until === 'letGoWarning') return { ...summary, stoppedAt: 'letGoWarning', violations: [...violations] };
     }
     const choice = choose();
-    if (choice) choice.click();
-    else q('[data-scene] [data-action=wait]')?.click();
+    const week = Number(text('[data-field=week]'));
+    if (choice) {
+      const before = firstNotes();
+      press(choice, true);
+      const reacted = q('[data-scene]')?.dataset.scene === 'reaction';
+      const notes = [...firstNotes()]
+        .filter(([name, note]) => note && note !== before.get(name))
+        .map(([name, note]) => ({ name, note: uncounted(note) }));
+      log.push({
+        kind: 'answer',
+        week,
+        title,
+        reaction: reacted ? (q('[data-scene] [data-part=reaction]')?.textContent ?? '') : null,
+        chips: reacted ? qa('[data-scene] [data-chip]').map((c) => c.textContent ?? '') : [],
+        notes,
+      });
+    } else {
+      press(q('[data-scene] [data-action=wait]'), true);
+      log.push({ kind: 'wait', week });
+    }
   }
   return { ...summary, violations: [...violations] };
 }
