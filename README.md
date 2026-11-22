@@ -79,7 +79,7 @@ npm run dev         # play locally at the address Vite prints
 npm run build       # build the static game into dist/
 npm run preview     # serve the built game
 npm test            # run the unit tests once
-npm run test:e2e    # build the game and play it in Chromium (first run: npx playwright install chromium)
+npm run test:e2e    # build the game and play it in Chromium (first run: npm run playwright:install)
 npm run playtest    # scripted players play whole runs, checking every screen and scoring the success metrics; PLAYTEST_URL=<site> to play a deployed copy
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types

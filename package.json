@@ -14,11 +14,12 @@
     "balance": "BALANCE_SEEDS=200 vitest run tests/balance --silent=false",
     "lint": "oxlint --type-aware --deny-warnings src tests scripts e2e playtest",
     "test:e2e": "playwright test",
-    "playtest": "playwright test --config playwright.playtest.config.ts"
+    "playtest": "playwright test --config playwright.playtest.config.ts",
+    "playwright:install": "playwright install --with-deps chromium"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "happy-dom": "^21.0.4",
     "oxlint": "1.93.0",
     "oxlint-tsgolint": "7.0.2007",

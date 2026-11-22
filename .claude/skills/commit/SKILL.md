@@ -79,7 +79,7 @@ Run, in order:
 1. `npx tsc --noEmit` — must report no errors.
 2. `npm run lint` — must report no errors or warnings. Fix the code rather than switching a rule off; a rule that is wrong for this project is changed in `.oxlintrc.json`, with the reason in the commit message.
 3. `npx vitest run` — must pass.
-4. `npm run test:e2e` — must pass. It builds the game and plays it in Chromium; run it whenever the change touches `src/`, `index.html`, styles, assets or the build, and say so when it was skipped for a docs-only change. The first time on a machine, `npx playwright install chromium` downloads the browser.
+4. `npm run test:e2e` — must pass. It builds the game and plays it in Chromium; run it whenever the change touches `src/`, `index.html`, styles, assets or the build, and say so when it was skipped for a docs-only change. The first time on a machine, `npm run playwright:install` downloads the browser.
 
 Do not commit if any of them fails.
 
