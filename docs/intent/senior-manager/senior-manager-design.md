@@ -144,8 +144,7 @@ Committing to this level changes other segments, each walked through its own des
 
 ### Deferred
 1. Tuning: how fast teams drift under managers of each skill, the oversight and skip-level costs, the moment cap, leniency ranges, and goal thresholds are set by the balance harness and playtesting.
-2. How the director level takes over a senior manager run.
-3. Whether managers' own ratings use the same five-step scale and measures as engineers', or a manager-specific basis beyond their team's results.
+2. Whether managers' own ratings use the same five-step scale and measures as engineers', or a manager-specific basis beyond their team's results.
 
 ## References
 
