@@ -51,5 +51,15 @@ export interface DirectorState {
   /** The group the listening tour visited, and the quarter it shows that group as it is. */
   visited: { groupId: string; quarter: number } | null;
   bets: Bet[];
+  /** The next group the listening tour visits, as an index into the groups. */
+  tourRotation: number;
+  /** Problems the listening tour surfaced, to become moments next quarter. */
+  surfaced: { groupId: string; week: number }[];
+  /** Senior managers on a plan whose third low rating is held for a final evaluation. */
+  heldEvaluations: string[];
+  /** Each period's calibration: the average gap, in rating steps, between the groups' ratings and their delivery. */
+  calibrations: { week: number; gap: number }[];
+  /** Quarters in a row the player has ended at the edge. */
+  burnoutQuarters: number;
   counters: { person: number; team: number; project: number; moment: number; goal: number; bet: number };
 }

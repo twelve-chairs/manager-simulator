@@ -6,7 +6,7 @@ export { seniorView, type ManagerView, type SeniorView, type TeamView } from './
 export { endMonth, setSeniorHabit, type SeniorHabitCommand } from './month';
 export { SENIOR_LEVEL, afterAdvanceSenior, assessSenior, monthOf, reviewDue, seniorScorecard, type SeniorScorecard } from './review';
 export { beginMonth, chooseSenior } from './moments';
-export { calibrateTeam, deliveredRatings, type CalibrationMove } from './calibration';
+export { calibrateTeam, deliveredRatings, meanStep, type CalibrationMove } from './calibration';
 export { goalStatus } from './goals';
 export { monthRecap, type SeniorRecap } from './recap';
 export { seniorManagerLevel } from './contract';

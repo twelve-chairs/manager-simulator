@@ -18,4 +18,25 @@ export const DIRECTOR_TUNING = {
   outsiderTrust: [40, 70] as const,
   outsiderMotivation: [40, 80] as const,
   outsiderStress: [15, 50] as const,
+  /** Quarters between reviews, the quarter promotion is possible from, and the quarter of the last review. */
+  reviewEveryQuarters: 2,
+  promotionFromQuarter: 6,
+  lastReviewQuarter: 12,
+  /** Quarters in a row at the edge that burn the player out. */
+  burnoutQuarters: 2,
+  /** Where the time goes: the trust the room above gains or loses, and the groups' motivation and senior managers' trust. */
+  time: { aboveTrust: 4, groupMotivation: 4, seniorTrust: 3 },
+  /** Staff meetings in a quarter: each senior manager's trust gained, and the player's energy spent. */
+  staffMeeting: { weekly: { trust: 6, energy: 6 }, fortnightly: { trust: 3, energy: 3 } },
+  /** The listening tour's energy. */
+  tourEnergy: 4,
+  /** Drift: the share of the way a group moves in a quarter toward what its senior manager sustains. */
+  driftShare: 0.5,
+  sustains: { motivationBase: 30, motivationPerSkill: 0.6, stressBase: 55, stressPerSkill: 0.5 },
+  /** The management skill a leaderless group is treated as having. */
+  leaderlessSkill: 15,
+  /** A senior manager's motivation when the quarter serves their want or doesn't, and the share their stress moves toward their group's. */
+  wantServed: 6,
+  wantUnserved: -4,
+  seniorStressShare: 0.4,
 };

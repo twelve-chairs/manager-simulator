@@ -31,19 +31,19 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Habits
 
-- [ ] **DIR-HABIT-001**: When the level begins, the director level shall set where your time goes to balanced, the staff meeting to weekly and the listening tour to none.
-- [ ] **DIR-HABIT-002**: When the player changes a habit, the director level shall apply the new setting from that quarter's end-of-quarter effects and to the moments of later quarters.
-- [ ] **DIR-HABIT-003**: If a habit change names an unknown habit or option, then the director level shall reject it with an error and leave the level state unchanged.
-- [ ] **DIR-HABIT-004**: When a quarter ends with time going upward, the director level shall raise the executive's and each peer's trust by a tuned amount and lower each group's motivation by a tuned amount; with time going to the organization, it shall raise each group's motivation and each senior manager's trust by a tuned amount and lower the executive's and each peer's trust by a tuned amount.
-- [ ] **DIR-HABIT-005**: When a quarter ends, the director level shall hold staff meetings at the habit's cadence, raising each senior manager's trust and revealing their want, at a tuned energy cost that is higher weekly than fortnightly.
-- [ ] **DIR-HABIT-006**: When a quarter ends under a quarterly listening tour, the director level shall visit the next group in rotation, show its current health for the next quarter, surface one of its problems its senior manager has not raised as a moment the next quarter, and cost the player a tuned amount of energy.
+- [x] **DIR-HABIT-001**: When the level begins, the director level shall set where your time goes to balanced, the staff meeting to weekly and the listening tour to none.
+- [x] **DIR-HABIT-002**: When the player changes a habit, the director level shall apply the new setting from that quarter's end-of-quarter effects and to the moments of later quarters.
+- [x] **DIR-HABIT-003**: If a habit change names an unknown habit or option, then the director level shall reject it with an error and leave the level state unchanged.
+- [x] **DIR-HABIT-004**: When a quarter ends with time going upward, the director level shall raise the executive's and each peer's trust by a tuned amount and lower each group's motivation by a tuned amount; with time going to the organization, it shall raise each group's motivation and each senior manager's trust by a tuned amount and lower the executive's and each peer's trust by a tuned amount.
+- [x] **DIR-HABIT-005**: When a quarter ends, the director level shall hold staff meetings at the habit's cadence, raising each senior manager's trust and revealing their want, at a tuned energy cost that is higher weekly than fortnightly.
+- [x] **DIR-HABIT-006**: When a quarter ends under a quarterly listening tour, the director level shall visit the next group in rotation, show its current health for the next quarter, surface one of its problems its senior manager has not raised as a moment the next quarter, and cost the player a tuned amount of energy.
 
 ## Groups under their senior managers
 
-- [ ] **DIR-DRIFT-001**: When a quarter ends, the director level shall move each group's motivation and stress a tuned share of the way toward the levels its senior manager's management skill sustains, and set its attrition risk from them.
-- [ ] **DIR-DRIFT-002**: When a quarter ends, the director level shall move each senior manager's motivation by whether their want was served that quarter and their stress toward their group's stress, as tuned.
-- [ ] **DIR-DRIFT-003**: When the level begins, and when a quarter ends that is the last before a review, the director level shall take the engagement survey: record each group's motivation, stress and attrition risk bands and the quarter.
-- [ ] **DIR-DRIFT-004**: When a review period ends, the director level shall calibrate each group's ratings without a scene: move its heads to the ratings its delivery corresponds to, then raise them by its senior manager's leniency, using re-rate effects.
+- [x] **DIR-DRIFT-001**: When a quarter ends, the director level shall move each group's motivation and stress a tuned share of the way toward the levels its senior manager's management skill sustains, and set its attrition risk from them.
+- [x] **DIR-DRIFT-002**: When a quarter ends, the director level shall move each senior manager's motivation by whether their want was served that quarter and their stress toward their group's stress, as tuned.
+- [x] **DIR-DRIFT-003**: When the level begins, and when a quarter ends that is the last before a review, the director level shall take the engagement survey: record each group's motivation, stress and attrition risk bands and the quarter.
+- [x] **DIR-DRIFT-004**: When a review period ends, the director level shall calibrate each group's ratings without a scene: move its heads to the ratings its delivery corresponds to, then raise them by its senior manager's leniency, using re-rate effects.
 
 ## Moments
 
@@ -84,8 +84,8 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Senior managers' plans
 
-- [ ] **DIR-PLAN-001**: When a review period ends, the director level shall rate each senior manager on their group's delivery and health under them in that period.
-- [ ] **DIR-PLAN-002**: When a senior manager has been rated below *meets* at two period ends in a row, the director level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
+- [x] **DIR-PLAN-001**: When a review period ends, the director level shall rate each senior manager on their group's delivery and health under them in that period.
+- [x] **DIR-PLAN-002**: When a senior manager has been rated below *meets* at two period ends in a row, the director level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
 - [ ] **DIR-PLAN-003**: When a senior manager is let go or replaced, the director level shall remove them and leave their group leaderless; and when a quarter begins with a group that has no senior manager and none on the way, it shall offer a moment to set one: promote from the group, lowering its skill, or hire from outside, leaving it leaderless one more quarter.
 
 ## Goals
@@ -100,12 +100,12 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Reviews and the end of the level
 
-- [ ] **DIR-END-001**: The director level shall advance the simulation thirteen weeks per turn.
-- [ ] **DIR-END-002**: The director level shall be reviewed every two quarters, at quarters 2, 4, 6, 8, 10 and 12 of the level.
+- [x] **DIR-END-001**: The director level shall advance the simulation thirteen weeks per turn.
+- [x] **DIR-END-002**: The director level shall be reviewed every two quarters, at quarters 2, 4, 6, 8, 10 and 12 of the level.
 - [ ] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), the executive's confidence (the executive's trust in the player), and calibration quality (how far the groups' ratings sit from what they delivered), each against a tuned target.
-- [ ] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on.
-- [ ] **DIR-END-005**: When the level is assessed for a review, the director level shall report that it is the level's last review at the sixth review (quarter 12), and not before.
-- [ ] **DIR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of two consecutive quarters, then the director level shall report that the player has burned out.
+- [x] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on.
+- [x] **DIR-END-005**: When the level is assessed for a review, the director level shall report that it is the level's last review at the sixth review (quarter 12), and not before.
+- [x] **DIR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of two consecutive quarters, then the director level shall report that the player has burned out.
 
 ## Turn loop contract
 
