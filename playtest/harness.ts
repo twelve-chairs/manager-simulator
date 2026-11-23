@@ -1,7 +1,7 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
 import { realContent } from '../tests/balance/harness';
 import { BETTER_CHOICES } from '../tests/balance/strategies';
-import { LINE_TITLES, SENIOR_TITLES, type Look, type PlayEvent } from './metrics';
+import { DIRECTOR_TITLES, LINE_TITLES, SENIOR_TITLES, type Level, type Look, type PlayEvent } from './metrics';
 
 /** The save the game keeps in the browser's storage, and its format, as the save component writes them. */
 const SAVE_KEY = 'manager-simulator.save';
@@ -72,6 +72,10 @@ export interface PlaySummary {
     handover: { choice: string; options: { id: string; trust: string; want: string | null }[] } | null;
     /** Each senior manager moment: the choices offered and the one taken ('settle' for calibration settled on the evidence, null for waiting). */
     seniorChoices: { title: string; offered: string[]; chosen: string | null }[];
+    /** The director's handover, if the run reached one, as the senior manager's is kept. */
+    directorHandover: { choice: string; options: { id: string; trust: string; want: string | null }[] } | null;
+    /** Each director moment: the choices offered and the one taken ('fund-bets' for bets funded through their scene, null for waiting). */
+    directorChoices: { title: string; offered: string[]; chosen: string | null }[];
   };
   energyTrail: string[];
   /** What the player read, clicked and saw, in order, for the success-metric scorecard (playtest/metrics.ts). */
@@ -86,7 +90,7 @@ export async function play(page: Page, options: PlayOptions): Promise<PlaySummar
     until: options.until ?? 'end',
     maxWeeks: options.maxWeeks ?? 400,
     // the page cannot import the title table, so it gets the patterns as text
-    titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source) },
+    titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source), director: DIRECTOR_TITLES.map(([, re]) => re.source) },
     better: betterByTitle(),
   };
   return page.evaluate(playInPage, args);
@@ -114,7 +118,7 @@ export async function attachSummary(testInfo: TestInfo, name: string, summary: P
  * selects, and every screen is checked as it goes. It is self-contained, because Playwright sends it to the page
  * as source.
  */
-type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[] }; better: Record<string, string> };
+type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[]; director: string[] }; better: Record<string, string> };
 
 /** The balance harness's better choice for each situation, by the title the page shows it under. */
 export function betterByTitle(): Record<string, string> {
@@ -142,6 +146,7 @@ function playInPage(options: InPage): PlaySummary {
   /** The titles of each career level's own moments (playtest/metrics.ts); any other moment is a situation. */
   const LINE_TITLES = new RegExp(options.titles.line, 'i');
   const SENIOR_TITLES = options.titles.senior.map((source) => new RegExp(source));
+  const DIRECTOR_TITLES = options.titles.director.map((source) => new RegExp(source));
 
   const violations = new Set<string>();
   const flag = (where: string, what: string) => violations.add(`${where}: ${what}`);
@@ -152,20 +157,27 @@ function playInPage(options: InPage): PlaySummary {
     reviews: [],
     career: [],
     violations: [],
-    seen: { finalEvaluations: [], letGoWarnings: [], assigned: [], held: [], edgeWarnings: [], waitedLessons: 0, waitedWithoutLesson: [], endings: [], handover: null, seniorChoices: [] },
+    seen: { finalEvaluations: [], letGoWarnings: [], assigned: [], held: [], edgeWarnings: [], waitedLessons: 0, waitedWithoutLesson: [], endings: [], handover: null, seniorChoices: [], directorHandover: null, directorChoices: [] },
     energyTrail: [],
     events: [],
   };
 
   /** Whether the page shows the senior manager: managers rather than a team. */
   const senior = () => q('[data-panel=managers]') !== null;
+  /** Whether the page shows the director: senior managers and their groups. */
+  const director = () => q('[data-panel=senior-managers]') !== null;
+  const levelOn = (): Level => (director() ? 'director' : senior() ? 'senior' : 'line');
   /** Whether a moment is the career level's own rather than a situation, by its title at the level on screen. */
-  const isLevelMoment = (title: string) => (senior() ? SENIOR_TITLES.some((re) => re.test(title)) : LINE_TITLES.test(title));
-  /** The game week the senior manager level began, as the player counts weeks: the line manager's last review. */
+  const isLevelMoment = (title: string) => (director() ? DIRECTOR_TITLES.some((re) => re.test(title)) : senior() ? SENIOR_TITLES.some((re) => re.test(title)) : LINE_TITLES.test(title));
+  /** The game week the senior manager and director levels began, as the player counts weeks: the last review before each. */
   let seniorBase = 0;
+  let directorBase = 0;
   let lastReviewWeek = 0;
-  /** The week of the run a screen is about, counting from 1: the header's week, or at the senior manager its month's first week. */
-  const runWeek = () => (senior() ? seniorBase + (Number(text('[data-field=week]')) - 1) * 4 + 1 : Number(text('[data-field=week]')));
+  /** The week of the run a screen is about, counting from 1: the header's week, or at a higher level its turn's first week. */
+  const runWeek = () => {
+    const n = Number(text('[data-field=week]'));
+    return director() ? directorBase + (n - 1) * 13 + 1 : senior() ? seniorBase + (n - 1) * 4 + 1 : n;
+  };
 
   /** The event log (PLAY-RUN-002): only what the page shows, as the player would see it. */
   // @spec PLAY-RUN-002, PLAY-CLOCK-001, PLAY-CLOCK-002, PLAY-CLOCK-003
@@ -219,7 +231,7 @@ function playInPage(options: InPage): PlaySummary {
     const panels = qa('[data-panel]').map((p) => q(':scope > h2, :scope > summary', p)?.textContent?.trim() ?? '').filter(Boolean);
     if (!panels.length) return;
     const habits = [...new Set(qa('[data-panel=habits] .habit-name').map((n) => (n.textContent ?? '').trim().replace(/ of .+$/, '')))];
-    const entry: PlayEvent = { kind: 'layout', senior: senior(), panels: [...new Set(panels)], habits };
+    const entry: PlayEvent = { kind: 'layout', level: levelOn(), panels: [...new Set(panels)], habits };
     const key = JSON.stringify(entry);
     if (key !== lastLayout) log.push(entry);
     lastLayout = key;
@@ -245,11 +257,11 @@ function playInPage(options: InPage): PlaySummary {
   /** The week screen's own rules: the header, the team cards and the scene. */
   function checkWeek(sc: string, lastSlot: { week: string; slot: number }) {
     const week = text('[data-field=week]');
-    const turn = senior() ? 'month' : 'week';
+    const turn = director() ? 'quarter' : senior() ? 'month' : 'week';
     const energy = text('[data-field=energy]');
     if (!ENERGY.includes(energy)) flag('header', `energy word "${energy}"`);
     const warning = q('[data-field=burnout]')?.textContent ?? null;
-    if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?) at the edge\. 4 in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
+    if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?|quarters?) at the edge\. \d+ in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
     for (const card of qa('[data-panel=team] [data-person]')) {
       const lines = qa('[data-part=memory] li', card).map((l) => l.textContent ?? '');
       if (lines.length > 3) flag('team', `more than three memory lines`);
@@ -272,9 +284,9 @@ function playInPage(options: InPage): PlaySummary {
       for (const chip of qa('[data-scene] [data-chip]')) if (COUNTED.test(chip.textContent ?? '')) flag('reaction', `a chip with a count: ${chip.textContent}`);
     }
     if (sc === 'moment') {
-      // A month's moment says its week of the month too: "Week 2, Tuesday morning".
-      const at = /^(?:Week ([1-4]), )?(\w+) (\w+)$/.exec(text('[data-field=when]'));
-      if (senior() !== Boolean(at?.[1])) flag('moment', `when "${text('[data-field=when]')}" at the ${turn} level`);
+      // A month's or a quarter's moment says its week of the turn too: "Week 2, Tuesday morning".
+      const at = /^(?:Week ([1-9]|1[0-3]), )?(\w+) (\w+)$/.exec(text('[data-field=when]'));
+      if ((levelOn() !== 'line') !== Boolean(at?.[1])) flag('moment', `when "${text('[data-field=when]')}" at the ${turn} level`);
       const [day, time] = [at?.[2], at?.[3]];
       const slot = at ? (Number(at[1] ?? 1) - 1) * 15 + DAYS.indexOf(day!) * 3 + TIMES.indexOf(time!) : -1;
       if (slot < 0) flag('moment', `when "${text('[data-field=when]')}"`);
@@ -387,7 +399,7 @@ function playInPage(options: InPage): PlaySummary {
   // @spec PLAY-RUN-007
   let habitsWeek = '';
   function soundHabits() {
-    if (senior() || !['sound', 'mixed'].includes(options.strategy)) return;
+    if (levelOn() !== 'line' || !['sound', 'mixed'].includes(options.strategy)) return;
     const week = text('[data-field=week]');
     if (week === habitsWeek) return;
     habitsWeek = week;
@@ -416,6 +428,7 @@ function playInPage(options: InPage): PlaySummary {
     // @spec PLAY-RUN-007
     const sound = () => lineSound(choices, by);
     if (senior()) return seniorChoice(choices, by);
+    if (director()) return directorChoice(choices, by);
     const delegate = () => by((id) => id === 'leave') ?? by((id) => id.startsWith('give:') || id.startsWith('ask:')) ?? by((id) => id === 'take' || id === 'pushOn') ?? choices.at(-1) ?? null;
     const hero = () => by((id) => ['self', 'takeOver', 'replan', 'take'].includes(id)) ?? choices[0] ?? null;
     switch (options.strategy) {
@@ -443,6 +456,52 @@ function playInPage(options: InPage): PlaySummary {
           setHabit('nightPages', /rotation/i);
         }
         return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
+    }
+  }
+
+  /** Sound practice at the director, in order of preference among the choices a moment offers (PLAY-RUN-009). */
+  const DIRECTOR_SOUND = ['spread', 'coach', 'promote', 'letGo', 'negotiate', 'splitPromote', 'merge', 'straight'];
+  // @spec PLAY-RUN-009
+  function directorChoice(choices: HTMLElement[], by: (pred: (id: string) => boolean) => HTMLElement | null): HTMLElement | null {
+    const prefer = (order: string[]) => {
+      for (const id of order) {
+        const found = by((x) => x === id);
+        if (found) return found;
+      }
+      return null;
+    };
+    const title = text('[data-scene] [data-part=heading]');
+    const situation = !isLevelMoment(title);
+    const better = situation ? options.better[title] : undefined;
+    /** Funds the first bet on offer on the group with the lowest stress, as the group panel shows it. */
+    const fundBets = () => {
+      const groups = qa('[data-panel=senior-managers] [data-group]').map((g) => ({ id: g.dataset.group!, stress: bandOf('stress', text('[data-field=stress]', g)) }));
+      const calmest = [...groups].sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1))[0];
+      const picker = q('[data-scene] [data-offer] select') as HTMLSelectElement | null;
+      if (!calmest || !picker) return prefer(['none']);
+      picker.value = calmest.id;
+      picker.dispatchEvent(new Event('change', { bubbles: true }));
+      return q('[data-action=fund-bets]');
+    };
+    const sound = () => (situation ? (better ? by((x) => x === better) : null) ?? choices[0] ?? null : q('[data-scene] [data-detail=bets]') ? fundBets() : (prefer(DIRECTOR_SOUND) ?? choices[0] ?? null));
+    switch (options.strategy) {
+      case 'hero':
+      case 'heavyThenEase':
+        return prefer(['decide', 'neediest', 'agree', 'promote', 'oneMore', 'straight']) ?? choices[0] ?? null;
+      case 'delegate':
+        return prefer(['spread', 'agree', 'leave', 'hire', 'oneMore', 'wins']) ?? choices.at(-1) ?? null;
+      case 'decline':
+        return prefer(['refuse', 'hold', 'none', 'leave']) ?? sound();
+      case 'waiter':
+        return situation && random() < 0.5 ? null : sound();
+      case 'mixed': {
+        const r = random();
+        if (r < 0.1) return null;
+        if (r < 0.3) return choices[Math.floor(random() * choices.length)] ?? null;
+        return sound();
+      }
+      default:
+        return sound();
     }
   }
 
@@ -524,7 +583,7 @@ function playInPage(options: InPage): PlaySummary {
       if (!readScreens.has(`review|${heading}`)) {
         read(`review|${heading}`, q('[data-screen]'));
         const turn = Number(/\d+/.exec(heading)?.[0] ?? 0);
-        const reviewWeek = heading.startsWith('Month') ? seniorBase + turn * 4 : turn;
+        const reviewWeek = heading.startsWith('Quarter') ? directorBase + turn * 13 : heading.startsWith('Month') ? seniorBase + turn * 4 : turn;
         lastReviewWeek = reviewWeek;
         log.push({ kind: 'review', week: reviewWeek, rating: text('[data-field=rating]'), promoted: text('[data-field=outcome]') === 'You are being promoted.' });
       }
@@ -539,8 +598,15 @@ function playInPage(options: InPage): PlaySummary {
       const offered = qa('[data-handover]').map((b) => ({ id: b.dataset.handover!, trust: text('[data-field=trust]', b), want: q('[data-field=want]', b)?.textContent ?? null }));
       const growers = offered.filter((o) => o.want === 'growth' && TRUST.indexOf(o.trust) >= 3).sort((a, b) => TRUST.indexOf(b.trust) - TRUST.indexOf(a.trust));
       const choice = growers[0]?.id ?? 'hire';
-      summary.seen.handover = { choice, options: offered.filter((o) => o.id !== 'hire') };
-      seniorBase = lastReviewWeek;
+      // @spec PLAY-RUN-009
+      const toDirector = /promoted to director/i.test(text('[data-part=heading]'));
+      if (toDirector) {
+        summary.seen.directorHandover = { choice, options: offered.filter((o) => o.id !== 'hire') };
+        directorBase = lastReviewWeek;
+      } else {
+        summary.seen.handover = { choice, options: offered.filter((o) => o.id !== 'hire') };
+        seniorBase = lastReviewWeek;
+      }
       read('handover', q('[data-screen]'));
       press(q(`[data-handover="${choice}"]`));
       continue;
@@ -564,7 +630,7 @@ function playInPage(options: InPage): PlaySummary {
     const sceneKey = `${text('[data-field=week]')}|${sc}|${text('[data-scene] [data-part=heading]')}|${text('[data-field=when]')}`;
     if (sc === 'moment' && !readScreens.has(sceneKey)) {
       const heading = text('[data-scene] [data-part=heading]');
-      log.push({ kind: 'moment', week: runWeek(), title: heading, senior: senior() });
+      log.push({ kind: 'moment', week: runWeek(), title: heading, level: levelOn() });
     }
     read(sceneKey, q('[data-scene]'));
     const warning = q('[data-field=burnout]')?.textContent;
@@ -575,7 +641,7 @@ function playInPage(options: InPage): PlaySummary {
       if (week !== lastRecapWeek) {
         lastRecapWeek = week;
         // At the senior manager the header counts months from the level's start; the run counts weeks.
-        summary.weeks = senior() ? seniorBase + Number(week) * 4 : Number(week);
+        summary.weeks = director() ? directorBase + Number(week) * 13 : senior() ? seniorBase + Number(week) * 4 : Number(week);
         summary.energyTrail.push(`${week}:${text('[data-field=energy]')}`);
         summary.seen.assigned.push(...qa('[data-part=recap-assigned] li').map((l) => l.textContent ?? ''));
         summary.seen.held.push(...qa('[data-part=recap-held] li').map((l) => l.textContent ?? ''));
@@ -621,6 +687,7 @@ function playInPage(options: InPage): PlaySummary {
     }
     const choice = choose();
     if (senior()) summary.seen.seniorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? null });
+    if (director()) summary.seen.directorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? choice?.dataset.action ?? null });
     const week = runWeek();
     if (choice) {
       const before = firstNotes();

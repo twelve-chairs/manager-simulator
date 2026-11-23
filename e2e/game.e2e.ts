@@ -65,7 +65,7 @@ test('the start screen shows the career ladder and two clear buttons', async ({ 
   await expect(page.getByRole('button', { name: 'Load a saved game' })).toBeVisible();
   await expect(page.locator('[data-part=ladder] > li')).toHaveCount(3);
   // The game starts with the line manager and senior manager levels (UI-SHELL-013); director and above is still to come.
-  await expect(page.locator('[data-part=ladder] [data-field=status]')).toHaveText(['Playable now', 'Playable now', 'Coming later']);
+  await expect(page.locator('[data-part=ladder] [data-field=status]')).toHaveText(['Playable now', 'Playable now', 'Playable now']);
   // the climb is drawn bottom to top: line manager sits lowest
   const top = async (i: number) => (await page.locator('[data-part=ladder] > li').nth(i).boundingBox())!.y;
   expect(await top(0)).toBeGreaterThan(await top(2));

@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLOCK, formatScorecard, momentKind, scoreRun, scorecard, type Look, type PlayEvent } from '../../playtest/metrics';
+import { CLOCK, formatScorecard, momentKind, scoreRun, scorecard, type Level, type Look, type PlayEvent } from '../../playtest/metrics';
+import { directorLevel } from '../../src/levels/director';
+import { advance } from '../../src/sim';
+import { director } from '../levels/director/fixtures';
 import { realContent } from '../balance/harness';
 import { playSeniorRun, type SeniorStrategy } from '../balance/senior';
 import { SENIOR_STRATEGIES } from '../balance/senior-strategies';
@@ -17,8 +20,8 @@ const look = (week: number, over: Partial<Omit<Look, 'kind' | 'week'>> = {}): Lo
 });
 const read = (words: number): PlayEvent => ({ kind: 'read', words });
 const click = (decision = false): PlayEvent => ({ kind: 'click', decision });
-const moment = (week: number, title: string, senior = false): PlayEvent => ({ kind: 'moment', week, title, senior });
-const layout = (senior: boolean, panels: string[], habits: string[]): PlayEvent => ({ kind: 'layout', senior, panels, habits });
+const moment = (week: number, title: string, level: Level = 'line'): PlayEvent => ({ kind: 'moment', week, title, level });
+const layout = (level: Level, panels: string[], habits: string[]): PlayEvent => ({ kind: 'layout', level, panels, habits });
 const answer = (week: number, title: string, reaction: string | null = 'They nod.', chips: string[] = [], notes: { name: string; note: string }[] = []): PlayEvent => ({
   kind: 'answer',
   week,
@@ -195,24 +198,24 @@ describe('the shape of a session', () => {
 
   // @spec PLAY-SHAPE-002
   it('reads a senior manager moment’s kind from its title’s fixed wording, around the names it carries', () => {
-    const r = scoreRun(1, [moment(1, 'Ada needs help', true), moment(1, 'Bo needs help', true), moment(5, 'Cy needs help', true), moment(9, 'Calibration', true), ended('x')]);
+    const r = scoreRun(1, [moment(1, 'Ada needs help', 'senior'), moment(1, 'Bo needs help', 'senior'), moment(5, 'Cy needs help', 'senior'), moment(9, 'Calibration', 'senior'), ended('x')]);
     expect(r.shape.longestSameKind).toBe(3);
     // level moments that come back are not situation repeats
-    expect(scoreRun(1, [moment(1, 'A staffing request', true), moment(5, 'A staffing request', true), ended('x')]).shape.situationRepeats).toBe(0);
+    expect(scoreRun(1, [moment(1, 'A staffing request', 'senior'), moment(5, 'A staffing request', 'senior'), ended('x')]).shape.situationRepeats).toBe(0);
   });
 
   // @spec PLAY-SHAPE-002
   it('tells a career level’s moments from situations by the level they came at', () => {
-    expect(momentKind('Check-in: Ada', false)).toBe('Check-in');
-    expect(momentKind('release approval', false)).toBe('release approval');
+    expect(momentKind('Check-in: Ada', 'line')).toBe('Check-in');
+    expect(momentKind('release approval', 'line')).toBe('release approval');
     // the line manager's calibration is a situation; the senior manager's is the level's own scene
-    expect(momentKind('Calibration', false)).toBeNull();
-    expect(momentKind('Calibration', true)).toBe('Calibration');
-    expect(momentKind('Ada needs help', true)).toBe('Escalation');
-    expect(momentKind('Platform and Payments disagree', true)).toBe('Dispute');
-    expect(momentKind('Final evaluation: Ada', true)).toBe('Final evaluation');
-    expect(momentKind('Running hot', true)).toBeNull();
-    expect(momentKind('Check-in: Ada', true)).toBeNull();
+    expect(momentKind('Calibration', 'line')).toBeNull();
+    expect(momentKind('Calibration', 'senior')).toBe('Calibration');
+    expect(momentKind('Ada needs help', 'senior')).toBe('Escalation');
+    expect(momentKind('Platform and Payments disagree', 'senior')).toBe('Dispute');
+    expect(momentKind('Final evaluation: Ada', 'senior')).toBe('Final evaluation');
+    expect(momentKind('Running hot', 'senior')).toBeNull();
+    expect(momentKind('Check-in: Ada', 'senior')).toBeNull();
   });
 
   // @spec PLAY-SHAPE-002, PLAY-JOB-001
@@ -224,11 +227,40 @@ describe('the shape of a session', () => {
       const spy: SeniorStrategy = { ...base, choose: (seen, m) => ((m.source === 'level' ? level : situations).add(m.title), base.choose(seen, m)) };
       for (const seed of [1, 2, 3, 4]) playSeniorRun(spy, seed, content);
     }
-    expect([...level].filter((t) => momentKind(t, true) === null)).toEqual([]);
-    expect([...situations].filter((t) => momentKind(t, true) !== null)).toEqual([]);
-    const kinds = new Set([...level].map((t) => momentKind(t, true)));
+    expect([...level].filter((t) => momentKind(t, 'senior') === null)).toEqual([]);
+    expect([...situations].filter((t) => momentKind(t, 'senior') !== null)).toEqual([]);
+    const kinds = new Set([...level].map((t) => momentKind(t, 'senior')));
     for (const k of ['Escalation', 'Staffing request', 'Dispute', 'Approval', 'Calibration']) expect(kinds).toContain(k);
   }, 120_000);
+
+  // @spec PLAY-SHAPE-002
+  it('reads a director moment’s kind from its title’s fixed wording', () => {
+    expect(momentKind('Headcount for the quarter', 'director')).toBe('Headcount');
+    expect(momentKind('Payments is in trouble', 'director')).toBe('Group in trouble');
+    expect(momentKind('The quarterly review', 'director')).toBe('Quarterly review');
+    expect(momentKind('Ada needs help', 'director')).toBeNull();
+    expect(momentKind('Headcount for the quarter', 'senior')).toBeNull();
+  });
+
+  // @spec PLAY-SHAPE-002, PLAY-JOB-001
+  it('recognises every director moment the level produces', () => {
+    const kinds = new Set<string>();
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      let { level, sim } = director(seed);
+      for (let q = 0; q < 6; q++) {
+        level = directorLevel.beginWeek(level, sim);
+        for (const m of level.moments) {
+          expect(momentKind(m.title, 'director'), m.title).not.toBeNull();
+          kinds.add(momentKind(m.title, 'director')!);
+        }
+        const end = directorLevel.endWeek(level, sim);
+        if (!end.ok) throw new Error(end.error);
+        level = directorLevel.afterAdvance(end.level, advance(end.sim, 13).state).level;
+        sim = advance(end.sim, 13).state;
+      }
+    }
+    for (const k of ['Headcount', 'Strategy bets', 'Quarterly review']) expect(kinds).toContain(k);
+  });
 
   // @spec PLAY-SHAPE-003
   it('counts situations shown again within 13 weeks of last being shown', () => {
@@ -248,45 +280,63 @@ describe('promotion changes the job', () => {
   const SENIOR_PANELS = ['Your managers', 'Your habits'];
   const promoted = (seed: number, extraSenior: string[] = []) =>
     scoreRun(seed, [
-      layout(false, LINE_PANELS, ['Night pages', '1:1s', 'Growth focus']),
+      layout('line', LINE_PANELS, ['Night pages', '1:1s', 'Growth focus']),
       moment(1, 'Check-in: Ada'),
       moment(2, 'Night page: Bo'),
       moment(3, 'Final evaluation: Cy'),
       moment(4, 'Calibration'),
       review(39, 'exceeds', true),
-      layout(true, SENIOR_PANELS, ['Oversight', '1:1s with your managers', 'Skip-level listening']),
-      moment(40, 'Ada needs help', true),
-      moment(44, 'Final evaluation: Bo', true),
-      moment(48, 'Running hot', true),
-      ...extraSenior.map((t) => moment(52, t, true)),
+      layout('senior', SENIOR_PANELS, ['Oversight', '1:1s with your managers', 'Skip-level listening']),
+      moment(40, 'Ada needs help', 'senior'),
+      moment(44, 'Final evaluation: Bo', 'senior'),
+      moment(48, 'Running hot', 'senior'),
+      ...extraSenior.map((t) => moment(52, t, 'senior')),
       ended('x'),
     ]);
 
   // @spec PLAY-JOB-001
   it('lists, per promoted run, the panels, habits and level moments that stopped and started appearing', () => {
-    expect(promoted(1).job).toEqual({
+    expect(promoted(1).jobs).toEqual([{
+      from: 'line',
+      to: 'senior',
       gone: { panels: ['Projects', 'Your team'], habits: ['1:1s', 'Growth focus', 'Night pages'], moments: ['Check-in', 'Night page'] },
       came: { panels: ['Your managers'], habits: ['1:1s with your managers', 'Oversight', 'Skip-level listening'], moments: ['Escalation'] },
-    });
+    }]);
     // a run that never left its first level has nothing to compare
-    expect(scoreRun(2, [layout(false, LINE_PANELS, ['1:1s']), moment(1, 'Check-in: Ada'), ended('x')]).job).toBeNull();
+    expect(scoreRun(2, [layout('line', LINE_PANELS, ['1:1s']), moment(1, 'Check-in: Ada'), ended('x')]).jobs).toEqual([]);
+  });
+
+  // @spec PLAY-JOB-001
+  it('lists each promotion a run reaches, the second from senior manager to director', () => {
+    const twice = scoreRun(4, [
+      layout('line', LINE_PANELS, ['1:1s']),
+      layout('senior', SENIOR_PANELS, ['Oversight']),
+      moment(40, 'Ada needs help', 'senior'),
+      layout('director', ['Your senior managers', 'Above and beside you', 'Your bets', 'Your habits'], ['Where your time goes']),
+      moment(80, 'Headcount for the quarter', 'director'),
+      ended('x'),
+    ]);
+    expect(twice.jobs.map((j) => [j.from, j.to])).toEqual([['line', 'senior'], ['senior', 'director']]);
+    expect(twice.jobs[1]!.came.moments).toEqual(['Headcount']);
+    expect(twice.jobs[1]!.gone.moments).toEqual(['Escalation']);
+    expect(twice.jobs[1]!.gone.panels).toEqual(['Your managers']);
   });
 
   // @spec PLAY-JOB-002
   it('reports each change across promoted runs with the number of runs it happened in, failing no check', () => {
-    const card = scorecard('sound', [promoted(1), promoted(2, ['Calibration']), scoreRun(3, [layout(false, LINE_PANELS, []), ended('x')])]);
-    expect(card.job.runs).toBe(2);
-    expect(card.job.came.moments).toEqual([
+    const card = scorecard('sound', [promoted(1), promoted(2, ['Calibration']), scoreRun(3, [layout('line', LINE_PANELS, []), ended('x')])]);
+    expect(card.jobs[0]).toMatchObject({ from: 'line', to: 'senior', runs: 2 });
+    expect(card.jobs[0]!.came.moments).toEqual([
       { name: 'Escalation', runs: 2 },
       { name: 'Calibration', runs: 1 },
     ]);
-    expect(card.job.gone.panels).toEqual([
+    expect(card.jobs[0]!.gone.panels).toEqual([
       { name: 'Projects', runs: 2 },
       { name: 'Your team', runs: 2 },
     ]);
     expect(card.checks.map((c) => c.id)).toEqual(['PLAY-CHOICE-001']);
     const table = formatScorecard(card);
-    expect(table).toMatch(/Promotion changes the job\n {2}2 of 3 runs promoted/);
+    expect(table).toMatch(/Promotion changes the job\n {2}line manager to senior manager: 2 of 3 runs/);
     expect(table).toMatch(/no longer.*Your team \(2\)/);
     expect(table).toMatch(/new.*Escalation \(2\), Calibration \(1\)/);
   });

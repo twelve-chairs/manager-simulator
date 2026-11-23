@@ -19,6 +19,8 @@ const ENDINGS = {
   stayed: 'You stayed a line manager. Two years went by without the promotion.',
   burnoutSenior: 'You burned out. Four months at the edge was too long.',
   stayedSenior: 'You stayed a senior manager. Three years went by without the promotion.',
+  burnoutDirector: 'You burned out. Two quarters at the edge was too long.',
+  stayedDirector: 'You stayed a director. Three years went by without the promotion.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 };
 
@@ -52,7 +54,15 @@ for (const { strategy, seed } of RUNS) {
     expect(summary.seen.handover !== null).toBe(atSenior);
     if (summary.ending === ENDINGS.completed) expect(summary.reviews.slice(-2).every((r) => ['exceeds', 'outstanding'].includes(r.rating))).toBe(true);
     if (summary.ending === ENDINGS.managedOut) expect(summary.reviews.slice(-3).every((r) => ['partial', 'below'].includes(r.rating))).toBe(true);
-    // Two years at most at the line manager, then three at the senior manager.
-    expect(summary.weeks).toBeLessThanOrEqual(atSenior ? 104 + 144 : 104);
+    if (summary.ending === ENDINGS.stayedDirector) {
+      expect(last?.week).toBe('Quarter 12 review');
+      expect(last?.outcome).toMatch(/last review as a director/);
+    }
+    // A run that reached the director was handed over twice.
+    const atDirector = [ENDINGS.burnoutDirector, ENDINGS.stayedDirector].includes(summary.ending!) || summary.seen.directorHandover !== null;
+    expect(summary.seen.directorHandover !== null).toBe(atDirector);
+    if (atDirector) expect(summary.seen.handover).not.toBeNull();
+    // Two years at most at the line manager, then three at the senior manager, then three at the director.
+    expect(summary.weeks).toBeLessThanOrEqual(atDirector ? 104 + 144 + 156 : atSenior ? 104 + 144 : 104);
   });
 }

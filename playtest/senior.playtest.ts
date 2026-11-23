@@ -29,10 +29,10 @@ test('a sound player promoted to senior manager hands over by the rule and plays
       expect(offered).toContain('acceptAll');
       continue;
     }
-    const situationBetter = momentKind(title, true) === null ? better[title] : undefined;
-    const preferred = momentKind(title, true) === null ? (situationBetter && offered.includes(situationBetter) ? situationBetter : offered[0]) : (SOUND.find((id) => offered.includes(id)) ?? offered[0]);
+    const situationBetter = momentKind(title, 'senior') === null ? better[title] : undefined;
+    const preferred = momentKind(title, 'senior') === null ? (situationBetter && offered.includes(situationBetter) ? situationBetter : offered[0]) : (SOUND.find((id) => offered.includes(id)) ?? offered[0]);
     expect(chosen, `offered ${offered.join(', ')}`).toBe(preferred);
   }
   // The run played until it ended, at the senior manager.
-  expect(summary.ending).toMatch(/senior manager|burned out|managed out|promoted past the top/);
+  expect(summary.ending).toMatch(/senior manager|director|burned out|managed out|promoted past the top/);
 });

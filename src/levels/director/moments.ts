@@ -116,7 +116,7 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
   const review: Draft = {
     kind: 'review',
     title: 'The quarterly review',
-    text: `You present the quarter to your executive: ${held.active.length - held.troubled.length} projects on schedule and ${held.troubled.length} in trouble.`,
+    text: `You present the quarter to your executive: ${held.active.length - held.troubled.length === 1 ? "one project" : `${held.active.length - held.troubled.length} projects`} on schedule and ${held.troubled.length} in trouble.`,
     choices: CHOICES.review,
   };
   const room = Math.max(0, T.momentCap - first.length - 1);

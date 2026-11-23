@@ -36,6 +36,17 @@ A run promoted from the line manager goes on at the senior manager, and every sc
 
 The playtests check the senior manager's screens as they check the line manager's: the month wording, the managers panel, the calibration scene, the recap, the review and the career summary.
 
+### At the director
+
+A run promoted from the senior manager goes on at the director, and every scripted player plays it too:
+
+- **The handover** follows the senior manager's rule, among the player's managers: the one who trusts them most among those who want growth, if one trusts them at least *trusting*; otherwise an outside hire.
+- **Sound practice** keeps the default habits, answers each situation from the better-choice table, and on each of the level's own moments: spreads the quarter's headcount across the groups; funds the first bet on offer on the group with the lowest stress; coaches a senior manager through a group in trouble or a problem the listening tour surfaced; promotes a new senior manager from the group; lets a senior manager on a failed plan go; negotiates with a peer; splits a large group, promoting from it, and merges a small one; and tells the quarterly review straight.
+- **The first-timer** plays sound practice with its random choices and waits.
+- **The naive players** keep their character: the hero takes every decision itself and gives all the heads to the most stretched group; the delegator agrees to every ask and leads with the wins; the decliner refuses, holds heads back and funds no bet; the waiter lets half the situations wait.
+
+The playtests check the director's screens as they check the senior manager's, with the quarter's wording: thirteen weeks a turn, a moment's place as its week of the quarter and day.
+
 ## The Session Clock
 
 The **estimated session time** at any point of a run is the sum of:
@@ -77,7 +88,7 @@ No proxy can tell a game from a test, so nothing here is checked. Reported, as t
 
 - Decisions per week: the mean, and the fewest and most in any week.
 - The share of weeks with no decision at all.
-- The longest run of consecutive moments of the same kind. A career level's moment is of its kind: at the line manager, the kind its title names before the colon ("Check-in: Ada" is a check-in); at the senior manager, the kind its title's fixed wording names, around the names it carries ("… needs help" is an escalation, "… disagree" a dispute). Each situation is a kind of its own.
+- The longest run of consecutive moments of the same kind. A career level's moment is of its kind: at the line manager, the kind its title names before the colon ("Check-in: Ada" is a check-in); at the senior manager and the director, the kind its title's fixed wording names, around the names it carries ("… needs help" is an escalation, "… disagree" a dispute, "… is in trouble" a group in trouble). Each situation is a kind of its own.
 - How often a situation comes back within 13 weeks of last being shown.
 - The share of reaction texts that are distinct, across all the run's reactions.
 
@@ -87,9 +98,9 @@ The HLD asks whether a promoted player can name one thing they no longer do and 
 
 - **Panels**: the panels a week shows beside the scene, by their headings ("Your team", "Your managers").
 - **Habits**: the habits the habits panel offers, by their labels. A habit set per person counts once, with the person's name left out (oversight of each manager counts as "Oversight").
-- **Kinds of moment**: the career level's own moments, by their kind as *The shape of a session* defines it. Situations are left out: both levels have them, and their titles are each situation's own.
+- **Kinds of moment**: the career level's own moments, by their kind as *The shape of a session* defines it. Situations are left out: every level has them, and their titles are each situation's own.
 
-For each run promoted into a second career level, the scorecard lists, in each part, what the first level showed and the second never did (what the player no longer does) and what the second showed and the first never did (what they now have to learn). Across a player's promoted runs it reports each item with the number of runs it appeared in.
+For each promotion a run reaches, the scorecard lists, in each part, what the level left showed and the level reached never did (what the player no longer does) and what the level reached showed and the level left never did (what they now have to learn). Across a player's runs it reports, for each promotion (line manager to senior manager, senior manager to director), each item with the number of runs it appeared in.
 
 This is reported rather than checked. The two levels as designed differ in every part, so a check would only catch the handover breaking, which the senior manager playtest already catches; the proxy's use is to set what the page offered beside what human playtesters name when asked what changed.
 

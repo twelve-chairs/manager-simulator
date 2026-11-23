@@ -43,7 +43,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Status
 
-**Early development, and playable from start to finish.** Two career levels run in the browser.
+**Early development, and playable from start to finish.** Three career levels run in the browser. The director is new and not yet balanced.
 
 **Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
@@ -58,9 +58,15 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 - written situations about managers: one who wants to go back to engineering, two up for one promotion, a public clash, a rumoured reorg;
 - calibration before each six-monthly review, and three years to earn the next promotion.
 
+**Director**, promoted again: you choose who leads your old group, then run three groups through their senior managers, a quarter at a time:
+
+- senior managers as people, and groups whose mood you see through a twice-yearly survey, or a listening tour;
+- your executive and two peer directors, whose trust shapes your headcount and your bets;
+- headcount to place each quarter, strategy bets to fund, groups to split or merge, and a quarterly review where you choose how honestly to tell it.
+
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** director and above, where whole organizations become the people you look after.
+**Next up:** balancing the director, then the levels above it.
 
 ## Fiction, not advice
 
@@ -107,7 +113,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
 | `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews |
-| `src/levels/director/` | Director career level, built but not yet joined to the game: the handover from a promoted senior manager, groups and senior managers, the executive and peers, headcount, strategy bets, the quarterly review, goals, recaps and reviews |
+| `src/levels/director/` | Director career level: the handover from a promoted senior manager, groups and senior managers, the executive and peers, headcount, strategy bets, the quarterly review, goals, recaps and reviews |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |
 | `src/save/` | Save / load: a run saved as its seed and commands, rebuilt by replaying them |
