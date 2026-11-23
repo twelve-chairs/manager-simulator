@@ -12,4 +12,47 @@ export const SENIOR_TUNING = {
   candidTrust: 40,
   /** The size of a team generated at the handover. */
   teamSize: [4, 7] as const,
+
+  /** Oversight: energy each month per manager, and the skill coaching grows. */
+  coachingEnergy: 2,
+  closeEnergy: 5,
+  coachingGrowth: 2,
+  /** Close oversight: motivation a manager who wants autonomy loses each month, and trust after this many months. */
+  closeAutonomyMotivation: 4,
+  closeTrustMonths: 3,
+  closeTrust: 4,
+  /** 1:1s: per 1:1, trust gained and energy spent. */
+  oneOnOneTrust: 2,
+  oneOnOneEnergy: 1,
+  /** Backfill: months before a lost head is replaced, the skill a fast backfill costs, and the stress of each month without the head. */
+  backfillMonths: { fast: 1, holdTheBar: 2 } as const,
+  fastBackfillSkill: 5,
+  backfillGapStress: 4,
+  /** Skip-level listening: energy, and the trust it costs a manager who trusts the player less than this. */
+  skipLevelEnergy: 3,
+  skipLevelTrust: 4,
+  skipLevelTrustBelow: 50,
+  /** Drift: the share of the way a team moves each month toward what its manager sustains, and how much faster hands-off under a struggling one. */
+  driftShare: 0.25,
+  handsOffDrift: 1.6,
+  sustains: { motivationBase: 30, motivationPerSkill: 0.6, stressBase: 65, stressPerSkill: 0.5 },
+  /** The management skill a leaderless team is treated as having. */
+  leaderlessSkill: 15,
+  /** A manager's motivation when the month serves their want or doesn't, and the share their stress moves toward their team's. */
+  wantServed: 3,
+  wantUnserved: -2,
+  managerStressShare: 0.25,
+  /** Months before promotion is possible, and the month of the last review. */
+  promotionFromMonth: 18,
+  lastReviewMonth: 36,
+  /** The review's targets. */
+  review: {
+    completedOnTime: { target: 1, tolerance: 1 },
+    onScheduleShare: { target: 0.7, tolerance: 0.15 },
+    regrettedAttrition: { target: 0, tolerance: 1 },
+    motivation: { target: 60, tolerance: 10 },
+    stress: { target: 40, tolerance: 10 },
+    managerGrowth: { target: 3, tolerance: 3 },
+    healthHeld: { target: 0.67, tolerance: 0.2 },
+  },
 };

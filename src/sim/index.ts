@@ -34,7 +34,7 @@ import type {
 
 export * from './types';
 export { TUNING } from './tuning';
-export { compareCodeUnits, nextRandom } from './core';
+export { attritionRiskOf, compareCodeUnits, nextRandom } from './core';
 export {
   applyEffects,
   AGGREGATE_TEAM_FIELDS,

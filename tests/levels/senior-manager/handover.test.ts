@@ -29,7 +29,7 @@ describe('the handover', () => {
     expect(r.sim.teams[line.level.teamId]!.leader).toEqual({ kind: 'person', id: first });
     expect(band(lead.skill)).toBe(1); // developing: a strong engineer is not thereby a good manager
     expect(r.sim.teams[line.level.teamId]!.aggregate!.headcount).toBe(engineersOf(line).length - 1);
-    expect(r.level.backfills).toEqual([{ teamId: line.level.teamId, since: r.level.startWeek }]);
+    expect(r.level.backfills).toEqual([{ teamId: line.level.teamId, since: r.level.startWeek, months: 0 }]);
     const other = promotedLine(3, (s) => Object.assign(s.people[second!]!, { trust: 70, want: 'stability' }));
     const r2 = takeOver(other.level, other.sim, second!);
     if (!r2.ok) throw new Error(r2.error);

@@ -2,6 +2,7 @@ import { NAMES, type LineState } from '../line-manager';
 import { addTeam, aggregateTeam, applyEffects, type Effect, type NewProject, type SimState, type Want } from '../../sim';
 import { generateManager, nextId, randomInt, rule, summarizeTeam, unusedName } from './core';
 import { DEFAULT_SENIOR_HABITS } from './habits';
+import { periodSnapshot, remember } from './review';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorState } from './types';
 
@@ -56,7 +57,16 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     learnedWants: {},
     listenedTo: [],
     backfills: [],
-    counters: { person: 0, team: 0, project: 0 },
+    closeMonths: {},
+    skipRotation: 0,
+    surfaced: [],
+    burnoutMonths: 0,
+    knownHeadcount: {},
+    knownRatings: {},
+    regretted: [],
+    completions: {},
+    periodStart: { week: lineSim.week, skill: 0, health: {} },
+    counters: { person: 0, team: 0, project: 0, hire: 0 },
   };
   let sim = lineSim;
   const teamId = line.teamId;
@@ -79,7 +89,7 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
       { type: 'setLeader', teamId, leader: { kind: 'person', id: lead.id }, cause: HANDOVER },
       { type: 'value', target: { kind: 'person', id: lead.id }, field: 'skill', amount: skill - lead.skill, cause: HANDOVER },
     ]);
-    level.backfills.push({ teamId, since: lineSim.week });
+    level.backfills.push({ teamId, since: lineSim.week, months: 0 });
   }
   sim = aggregateTeam(sim, teamId, HANDOVER).state;
   if (choice === 'hire') {
@@ -128,5 +138,7 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     level.leniency[m] = randomInt(level, 0, 2);
     level.habits.oversight[m] = 'coaching';
   }
+  remember(level, sim);
+  level.periodStart = periodSnapshot(level, sim);
   return { ok: true, sim, level };
 }

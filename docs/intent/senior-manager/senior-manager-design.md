@@ -55,7 +55,7 @@ The level then converts the run: the old team becomes an aggregate team led by t
 
 Each month, the level moves each team's motivation and stress toward what its manager's management skill can sustain, and its attrition risk with them. A skilled manager pulls their team toward health; a struggling one lets it slide, faster when the player is hands-off. A leaderless team's stress rises, as the simulation core already applies. Coaching oversight and moments the player handles by coaching raise a manager's management skill; stepping in on a manager's behalf solves the problem now and teaches them nothing.
 
-A manager's own motivation and stress follow from their team's health, the player's oversight, how their wants are served and what the player did in their moments, as an engineer's do.
+A manager's own motivation and stress follow from their team's health, the player's oversight, how their wants are served and what the player did in their moments, as an engineer's do. A month serves a manager's want when it gives them what they want from the job: coaching oversight serves growth, hands-off oversight serves autonomy, 1:1s at least fortnightly serve recognition, and a team below the *strained* band serves stability.
 
 ## A Month's Moments
 

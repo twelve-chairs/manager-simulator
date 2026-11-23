@@ -30,19 +30,19 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 ## Habits
 
 - [x] **SENIOR-HABIT-001**: When the level begins, the senior manager level shall set oversight to coaching for every manager, 1:1s with managers to fortnightly, backfill to hold the bar and skip-level listening to none.
-- [ ] **SENIOR-HABIT-002**: When the player changes a habit, the senior manager level shall apply the new setting from that month's end-of-month effects and to the moments of later months.
-- [ ] **SENIOR-HABIT-003**: If a habit change names an unknown habit or option, or a manager who is not in the group, then the senior manager level shall reject it with an error and leave the level state unchanged.
-- [ ] **SENIOR-HABIT-004**: When a month ends, the senior manager level shall cost the player a tuned amount of energy for each manager under coaching oversight and a larger tuned amount for each under close oversight, and raise the management skill of each manager under coaching oversight by a tuned amount.
-- [ ] **SENIOR-HABIT-005**: When a month ends with a manager under close oversight, the senior manager level shall lower that manager's motivation by a tuned amount if their want is autonomy, and lower their trust by a tuned amount once they have been under close oversight for three months in a row.
-- [ ] **SENIOR-HABIT-006**: When a month ends, the senior manager level shall hold 1:1s with each manager at the habit's cadence, each raising that manager's trust and revealing their want, at a tuned energy cost per 1:1.
-- [ ] **SENIOR-HABIT-007**: When a team loses a head, the senior manager level shall backfill it after one month at a tuned lower skill under fast backfill, and after two months at the team's skill under hold the bar, raising the team's stress by a tuned amount for each month the head is missing.
-- [ ] **SENIOR-HABIT-008**: When a month ends under monthly skip-level listening, the senior manager level shall listen to the next team in rotation, show that team's truth for the month, surface one of its problems its manager has not raised as a moment the next month, cost the player a tuned amount of energy, and lower the team's manager's trust by a tuned amount if it is below 50.
+- [x] **SENIOR-HABIT-002**: When the player changes a habit, the senior manager level shall apply the new setting from that month's end-of-month effects and to the moments of later months.
+- [x] **SENIOR-HABIT-003**: If a habit change names an unknown habit or option, or a manager who is not in the group, then the senior manager level shall reject it with an error and leave the level state unchanged.
+- [x] **SENIOR-HABIT-004**: When a month ends, the senior manager level shall cost the player a tuned amount of energy for each manager under coaching oversight and a larger tuned amount for each under close oversight, and raise the management skill of each manager under coaching oversight by a tuned amount.
+- [x] **SENIOR-HABIT-005**: When a month ends with a manager under close oversight, the senior manager level shall lower that manager's motivation by a tuned amount if their want is autonomy, and lower their trust by a tuned amount once they have been under close oversight for three months in a row.
+- [x] **SENIOR-HABIT-006**: When a month ends, the senior manager level shall hold 1:1s with each manager at the habit's cadence, each raising that manager's trust and revealing their want, at a tuned energy cost per 1:1.
+- [x] **SENIOR-HABIT-007**: When a team loses a head, the senior manager level shall backfill it after one month at a tuned lower skill under fast backfill, and after two months at the team's skill under hold the bar, raising the team's stress by a tuned amount for each month the head is missing.
+- [x] **SENIOR-HABIT-008**: When a month ends under monthly skip-level listening, the senior manager level shall listen to the next team in rotation, show that team's truth for the month, surface one of its problems its manager has not raised as a moment the next month, cost the player a tuned amount of energy, and lower the team's manager's trust by a tuned amount if it is below 50.
 
 ## Teams under their managers
 
-- [ ] **SENIOR-DRIFT-001**: When a month ends, the senior manager level shall move each team's motivation and stress a tuned share of the way toward the levels its manager's management skill sustains, and further when the player's oversight of that manager is hands-off and their skill is below the *capable* band.
-- [ ] **SENIOR-DRIFT-002**: When a month ends, the senior manager level shall set each team's attrition risk from its motivation and stress, as tuned.
-- [ ] **SENIOR-DRIFT-003**: When a month ends, the senior manager level shall move each manager's motivation by whether their want was served that month and their stress toward their team's stress, as tuned.
+- [x] **SENIOR-DRIFT-001**: When a month ends, the senior manager level shall move each team's motivation and stress a tuned share of the way toward the levels its manager's management skill sustains, and further when the player's oversight of that manager is hands-off and their skill is below the *capable* band.
+- [x] **SENIOR-DRIFT-002**: When a month ends, the senior manager level shall set each team's attrition risk from its motivation and stress, as tuned.
+- [x] **SENIOR-DRIFT-003**: When a month ends, the senior manager level shall move each manager's motivation by whether their want was served that month and their stress toward their team's stress, as tuned.
 
 ## Moments
 
@@ -83,12 +83,12 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Reviews and the end of the level
 
-- [ ] **SENIOR-END-001**: The senior manager level shall advance the simulation four weeks per turn.
-- [ ] **SENIOR-END-002**: The senior manager level shall be reviewed every six months, at months 6, 12, 18, 24, 30 and 36 of the level.
+- [x] **SENIOR-END-001**: The senior manager level shall advance the simulation four weeks per turn.
+- [x] **SENIOR-END-002**: The senior manager level shall be reviewed every six months, at months 6, 12, 18, 24, 30 and 36 of the level.
 - [ ] **SENIOR-END-003**: When the scorecard is requested, the senior manager level shall report delivery (projects across the group completed by their deadline in the period, and the share of active projects on schedule), retention and team health (regretted attrition, and the teams' average motivation and stress), managers' growth (the change in the managers' average management skill over the period, and whether each team's health held), and calibration quality (how closely the period's ratings matched what each team delivered).
-- [ ] **SENIOR-END-004**: When the level is assessed for a review, the senior manager level shall report whether promotion is possible, which it is from the third review (month 18) on.
-- [ ] **SENIOR-END-005**: When the level is assessed for a review, the senior manager level shall report that it is the level's last review at the sixth review (month 36), and not before.
-- [ ] **SENIOR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of four consecutive months, then the senior manager level shall report that the player has burned out.
+- [x] **SENIOR-END-004**: When the level is assessed for a review, the senior manager level shall report whether promotion is possible, which it is from the third review (month 18) on.
+- [x] **SENIOR-END-005**: When the level is assessed for a review, the senior manager level shall report that it is the level's last review at the sixth review (month 36), and not before.
+- [x] **SENIOR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of four consecutive months, then the senior manager level shall report that the player has burned out.
 
 ## Turn loop contract
 
