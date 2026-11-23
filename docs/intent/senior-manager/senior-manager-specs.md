@@ -1,0 +1,99 @@
+# Senior Manager Level — Specs
+
+Design: [senior-manager-design.md](senior-manager-design.md)
+
+The bands a value is shown in are the line manager level's five bands of a 0–100 value; a band shown *better* is the healthier one (higher motivation, lower stress and attrition risk), and a band already at its best stays there. A month is four weeks, and months and reviews count from the start of this level. *Energy* is the player's stress seen the other way up, as at the line manager level: costing energy raises the player's stress. Regretted attrition is heads lost whose rating was *meets* or better. A value or rate the specs call *tuned* is set in the level's tuning, by the balance harness and playtesting.
+
+## Handover
+
+- [x] **SENIOR-HAND-001**: When a line manager review promotes the player, the senior manager level shall offer a handover choice of who leads the player's team: each active engineer on it, shown with their skill, trust in the player and want, or an outside hire.
+- [x] **SENIOR-HAND-002**: When the player chooses an engineer to lead their old team, the senior manager level shall make that engineer the team's manager, with management skill in the *developing* band if their trust in the player is at least 60 and their want is growth, and in the *learning* band otherwise, and treat the team as having lost a head.
+- [x] **SENIOR-HAND-003**: When the player chooses an outside hire to lead their old team, the senior manager level shall add a new manager to it with management skill in the *capable* band, trust of 50 and a want drawn from the level's generator, and raise the team's stress by a tuned amount.
+- [x] **SENIOR-HAND-004**: When the handover is applied, the senior manager level shall convert the player's old team to aggregate form under its new manager, keeping its projects, and add two teams to the player's group, each with a generated manager, headcount, health and one or two projects.
+- [x] **SENIOR-HAND-005**: When the handover is applied, the senior manager level shall keep the player's energy, reputation and rating history, and leave the old team's engineers in the state as aggregated people with their histories.
+- [x] **SENIOR-HAND-006**: If a handover choice names neither an active engineer on the player's old team nor an outside hire, then the senior manager level shall reject it with an error and leave the state unchanged.
+
+## Organization
+
+- [x] **SENIOR-ORG-001**: The senior manager level shall give each generated manager a name, personality, want, management skill, motivation, stress and trust drawn from the level's generator, and a leniency from 0 to 2 rating steps.
+- [x] **SENIOR-ORG-002**: The senior manager level shall give each team in the player's group at most one manager, and shall treat a team whose manager has left as leaderless until a new manager is set.
+
+## Visibility
+
+- [x] **SENIOR-VIS-001**: When the player's view is requested, the senior manager level shall show each manager in the group with their name, personality, team, performance level, memory, motivation, stress and management skill as bands, and their want once a 1:1 with them has been held.
+- [x] **SENIOR-VIS-002**: When the player's view is requested, the senior manager level shall show each team under its manager with its headcount, motivation and stress as bands, attrition risk as a band, and each of its projects with progress against scope, deadline and schedule status.
+- [x] **SENIOR-VIS-003**: While a team's manager has management skill below the *capable* band or trust in the player below 40, the senior manager level shall show that team's motivation, stress and attrition risk one band better than their true bands, unless the team's truth is shown.
+- [x] **SENIOR-VIS-004**: While the player's oversight of a team's manager is close, or in a month in which a skip-level session listened to that team, the senior manager level shall show that team's true bands and say that they come from what the player saw.
+- [x] **SENIOR-VIS-005**: The senior manager level shall never show a manager's leniency as a value.
+- [x] **SENIOR-VIS-006**: The senior manager level shall show no individual engineer of a team in aggregate form, except as named in situations and the recap.
+
+## Habits
+
+- [x] **SENIOR-HABIT-001**: When the level begins, the senior manager level shall set oversight to coaching for every manager, 1:1s with managers to fortnightly, backfill to hold the bar and skip-level listening to none.
+- [ ] **SENIOR-HABIT-002**: When the player changes a habit, the senior manager level shall apply the new setting from that month's end-of-month effects and to the moments of later months.
+- [ ] **SENIOR-HABIT-003**: If a habit change names an unknown habit or option, or a manager who is not in the group, then the senior manager level shall reject it with an error and leave the level state unchanged.
+- [ ] **SENIOR-HABIT-004**: When a month ends, the senior manager level shall cost the player a tuned amount of energy for each manager under coaching oversight and a larger tuned amount for each under close oversight, and raise the management skill of each manager under coaching oversight by a tuned amount.
+- [ ] **SENIOR-HABIT-005**: When a month ends with a manager under close oversight, the senior manager level shall lower that manager's motivation by a tuned amount if their want is autonomy, and lower their trust by a tuned amount once they have been under close oversight for three months in a row.
+- [ ] **SENIOR-HABIT-006**: When a month ends, the senior manager level shall hold 1:1s with each manager at the habit's cadence, each raising that manager's trust and revealing their want, at a tuned energy cost per 1:1.
+- [ ] **SENIOR-HABIT-007**: When a team loses a head, the senior manager level shall backfill it after one month at a tuned lower skill under fast backfill, and after two months at the team's skill under hold the bar, raising the team's stress by a tuned amount for each month the head is missing.
+- [ ] **SENIOR-HABIT-008**: When a month ends under monthly skip-level listening, the senior manager level shall listen to the next team in rotation, show that team's truth for the month, surface one of its problems its manager has not raised as a moment the next month, cost the player a tuned amount of energy, and lower the team's manager's trust by a tuned amount if it is below 50.
+
+## Teams under their managers
+
+- [ ] **SENIOR-DRIFT-001**: When a month ends, the senior manager level shall move each team's motivation and stress a tuned share of the way toward the levels its manager's management skill sustains, and further when the player's oversight of that manager is hands-off and their skill is below the *capable* band.
+- [ ] **SENIOR-DRIFT-002**: When a month ends, the senior manager level shall set each team's attrition risk from its motivation and stress, as tuned.
+- [ ] **SENIOR-DRIFT-003**: When a month ends, the senior manager level shall move each manager's motivation by whether their want was served that month and their stress toward their team's stress, as tuned.
+
+## Moments
+
+- [ ] **SENIOR-MOMENT-001**: When a month begins, the senior manager level shall produce its moments for the month, up to a tuned cap, in this order: final evaluations of managers held for one; calibration, in the last month before a review; problems surfaced by skip-level listening; escalations; staffing requests; cross-team disputes; approvals; new work for the group; and restructuring.
+- [ ] **SENIOR-MOMENT-002**: The senior manager level shall give each moment a week of the month, a day and a time, in order through the month.
+- [ ] **SENIOR-MOMENT-003**: When a team's stress or attrition risk is in the *high* band or worse, or one of its projects is behind, the senior manager level shall be able to produce an escalation from its manager, offering to coach them through it, step in and fix it yourself, or let them handle it.
+- [ ] **SENIOR-MOMENT-004**: When the player steps in on an escalation, the senior manager level shall fix the problem by a tuned amount, cost the player a tuned amount of energy and leave the manager's management skill unchanged; when the player coaches, it shall fix it by a smaller tuned amount if the manager's skill is at least *developing*, raise their skill and cost less energy; when the player lets them handle it, it shall fix it only if their skill is at least *capable*.
+- [ ] **SENIOR-MOMENT-005**: When one team's stress is in the *strained* band or worse while another's is *steady* or better, the senior manager level shall be able to produce a staffing request, offering to move a head between them, backfill with a hire, or decline; moving a head shall lower the receiving team's stress and lower the giving manager's trust if their team's stress then reaches *busy* or worse.
+- [ ] **SENIOR-MOMENT-006**: When two teams have active projects at risk at once, the senior manager level shall be able to produce a cross-team dispute between their managers, offering to get them to agree a plan, decide it yourself, or let it run; agreeing shall raise both managers' management skill, and deciding shall lower the trust of the manager whose project gives way.
+- [ ] **SENIOR-MOMENT-007**: When a team has no active project, the senior manager level shall be able to produce new work for the group, offering to give it to a team with room, decline it, or spread it across all teams; spreading it shall raise every team's stress.
+- [ ] **SENIOR-MOMENT-008**: When a manager proposes a promotion or letting someone go in their team, the senior manager level shall be able to produce an approval, offering to approve, ask for the evidence first, or refuse. Approving shall move one of the team's heads up a rating (a promotion) or remove one head (letting go), and lower the team's motivation by a tuned amount if the manager's leniency is above 0; asking for the evidence shall apply it only if the manager's leniency is 0, and lower the manager's trust by a small tuned amount either way; refusing shall lower the manager's trust by a tuned amount.
+- [ ] **SENIOR-MOMENT-009**: When the group has run 12 months with three teams, the senior manager level shall be able to produce a restructuring that adds a fourth team, offering to promote its manager from one of the teams, which lowers that team's skill, or hire from outside, which leaves the new team leaderless for a month.
+- [ ] **SENIOR-MOMENT-010**: When the player picks a choice for one of the month's open level moments, the senior manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the state unchanged.
+- [ ] **SENIOR-MOMENT-011**: When a month's end applies, the senior manager level shall close each level moment left unanswered as letting it wait.
+
+## Calibration
+
+- [ ] **SENIOR-CAL-001**: When the calibration moment is presented, the senior manager level shall show for each team its manager's proposed ratings, which are the ratings its delivery corresponds to raised by the manager's leniency, beside that delivery.
+- [ ] **SENIOR-CAL-002**: When the player calibrates a team, the senior manager level shall accept the proposal or move heads up or down a rating as the player chooses, apply the result with re-rate effects, and react through the manager: pleased at an accepted proposal, and losing trust by a tuned amount for each head moved below their proposal.
+- [ ] **SENIOR-CAL-003**: If a calibration moves more heads than a team holds at a rating, or names a rating not on the scale, then the senior manager level shall reject it with an error and leave the state unchanged.
+- [ ] **SENIOR-CAL-005**: When a month ends with the calibration moment unanswered, the senior manager level shall apply each manager's proposal as proposed.
+- [ ] **SENIOR-CAL-004**: When calibration applies, the senior manager level shall change each team's motivation by how far its ratings fall short of or exceed what it delivered, as tuned.
+
+## Managers' plans
+
+- [ ] **SENIOR-PLAN-001**: When a review period ends, the senior manager level shall rate each manager on their team's delivery and health under them in that period.
+- [ ] **SENIOR-PLAN-002**: When a manager has been rated below *meets* at two period ends in a row, the senior manager level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
+- [ ] **SENIOR-PLAN-003**: When the player lets a manager go, the senior manager level shall remove them, leave their team leaderless, and offer the next month a moment to set a new manager: promote from the team, lowering its skill, or hire from outside, leaving it leaderless one more month.
+
+## Goals
+
+- [ ] **SENIOR-GOAL-001**: When a review period begins, the senior manager level shall set two or three goals for it from the group's state, drawn from: grow a named manager's management skill by a band, keep regretted attrition at zero, ship a named project by its deadline as it stood when the goal was set, and bring a named team out of the *strained* band.
+- [ ] **SENIOR-GOAL-002**: When the player's view is requested, the senior manager level shall show each goal with its progress.
+
+## Recap
+
+- [ ] **SENIOR-RECAP-001**: When a month ends, the senior manager level shall return a recap of what changed (each manager whose band changed or who gained a memory note other than from a habit, each team whose reported health changed band, heads who left or joined, and what slipped) and of the routine (what each habit did, and each goal's progress).
+
+## Reviews and the end of the level
+
+- [ ] **SENIOR-END-001**: The senior manager level shall advance the simulation four weeks per turn.
+- [ ] **SENIOR-END-002**: The senior manager level shall be reviewed every six months, at months 6, 12, 18, 24, 30 and 36 of the level.
+- [ ] **SENIOR-END-003**: When the scorecard is requested, the senior manager level shall report delivery (projects across the group completed by their deadline in the period, and the share of active projects on schedule), retention and team health (regretted attrition, and the teams' average motivation and stress), managers' growth (the change in the managers' average management skill over the period, and whether each team's health held), and calibration quality (how closely the period's ratings matched what each team delivered).
+- [ ] **SENIOR-END-004**: When the level is assessed for a review, the senior manager level shall report whether promotion is possible, which it is from the third review (month 18) on.
+- [ ] **SENIOR-END-005**: When the level is assessed for a review, the senior manager level shall report that it is the level's last review at the sixth review (month 36), and not before.
+- [ ] **SENIOR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of four consecutive months, then the senior manager level shall report that the player has burned out.
+
+## Turn loop contract
+
+- [ ] **SENIOR-CONTRACT-001**: The senior manager level shall provide the turn loop's career level contract with a time step of four weeks, and a handover operation that takes a promoted line manager run and the handover choice and returns the run at this level.
+
+## Level state
+
+- [x] **SENIOR-STATE-001**: The senior manager level shall keep its state (habits, the managers' leniency, the month's moments, goals, visibility for the month, oversight history, plans and the burnout and review counters) serializable as plain data, derived only from the run's seed and commands.

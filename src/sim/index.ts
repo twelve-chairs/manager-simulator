@@ -1,4 +1,5 @@
 import {
+  attritionRiskOf,
   clamp100,
   emptyRatings,
   isBehind,
@@ -17,6 +18,7 @@ import { PERFORMANCE_LEVELS, RATINGS } from './types';
 import type {
   Cause,
   HistoryEntry,
+  NewPerson,
   OperationResult,
   Person,
   Plan,
@@ -27,6 +29,7 @@ import type {
   StartingOrganization,
   Team,
   TeamAggregate,
+  PerformanceLevel,
 } from './types';
 
 export * from './types';
@@ -113,6 +116,57 @@ export function aggregateTeam(state: SimState, teamId: string, cause: Cause): Op
   team.form = 'aggregate';
   team.aggregate = summary;
   return { state: ctx.s, log: ctx.log };
+}
+
+/** A team to add to a running simulation: always in aggregate form. */
+export interface NewAggregateTeam {
+  id: string;
+  name: string;
+  aggregate: { headcount: number; skill: number; motivation: number; stress: number; ratings?: Record<PerformanceLevel, number> };
+}
+
+export type AddTeamResult = ({ ok: true } & OperationResult) | { ok: false; error: string };
+
+/** Adds an aggregate team, and optionally a new manager to lead it, as a higher level does when it takes over a run. */
+// @spec SIM-TEAM-006, SIM-TEAM-007
+export function addTeam(state: SimState, input: { team: NewAggregateTeam; manager?: NewPerson }, cause: Cause): AddTeamResult {
+  const { team, manager } = input;
+  const a = team.aggregate;
+  if (state.teams[team.id]) return { ok: false, error: `team ${team.id} already exists` };
+  if (manager && state.people[manager.id]) return { ok: false, error: `person ${manager.id} already exists` };
+  if (!Number.isInteger(a.headcount) || a.headcount < 1) return { ok: false, error: `team ${team.id} needs a headcount of at least 1` };
+  for (const field of ['skill', 'motivation', 'stress'] as const) {
+    if (!(a[field] >= 0 && a[field] <= 100)) return { ok: false, error: `team ${team.id}: ${field} must be from 0 to 100` };
+  }
+  const ratings = a.ratings ? { ...a.ratings } : { ...emptyRatings(), unrated: a.headcount };
+  if (PERFORMANCE_LEVELS.reduce((n, l) => n + ratings[l], 0) !== a.headcount) return { ok: false, error: `team ${team.id}: rating counts must sum to its headcount` };
+
+  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  ctx.s.teams[team.id] = {
+    id: team.id,
+    name: team.name,
+    leader: manager ? { kind: 'person', id: manager.id } : null,
+    form: 'aggregate',
+    aggregate: { headcount: a.headcount, skill: a.skill, motivation: a.motivation, stress: a.stress, attritionRisk: attritionRiskOf(a.motivation, a.stress), ratings },
+  };
+  record(ctx, cause, { kind: 'team', id: team.id }, 'form', undefined, 'aggregate');
+  if (manager) {
+    ctx.s.people[manager.id] = {
+      ...manager,
+      role: 'manager',
+      teamId: team.id,
+      performance: 'unrated',
+      joinedWeek: ctx.s.week,
+      wantServedWeek: ctx.s.week,
+      lowMotivationWeeks: 0,
+      highStressWeeks: 0,
+      status: 'active',
+      history: [],
+    };
+    record(ctx, cause, { kind: 'person', id: manager.id }, 'status', undefined, 'active');
+    record(ctx, cause, { kind: 'team', id: team.id }, 'leader', null, { kind: 'person', id: manager.id });
+  }
+  return { ok: true, state: ctx.s, log: ctx.log };
 }
 
 // @spec SIM-QUERY-001

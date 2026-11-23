@@ -65,8 +65,12 @@ describe('batch validation', () => {
   });
 
   // @spec SIM-EFFECT-022
-  it('rejects setting a leader on a team that already has one', () => {
+  it('rejects setting a leader on a team that already has one, unless a person replaces the player', () => {
     expectRejectedUnchanged(fresh(), [{ type: 'setLeader', teamId: 't2', leader: { kind: 'person', id: 'e4' }, cause: ACTION }], 0);
+    expectRejectedUnchanged(fresh(), [{ type: 'setLeader', teamId: 't2', leader: { kind: 'player' }, cause: ACTION }], 0);
+    // a promoted player hands their team to an engineer on it, who stops being one of its members
+    const { state } = expectOk(applyEffects(fresh(), [{ type: 'setLeader', teamId: 't1', leader: { kind: 'person', id: 'e1' }, cause: ACTION }]));
+    expect(state.teams.t1!.leader).toEqual({ kind: 'person', id: 'e1' });
   });
 
   // @spec SIM-EFFECT-023

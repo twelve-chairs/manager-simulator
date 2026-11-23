@@ -37,7 +37,7 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-EFFECT-013**: When a move effect naming a detailed team is applied, the simulation core shall make the person a member of that team.
 - [x] **SIM-EFFECT-020**: When a move effect naming an aggregate team is applied, the simulation core shall mark the person `aggregated` and increase that team's headcount and the count for the person's performance level by one.
 - [x] **SIM-EFFECT-021**: When a move effect is applied to a person who leads a team, the simulation core shall make their former team leaderless.
-- [x] **SIM-EFFECT-022**: If a set-leader effect names a team that already has a leader, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
+- [x] **SIM-EFFECT-022**: If a set-leader effect names a team that already has a leader other than the player, or names the player as the leader of a team that has one, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged; a person set as the leader of a team the player leads replaces the player.
 - [x] **SIM-EFFECT-023**: If a set-leader effect names a person who already leads a team, then the simulation core shall reject the whole batch with an error naming that effect and leave the state unchanged.
 - [x] **SIM-EFFECT-014**: When a set-leader effect is applied, the simulation core shall make the named person or the player the leader of the named team.
 - [x] **SIM-EFFECT-015**: When a start-project effect is applied, the simulation core shall add an active project with zero progress and the current game week as its start week to the named team.
@@ -59,6 +59,9 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-TEAM-004**: When a team is converted to aggregate form, the simulation core shall mark its active members `aggregated` and leave its leader active.
 - [x] **SIM-TEAM-002**: The simulation core shall not convert an aggregate team back into individual people.
 - [x] **SIM-TEAM-003**: When a person who leads a team departs, the simulation core shall make that team leaderless.
+- [x] **SIM-TEAM-006**: When a team is added, the simulation core shall add it in aggregate form with the given id, name, headcount, skill, motivation and stress, its rating counts as given or all its heads `unrated`, its attrition risk computed from its motivation and stress, and no projects; and, when a manager is given, add them as an active person with the role `manager`, joined at the current week, leading the team.
+- [x] **SIM-TEAM-007**: If an added team's id is already a team's, its manager's id is already a person's, its headcount is below 1, a value is outside 0 to 100, or its rating counts do not sum to its headcount, then the simulation core shall reject it with an error and leave the state unchanged.
+- [x] **SIM-TEAM-008**: When a person is set as a team's leader, the simulation core shall make their role `manager`.
 - [x] **SIM-TEAM-005**: When an effect or rule changes the skill, motivation or stress of a detailed team, the simulation core shall apply the change to each of the team's active members.
 
 ## Performance level

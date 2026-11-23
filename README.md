@@ -96,6 +96,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/sim/` | Simulation core |
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
+| `src/levels/senior-manager/` | Senior manager career level, in progress: the handover from a promoted line manager and the view of managers and teams; not yet playable |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |
 | `src/save/` | Save / load: a run saved as its seed and commands, rebuilt by replaying them |

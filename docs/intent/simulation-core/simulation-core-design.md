@@ -101,9 +101,11 @@ Which teams are detailed is decided by the active career level. Converting a tea
 
 Hiring into an aggregate team raises its headcount by one instead of adding a person; the new head counts as `unrated`. Moving a person into an aggregate team marks them `aggregated`, raises its headcount by one and adds one to the count for their rating. Whenever an aggregate team loses headcount, by attrition or by a value effect, each head lost is taken from a rating chosen at random, weighted by how many people hold it and by a per-rating weight that is higher at both ends of the scale: strong performers are recruited away and weak ones are managed out; a gain from a value effect counts as `unrated`.
 
-A team has at most one leader. Moving a team's leader to another team makes them a member there and leaves their old team leaderless. Setting a leader on a team that already has one is invalid; the current leader must be removed or moved first.
+A team has at most one leader, and a person who leads a team is a manager: setting a person as a team's leader makes their role `manager`, as promoting an engineer to lead their team does. Moving a team's leader to another team makes them a member there and leaves their old team leaderless. Setting a leader on a team that already has one is invalid; the current leader must be removed or moved first.
 
 A team whose leader departs becomes **leaderless** until a new leader is set. Leaderless teams accumulate stress faster.
+
+A team can also be **added** to a running simulation, as a higher career level does when it takes over a run and the player's group grows. An added team is in aggregate form, with its summary given and all its heads `unrated` unless rating counts are given, and may come with a new manager who leads it; it joins at the current week.
 
 ### Project
 
@@ -135,7 +137,7 @@ There are two kinds of effect:
   - hire a person into a team,
   - remove a person (quit, fired or transferred),
   - move a person to another team,
-  - set a team's leader (the team must be leaderless, and the person must not already lead a team),
+  - set a team's leader (the team must be leaderless, or led by the player, whom a person set as leader replaces, as when a promoted player hands their team to its new manager; and the person must not already lead a team),
   - rate a person or the player (give an active person or the player a rating, either as a new rating or as a revision of the latest one; a rating for a person may carry a history note),
   - re-rate within an aggregate team (move a number of heads from one performance level to a rating, for calibration at levels where the team's people are not individuals; the team must be aggregate and hold at least that many heads at the first level; moving heads to the level they are already at changes nothing),
   - start a project for a team,
@@ -176,6 +178,7 @@ Situations, career levels and debriefs read the state through read-only queries:
 | `applyEffects` | state, batch of effects | new state and change log, or an error naming the invalid effect |
 | `advance` | state, step length in weeks | new state and change log |
 | `aggregateTeam` | state, team id, cause | new state with that team in aggregate form, and change log |
+| `addTeam` | state, an aggregate team (id, name, summary, optional rating counts), an optional new manager to lead it, cause | new state with the team added, and change log, or an error |
 | queries | state, query parameters | read-only results |
 
 State is plain, serializable data. Every operation returns a new state and leaves its input unchanged.
@@ -190,6 +193,7 @@ State is plain, serializable data. Every operation returns a new state and leave
 | Batch validation | Each effect validated against the state left by the effects before it; all-or-nothing commit | Validate every effect against the starting state | Real management moves are sequences (move the old lead out, then appoint a new one); validating against the starting state would reject them. |
 | Want served | Any effect tagged as serving the want, whatever field it changes | Only tagged effects that raise motivation; a dedicated serve-want effect | Lets content express a choice that is hard on someone but is what they wanted, which is both realistic and a lesson. |
 | Durations | Counted in game weeks | Counted in time steps | Step length changes on promotion; counting in steps would make "sustained" mean something different at each level. |
+| Adding teams | An operation that adds an aggregate team, with an optional manager, to a running simulation | Create every team the run will ever need at its start | Teams created at the start would be simulated, and draw on the generator, through a whole first level that never shows them, shifting every run's randomness; the director level will need to add organizations the same way. |
 | Detailed vs aggregate teams | Two team forms, one-way conversion | Simulate every person at every level; drop teams from the model once out of view | Higher levels must not show individuals, but their teams' health still has to move and matter. Simulating everyone individually keeps detail the player never sees; converting back would have to invent people. |
 | Value scale | Integers 0–100 | Floating-point values; unbounded values | Integers read clearly in debriefs and the UI and compare reliably in situation triggers. |
 | Pure, serializable state | Operations return new state; randomness from a seeded generator held in the state; iteration in id order | Mutable objects; global random source | Makes saves trivial, makes runs reproducible for tests and bug reports, and lets the turn loop discard a state safely. |

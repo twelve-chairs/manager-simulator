@@ -88,7 +88,8 @@ function invalidReason(s: SimState, e: Effect): string | undefined {
     case 'setLeader': {
       const t = s.teams[e.teamId];
       if (!t) return `team ${e.teamId} does not exist`;
-      if (t.leader !== null) return `team ${e.teamId} already has a leader`;
+      // A person may replace the player as a team's leader, as when a promoted player hands their team on (SIM-EFFECT-022).
+      if (t.leader !== null && !(t.leader.kind === 'player' && e.leader.kind === 'person')) return `team ${e.teamId} already has a leader`;
       if (e.leader.kind === 'person') {
         const reason = activePerson(e.leader.id);
         if (reason) return reason;
@@ -228,6 +229,11 @@ function apply(ctx: Ctx, e: Effect) {
         const p = s.people[e.leader.id]!;
         record(ctx, e.cause, { kind: 'person', id: p.id }, 'teamId', p.teamId, team.id);
         p.teamId = team.id;
+        // @spec SIM-TEAM-008
+        if (p.role !== 'manager') {
+          record(ctx, e.cause, { kind: 'person', id: p.id }, 'role', p.role, 'manager');
+          p.role = 'manager';
+        }
       }
       return;
     }
