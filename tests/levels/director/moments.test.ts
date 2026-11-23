@@ -10,7 +10,7 @@ import {
   type DirectorMoment,
   type DirectorState,
 } from '../../../src/levels/director';
-import { applyEffects, type Effect, type SimState } from '../../../src/sim';
+import { applyEffects, PERFORMANCE_LEVELS, type Effect, type SimState } from '../../../src/sim';
 import { realContent } from '../../balance/harness';
 import { director } from './fixtures';
 
@@ -101,6 +101,31 @@ describe('a quarter’s moments', () => {
     expect(r.level.groupIds).not.toContain(small);
     expect(r.sim.teams[into]!.aggregate!.headcount).toBe(before + sim.teams[small]!.aggregate!.headcount + 1);
     for (const p of Object.values(sim.projects).filter((x) => x.teamId === small && x.status === 'active')) expect(r.sim.projects[p.id]!.teamId).toBe(into);
+  });
+
+  // @spec DIR-MOMENT-004
+  it('offers to split a group too large for one senior manager, promoting or hiring for the new group, half its heads and projects moving', () => {
+    const d = director(4);
+    const big = d.level.groupIds[1]!;
+    const a = d.sim.teams[big]!.aggregate!;
+    const sim = fx(d.sim, [{ type: 'value', target: { kind: 'team', id: big }, field: 'headcount', amount: T.org.max + 2 - a.headcount }]);
+    const level = beginQuarter(d.level, sim);
+    const org = level.moments.find((m) => m.kind === 'orgDesign' && m.groupId === big)!;
+    expect(org.choices.map((c) => c.id)).toEqual(['splitPromote', 'splitHire', 'leave']);
+    const heads = sim.teams[big]!.aggregate!.headcount;
+    const promoted = ok(chooseDirector(level, sim, org.id, 'splitPromote'));
+    const added = promoted.level.groupIds.find((g) => !level.groupIds.includes(g))!;
+    expect(promoted.level.groupIds).toHaveLength(level.groupIds.length + 1);
+    const [left, right] = [promoted.sim.teams[big]!.aggregate!, promoted.sim.teams[added]!.aggregate!];
+    expect(left.headcount + right.headcount).toBe(heads);
+    expect(Math.abs(left.headcount - right.headcount)).toBeLessThanOrEqual(PERFORMANCE_LEVELS.length);
+    expect(leaderOf(promoted.sim, added)).not.toBeNull();
+    const projects = (sim2: SimState, g: string) => Object.values(sim2.projects).filter((p) => p.teamId === g && p.status === 'active').length;
+    expect(projects(promoted.sim, big) + projects(promoted.sim, added)).toBe(projects(sim, big));
+    const hired = ok(chooseDirector(level, sim, org.id, 'splitHire'));
+    const hiredGroup = hired.level.groupIds.find((g) => !level.groupIds.includes(g))!;
+    expect(leaderOf(hired.sim, hiredGroup)).toBeNull();
+    expect(leaderOf(ok(endQuarter(hired.level, hired.sim)).sim, hiredGroup)).not.toBeNull();
   });
 
   // @spec DIR-MOMENT-005

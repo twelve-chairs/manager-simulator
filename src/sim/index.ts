@@ -136,7 +136,7 @@ export function addTeam(state: SimState, input: { team: NewAggregateTeam; manage
   const a = team.aggregate;
   if (state.teams[team.id]) return { ok: false, error: `team ${team.id} already exists` };
   if (manager && state.people[manager.id]) return { ok: false, error: `person ${manager.id} already exists` };
-  if (!Number.isInteger(a.headcount) || a.headcount < 1) return { ok: false, error: `team ${team.id} needs a headcount of at least 1` };
+  if (!Number.isInteger(a.headcount) || a.headcount < 0) return { ok: false, error: `team ${team.id} needs a whole headcount of at least 0` };
   for (const field of ['skill', 'motivation', 'stress'] as const) {
     if (!(a[field] >= 0 && a[field] <= 100)) return { ok: false, error: `team ${team.id}: ${field} must be from 0 to 100` };
   }

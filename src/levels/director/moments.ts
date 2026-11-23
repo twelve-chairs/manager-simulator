@@ -1,5 +1,6 @@
 import { band, NAMES } from '../line-manager';
 import {
+  addTeam,
   applyEffects,
   behindScheduleProjects,
   closeTeam,
@@ -18,7 +19,7 @@ import type { Bet, BetOffer, DirectorMoment, DirectorState } from './types';
 type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
 type Choose = Result<{ level: DirectorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;
 
-const CHOICES: Record<DirectorMoment['kind'], { id: string; label: string }[]> = {
+const CHOICES: Record<DirectorMoment['kind'] | 'orgSplit', { id: string; label: string }[]> = {
   finalEvaluation: [{ id: 'letGo', label: 'Let them go' }, { id: 'oneMore', label: 'Give them one more period' }],
   newSenior: [{ id: 'promote', label: 'Promote one of the group’s managers' }, { id: 'hire', label: 'Hire from outside' }],
   headcount: [{ id: 'spread', label: 'Spread them across the groups' }, { id: 'neediest', label: 'Give them all to the most stretched group' }, { id: 'hold', label: 'Hold them back' }],
@@ -27,6 +28,7 @@ const CHOICES: Record<DirectorMoment['kind'], { id: string; label: string }[]> =
   trouble: [{ id: 'coach', label: 'Coach them through it' }, { id: 'decide', label: 'Take the decision yourself' }, { id: 'replace', label: 'Replace them' }],
   peerAsk: [{ id: 'agree', label: 'Agree' }, { id: 'negotiate', label: 'Negotiate a trade' }, { id: 'refuse', label: 'Refuse' }],
   orgDesign: [{ id: 'merge', label: 'Merge it into another group' }, { id: 'leave', label: 'Leave it as it is' }],
+  orgSplit: [{ id: 'splitPromote', label: 'Split it, promoting one of its managers to lead the new group' }, { id: 'splitHire', label: 'Split it, hiring a senior manager for the new group' }, { id: 'leave', label: 'Leave it as it is' }],
   review: [{ id: 'straight', label: 'Tell it straight: what went wrong, and the plan' }, { id: 'wins', label: 'Lead with the wins' }, { id: 'promise', label: 'Promise more next quarter' }],
 };
 
@@ -103,7 +105,8 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
   }
   for (const g of s.groupIds) {
     const a = sim.teams[g]?.aggregate;
-    if (a && a.headcount < T.org.min && s.groupIds.length > 1) optional.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} is small`, text: `${groupName(sim, g)} is down to ${a.headcount} people, small to carry a senior manager.`, choices: CHOICES.orgDesign });
+    if (a && a.headcount > T.org.max) optional.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} has grown large`, text: `${groupName(sim, g)} is ${a.headcount} people now, more than one senior manager can lead well.`, choices: CHOICES.orgSplit });
+    else if (a && a.headcount < T.org.min && s.groupIds.length > 1) optional.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} is small`, text: `${groupName(sim, g)} is down to ${a.headcount} people, small to carry a senior manager.`, choices: CHOICES.orgDesign });
   }
   const held = quarterHeld(s, sim);
   const review: Draft = {
@@ -214,6 +217,38 @@ function merge(s: DirectorState, sim0: SimState, groupId: string, log: ChangeLog
   return closed.state;
 }
 
+/**
+ * Splits a large group: a new, empty group is added, led by a manager promoted from the group or, with a hire, leaderless
+ * until they arrive next quarter; half the heads at each rating and every other active project move into it.
+ */
+// @spec DIR-MOMENT-004
+function split(s: DirectorState, sim0: SimState, groupId: string, promote: boolean, log: ChangeLogEntry[]): { sim: SimState; groupId: string } {
+  const cause = { kind: 'action', actionId: 'director.orgDesign' } as const;
+  const a = sim0.teams[groupId]!.aggregate!;
+  const id = nextId(s, 'team', 'g', sim0.teams);
+  const manager = promote ? generateSeniorManager(s, sim0, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust }) : undefined;
+  const added = addTeam(sim0, { team: { id, name: unusedName(s, NAMES.teams, Object.values(sim0.teams).map((t) => t.name)), aggregate: { headcount: 0, skill: a.skill, motivation: a.motivation, stress: a.stress } }, ...(manager && { manager }) }, cause);
+  if (!added.ok) throw new Error(`split: ${added.error}`);
+  log.push(...added.log);
+  let sim = added.state;
+  for (const l of PERFORMANCE_LEVELS) {
+    const n = Math.floor(sim.teams[groupId]!.aggregate!.ratings[l] / 2);
+    if (!n) continue;
+    const r = moveHeads(sim, { from: groupId, to: id, level: l, count: n }, cause);
+    if (!r.ok) throw new Error(`split: ${r.error}`);
+    log.push(...r.log);
+    sim = r.state;
+  }
+  const projects = Object.values(sim.projects).filter((p) => p.teamId === groupId && p.status === 'active').sort((x, y) => (x.id < y.id ? -1 : 1));
+  sim = apply(sim, projects.filter((_, i) => i % 2 === 1).map((p): Effect => ({ type: 'reassignProject', projectId: p.id, teamId: id, cause })), log);
+  if (manager) {
+    s.leniency[manager.id] = randomInt(s, [0, 2]);
+    sim = apply(sim, [value('team', groupId, 'skill', -T.newSenior.promoteSkill, 'director.orgDesign')], log);
+  } else s.arriving[id] = sim.week;
+  s.groupIds.push(id);
+  return { sim, groupId: id };
+}
+
 /** Applies the player's choice for one of the quarter's open moments. */
 // @spec DIR-MOMENT-005, DIR-MOMENT-003, DIR-PLAN-003, DIR-QBR-002, DIR-QBR-003, DIR-QBR-004, DIR-PEER-001
 export function chooseDirector(level: DirectorState, sim0: SimState, momentId: string, choiceId: string): Choose {
@@ -307,7 +342,11 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
       break;
     }
     case 'orgDesign':
-      if (choiceId === 'merge') {
+      if (choiceId === 'splitPromote' || choiceId === 'splitHire') {
+        const added = split(s, sim, m.groupId!, choiceId === 'splitPromote', log);
+        sim = added.sim;
+        reaction = `${groupName(sim0, m.groupId!)} becomes two groups: ${groupName(sim, added.groupId)} is the new one.`;
+      } else if (choiceId === 'merge') {
         sim = merge(s, sim, m.groupId!, log);
         reaction = `${groupName(sim0, m.groupId!)} joins another group.`;
       } else reaction = `${groupName(sim0, m.groupId!)} stays as it is.`;

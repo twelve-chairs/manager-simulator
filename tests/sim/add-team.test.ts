@@ -30,12 +30,13 @@ describe('adding a team', () => {
   });
 
   // @spec SIM-TEAM-007
-  it('rejects a used id, a headcount below 1, a value out of range, or rating counts that miss the headcount', () => {
+  it('rejects a used id, a negative or fractional headcount, a value out of range, or rating counts that miss the headcount', () => {
     const state = fresh();
     const bad = [
       { team: team('t1') },
       { team: team(), manager: manager('e1') },
-      { team: { ...team(), aggregate: { ...team().aggregate, headcount: 0 } } },
+      { team: { ...team(), aggregate: { ...team().aggregate, headcount: -1 } } },
+      { team: { ...team(), aggregate: { ...team().aggregate, headcount: 1.5 } } },
       { team: { ...team(), aggregate: { ...team().aggregate, stress: 101 } } },
       { team: { ...team(), aggregate: { ...team().aggregate, skill: -1 } } },
       { team: { ...team(), aggregate: { ...team().aggregate, ratings: { unrated: 2, below: 0, partial: 0, meets: 0, exceeds: 0, outstanding: 0 } } } },
@@ -45,6 +46,10 @@ describe('adding a team', () => {
       expect(result.ok, JSON.stringify(input)).toBe(false);
     }
     expect(state).toEqual(fresh());
+    // an empty team is accepted, for heads to be moved into
+    const empty = addTeam(state, { team: { ...team(), aggregate: { ...team().aggregate, headcount: 0 } } }, ACTION);
+    if (!empty.ok) throw new Error(empty.error);
+    expect(empty.state.teams.t9!.aggregate).toMatchObject({ headcount: 0, ratings: { unrated: 0, below: 0, partial: 0, meets: 0, exceeds: 0, outstanding: 0 } });
   });
 });
 

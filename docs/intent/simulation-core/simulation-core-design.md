@@ -113,7 +113,7 @@ An aggregate team with no heads, no leader and no active projects can be **close
 
 A career level that sees a manager's whole **group** of teams as one can **fold** them into one aggregate team: each team's heads and manager are moved into the group, its projects reassigned to it, and the emptied team closed. The core then simulates the group like any aggregate team, and keeps none of the teams it was made from.
 
-A team can also be **added** to a running simulation, as a higher career level does when it takes over a run and the player's group grows. An added team is in aggregate form, with its summary given and all its heads `unrated` unless rating counts are given, and may come with a new manager who leads it; it joins at the current week.
+A team can also be **added** to a running simulation, as a higher career level does when it takes over a run and the player's group grows. An added team is in aggregate form, with its summary given and all its heads `unrated` unless rating counts are given, and may come with a new manager who leads it; it joins at the current week. An added team may have no heads yet, so a career level splitting a group can add the new one empty and move heads into it.
 
 ### Project
 
