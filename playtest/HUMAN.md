@@ -1,10 +1,10 @@
 # Running a Human Playtest
 
-This is the script for one playtest session: one player, one facilitator, 30 to 60 minutes, and a second session for a player who wasn't promoted in the first and wants to go on (see *A second session*). Each heading below is one of the HLD's success metrics (`docs/high-level-design.md`, *Success Metrics*). The scripted players in `metrics.playtest.ts` measure a proxy for the same metrics under the same headings, so you can compare a round of sessions with the scorecard for the same version (see *Comparing with the scorecard*).
+This is the script for one playtest session: one player, one facilitator, 30 to 60 minutes, and later sessions on the same run for a player who wants to go on to a promotion they didn't reach (see *Later sessions*). Each heading below is one of the HLD's success metrics (`docs/high-level-design.md`, *Success Metrics*). The scripted players in `metrics.playtest.ts` measure a proxy for the same metrics under the same headings, so you can compare a round of sessions with the scorecard for the same version (see *Comparing with the scorecard*).
 
 ## Setup
 
-- **The game:** the live site, https://twelve-chairs.github.io/manager-simulator/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a second session.
+- **The game:** the live site, https://twelve-chairs.github.io/manager-simulator/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a later session.
 - **The version:** write down the version from the bottom of the start screen ("Version v0.1.61 (07ccf45)") before the player starts.
 - **The player:** someone who hasn't played before. Note whether they manage people, have been managed, or neither; don't screen anyone out.
 - **Time:** let them play for up to 60 minutes. Stop earlier if they want to stop, and note when and why.
@@ -12,13 +12,13 @@ This is the script for one playtest session: one player, one facilitator, 30 to 
 - **Don't coach.** Don't explain the game, suggest a choice or answer how something works. If they ask, say "What do you think?" and note the question. The only exception is a bug that blocks play: note it, and help them past it.
 - **Take notes** with the week number from the header, so a note can be matched with what was on screen.
 
-## A second session
+## Later sessions
 
-The earliest promotion comes at the third review, week 39, and many first runs aren't promoted within an hour. *Promotion changes the job* needs a player who was, so a player who isn't promoted in the first session and wants to go on plays a second one, on another day if they like:
+Each career level takes about an hour to earn a promotion from: the earliest comes at the third review (week 39 as a line manager, month 18 as a senior manager), and many runs aren't promoted within an hour. *Promotion changes the job* needs a player who was, so a player who wants to go on plays a later session on the same run, on another day if they like: a second one to reach the senior manager, and a third to reach the director.
 
-- **Keeping the run:** the game saves after every move in the browser it was played in. If the second session is somewhere else, or the first was in a private window, use **Export save** at the end of the first session and **Load a saved game** at the start of the second.
-- **How long:** until a promotion and then about three months at the new level, through the first calibration if they get there; stop earlier if they want to.
-- **What to record:** only *Promotion changes the job*, and anything new under the other headings, marked as from the second session. *A promotion in the first session* is recorded from the first session alone.
+- **Keeping the run:** the game saves after every move in the browser it was played in. If a later session is somewhere else, or an earlier one was in a private window, use **Export save** at the end of a session and **Load a saved game** at the start of the next.
+- **How long:** until the next promotion and then a little time at the new level: about three months as a senior manager, through the first calibration if they get there, or about two quarters as a director, through the first quarterly review. Stop earlier if they want to.
+- **What to record:** only *Promotion changes the job*, for the promotion the session reached, and anything new under the other headings, marked with the session it came from. *A promotion in the first session* is recorded from the first session alone.
 - **The rules are the same:** think aloud, no coaching.
 
 ## Metrics
@@ -83,20 +83,21 @@ The HLD: playtesters describe a session as playing a game. If they describe it a
 
 ### Promotion changes the job
 
-The HLD: playtesters asked "what changed when you were promoted?" name concrete mechanics, not only bigger numbers. This needs a player who was promoted and has played a few months at the new level, in the first session or a second one.
+The HLD: playtesters asked "what changed when you were promoted?" name concrete mechanics, not only bigger numbers. This needs a player who was promoted and has played a little at the new level, in any session. Ask it after each promotion a player reaches.
 
 **Watch for**
-- How they react to the promotion, and how they choose who leads their old team.
-- The first months: whether they notice that turns are now months, that they see their managers rather than their engineers, and that the teams are shown as their managers report them.
-- Habits from the first level they look for and don't find, and the new ones they try.
-- The first calibration: whether they understand what they are being asked to set, and what they set it by.
+- How they react to the promotion, and how they choose who leads their old team or group.
+- At the senior manager, the first months: whether they notice that turns are now months, that they see their managers rather than their engineers, and that the teams are shown as their managers report them; and the first calibration: whether they understand what they are being asked to set, and what they set it by.
+- At the director, the first quarters: whether they notice that turns are now quarters, that a group's mood comes from a survey taken twice a year, and that their executive and peers are people whose trust moves; how they place the quarter's headcount and choose bets; and at the quarterly review, whether they tell it straight, and why.
+- Habits from the level before they look for and don't find, and the new ones they try.
 - Anything they say sounds like "the same thing with more people".
 
 **Ask afterwards**
 - What changed when you were promoted?
 - What did you stop doing?
 - What did you have to learn that you didn't do before?
-- Did your old team feel different once someone else was leading it?
+- Did your old team, or group, feel different once someone else was leading it?
+- After the second promotion: what changed this time, and was it more or less of a change than the first?
 - If they weren't promoted: skip these and record "not reached".
 
 ### Skill can be learned
@@ -137,8 +138,15 @@ It feels like a game, not a test:
   Words they used for it:
   Most fun / most tedious:
 
-Promotion changes the job (session 1 or 2; or "not reached"):
+Promotion changes the job, to senior manager (session ___; or "not reached"):
   Promoted at week:          Months played at the new level:
+  What they said changed:
+  What they stopped doing:
+  What they had to learn:
+  "The same thing with more people"? Their words:
+
+Promotion changes the job, to director (session ___; or "not reached"):
+  Promoted at month:         Quarters played at the new level:
   What they said changed:
   What they stopped doing:
   What they had to learn:
@@ -149,9 +157,9 @@ Skill can be learned:
 
 Bugs, and questions they asked:
 
-Second session, if any: date, minutes played, how the run was carried over:
+Later sessions, if any: for each, the date, minutes played and how the run was carried over:
 ```
 
 ## Comparing with the scorecard
 
-Run `npm run playtest` on the same version (or `PLAYTEST_URL=https://twelve-chairs.github.io/manager-simulator/ npm run playtest` against the live site), open the report with `npx playwright show-report`, and read the first-timer's scorecard. Its headings match the ones above. Under *Promotion changes the job*, the scorecard lists the panels, habits and kinds of moment that stopped and started appearing at the promotion: set what players named beside it, and note what they named that it doesn't list, and what it lists that nobody noticed. Where the people disagree with the scorecard, for example a scorecard that shows every quit was flagged on the card but players who were surprised by quits, record it: that is how the scorecard's proxies are calibrated (see the design's *Open Questions*).
+Run `npm run playtest` on the same version (or `PLAYTEST_URL=https://twelve-chairs.github.io/manager-simulator/ npm run playtest` against the live site), open the report with `npx playwright show-report`, and read the first-timer's scorecard. Its headings match the ones above. Under *Promotion changes the job*, the scorecard lists, for each promotion, the panels, habits and kinds of moment that stopped and started appearing at it: set what players named beside it, and note what they named that it doesn't list, and what it lists that nobody noticed. Where the people disagree with the scorecard, for example a scorecard that shows every quit was flagged on the card but players who were surprised by quits, record it: that is how the scorecard's proxies are calibrated (see the design's *Open Questions*).
