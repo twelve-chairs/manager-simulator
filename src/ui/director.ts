@@ -12,7 +12,7 @@ export const DIRECTOR_HELP_TOPICS = [
   { id: 'survey', title: 'The survey', text: 'You see your groups’ mood as the last engagement survey measured it, twice a year. A listening tour shows one group as it is now.' },
   { id: 'bets-review', title: 'Bets and the review', text: 'Fund bets your groups can carry. Each quarter you tell your executive how it went; what you leave out tends to come back.' },
   { id: 'energy', title: 'Energy', text: 'Your energy falls with what you take on yourself. Two quarters in a row at the edge and you burn out.' },
-  { id: 'reviews', title: 'Reviews', text: 'Every two quarters your executive reviews the bets, delivery, retention, your groups’ health and their confidence in you. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends.' },
+  { id: 'reviews', title: 'Reviews', text: 'Every two quarters your executive reviews the bets, delivery, retention, your groups’ health and their confidence in you. From your third review on, two reviews in a row rated exceeds or better earn a promotion. After three years without one, the run ends.' },
 ] as const;
 
 const PANEL_HELP = {

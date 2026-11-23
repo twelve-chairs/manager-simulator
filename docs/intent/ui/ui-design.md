@@ -144,7 +144,7 @@ Each level has its own How to play topics and panel help lines; the senior manag
 | Habits | Habits are how you run the team every week: who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony there is, and whose growth you focus on. Change them any time. |
 | Your people | Everyone has a personality and remembers what happened between you. 1:1s build trust and reveal what each person wants; people whose wants go unserved lose motivation, and unhappy people leave. |
 | Energy | Your energy falls with the work you take on and recovers in quiet weeks, fastest in a week you take nothing on yourself. Push it to the edge for four weeks in a row and you burn out. |
-| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your third review on, two strong reviews in a row earn a promotion; three weak ones in a row and you're out. After two years without a promotion, the run ends. |
+| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your third review on, two reviews in a row rated exceeds or better earn a promotion; three in a row rated partial or below and you're out. After two years without a promotion, the run ends. |
 
 | Panel | Help line |
 |---|---|
@@ -183,7 +183,7 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 | What you're told | Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth. |
 | Calibration | Before each review your managers propose their teams' ratings. Compare them with what each team delivered, and move heads up or down. |
 | Energy | Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out. |
-| Reviews | Every six months your manager reviews delivery, retention, your teams' health, how your managers grew, calibration and the period's goals. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
+| Reviews | Every six months your manager reviews delivery, retention, your teams' health, how your managers grew, calibration and the period's goals. From your third review on, two reviews in a row rated exceeds or better earn a promotion. After three years without one, the run ends. |
 
 | Panel | Help line |
 |---|---|
@@ -229,7 +229,7 @@ The director level keeps the shell (header, scene, recap, review, ended) and bri
 | The survey | You see your groups' mood as the last engagement survey measured it, twice a year. A listening tour shows one group as it is now. |
 | Bets and the review | Fund bets your groups can carry. Each quarter you tell your executive how it went; what you leave out tends to come back. |
 | Energy | Your energy falls with what you take on yourself. Two quarters in a row at the edge and you burn out. |
-| Reviews | Every two quarters your executive reviews the bets, delivery, retention, your groups' health and their confidence in you. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
+| Reviews | Every two quarters your executive reviews the bets, delivery, retention, your groups' health and their confidence in you. From your third review on, two reviews in a row rated exceeds or better earn a promotion. After three years without one, the run ends. |
 
 | Panel | Help line |
 |---|---|
