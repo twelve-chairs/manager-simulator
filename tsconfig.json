@@ -8,5 +8,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests", "scripts", "e2e", "playtest", "vite.config.ts", "playwright.config.ts", "playwright.playtest.config.ts"]
+  "include": ["src", "tests", "scripts", "e2e", "playtest", "vite.config.ts", "playwright.config.ts", "playwright.playtest.config.ts", "playwright.ai.config.ts"]
 }

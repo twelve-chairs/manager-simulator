@@ -1,0 +1,154 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import type { z } from 'zod';
+import {
+  AI_TUNING,
+  NO_CREDENTIALS,
+  checkReply,
+  decide,
+  decisionMessage,
+  hasCredentials,
+  interviewMessage,
+  keepNotebook,
+  renderReport,
+  runOptions,
+  scriptQuestions,
+  systemPrompt,
+  type AiClient,
+  type Reply,
+  type Screen,
+  type Step,
+} from '../../playtest/ai/core';
+
+const moment = (over: Partial<Screen> = {}): Screen => ({
+  kind: 'moment',
+  turn: 'Week 3',
+  title: 'Quiet in the 1:1',
+  text: 'Ada answers every question in the 1:1 with a word or two.',
+  choices: [{ id: 'move-on', label: 'Keep the 1:1 on project status' }, { id: 'ask', label: 'Ask what would make the job worth staying for' }],
+  habits: [{ id: 'oneOnOnes', label: '1:1s', options: [{ value: 'weekly', label: 'Every week' }, { value: 'fortnightly', label: 'Every other week' }], value: 'fortnightly' }],
+  canWait: true,
+  ...over,
+});
+const reply = (over: Partial<Reply> = {}, action: Partial<Reply['action']> = {}): Reply => ({
+  thinkAloud: 'She seems withdrawn; I should ask.',
+  feeling: 'clear',
+  action: { kind: 'choose', choiceId: 'ask', place: [], fund: [], ...action },
+  habits: [],
+  notebook: 'Quiet engineers may be flight risks.',
+  ...over,
+});
+/** A client that answers from a list, recording what it was sent. */
+function fake(answers: (Reply | null)[]): AiClient & { sent: string[] } {
+  const sent: string[] = [];
+  return {
+    sent,
+    async ask<T>(_system: string, user: string, _schema: z.ZodType<T>) {
+      sent.push(user);
+      return (answers.shift() ?? null) as T | null;
+    },
+  };
+}
+
+describe('the AI playtester', () => {
+  // @spec PLAY-AI-001
+  it('finds credentials in an API key, a token, a named profile or a signed-in profile, and says how to provide them when there are none', () => {
+    expect(hasCredentials({}, false)).toBe(false);
+    expect(hasCredentials({ ANTHROPIC_API_KEY: 'k' }, false)).toBe(true);
+    expect(hasCredentials({ ANTHROPIC_AUTH_TOKEN: 't' }, false)).toBe(true);
+    expect(hasCredentials({ ANTHROPIC_PROFILE: 'work' }, false)).toBe(true);
+    expect(hasCredentials({}, true)).toBe(true);
+    expect(NO_CREDENTIALS).toMatch(/ant auth login/);
+    expect(NO_CREDENTIALS).toMatch(/Nothing was sent/);
+  });
+
+  // @spec PLAY-AI-002
+  it('sends only the screen’s text, its choices and habits, what was last read, and the notebook', () => {
+    const m = decisionMessage(moment(), 'my notes', 'How week 2 went: Bo is less stressed.');
+    expect(m).toContain('my notes');
+    expect(m).toContain('How week 2 went');
+    expect(m).toContain('Ada answers every question');
+    expect(m).toContain('- `ask`: Ask what would make the job worth staying for');
+    expect(m).toContain('`oneOnOnes` (1:1s), now `fortnightly`');
+    expect(m).toContain('You may also let this wait.');
+    const bets = decisionMessage(moment({ funding: { offers: [{ id: 'bo1', label: 'Atlas' }], groups: [{ id: 'g1', label: 'Payments' }] } }), '', '');
+    expect(bets).toMatch(/Bets on offer:\n- `bo1`: Atlas/);
+    expect(bets).toContain('(empty: you have just started)');
+    expect(systemPrompt('sceptic')).toMatch(/sceptical player/);
+  });
+
+  // @spec PLAY-AI-003
+  it('accepts only what the screen offers', () => {
+    expect(checkReply(moment(), reply())).toMatchObject({ ok: true, action: { kind: 'choose', choiceId: 'ask' } });
+    expect(checkReply(moment(), reply({}, { choiceId: 'shout' }))).toMatchObject({ ok: false, reason: expect.stringContaining('move-on, ask') });
+    expect(checkReply(moment({ canWait: false }), reply({}, { kind: 'wait', choiceId: '' })).ok).toBe(false);
+    expect(checkReply(moment(), reply({ habits: [{ habit: 'oneOnOnes', value: 'daily' }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({ habits: [{ habit: 'oneOnOnes', value: 'weekly' }] }))).toMatchObject({ ok: true, habits: [{ habit: 'oneOnOnes', value: 'weekly' }] });
+    const heads = moment({ placement: { heads: 3, targets: [{ id: 'group:g1', label: 'Payments' }, { id: 'group:g2', label: 'Search' }] } });
+    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 2 }, { target: 'group:g2', count: 1 }] }))).toMatchObject({ ok: true, action: { kind: 'place', place: { 'group:g1': 2, 'group:g2': 1 } } });
+    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 4 }] })).ok).toBe(false);
+    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g9', count: 1 }] })).ok).toBe(false);
+    const bets = moment({ funding: { offers: [{ id: 'bo1', label: 'A' }, { id: 'bo2', label: 'B' }, { id: 'bo3', label: 'C' }], groups: [{ id: 'g1', label: 'P' }] } });
+    expect(checkReply(bets, reply({}, { kind: 'fund', choiceId: '', fund: [{ offerId: 'bo1', groupId: 'g1' }] }))).toMatchObject({ ok: true, action: { kind: 'fund', fund: { bo1: 'g1' } } });
+    expect(checkReply(bets, reply({}, { kind: 'fund', choiceId: '', fund: [{ offerId: 'bo1', groupId: 'g1' }, { offerId: 'bo2', groupId: 'g1' }, { offerId: 'bo3', groupId: 'g1' }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({}, { kind: 'fund', choiceId: '', fund: [] })).ok).toBe(false);
+  });
+
+  // @spec PLAY-AI-003, PLAY-AI-004, PLAY-AI-009
+  it('sends an invalid reply back once with the reason, then lets the moment wait, and treats a refused reply as invalid', async () => {
+    const good = fake([reply({}, { choiceId: 'shout' }), reply()]);
+    const r = await decide(good, 'sys', moment(), 'old', '');
+    expect(r.action).toEqual({ kind: 'choose', choiceId: 'ask' });
+    expect(r.notebook).toBe('Quiet engineers may be flight risks.');
+    expect(good.sent[1]).toMatch(/could not be acted on: There is no choice "shout"/);
+    const bad = await decide(fake([null, reply({}, { choiceId: 'shout' })]), 'sys', moment(), 'old', '');
+    expect(bad).toMatchObject({ reply: null, action: { kind: 'wait' }, notebook: 'old', note: expect.any(String) });
+    const cannotWait = await decide(fake([null, null]), 'sys', moment({ canWait: false }), 'old', '');
+    expect(cannotWait.action).toEqual({ kind: 'choose', choiceId: 'move-on' });
+  });
+
+  // @spec PLAY-AI-004
+  it('keeps the notebook to its longest length', () => {
+    const long = Array.from({ length: AI_TUNING.notebookWords + 50 }, (_, i) => `w${i}`).join(' ');
+    expect(keepNotebook(long).split(' ')).toHaveLength(AI_TUNING.notebookWords);
+    expect(keepNotebook('  short notes  ')).toBe('short notes');
+  });
+
+  // @spec PLAY-AI-006
+  it('asks the human script’s questions for the metrics reached, under its headings', () => {
+    const questions = scriptQuestions(readFileSync(new URL('../../playtest/HUMAN.md', import.meta.url), 'utf8'));
+    expect(questions.map((q) => q.heading)).toEqual(expect.arrayContaining(['A promotion in the first session', 'Promotion changes the job', 'Skill can be learned']));
+    for (const q of questions) expect(q.questions.length).toBeGreaterThan(0);
+    const unpromoted = interviewMessage(questions, false, 'notes', ['first thought']);
+    expect(unpromoted).not.toContain('### Promotion changes the job');
+    expect(unpromoted).toContain('1. first thought');
+    expect(interviewMessage(questions, true, 'notes', [])).toContain('### Promotion changes the job');
+  });
+
+  // @spec PLAY-AI-007
+  it('writes a report opening with the run, then the interview, then the notable moments', () => {
+    const steps: Step[] = [
+      { n: 1, turn: 'Week 1', title: 'Quiet in the 1:1', screen: '', reply: reply(), action: { kind: 'choose', choiceId: 'ask' }, better: 'ask' },
+      { n: 2, turn: 'Week 2', title: 'Scope creep', screen: '', reply: reply({ feeling: 'confused', thinkAloud: 'What does trade mean here?' }), action: { kind: 'choose', choiceId: 'say-yes' }, better: 'trade' },
+    ];
+    const report = renderReport(
+      { version: 'v0.1.99 (abc1234)', persona: 'new-manager', seed: 101, model: 'claude-opus-5-5', reached: 'promoted to senior manager', requests: 3, tokens: { input: 1000, output: 200, cacheRead: 800, cacheWrite: 100 } },
+      [{ when: 'after the first promotion', interview: { answers: [{ heading: 'Promotion changes the job', answer: 'I stopped doing night pages.' }] } }],
+      steps,
+    );
+    const at = (s: string) => report.indexOf(s);
+    expect(at('v0.1.99 (abc1234)')).toBeGreaterThan(0);
+    expect(report).toMatch(/language model, not a person/);
+    expect(at('## Interview: after the first promotion')).toBeLessThan(at('## Notable moments'));
+    expect(report).toContain('I stopped doing night pages.');
+    expect(report).toMatch(/2\. Week 2, Scope creep\*\* \(confused; chose say-yes, not trade\): What does trade mean here\?/);
+    expect(report).not.toMatch(/1\. Week 1, Quiet/);
+  });
+
+  // @spec PLAY-AI-008
+  it('plays one persona to the first promotion by default, and takes options for the rest', () => {
+    expect(runOptions({})).toEqual({ persona: 'new-manager', seed: 101, until: 'promotion', maxDecisions: AI_TUNING.maxDecisions.promotion });
+    expect(runOptions({ AI_PERSONA: 'sceptic', AI_SEED: '7', AI_UNTIL: 'director', AI_MAX_DECISIONS: '50' })).toEqual({ persona: 'sceptic', seed: 7, until: 'director', maxDecisions: 50 });
+    for (const bad of [{ AI_PERSONA: 'robot' }, { AI_UNTIL: 'forever' }, { AI_SEED: '-1' }, { AI_MAX_DECISIONS: '0' }]) expect(() => runOptions(bad)).toThrow();
+  });
+});

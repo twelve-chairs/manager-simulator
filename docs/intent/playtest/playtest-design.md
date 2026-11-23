@@ -122,6 +122,24 @@ Each player's runs produce one scorecard, attached to the playtest's HTML report
 - **Questions to ask afterwards**, under each metric's heading, worded so that they don't lead the player.
 - **A record sheet** with the version and one space per heading, so a round of sessions can be compared with the scorecard for the same version.
 
+## The AI Playtester
+
+Between rounds of human sessions, an **AI playtester** plays the game as a newcomer would and answers the human script's questions afterwards. It is a third kind of evidence, between the scripted players, which know the game's rules and measure proxies, and people, whose experience is the thing measured: it reads only what the page shows, so it can show whether a newcomer can work out what to do from the words on screen, where the wording confuses, and what a player names when asked what changed at a promotion. It does not replace human sessions: it reads every word, never tires, and already knows a good deal about management, so it overrates clarity and underrates tedium, and its report says so.
+
+**How it plays.** A Playwright run plays the real page from a new run, as the scripted players do. At each screen that asks for a decision (a moment, the scene before a turn, a handover, headcount, bets), the harness sends Claude the screen as text: the header, the panels, the scene and its choices, each with its id; and the last recap or review the player read. Claude replies, in a fixed structured form the harness checks, with a short think-aloud and an action: a choice the screen offers, letting the moment wait, habit changes before a turn, or a placement of heads or bets. A reply that names something the screen does not offer is sent back once with the reason, and a second bad reply lets the moment wait. The harness makes the other clicks itself (Continue, Start, Finish, closing a recap, acknowledging a review), so the playtester spends its turns on decisions.
+
+**What it remembers.** Each reply carries the playtester's own notebook, a few hundred words it rewrites as it goes: what it has learned, what it suspects, what it would do differently. The notebook and the current screen are all it sees; it never sees the game's state, its code or this design. Each decision is a separate request, so a run's cost grows with its decisions, not with its length squared.
+
+**Personas.** A run plays as one persona: a newly promoted manager, a seasoned engineer managing for the first time, or a sceptic who tries the edges. The persona and the game's framing (fiction, simplified, played from the screen) form a fixed system prompt, cached across the run's requests.
+
+**The interview.** At each promotion and at the end of the run, the playtester answers the human script's questions for the metrics it has reached, from its notebook and its think-aloud, under the same headings, so its report can be set beside human record sheets and the scorecard.
+
+**The report.** A run writes a Markdown report and the run's transcript (every screen sent, every reply, every action taken) to a folder git ignores. The report opens with the version, persona, seed, model, how far the run got, the number of requests and the tokens they used, and the caveat that this is a model, not a person; then the interview, then each level's notable moments: the think-aloud where the playtester was confused, surprised, or chose against the better choice.
+
+**Running it.** It runs only when asked, with `npm run playtest:ai`, never in `npm test`, the playtest suite or CI, so it spends nothing unless someone runs it. It reads the Anthropic credentials already in the environment (an API key, or a signed-in profile) and stops with a message if there are none; no key is ever written to the repository. A run is bounded: by default it plays to the first promotion, and options take it further (to the director, or to the end), choose the persona and seed, and cap the number of decisions. It uses Claude Opus 5.5, with refusal fallbacks enabled.
+
+**What leaves the machine.** Only the text of the game's own screens and the persona prompt are sent. The game itself still makes no network requests; this is test tooling, like the build, and its one new dependency, the Anthropic SDK, is a development dependency the game never loads.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -136,6 +154,9 @@ Each player's runs produce one scorecard, attached to the playtest's HTML report
 | What the players read | Only the page | The save or the run state | The metrics are about what a player experiences; a proxy read from the game's state could hold while the screen hides it. |
 | Human script | A Markdown file beside the playtests | In this design; a document outside the repo | A facilitator should not need to read a design doc to run a session, and the script should change with the game it tests. |
 | Reaching a promotion with people | Later sessions on the same run, one for each promotion a player goes on to | A starting point at the senior manager for playtesters; asking only players promoted in one session | The metric is about the change itself, so the player has to have done the first job; a run started at the second level has nothing to compare. Most first runs end their first hour unpromoted, so asking only those promoted would leave the metric with few answers. |
+| An AI playtester | A model plays the real page from its text, decision by decision, keeps its own notebook, and answers the human script's questions | A model reviewing transcripts of the scripted players' runs; a person-free replacement for human sessions | Only a player that chooses can show whether a newcomer finds the better choices from the words on screen; a reviewer of another player's choices cannot. A model is not a person, so it complements human sessions rather than replacing them. |
+| When the AI playtester runs | Only on request, with credentials from the environment | In CI or the weekly playtest run | Each run costs money and gives different answers each time; it is a tool to reach for, not a check to keep green. |
+| How it remembers | A notebook it rewrites each decision, sent with the screen | The whole run's history in one growing conversation | A run is hundreds of decisions; a notebook keeps every request small and its cost flat, and makes what it learned readable in the report. |
 | What counts as the job changing | Panels, habits and the level's own kinds of moment, each compared across the handover | Every heading on the page; moment kinds read from a mark the page adds for the playtests | They are what a player would name. Every heading would bury them under names of people and projects; a mark added for the playtests would be read by no player, and the title wording is what a player sees. |
 
 ## Open Questions & Future Decisions

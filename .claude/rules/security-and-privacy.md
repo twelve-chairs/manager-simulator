@@ -31,6 +31,13 @@ that needs an HLD update first, not just a code review:
   phones home.
 - Fingerprinting or identifiers that persist beyond the game's own save data.
 
+Test tooling is not the game. The AI playtester (`npm run playtest:ai`,
+`playtest/ai/`) calls the Claude API from the developer's machine, sending only
+the text of the game's own screens and its persona prompt. It reads credentials
+from the environment and never writes them anywhere, runs only when asked
+(never in `npm test`, the playtest suite or CI), and writes its reports to a
+folder git ignores. Its SDK is a development dependency the game never loads.
+
 ## Dependencies
 
 - Keep runtime dependencies to a minimum; prefer none. Each one needs a reason

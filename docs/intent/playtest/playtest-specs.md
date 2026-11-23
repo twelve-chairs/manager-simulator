@@ -68,3 +68,15 @@ The worse half of a person's bands is struggling or flat for motivation, and str
 
 - [x] **PLAY-HUMAN-001**: The human playtest script shall have a section for setup, and a heading for each of the HLD's success metrics, each with what to watch for and questions to ask afterwards.
 - [x] **PLAY-HUMAN-002**: The human playtest script shall have a record sheet with a space for the version shown on the start screen and one for each success metric's heading.
+
+## The AI playtester
+
+- [x] **PLAY-AI-001**: When `npm run playtest:ai` runs without Anthropic credentials in the environment, the AI playtester shall stop with a message saying how to provide them, and make no request.
+- [x] **PLAY-AI-002**: When the AI playtester reaches a screen that asks for a decision, it shall send Claude only the screen's text (header, panels, scene, choices with their ids), the last recap or review the player read, the playtester's notebook and its persona prompt, and nothing of the game's state or code.
+- [x] **PLAY-AI-003**: When Claude replies to a decision, the AI playtester shall accept only an action the screen offers (a choice by id, letting the moment wait, habit changes to offered options, or a placement or funding the scene accepts); it shall send an invalid reply back once with the reason, and let the moment wait if the second reply is invalid too.
+- [x] **PLAY-AI-004**: When a decision's reply is accepted, the AI playtester shall replace its notebook with the reply's notebook, kept to a tuned length, and record the screen, the think-aloud and the action in the run's transcript.
+- [x] **PLAY-AI-005**: The AI playtester shall make the screens' other clicks itself (Continue, Start, Finish, closing a recap, acknowledging a review) without a request.
+- [x] **PLAY-AI-006**: When a run is promoted, and when it ends or reaches its limit, the AI playtester shall ask Claude the human script's questions for the metrics the run has reached, under the script's headings, from the notebook and the think-aloud so far.
+- [x] **PLAY-AI-007**: When a run ends or reaches its limit, the AI playtester shall write a Markdown report and the transcript to `playtest-results/`, the report opening with the version, persona, seed, model, how far the run got, the requests made and the tokens they used, and a note that the player was a model, then the interview, then the moments where the think-aloud showed confusion or surprise or the action went against the better choice.
+- [x] **PLAY-AI-008**: The AI playtester shall play as one persona (a newly promoted manager, a seasoned engineer managing for the first time, or a sceptic), stop at the first promotion unless told to go to the director or the end, and stop after a maximum number of decisions, each set by an option.
+- [x] **PLAY-AI-009**: The AI playtester shall call Claude Opus 5.5 with adaptive thinking, a structured reply format, a cached system prompt and refusal fallbacks, and treat a refused reply as an invalid one.

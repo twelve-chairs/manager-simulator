@@ -98,6 +98,7 @@ npm run preview     # serve the built game
 npm test            # run the unit tests once
 npm run test:e2e    # build the game and play it in Chromium (first run: npm run playwright:install)
 npm run playtest    # scripted players play whole runs, checking every screen and scoring the success metrics; PLAYTEST_URL=<site> to play a deployed copy
+npm run playtest:ai # Claude plays as a newcomer and answers the human script; needs Anthropic credentials and costs money (AI_PERSONA, AI_SEED, AI_UNTIL, AI_MAX_DECISIONS)
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
 npm run lint        # lint with oxlint, including type-aware rules
@@ -126,6 +127,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `e2e/` | End-to-end tests: the production build played in Chromium with Playwright |
 | `playtest/` | Playtests: scripted players of different styles play whole runs from fixed seeds, with every screen checked, and a scorecard of proxies for the HLD's success metrics |
 | `playtest/HUMAN.md` | The script for a human playtest session, under the same success-metric headings as the scorecard |
+| `playtest/ai/` | The AI playtester: Claude plays the real page as a newcomer, decision by decision, and writes a report to `playtest-results/` |
 | `.mcp.json` | A Playwright MCP server for AI-assisted exploratory testing in a real browser |
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs at each career level to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools: the situation content compiler and the version stamp |
