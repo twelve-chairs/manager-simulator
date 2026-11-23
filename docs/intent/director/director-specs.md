@@ -103,7 +103,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-END-001**: The director level shall advance the simulation thirteen weeks per turn.
 - [x] **DIR-END-002**: The director level shall be reviewed every two quarters, at quarters 2, 4, 6, 8, 10 and 12 of the level.
 - [x] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), and the executive's confidence (the executive's trust in the player), each against a tuned target.
-- [x] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on.
+- [x] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on, how many reviews remain until it is, and how many reviews it has left after this one, its last being at quarter 12.
 - [x] **DIR-END-005**: When the level is assessed for a review, the director level shall report that it is the level's last review at the sixth review (quarter 12), and not before.
 - [x] **DIR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of two consecutive quarters, then the director level shall report that the player has burned out.
 

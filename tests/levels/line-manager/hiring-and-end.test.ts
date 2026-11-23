@@ -124,11 +124,16 @@ describe('scorecard', () => {
   });
 
   // @spec LINE-END-004
-  it('allows promotion from week 39, the third review', () => {
+  it('allows promotion from week 39, the third review, and counts the reviews until then and those left', () => {
     const { level, sim } = run(1);
     expect(assess(level, patch(sim, (s) => (s.week = 26))).promotionPossible).toBe(false);
     expect(assess(level, patch(sim, (s) => (s.week = 38))).promotionPossible).toBe(false);
     expect(assess(level, patch(sim, (s) => (s.week = 39))).promotionPossible).toBe(true);
+    const counts = (week: number) => {
+      const a = assess(level, patch(sim, (s) => (s.week = week)));
+      return [a.reviewsUntilPromotion, a.reviewsLeft];
+    };
+    expect([13, 26, 39, 91, 104].map(counts)).toEqual([[2, 7], [1, 6], [0, 5], [0, 1], [0, 0]]);
   });
 
   // @spec LINE-END-013

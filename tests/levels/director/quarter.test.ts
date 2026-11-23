@@ -190,6 +190,7 @@ describe('reviews and the end of the level', () => {
     const a = (q: number) => assessDirector(level, at(sim, sim.week + q * 13));
     expect([2, 4, 6, 8, 12].map((q) => a(q).promotionPossible)).toEqual([false, false, true, true, true]);
     expect([2, 10, 12].map((q) => a(q).lastReview)).toEqual([false, false, true]);
+    expect([2, 4, 6, 10, 12].map((q) => [a(q).reviewsUntilPromotion, a(q).reviewsLeft])).toEqual([[2, 5], [1, 4], [0, 3], [0, 1], [0, 0]]);
   });
 
   // @spec DIR-END-006

@@ -19,6 +19,7 @@ export function stubReview(outcome: ReviewOutcome = 'continue') {
       sim: { ...input.sim, player: { ...input.sim.player, reputation: 77 } },
       rating: 'meets',
       outcome,
+      standing: { promotion: { kind: 'twoInARow' as const } },
       score: 0,
       measures: input.assessment.measures.map((m) => ({ ...m, verdict: 'at' as const })),
       debriefs: input.debriefs,

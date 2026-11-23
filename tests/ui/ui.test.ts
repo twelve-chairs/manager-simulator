@@ -694,6 +694,30 @@ describe('review and end', () => {
     expect($$(root, '[data-measure] [data-field=target]')).toHaveLength(0);
   });
 
+  // @spec UI-REVIEW-001, UI-REVIEW-002
+  it('says in words where the player stands, with the score in small print', () => {
+    const r = structuredClone(endWeeks(run(), 13));
+    const shown = (standing: NonNullable<typeof r.review>['standing']) => {
+      const root = makeApp({ run: { ...r, review: { ...r.review!, rating: 'exceeds', score: 0.5, standing } } }).root;
+      const field = (f: string) => root.querySelector(`[data-field=${f}]`)?.textContent ?? null;
+      return { margins: $$(root, '[data-field=margin]').map((m) => m.textContent), promotion: field('promotion'), plan: field('plan'), score: field('score') };
+    };
+    expect(shown({ marginUp: 'outstanding', marginDown: 'meets', promotion: { kind: 'oneMore' } })).toEqual({
+      margins: ['One measure a step better would have made it outstanding.', 'One measure a step worse would have made it meets.'],
+      promotion: "One more review rated exceeds or better and you'll be promoted.",
+      plan: null,
+      score: 'score 0.50, from −1 to 1',
+    });
+    expect(shown({ promotion: { kind: 'twoInARow' } }).promotion).toBe('Promotion takes two reviews in a row rated exceeds or better.');
+    expect(shown({ promotion: { kind: 'notOpenYet', reviews: 2 } }).promotion).toBe('Promotion opens in 2 reviews.');
+    expect(shown({ promotion: { kind: 'outOfTime' } }).promotion).toBe("There aren't enough reviews left at this level for a promotion.");
+    expect(shown({ promotion: { kind: 'promoted' } }).promotion).toBeNull();
+    expect(shown({ promotion: { kind: 'ended' } }).promotion).toBeNull();
+    expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'coaching' }).plan).toBe('One more review rated partial or below puts you on an improvement plan.');
+    expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'pip' }).plan).toBe("One more review rated partial or below and you'll be managed out.");
+    expect(shown({ promotion: { kind: 'twoInARow' } }).margins).toEqual([]);
+  });
+
   // @spec UI-REVIEW-001
   it('says when a ceiling held the rating down, and what staying a line manager means', () => {
     const r = structuredClone(endWeeks(run(), 13));

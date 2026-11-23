@@ -25,7 +25,7 @@ A **measure** has a name, the player's value for the quarter, a target, a tolera
 - **above target** when it is beyond the tolerance on the better side;
 - **below target** when it is beyond the tolerance on the worse side.
 
-The career level supplies its measures through the turn loop's career level contract (*assess*), with their targets and tolerances; it also says whether promotion is possible yet, whether this is the level's last review, and any **ceiling** on the rating with the reason for it. The review adds one measure of its own to every review: the player's **reputation**, with its target and tolerance set by the review.
+The career level supplies its measures through the turn loop's career level contract (*assess*), with their targets and tolerances; it also says whether promotion is possible yet, how many reviews remain before it is, how many reviews the level has left after this one, whether this is the level's last review, and any **ceiling** on the rating with the reason for it. The review adds one measure of its own to every review: the player's **reputation**, with its target and tolerance set by the review.
 
 ## The Rating
 
@@ -44,6 +44,20 @@ After rating the player, the review decides, in this order:
 3. **Stayed** if the level says this is its last review: the player has run out of time to be promoted at this level, and the run ends.
 4. **Continue** otherwise.
 
+## Standing
+
+With the outcome, the review returns the player's **standing**: how near the rating came to the ones either side of it, and what the next reviews can do. A player reads from it, in words, how close they are to promotion or to being managed out; a score from −1 to 1 tells them neither.
+
+- **Margin.** Whether one measure a verdict better (below to at, or at to above) would have earned the next rating up, and whether one measure a verdict worse would have dropped it to the next rating down. Each such step moves the score by one over the number of measures. No margin up is given when a ceiling lowered the rating, since the ceiling held it, not the tally, and none beyond *outstanding* or below *below*.
+- **Toward promotion**, one of:
+  - *promoted*, when the outcome is promote;
+  - *ended*, when the run ends at this review (managed out, or the level's last review without a promotion);
+  - *not open yet*, when promotion will not be possible at the next review either, with how many reviews until it is;
+  - *out of time*, when two more ratings of *exceeds* or better are needed and the level has fewer than two reviews left;
+  - *one more*, when this rating is *exceeds* or better and the next review can promote: one more such rating promotes;
+  - *two in a row*, otherwise: promotion takes two ratings in a row of *exceeds* or better.
+- **Plan.** When the rating leaves the player on a coaching plan, one more low rating puts them on an improvement plan; on an improvement plan, one more low rating and they are managed out.
+
 ## Debriefs
 
 The review includes the debrief records the situation engine kept since the player's previous rating (or since the start of the run, at the first review), which the turn loop gathers from the situation engine. Counting from the previous rating rather than a fixed number of weeks keeps consecutive reviews' windows joined up whatever the level's time step: resolved situations with their debrief text, and those the player ignored or that expired. The review returns them with the measures, so the review the player reads names the conversations that went well, went badly, or never happened.
@@ -52,7 +66,7 @@ The review includes the debrief records the situation engine kept since the play
 
 | Operation | Input | Output |
 |---|---|---|
-| `conductReview` | level id, simulation state, the level's assessment (measures, whether promotion is possible, whether this is the last review, and any rating ceiling with its reason), debrief records since the previous review | new simulation state, the rating, the outcome, each measure with its verdict, the score, the ceiling's reason when it lowered the rating, and the debrief records |
+| `conductReview` | level id, simulation state, the level's assessment (measures, whether promotion is possible, the reviews until it is, the reviews left at the level, whether this is the last review, and any rating ceiling with its reason), debrief records since the previous review | new simulation state, the rating, the outcome, the standing, each measure with its verdict, the score, the ceiling's reason when it lowered the rating, and the debrief records |
 
 ## Decisions & Alternatives
 
@@ -64,6 +78,7 @@ The review includes the debrief records the situation engine kept since the play
 | Promotion | Two consecutive ratings of *exceeds* or better once the level allows it | One strong review; the player chooses when to go for promotion | One strong quarter is luck as often as skill; two in a row shows sustained performance, as real promotion cases ask for. |
 | A result the tally should not average away | A ceiling on the rating set by the level, with a reason shown to the player | Weighting that measure more heavily; leaving it to the tally | A heavier weight is invisible: the player sees a lower score but not why. A ceiling names the reason, and leaves the level to say which results its manager would not overlook. |
 | A run that never ends | The level's last review ends the run with the outcome `stayed` when the player is not promoted | Easier promotion (two strong reviews among the last three); no end | A steady player otherwise plays one level forever. Easier promotion still allows an endless run and raises every strategy's promotion rate; a last review gives each level a shape and an honest ending. |
+| Telling the player where they stand | A standing in words: the margin to the ratings either side, what the next reviews can do toward promotion, and the plan's next step | The score alone; the score with the thresholds beside it; a progress bar toward promotion | A score with thresholds is still arithmetic the player has to do, and says nothing of the two-in-a-row rule. A bar suggests promotion accrues, when it is two consecutive ratings. A margin of one measure names something the player can change. |
 | Explaining the quarter | Measures with verdicts, plus the quarter's debrief records | The rating alone | Traceable consequences are an HLD goal; the debriefs connect the rating to the choices that produced it. |
 
 ## Open Questions & Future Decisions

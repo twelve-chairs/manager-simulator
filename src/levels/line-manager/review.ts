@@ -97,6 +97,9 @@ export function assess(level: LineState, sim: SimState): Assessment {
     ],
     promotionPossible: card.promotionPossible,
     lastReview: sim.week >= LINE_TUNING.lastReview * LINE_TUNING.reviewEveryWeeks,
+    // @spec LINE-END-004
+    reviewsUntilPromotion: Math.max(0, LINE_TUNING.promotionFromReview - Math.floor(sim.week / LINE_TUNING.reviewEveryWeeks)),
+    reviewsLeft: Math.max(0, LINE_TUNING.lastReview - Math.floor(sim.week / LINE_TUNING.reviewEveryWeeks)),
     ...(level.overwhelmedWeeks > LINE_TUNING.overloadedWeeks
       ? { ceiling: { rating: 'partial' as const, reason: OVERLOADED_TEAM } }
       : band(card.teamHealth.stress) >= LINE_TUNING.stretchedTeamBand

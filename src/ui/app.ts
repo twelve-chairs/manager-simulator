@@ -1,6 +1,7 @@
 import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Dependencies, type Run, type WeekMoment } from '../loop';
 import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '../save';
 import type { ContentError, Situation } from '../situations';
+import type { Standing, TowardPromotion } from '../review';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_OPEN_THROUGH_WEEK } from './help';
@@ -157,6 +158,30 @@ const OUTCOMES = {
 } as const;
 
 const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
+
+/** Where the player stands toward promotion, in words; nothing once the review promotes or ends the run. */
+const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | 'promoted' | 'ended'>, string> = {
+  oneMore: "One more review rated exceeds or better and you'll be promoted.",
+  twoInARow: 'Promotion takes two reviews in a row rated exceeds or better.',
+  outOfTime: "There aren't enough reviews left at this level for a promotion.",
+};
+const PLAN_NEXT = {
+  coaching: 'One more review rated partial or below puts you on an improvement plan.',
+  pip: "One more review rated partial or below and you'll be managed out.",
+} as const;
+
+/** The standing's words: margins, the way to promotion and the plan's next step. */
+// @spec UI-REVIEW-002
+function standingLines(s: Standing): Child[] {
+  const p = s.promotion;
+  const toward = p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+  return [
+    s.marginUp ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step better would have made it ${s.marginUp}.`) : null,
+    s.marginDown ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step worse would have made it ${s.marginDown}.`) : null,
+    toward ? h('p', { class: 'standing', 'data-field': 'promotion' }, toward) : null,
+    s.plan ? h('p', { class: 'standing plan', 'data-field': 'plan' }, PLAN_NEXT[s.plan]) : null,
+  ];
+}
 
 /** What happened to a situation, in the words the recap uses. */
 const DEBRIEF_STATUS = { resolved: 'You dealt with it', ignored: 'You let it wait', expired: 'It passed before you got to it' } as const;
@@ -684,8 +709,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       { 'data-screen': 'review', class: 'review' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, `${capital(renderer.turn)} ${turnOf(ctx.run, renderer, ctx.run.sim.week - STEP[renderer.turn])} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
-      h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
+      h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' ', h('small', { class: 'numbers', 'data-field': 'score' }, `score ${review.score.toFixed(2)}, from −1 to 1`)),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
+      standingLines(review.standing),
       h(
         'table',
         { class: 'measures' },

@@ -63,6 +63,11 @@ describe('the senior manager’s reviews', () => {
     expect(assessSenior(level, at(level, sim, 12)).promotionPossible).toBe(false);
     expect(assessSenior(level, at(level, sim, 17)).promotionPossible).toBe(false);
     expect(assessSenior(level, at(level, sim, 18)).promotionPossible).toBe(true);
+    const counts = (month: number) => {
+      const a = assessSenior(level, at(level, sim, month));
+      return [a.reviewsUntilPromotion, a.reviewsLeft];
+    };
+    expect([6, 12, 18, 30, 36].map(counts)).toEqual([[2, 5], [1, 4], [0, 3], [0, 1], [0, 0]]);
   });
 
   // @spec SENIOR-END-005

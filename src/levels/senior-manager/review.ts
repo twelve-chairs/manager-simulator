@@ -142,5 +142,8 @@ export function assessSenior(level: SeniorState, sim: SimState): Assessment {
     ],
     promotionPossible: month >= T.promotionFromMonth,
     lastReview: month >= T.lastReviewMonth,
+    // @spec SENIOR-END-004
+    reviewsUntilPromotion: Math.max(0, Math.ceil((T.promotionFromMonth - month) / T.reviewEveryMonths)),
+    reviewsLeft: Math.max(0, Math.ceil((T.lastReviewMonth - month) / T.reviewEveryMonths)),
   };
 }

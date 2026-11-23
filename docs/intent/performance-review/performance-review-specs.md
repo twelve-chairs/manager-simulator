@@ -21,7 +21,13 @@ Design: [performance-review-design.md](performance-review-design.md)
 - [x] **REVIEW-OUT-004**: When neither managing out nor promotion applies and the level's assessment says this is its last review, the performance review shall give the outcome `stayed`.
 - [x] **REVIEW-OUT-003**: When neither managing out, promotion nor the level's last review applies, including at a first review with no previous rating, the performance review shall give the outcome `continue`.
 
+## Standing
+
+- [x] **REVIEW-STAND-001**: When the performance review gives a rating, it shall report a margin up when one measure a verdict better would have reached the next rating up's threshold, unless the rating is `outstanding` or a ceiling lowered it, and a margin down when one measure a verdict worse would have fallen below the rating's own threshold, unless the rating is `below`, a verdict step moving the score by one over the number of measures.
+- [x] **REVIEW-STAND-002**: When the performance review gives an outcome, it shall report toward promotion `promoted` when the outcome is `promote`, `ended` when it is `managedOut` or `stayed`, and otherwise, in this order: `notOpenYet` with the reviews until promotion is possible when the level reports more than one, `outOfTime` when the rating is below `exceeds` and the level has fewer than two reviews left, `oneMore` when the rating is `exceeds` or better, and `twoInARow` otherwise.
+- [x] **REVIEW-STAND-003**: When the rating leaves the player on a coaching plan or an improvement plan, the performance review shall report that plan in the standing, so the next low rating's consequence can be shown.
+
 ## What the review returns
 
-- [x] **REVIEW-RESULT-001**: When the performance review is conducted, it shall return the rating, the outcome, the score, each measure with its verdict, the ceiling's reason when a ceiling lowered the rating, and the debrief records it was given.
+- [x] **REVIEW-RESULT-001**: When the performance review is conducted, it shall return the rating, the outcome, the standing, the score, each measure with its verdict, the ceiling's reason when a ceiling lowered the rating, and the debrief records it was given.
 - [x] **REVIEW-RESULT-002**: The performance review shall leave its input simulation state unchanged and use no randomness, giving the same result for the same input.

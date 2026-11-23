@@ -21,9 +21,12 @@ function rated(sim: SimState, ratings: Rating[]): SimState {
   return s;
 }
 
-const assessment = (values: ('above' | 'at' | 'below')[], promotionPossible = false): Assessment => ({
+const assessment = (values: ('above' | 'at' | 'below')[], promotionPossible = false, more: Partial<Assessment> = {}): Assessment => ({
   measures: values.map((v, i) => measure(v === 'above' ? 70 : v === 'at' ? 50 : 30, { id: `m${i}` })),
   promotionPossible,
+  reviewsUntilPromotion: promotionPossible ? 0 : 1,
+  reviewsLeft: 4,
+  ...more,
 });
 
 const review = (sim: SimState, a: Assessment, debriefs: DebriefRecord[] = []) => conductReview({ levelId: 'line-manager', sim, assessment: a, debriefs });
@@ -156,11 +159,60 @@ describe('a ceiling and the last review', () => {
 
 describe('the result', () => {
   // @spec REVIEW-RESULT-001
-  it('returns the rating, outcome, score, scored measures and the debriefs given', () => {
+  it('returns the rating, outcome, standing, score, scored measures and the debriefs given', () => {
     const debriefs: DebriefRecord[] = [{ week: 3, situationId: 's', bindings: {}, status: 'ignored' }];
     const result = review(neutral(), assessment(['above', 'below']), debriefs);
-    expect(Object.keys(result).sort()).toEqual(['debriefs', 'measures', 'outcome', 'rating', 'score', 'sim']);
+    expect(Object.keys(result).sort()).toEqual(['debriefs', 'measures', 'outcome', 'rating', 'score', 'sim', 'standing']);
     expect(result.measures.map((m) => m.verdict)).toEqual(['above', 'below', 'at']);
     expect(result.debriefs).toEqual(debriefs);
+  });
+});
+
+describe('standing', () => {
+  // the reputation measure sits at target in every case, so a list of n verdicts makes n + 1 measures
+  const EXCEEDS: ('above' | 'at' | 'below')[] = ['above', 'above', 'at']; // 2 of 4: score 0.5
+  const PARTIAL: ('above' | 'at' | 'below')[] = ['below', 'at']; // -1 of 3: score -0.33
+
+  // @spec REVIEW-STAND-001
+  it('says when one measure a step better or worse would have changed the rating', () => {
+    const near = review(neutral(), assessment(EXCEEDS));
+    expect(near.rating).toBe('exceeds');
+    expect(near.standing).toMatchObject({ marginUp: 'outstanding', marginDown: 'meets' });
+    const steady = review(neutral(), assessment(['above', 'at', 'at', 'at', 'at', 'at', 'at', 'at', 'at']));
+    expect(steady.rating).toBe('meets');
+    expect(steady.standing.marginUp).toBeUndefined();
+    expect(steady.standing.marginDown).toBeUndefined();
+    const top = review(patch(fresh(), (s) => (s.player.reputation = 90)), assessment(['above']));
+    expect(top.rating).toBe('outstanding');
+    expect(top.standing).toMatchObject({ marginDown: 'exceeds' });
+    expect(top.standing.marginUp).toBeUndefined();
+    const bottom = review(patch(fresh(), (s) => (s.player.reputation = 0)), assessment(['below']));
+    expect(bottom.rating).toBe('below');
+    expect(bottom.standing.marginDown).toBeUndefined();
+    // a ceiling, not the tally, held the rating: no margin up, and a step worse still lands on the ceiling
+    const capped = review(neutral(), assessment(EXCEEDS, false, { ceiling: { rating: 'partial', reason: 'Too stretched.' } }));
+    expect(capped.rating).toBe('partial');
+    expect(capped.standing.marginUp).toBeUndefined();
+    expect(capped.standing.marginDown).toBeUndefined();
+  });
+
+  // @spec REVIEW-STAND-002
+  it('says what the next reviews can do toward promotion', () => {
+    const toward = (sim: SimState, a: Assessment) => review(sim, a).standing.promotion;
+    expect(toward(rated(neutral(), ['exceeds']), assessment(EXCEEDS, true))).toEqual({ kind: 'promoted' });
+    expect(toward(neutral(), assessment(['at'], false, { lastReview: true, reviewsLeft: 0 }))).toEqual({ kind: 'ended' });
+    expect(toward(rated(neutral(), ['partial', 'partial']), assessment(PARTIAL))).toEqual({ kind: 'ended' });
+    expect(toward(neutral(), assessment(EXCEEDS, false, { reviewsUntilPromotion: 2 }))).toEqual({ kind: 'notOpenYet', reviews: 2 });
+    expect(toward(neutral(), assessment(['at'], true, { reviewsLeft: 1 }))).toEqual({ kind: 'outOfTime' });
+    expect(toward(neutral(), assessment(EXCEEDS, false, { reviewsUntilPromotion: 1 }))).toEqual({ kind: 'oneMore' });
+    expect(toward(neutral(), assessment(EXCEEDS, true, { reviewsLeft: 1 }))).toEqual({ kind: 'oneMore' });
+    expect(toward(neutral(), assessment(['at'], true))).toEqual({ kind: 'twoInARow' });
+  });
+
+  // @spec REVIEW-STAND-003
+  it('reports the plan a low rating leaves the player on', () => {
+    expect(review(neutral(), assessment(PARTIAL)).standing.plan).toBe('coaching');
+    expect(review(rated(neutral(), ['partial']), assessment(PARTIAL)).standing.plan).toBe('pip');
+    expect(review(rated(neutral(), ['partial']), assessment(['at'])).standing.plan).toBeUndefined();
   });
 });

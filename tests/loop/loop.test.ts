@@ -300,7 +300,7 @@ describe('a week', () => {
     const stillOpen = beforeReview.presented.map((p) => ({ week: 12, situationId: p.situationId, bindings: p.bindings, status: 'ignored' }));
     expect(calls[0]!.debriefs).toEqual([...closed, ...stillOpen]);
     expect(run.sim.player.reputation).toBe(77);
-    expect(run.review).toEqual({ rating: 'meets', outcome: 'continue', score: 0, measures: calls[0]!.assessment.measures.map((m) => ({ ...m, verdict: 'at' })), debriefs: calls[0]!.debriefs });
+    expect(run.review).toEqual({ rating: 'meets', outcome: 'continue', standing: { promotion: { kind: 'twoInARow' } }, score: 0, measures: calls[0]!.assessment.measures.map((m) => ({ ...m, verdict: 'at' })), debriefs: calls[0]!.debriefs });
   });
 
   // @spec LOOP-WEEK-004

@@ -103,5 +103,8 @@ export function assessDirector(level: DirectorState, sim: SimState): Assessment 
     ],
     promotionPossible: quarter >= T.promotionFromQuarter,
     lastReview: quarter >= T.lastReviewQuarter,
+    // @spec DIR-END-004
+    reviewsUntilPromotion: Math.max(0, Math.ceil((T.promotionFromQuarter - quarter) / T.reviewEveryQuarters)),
+    reviewsLeft: Math.max(0, Math.ceil((T.lastReviewQuarter - quarter) / T.reviewEveryQuarters)),
   };
 }
