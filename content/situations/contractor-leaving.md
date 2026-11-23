@@ -3,7 +3,7 @@ id: contractor-leaving
 title: The contractor's last week
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 26
+once: true
 waitDebrief: "A contractor who leaves without a handover takes the knowledge with them. The team finds the gaps one incident at a time."
 roles:
   - name: project
