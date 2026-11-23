@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CLOCK, formatScorecard, scoreRun, scorecard, type Look, type PlayEvent } from '../../playtest/metrics';
+import { CLOCK, formatScorecard, momentKind, scoreRun, scorecard, type Look, type PlayEvent } from '../../playtest/metrics';
+import { realContent } from '../balance/harness';
+import { playSeniorRun, type SeniorStrategy } from '../balance/senior';
+import { SENIOR_STRATEGIES } from '../balance/senior-strategies';
 
 /** Builders for the event log a scripted player records from the screen. */
 const person = (name: string, motivation = 'fine', stress = 'steady', memory: string[] = []) => ({ name, motivation, stress, memory });
@@ -14,7 +17,8 @@ const look = (week: number, over: Partial<Omit<Look, 'kind' | 'week'>> = {}): Lo
 });
 const read = (words: number): PlayEvent => ({ kind: 'read', words });
 const click = (decision = false): PlayEvent => ({ kind: 'click', decision });
-const moment = (week: number, title: string, situation = false): PlayEvent => ({ kind: 'moment', week, title, situation });
+const moment = (week: number, title: string, senior = false): PlayEvent => ({ kind: 'moment', week, title, senior });
+const layout = (senior: boolean, panels: string[], habits: string[]): PlayEvent => ({ kind: 'layout', senior, panels, habits });
 const answer = (week: number, title: string, reaction: string | null = 'They nod.', chips: string[] = [], notes: { name: string; note: string }[] = []): PlayEvent => ({
   kind: 'answer',
   week,
@@ -164,15 +168,15 @@ describe('the shape of a session', () => {
     answer(1, 'Check-in: Ada'),
     moment(1, 'Check-in: Bo'),
     wait(1),
-    moment(1, 'Scope creep', true),
+    moment(1, 'Scope creep'),
     answer(1, 'Scope creep', 'They nod.'),
     look(2),
     look(3),
     moment(3, 'Night page: Bo'),
     answer(3, 'Night page: Bo', 'They nod.'),
-    moment(15, 'Scope creep', true),
+    moment(15, 'Scope creep'),
     answer(15, 'Scope creep', 'They sigh.'),
-    moment(29, 'Scope creep', true),
+    moment(29, 'Scope creep'),
     answer(29, 'Scope creep', 'They sigh.'),
     ended('x'),
   ];
@@ -189,16 +193,102 @@ describe('the shape of a session', () => {
     expect(card.shape.longestSameKind).toBe(2);
   });
 
+  // @spec PLAY-SHAPE-002
+  it('reads a senior manager moment’s kind from its title’s fixed wording, around the names it carries', () => {
+    const r = scoreRun(1, [moment(1, 'Ada needs help', true), moment(1, 'Bo needs help', true), moment(5, 'Cy needs help', true), moment(9, 'Calibration', true), ended('x')]);
+    expect(r.shape.longestSameKind).toBe(3);
+    // level moments that come back are not situation repeats
+    expect(scoreRun(1, [moment(1, 'A staffing request', true), moment(5, 'A staffing request', true), ended('x')]).shape.situationRepeats).toBe(0);
+  });
+
+  // @spec PLAY-SHAPE-002
+  it('tells a career level’s moments from situations by the level they came at', () => {
+    expect(momentKind('Check-in: Ada', false)).toBe('Check-in');
+    expect(momentKind('release approval', false)).toBe('release approval');
+    // the line manager's calibration is a situation; the senior manager's is the level's own scene
+    expect(momentKind('Calibration', false)).toBeNull();
+    expect(momentKind('Calibration', true)).toBe('Calibration');
+    expect(momentKind('Ada needs help', true)).toBe('Escalation');
+    expect(momentKind('Platform and Payments disagree', true)).toBe('Dispute');
+    expect(momentKind('Final evaluation: Ada', true)).toBe('Final evaluation');
+    expect(momentKind('Running hot', true)).toBeNull();
+    expect(momentKind('Check-in: Ada', true)).toBeNull();
+  });
+
+  // @spec PLAY-SHAPE-002, PLAY-JOB-001
+  it('recognises every senior manager moment the level produces, and no senior situation', () => {
+    const content = realContent();
+    const level = new Set<string>();
+    const situations = new Set<string>();
+    for (const base of SENIOR_STRATEGIES) {
+      const spy: SeniorStrategy = { ...base, choose: (seen, m) => ((m.source === 'level' ? level : situations).add(m.title), base.choose(seen, m)) };
+      for (const seed of [1, 2, 3, 4]) playSeniorRun(spy, seed, content);
+    }
+    expect([...level].filter((t) => momentKind(t, true) === null)).toEqual([]);
+    expect([...situations].filter((t) => momentKind(t, true) !== null)).toEqual([]);
+    const kinds = new Set([...level].map((t) => momentKind(t, true)));
+    for (const k of ['Escalation', 'Staffing request', 'Dispute', 'Approval', 'Calibration']) expect(kinds).toContain(k);
+  }, 120_000);
+
   // @spec PLAY-SHAPE-003
   it('counts situations shown again within 13 weeks of last being shown', () => {
     // Week 15 is 14 weeks after week 1; week 29 is 14 after week 15.
     expect(card.shape.situationRepeats).toBe(0);
-    expect(scoreRun(1, [moment(1, 'Scope creep', true), moment(14, 'Scope creep', true), moment(20, 'Tech debt', true), ended('x')]).shape.situationRepeats).toBe(1);
+    expect(scoreRun(1, [moment(1, 'Scope creep'), moment(14, 'Scope creep'), moment(20, 'Tech debt'), ended('x')]).shape.situationRepeats).toBe(1);
   });
 
   // @spec PLAY-SHAPE-004
   it('reports the share of reaction texts that are distinct', () => {
     expect(card.shape.distinctReactions).toBe(2 / 5);
+  });
+});
+
+describe('promotion changes the job', () => {
+  const LINE_PANELS = ['Your team', 'Projects', 'Your habits'];
+  const SENIOR_PANELS = ['Your managers', 'Your habits'];
+  const promoted = (seed: number, extraSenior: string[] = []) =>
+    scoreRun(seed, [
+      layout(false, LINE_PANELS, ['Night pages', '1:1s', 'Growth focus']),
+      moment(1, 'Check-in: Ada'),
+      moment(2, 'Night page: Bo'),
+      moment(3, 'Final evaluation: Cy'),
+      moment(4, 'Calibration'),
+      review(39, 'exceeds', true),
+      layout(true, SENIOR_PANELS, ['Oversight', '1:1s with your managers', 'Skip-level listening']),
+      moment(40, 'Ada needs help', true),
+      moment(44, 'Final evaluation: Bo', true),
+      moment(48, 'Running hot', true),
+      ...extraSenior.map((t) => moment(52, t, true)),
+      ended('x'),
+    ]);
+
+  // @spec PLAY-JOB-001
+  it('lists, per promoted run, the panels, habits and level moments that stopped and started appearing', () => {
+    expect(promoted(1).job).toEqual({
+      gone: { panels: ['Projects', 'Your team'], habits: ['1:1s', 'Growth focus', 'Night pages'], moments: ['Check-in', 'Night page'] },
+      came: { panels: ['Your managers'], habits: ['1:1s with your managers', 'Oversight', 'Skip-level listening'], moments: ['Escalation'] },
+    });
+    // a run that never left its first level has nothing to compare
+    expect(scoreRun(2, [layout(false, LINE_PANELS, ['1:1s']), moment(1, 'Check-in: Ada'), ended('x')]).job).toBeNull();
+  });
+
+  // @spec PLAY-JOB-002
+  it('reports each change across promoted runs with the number of runs it happened in, failing no check', () => {
+    const card = scorecard('sound', [promoted(1), promoted(2, ['Calibration']), scoreRun(3, [layout(false, LINE_PANELS, []), ended('x')])]);
+    expect(card.job.runs).toBe(2);
+    expect(card.job.came.moments).toEqual([
+      { name: 'Escalation', runs: 2 },
+      { name: 'Calibration', runs: 1 },
+    ]);
+    expect(card.job.gone.panels).toEqual([
+      { name: 'Projects', runs: 2 },
+      { name: 'Your team', runs: 2 },
+    ]);
+    expect(card.checks.map((c) => c.id)).toEqual(['PLAY-CHOICE-001']);
+    const table = formatScorecard(card);
+    expect(table).toMatch(/Promotion changes the job\n {2}2 of 3 runs promoted/);
+    expect(table).toMatch(/no longer.*Your team \(2\)/);
+    expect(table).toMatch(/new.*Escalation \(2\), Calibration \(1\)/);
   });
 });
 
@@ -219,7 +309,7 @@ describe('the scorecard', () => {
     expect(card.runs[0]).toMatchObject({ seed: 11, ending: 'You stayed a line manager.' });
     expect(card.checks.map((c) => c.id)).toEqual(['PLAY-CHOICE-001']);
     const table = formatScorecard(card);
-    for (const heading of ['A promotion in the first session', 'Bad outcomes can be traced', 'Choices feel consequential', 'The shape of a session', 'Skill can be learned']) {
+    for (const heading of ['A promotion in the first session', 'Bad outcomes can be traced', 'Choices feel consequential', 'The shape of a session', 'Promotion changes the job', 'Skill can be learned']) {
       expect(table).toContain(heading);
     }
     expect(table).toMatch(/seed 11 .*You stayed a line manager\./);

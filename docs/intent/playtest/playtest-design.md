@@ -77,13 +77,21 @@ No proxy can tell a game from a test, so nothing here is checked. Reported, as t
 
 - Decisions per week: the mean, and the fewest and most in any week.
 - The share of weeks with no decision at all.
-- The longest run of consecutive moments of the same kind. A career level's moment is of the kind its title names before the colon ("Check-in: Ada" is a check-in); each situation is a kind of its own.
+- The longest run of consecutive moments of the same kind. A career level's moment is of its kind: at the line manager, the kind its title names before the colon ("Check-in: Ada" is a check-in); at the senior manager, the kind its title's fixed wording names, around the names it carries ("… needs help" is an escalation, "… disagree" a dispute). Each situation is a kind of its own.
 - How often a situation comes back within 13 weeks of last being shown.
 - The share of reaction texts that are distinct, across all the run's reactions.
 
 ### Promotion changes the job
 
-The HLD's "what changed when you were promoted?" needs a second career level to compare with. It is deferred until one exists.
+The HLD asks whether a promoted player can name one thing they no longer do and one new thing they have to learn. The proxy is what the page offers on either side of the handover, in three parts a player could name:
+
+- **Panels**: the panels a week shows beside the scene, by their headings ("Your team", "Your managers").
+- **Habits**: the habits the habits panel offers, by their labels. A habit set per person counts once, with the person's name left out (oversight of each manager counts as "Oversight").
+- **Kinds of moment**: the career level's own moments, by their kind as *The shape of a session* defines it. Situations are left out: both levels have them, and their titles are each situation's own.
+
+For each run promoted into a second career level, the scorecard lists, in each part, what the first level showed and the second never did (what the player no longer does) and what the second showed and the first never did (what they now have to learn). Across a player's promoted runs it reports each item with the number of runs it appeared in.
+
+This is reported rather than checked. The two levels as designed differ in every part, so a check would only catch the handover breaking, which the senior manager playtest already catches; the proxy's use is to set what the page offered beside what human playtesters name when asked what changed.
 
 ### Skill can be learned
 
@@ -114,15 +122,15 @@ Each player's runs produce one scorecard, attached to the playtest's HTML report
 | First-timer | The existing *mixed* player | A new strategy; the sound player | It already plays as a new player might, mostly well with some mistakes and waiting. The sound player would overstate how quickly a first session gets anywhere. |
 | What the players read | Only the page | The save or the run state | The metrics are about what a player experiences; a proxy read from the game's state could hold while the screen hides it. |
 | Human script | A Markdown file beside the playtests | In this design; a document outside the repo | A facilitator should not need to read a design doc to run a session, and the script should change with the game it tests. |
+| What counts as the job changing | Panels, habits and the level's own kinds of moment, each compared across the handover | Every heading on the page; moment kinds read from a mark the page adds for the playtests | They are what a player would name. Every heading would bury them under names of people and projects; a mark added for the playtests would be read by no player, and the title wording is what a player sees. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. The *Promotion changes the job* proxy, now that a second career level exists, as its own change.
-2. Making *A promotion in the first session* a hard check, once the line manager level's pacing can meet it.
-3. Whether every quit should be foreshadowed on screen (a sign of restlessness, visible trust, or no base chance to quit), and then whether quits with a warning become a hard check.
-4. Thresholds for the reported proxies, set from the first rounds of human sessions.
-5. Calibrating the session clock's constants against timed human sessions.
+1. Making *A promotion in the first session* a hard check, once the line manager level's pacing can meet it.
+2. Whether every quit should be foreshadowed on screen (a sign of restlessness, visible trust, or no base chance to quit), and then whether quits with a warning become a hard check.
+3. Thresholds for the reported proxies, set from the first rounds of human sessions.
+4. Calibrating the session clock's constants against timed human sessions.
 
 ## References
 

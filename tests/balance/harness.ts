@@ -14,9 +14,9 @@ export const BALANCE_TUNING = {
   reviewSlots: 6,
   scoreMargin: 0.3,
   minSoundPromotionShare: 0.3,
-  // Always delegating is half of good practice in this game, so Delegator earns some promotions: about 10-15% of runs,
-  // against sound practice's 38-40%, while scoring 0.7 below it. A limit near that share would fail on how content
-  // reshuffles the situation draws rather than on how the game plays.
+  // Always delegating is half of good practice in this game, so Delegator earns a few promotions: about 5% of runs at
+  // 200 seeds, against sound practice's 76%, while scoring well below it. A limit near that share would fail on how
+  // content reshuffles the situation draws rather than on how the game plays.
   maxNaivePromotionShare: 0.2,
   maxSoundBurnoutShare: 0.1,
 } as const;

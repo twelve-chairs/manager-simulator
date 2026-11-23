@@ -22,6 +22,32 @@ const TIRED = ['tired', 'running on fumes'];
 const LOW_RATINGS = ['partial', 'below'];
 const RATING_SCORES: Record<string, number> = { below: 0, partial: 1, meets: 2, exceeds: 3, outstanding: 4 };
 
+/**
+ * The titles of the line manager's own moments; any other moment there is a situation. A moment's kind is its title
+ * before the colon, and work items are titled by their kind in lower case ("release approval").
+ */
+export const LINE_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;
+/** The senior manager's own moments, by kind, recognised from the fixed wording around the names their titles carry. */
+export const SENIOR_TITLES: readonly (readonly [string, RegExp])[] = [
+  ['Escalation', / needs help$/],
+  ['Staffing request', /^A staffing request$/],
+  ['Dispute', / disagree$/],
+  ['Approval', / asks for an approval$/],
+  ['New work', /^New work for the group$/],
+  ['A fourth team', /^A fourth team$/],
+  ['Replacing a manager', / needs a manager$/],
+  ['Calibration', /^Calibration$/],
+  ['Skip-level problem', /^What .+ told you$/],
+  ['Final evaluation', /^Final evaluation: /],
+];
+
+/** A moment's kind, if it is one of the career level's own moments, or null for a situation. */
+// @spec PLAY-SHAPE-002
+export function momentKind(title: string, senior: boolean): string | null {
+  if (senior) return SENIOR_TITLES.find(([, re]) => re.test(title))?.[0] ?? null;
+  return LINE_TITLES.test(title) ? title.split(':')[0]! : null;
+}
+
 /** What the screen showed of the team, the projects and the player while a week was on screen. */
 export interface Look {
   kind: 'look';
@@ -36,7 +62,9 @@ export type PlayEvent =
   | { kind: 'read'; words: number }
   | { kind: 'click'; decision: boolean }
   | Look
-  | { kind: 'moment'; week: number; title: string; situation: boolean }
+  | { kind: 'moment'; week: number; title: string; senior: boolean }
+  /** The panels a week showed beside the scene, by heading, and the habits it offered, by label without a person's name. */
+  | { kind: 'layout'; senior: boolean; panels: string[]; habits: string[] }
   | { kind: 'answer'; week: number; title: string; reaction: string | null; chips: string[]; notes: { name: string; note: string }[] }
   | { kind: 'wait'; week: number }
   | { kind: 'review'; week: number; rating: string; promoted: boolean }
@@ -62,6 +90,14 @@ export interface RunCard {
     distinctReactions: number | null;
   };
   ratings: number[];
+  /** For a run promoted into a second career level: what stopped appearing at the promotion, and what started. */
+  job: { gone: JobParts; came: JobParts } | null;
+}
+
+export interface JobParts {
+  panels: string[];
+  habits: string[];
+  moments: string[];
 }
 
 export interface Check {
@@ -77,16 +113,41 @@ export interface Scorecard {
   promotion: { withinSession: number; target: number; sessionMinutes: number };
   trace: { quits: number | null; lowRatings: number | null; overdue: number | null; burnout: number | null };
   averageRating: number | null;
+  job: { runs: number; gone: JobCounts; came: JobCounts };
   checks: Check[];
 }
+
+export type JobCounts = Record<keyof JobParts, { name: string; runs: number }[]>;
 
 const share = (part: number, whole: number) => (whole ? part / whole : null);
 const isLook = (e: PlayEvent): e is Look => e.kind === 'look';
 const worse = (p: Look['people'][number]) => WORSE_MOTIVATION.includes(p.motivation) || WORSE_STRESS.includes(p.stress);
 /** A memory line without the count the card adds to a repeated note ("Took on a design review, twice"). */
 const uncounted = (line: string) => line.replace(/, (twice|\d+ times)$/, '');
-/** A moment's kind: a career level's moment by its title before the colon; each situation a kind of its own. */
-const kindOf = (title: string, situation: boolean) => (situation ? `situation:${title}` : title.split(':')[0]!);
+/** A moment's kind for a run of moments: the level's own kind, or each situation a kind of its own. */
+const kindOf = (m: { title: string; senior: boolean }) => momentKind(m.title, m.senior) ?? `situation:${m.title}`;
+const isSituation = (m: { title: string; senior: boolean }) => momentKind(m.title, m.senior) === null;
+const PARTS = ['panels', 'habits', 'moments'] as const;
+const sorted = (xs: Iterable<string>) => [...new Set(xs)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+/** What the page showed at each level, and the difference between them, for a run that reached a second level. */
+// @spec PLAY-JOB-001
+function jobOf(events: PlayEvent[]): RunCard['job'] {
+  const at = (senior: boolean): JobParts => {
+    const layouts = events.filter((e) => e.kind === 'layout' && e.senior === senior) as Extract<PlayEvent, { kind: 'layout' }>[];
+    const moments = events.filter((e) => e.kind === 'moment' && e.senior === senior) as Extract<PlayEvent, { kind: 'moment' }>[];
+    return {
+      panels: sorted(layouts.flatMap((l) => l.panels)),
+      habits: sorted(layouts.flatMap((l) => l.habits)),
+      moments: sorted(moments.map((m) => momentKind(m.title, m.senior)).filter((k): k is string => k !== null)),
+    };
+  };
+  const before = at(false);
+  const after = at(true);
+  if (!events.some((e) => e.kind === 'layout' && e.senior)) return null;
+  const minus = (a: JobParts, b: JobParts): JobParts => ({ panels: a.panels.filter((x) => !b.panels.includes(x)), habits: a.habits.filter((x) => !b.habits.includes(x)), moments: a.moments.filter((x) => !b.moments.includes(x)) });
+  return { gone: minus(before, after), came: minus(after, before) };
+}
 
 /** The looks recorded before event `index`, in its window ending at `week`. */
 function windowBefore(events: PlayEvent[], index: number, week: number): Look[] {
@@ -173,13 +234,13 @@ export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
   let streak = 0;
   moments.forEach((m, i) => {
     const prev = moments[i - 1];
-    streak = prev && kindOf(prev.title, prev.situation) === kindOf(m.title, m.situation) ? streak + 1 : 1;
+    streak = prev && kindOf(prev) === kindOf(m) ? streak + 1 : 1;
     longestSameKind = Math.max(longestSameKind, streak);
   });
   const lastShown = new Map<string, number>();
   let situationRepeats = 0;
   for (const m of moments) {
-    if (!m.situation) continue;
+    if (!isSituation(m)) continue;
     const last = lastShown.get(m.title);
     if (last !== undefined && m.week - last <= REPEAT_WEEKS) situationRepeats++;
     lastShown.set(m.title, m.week);
@@ -201,7 +262,19 @@ export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
       distinctReactions: share(new Set(reactions).size, reactions.length),
     },
     ratings,
+    job: jobOf(events),
   };
+}
+
+/** Each item that stopped or started appearing across the promoted runs, with the number of runs, most first. */
+// @spec PLAY-JOB-002
+function jobCounts(runs: RunCard[], side: 'gone' | 'came'): JobCounts {
+  const count = (part: keyof JobParts) => {
+    const n = new Map<string, number>();
+    for (const r of runs) for (const x of r.job?.[side][part] ?? []) n.set(x, (n.get(x) ?? 0) + 1);
+    return [...n].map(([name, runs]) => ({ name, runs })).sort((a, b) => b.runs - a.runs);
+  };
+  return { panels: count('panels'), habits: count('habits'), moments: count('moments') };
 }
 
 // @spec PLAY-PROMO-003, PLAY-TRACE-005, PLAY-CHOICE-001, PLAY-SKILL-001
@@ -227,6 +300,7 @@ export function scorecard(player: string, runs: RunCard[]): Scorecard {
       burnout: events((r) => (r.trace.burnout ? [r.trace.burnout] : [])),
     },
     averageRating: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
+    job: { runs: runs.filter((r) => r.job).length, gone: jobCounts(runs, 'gone'), came: jobCounts(runs, 'came') },
     checks: [
       { id: 'PLAY-CHOICE-001', name: 'Every answered moment had a reaction at once', passed: !reactionFailures.length, failures: reactionFailures },
     ],
@@ -255,6 +329,12 @@ export function formatScorecard(card: Scorecard): string {
   for (const r of card.runs) {
     const d = r.shape.decisions;
     out.push(`  seed ${r.seed}: ${num(d.mean)} decisions a week (${d.fewest} to ${d.most}), ${pct(d.weeksWithNone)} of weeks with none, longest run of one kind ${r.shape.longestSameKind}, ${r.shape.situationRepeats} situation repeats within ${REPEAT_WEEKS} weeks, ${pct(r.shape.distinctReactions)} distinct reactions`);
+  }
+  out.push('', 'Promotion changes the job', `  ${card.job.runs} of ${card.runs.length} runs promoted into a second level`);
+  const items = (xs: { name: string; runs: number }[]) => (xs.length ? xs.map((x) => `${x.name} (${x.runs})`).join(', ') : 'none');
+  for (const part of PARTS) {
+    out.push(`  ${part}, no longer: ${items(card.job.gone[part])}`);
+    out.push(`  ${part}, new: ${items(card.job.came[part])}`);
   }
   out.push('', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`);
   out.push('', 'Hard checks');

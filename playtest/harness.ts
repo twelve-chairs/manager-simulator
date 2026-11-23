@@ -1,5 +1,5 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
-import type { Look, PlayEvent } from './metrics';
+import { LINE_TITLES, SENIOR_TITLES, type Look, type PlayEvent } from './metrics';
 
 /** The save the game keeps in the browser's storage, and its format, as the save component writes them. */
 const SAVE_KEY = 'manager-simulator.save';
@@ -78,7 +78,14 @@ export interface PlaySummary {
 
 /** Plays a run in the page, from wherever it is, checking every screen; see `playInPage`. */
 export async function play(page: Page, options: PlayOptions): Promise<PlaySummary> {
-  const args: Required<PlayOptions> = { strategy: options.strategy, seed: options.seed, until: options.until ?? 'end', maxWeeks: options.maxWeeks ?? 400 };
+  const args: InPage = {
+    strategy: options.strategy,
+    seed: options.seed,
+    until: options.until ?? 'end',
+    maxWeeks: options.maxWeeks ?? 400,
+    // the page cannot import the title table, so it gets the patterns as text
+    titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source) },
+  };
   return page.evaluate(playInPage, args);
 }
 
@@ -104,7 +111,9 @@ export async function attachSummary(testInfo: TestInfo, name: string, summary: P
  * selects, and every screen is checked as it goes. It is self-contained, because Playwright sends it to the page
  * as source.
  */
-function playInPage(options: Required<PlayOptions>): PlaySummary {
+type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[] } };
+
+function playInPage(options: InPage): PlaySummary {
   const q = (s: string, r: ParentNode = document) => r.querySelector<HTMLElement>(s);
   const qa = (s: string, r: ParentNode = document) => [...r.querySelectorAll<HTMLElement>(s)];
   const text = (s: string, r: ParentNode = document) => q(s, r)?.textContent ?? '';
@@ -117,8 +126,9 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
   const STATUSES = ['You dealt with it', 'You let it wait', 'It passed before you got to it'];
   const BETTER = ['blameless', 'direct', 'ask', 'real-plan', 'honest', 'honest-let-go', 'separately', 'write-it', 'trade', 'sprint', 'buddy-up', 'time-off', 'ask-priorities', 'ask-delegation', 'ask-wants', 'cover', 'approve-replan', 'evidence', 'pair', 'write-first', 'team-choice', 'explain', 'agree-order', 'join-call', 'amber'];
   const COUNTED = /, (twice|\d+ times)$/;
-  /** The titles of the career level's own moments, for the event log; any other moment is a situation. Work items are titled by their kind in lower case ("release approval"). */
-  const LEVEL_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;
+  /** The titles of each career level's own moments (playtest/metrics.ts); any other moment is a situation. */
+  const LINE_TITLES = new RegExp(options.titles.line, 'i');
+  const SENIOR_TITLES = options.titles.senior.map((source) => new RegExp(source));
 
   const violations = new Set<string>();
   const flag = (where: string, what: string) => violations.add(`${where}: ${what}`);
@@ -136,6 +146,8 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
 
   /** Whether the page shows the senior manager: managers rather than a team. */
   const senior = () => q('[data-panel=managers]') !== null;
+  /** Whether a moment is the career level's own rather than a situation, by its title at the level on screen. */
+  const isLevelMoment = (title: string) => (senior() ? SENIOR_TITLES.some((re) => re.test(title)) : LINE_TITLES.test(title));
   /** The game week the senior manager level began, as the player counts weeks: the line manager's last review. */
   let seniorBase = 0;
   let lastReviewWeek = 0;
@@ -186,6 +198,18 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     const key = JSON.stringify(entry);
     if (key !== lastLook) log.push(entry);
     lastLook = key;
+  }
+  /** The panels beside the scene, by heading, and the habits offered, by label with a person's name left out (PLAY-JOB-001). */
+  // @spec PLAY-JOB-001
+  let lastLayout = '';
+  function layout() {
+    const panels = qa('[data-panel]').map((p) => q(':scope > h2, :scope > summary', p)?.textContent?.trim() ?? '').filter(Boolean);
+    if (!panels.length) return;
+    const habits = [...new Set(qa('[data-panel=habits] .habit-name').map((n) => (n.textContent ?? '').trim().replace(/ of .+$/, '')))];
+    const entry: PlayEvent = { kind: 'layout', senior: senior(), panels: [...new Set(panels)], habits };
+    const key = JSON.stringify(entry);
+    if (key !== lastLayout) log.push(entry);
+    lastLayout = key;
   }
   const firstNotes = () => new Map(qa('[data-panel=team] [data-person]').map((card) => [text('[data-field=name]', card), q('[data-part=memory] li', card)?.textContent ?? '']));
   const uncounted = (line: string) => line.replace(COUNTED, '');
@@ -364,7 +388,7 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
       case 'decline':
         return prefer(['decline', 'refuse']) ?? sound();
       case 'waiter':
-        return !LEVEL_TITLES.test(text('[data-scene] [data-part=heading]')) && random() < 0.5 ? null : sound();
+        return !isLevelMoment(text('[data-scene] [data-part=heading]')) && random() < 0.5 ? null : sound();
       case 'mixed': {
         const r = random();
         if (r < 0.1) return null;
@@ -449,10 +473,11 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     checkText(sc);
     checkWeek(sc, lastSlot);
     look();
+    layout();
     const sceneKey = `${text('[data-field=week]')}|${sc}|${text('[data-scene] [data-part=heading]')}|${text('[data-field=when]')}`;
     if (sc === 'moment' && !readScreens.has(sceneKey)) {
       const heading = text('[data-scene] [data-part=heading]');
-      log.push({ kind: 'moment', week: runWeek(), title: heading, situation: !LEVEL_TITLES.test(heading) });
+      log.push({ kind: 'moment', week: runWeek(), title: heading, senior: senior() });
     }
     read(sceneKey, q('[data-scene]'));
     const warning = q('[data-field=burnout]')?.textContent;

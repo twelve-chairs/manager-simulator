@@ -43,13 +43,14 @@ The worse half of a person's bands is struggling or flat for motivation, and str
 ## The shape of a session
 
 - [x] **PLAY-SHAPE-001**: The scorecard shall report, per run, the mean number of decisions per week, the fewest and the most in any week, and the share of weeks with none.
-- [x] **PLAY-SHAPE-002**: The scorecard shall report, per run, the longest run of consecutive moments of the same kind, where a career level's moment is of the kind its title names before the colon and each situation is a kind of its own.
+- [x] **PLAY-SHAPE-002**: The scorecard shall report, per run, the longest run of consecutive moments of the same kind, where a line manager moment is of the kind its title names before the colon, a senior manager moment of the kind its title's fixed wording names, and each situation is a kind of its own.
 - [x] **PLAY-SHAPE-003**: The scorecard shall report, per run, how many times a situation was shown again within 13 weeks of last being shown.
 - [x] **PLAY-SHAPE-004**: The scorecard shall report, per run, the share of its reaction texts that are distinct.
 
 ## Promotion changes the job
 
-- [D] **PLAY-JOB-001**: When a run is promoted into a second career level, the scorecard shall report which of the previous level's panels and moment kinds no longer appear and which new ones do.
+- [x] **PLAY-JOB-001**: When a run is promoted into a second career level, the scorecard shall record, for each level, the panels the page showed by their headings, the habits it offered by their labels with any person's name left out, and the kinds of the career level's own moments, and list, in each part, those the first level showed and the second did not and those the second showed and the first did not.
+- [x] **PLAY-JOB-002**: The scorecard shall report, across a player's promoted runs, each panel, habit and kind of moment that stopped or started appearing at the promotion, with the number of runs in which it did, and shall fail no check on it.
 
 ## Skill can be learned
 
