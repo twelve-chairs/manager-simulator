@@ -36,6 +36,17 @@ export const BETTER_CHOICES: Record<string, string> = {
   'senior-first-hard-conversation': 'sit-in',
   'senior-credit-for-launch': 'name-team',
   'senior-clash-in-public': 'private-then-together',
+  // the director
+  'director-open-plan-move': 'ask-lead',
+  'director-flat-all-hands': 'groups-show',
+  'director-peer-takes-credit': 'private',
+  'director-specialty-group': 'sponsor',
+  'director-executive-pet-project': 'trade-off',
+  'director-belonging-survey': 'share',
+  'director-recruiting-brand': 'senior-on-stage',
+  'director-org-chart-tug': 'make-case',
+  'director-peer-in-trouble': 'lend-one',
+  'director-staff-meeting-leak': 'agreement',
 };
 
 /** A band, as the view gives it: 2 is "okay" energy and "busy" stress. */

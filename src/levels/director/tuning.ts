@@ -46,7 +46,7 @@ export const DIRECTOR_TUNING = {
   /** Headcount: heads given at neutral standing, per point of the executive's trust and of reputation above 50, the most given, onboarding stress per head, a bet's progress per head, and the executive's trust lost per head held back. */
   head: { base: 3, perTrust: 0.06, perReputation: 0.04, max: 8, onboardingStress: 2, betSpeed: 15, heldTrust: 2 },
   /** Bets: how many are offered, their scope per week to their deadline, weeks to deadline and stakes, weeks overdue before one fails, progress lost under a strained group, progress a trusting peer adds and the trust that takes, and how far promising more raises stakes. */
-  bets: { offers: [2, 3] as const, scopePerWeek: [16, 26] as const, deadline: [26, 52] as const, landing: [6, 12] as const, failing: [8, 14] as const, grace: 13, strainedSlow: 20, peerSpeed: 15, peerTrust: 60, promiseFactor: 1.5 },
+  bets: { offers: [2, 3] as const, scopePerWeek: [16, 26] as const, deadline: [26, 52] as const, landing: [6, 12] as const, failing: [8, 14] as const, grace: 13, strainedSlow: 20, peerSpeed: 15, peerTrust: 60, promiseFactor: 1.25 },
   /** The quarterly review: trust telling it straight earns, reputation per thing in trouble, reputation leading with wins earns, what being found out costs, and what promising more earns. */
   review: { straightTrust: 4, troubleReputation: 2, winsReputation: 4, caughtTrust: 10, caughtReputation: 8, promiseReputation: 3 },
   /** Peers: the stress agreeing costs a group, trust agreeing earns, trust at which negotiating works and what it moves, trust refusing costs, and the trust below which a peer goes to the executive and what that costs. */

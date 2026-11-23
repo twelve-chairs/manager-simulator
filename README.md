@@ -62,11 +62,12 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 - senior managers as people, and groups whose mood you see through a twice-yearly survey, or a listening tour;
 - your executive and two peer directors, whose trust shapes your headcount and your bets;
-- headcount to place each quarter, strategy bets to fund, groups to split or merge, and a quarterly review where you choose how honestly to tell it.
+- headcount to place each quarter, strategy bets to fund, groups to split or merge, and a quarterly review where you choose how honestly to tell it;
+- written situations about running an organization: a peer taking credit, the executive's pet project, a specialty group asking for time, a leak from your staff meeting.
 
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** written situations for the director, then the levels above it.
+**Next up:** a round of human playtests through both promotions, then the levels above the director.
 
 ## Fiction, not advice
 
