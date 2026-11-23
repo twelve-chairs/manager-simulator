@@ -106,8 +106,12 @@ describe('the senior manager’s week screen', () => {
   it('shows calibration as each team’s proposal beside its delivery, with moves, accept-all and settle', () => {
     let run = senior(7);
     run = endWeeks(run, 5, both('continue'));
+    // let any moment ahead of calibration wait, so calibration is the scene
+    const calibrationId = level(run).moments.find((m) => m.kind === 'calibration')!.id;
+    while (run.week.find((m) => m.status === 'open')?.id !== calibrationId) run = step(run, { kind: 'wait' }, both('continue'));
     const { root, app } = makeApp({ run, deps: both('continue') });
     if (scene(root) === 'recap') click(root, '[data-action=close-recap]');
+    if (scene(root) === 'opening') click(root, '[data-action=start-week]');
     expect(text(root, '[data-scene] [data-part=heading]')).toBe('Calibration');
     const teams = $$(root, '[data-calibration]').map((t) => t.dataset.calibration);
     expect(teams).toEqual(level(run).teamIds);

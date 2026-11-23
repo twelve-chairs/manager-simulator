@@ -84,7 +84,7 @@ Calibrating on evidence, so each team's ratings match what it delivered, is the 
 
 ## Managers' Plans
 
-A manager rated low on what their team delivered and how it fared under them, for two periods in a row, goes on an improvement plan, as an engineer does at the first level; a third low rating is held for a final evaluation. Letting a manager go leaves their team leaderless, as a manager who quits does, until the player sets a new manager; the month after a team is left without one, a moment offers it a new manager: promoted from the team, which takes a strong head out of it, or hired from outside, which takes a month. Either way the team's stress rises while it adjusts.
+A manager rated low on what their team delivered and how it fared under them, for two periods in a row, goes on an improvement plan, as an engineer does at the first level; a third low rating is held for a final evaluation. Letting a manager go leaves their team leaderless, as a manager who quits does, until the player sets a new manager; the month after a team is left without one, a moment offers it a new manager: promoted from the team, which takes a strong head out of it and starts a *developing* manager who already knows the team and has the player's trust, or hired from outside, a *capable* stranger who takes a month to arrive. Either way the team's stress rises while it adjusts.
 
 ## The Period's Goals
 
@@ -135,6 +135,10 @@ Committing to this level changes other segments, each walked through its own des
 | Replacing managers | Coach, then an improvement plan, then replace | Coach only; replace at will | Mirrors the first level's lesson about engineers, and makes replacement a real decision with a cost to the team. |
 | Visibility | Teams as their manager reports them; the truth through close oversight or skip-levels | Always the true numbers | A senior manager learns about teams through managers; misreporting makes oversight and listening worth their cost, and makes a struggling manager something to find, not something shown. |
 | Energy | Kept, with the burnout rule in months | Reputation as the only personal stake | Doing a manager's job for them is the cost the level teaches; energy is how the player feels it. |
+| Review targets | Set so sound practice meets them and its best skills score above: settling calibration on the evidence scores above, on-schedule share is judged against what a group of teams carrying new work achieves, and team stress against what a coached manager's team sustains | Targets carried over from the line manager, or set as ideals | Targets beyond what good practice reaches mark every player down alike and rank nothing; the balance harness measures them against sound and naive play. |
+| Declining new work | Costs the player reputation with their manager, enough that declining everything scores below | A free choice | A group that takes on nothing keeps its teams calm; without a cost, refusing work would be the best way to play. |
+| What a manager sustains | A team settles at a stress that falls with its manager's management skill, so a coached, capable manager's team sits within the review's target | Higher settled stress, so only the most skilled managers keep teams healthy | Growing managers is the level's lesson; their teams' health is where it shows. |
+| Promoting from the team | A *developing* manager with the player's trust, at a small cost in the team's skill and a head | A weaker promotion than an outside hire | Growing people from within is practice the game teaches; it should be at least as good a choice as hiring a stranger. |
 
 ## Open Questions & Future Decisions
 

@@ -28,3 +28,13 @@ Design: [balance-design.md](balance-design.md)
 - [x] **BAL-CHECK-002**: The balance harness shall fail unless sound practice's promotion share is at least the minimum its tuning sets.
 - [x] **BAL-CHECK-003**: The balance harness shall fail if any naive strategy's promotion share exceeds the maximum its tuning sets.
 - [x] **BAL-CHECK-004**: The balance harness shall fail if sound practice's burnout share exceeds the maximum its tuning sets.
+
+## The senior manager
+
+- [x] **BAL-SENIOR-001**: When the balance harness plays a senior manager run, it shall start a line manager run from the seed, hand it over to an outside hire, and play the senior manager level through the turn loop with the compiled situation content, the real career levels and the real performance review, for up to 36 months or until the run ends.
+- [x] **BAL-SENIOR-002**: When the balance harness plays a senior manager month, it shall give the strategy only the level's view and the month's open moments with their choices, act only through plan and answer commands, and fail with the strategy, seed, month and error if the turn loop refuses a command.
+- [x] **BAL-SENIOR-003**: When a senior manager run ends or reaches 36 months, the balance harness shall record its review ratings, whether it ended promoted, burned out or managed out, and its regretted attrition, and report for each senior strategy the average review score over six review slots and the promotion, burnout and managed-out shares, as it does for the line manager.
+- [x] **BAL-SENIOR-004**: The balance harness shall report sound practice with skip-levels beside the other senior strategies, and shall include it in no check.
+- [x] **BAL-SENIOR-005**: The balance harness shall fail unless, at the senior manager, sound practice's average review score exceeds every naive strategy's by at least the senior score margin, sound practice's promotion share is at least the senior minimum, no naive strategy's promotion share exceeds the senior maximum, and sound practice's burnout share is at most the senior maximum.
+- [x] **BAL-SENIOR-006**: The balance harness shall fail if, at the senior manager, sound practice's managed-out share exceeds the maximum sound managed-out share.
+- [x] **BAL-SENIOR-007**: When the balance report runs, it shall print the senior manager's table beside the line manager's.

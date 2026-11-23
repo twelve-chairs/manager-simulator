@@ -57,11 +57,9 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 - escalations, staffing, disputes between teams, approvals and a fourth team to take on;
 - calibration before each six-monthly review, and three years to earn the next promotion.
 
-The senior manager level is new and not yet balanced: its reviews are harder than they should be.
-
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** balancing the senior manager level, then director and above, where whole organizations become the people you look after.
+**Next up:** situations written for the senior manager, then director and above, where whole organizations become the people you look after.
 
 ## Fiction, not advice
 
@@ -120,7 +118,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `playtest/` | Playtests: scripted players of different styles play whole runs from fixed seeds, with every screen checked, and a scorecard of proxies for the HLD's success metrics |
 | `playtest/HUMAN.md` | The script for a human playtest session, under the same success-metric headings as the scorecard |
 | `.mcp.json` | A Playwright MCP server for AI-assisted exploratory testing in a real browser |
-| `tests/balance/` | Balance harness: scripted strategies play seeded runs to check that sound management outperforms naive habits |
+| `tests/balance/` | Balance harness: scripted strategies play seeded runs at each career level to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools: the situation content compiler and the version stamp |
 | `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to GitHub Pages from `main` |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |

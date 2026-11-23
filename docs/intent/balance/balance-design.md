@@ -58,6 +58,28 @@ The checks, with thresholds from the harness's tuning:
 
 The test suite runs 20 seeds per strategy and must stay within about 15 seconds; a report command runs more seeds and prints the table for tuning.
 
+## The Senior Manager
+
+The senior manager level is measured the same way, on its own. Each run starts the level directly: a line manager run from the seed is handed over to an outside hire, with the same handover for every strategy, so strategies differ only in how they play the level and not in whom they promote. The run then plays through the turn loop with the real level, review and content for up to 36 months (six reviews, the whole level), and a promotion completes it.
+
+A strategy sees what the player sees (the senior manager's view: managers, teams as their managers report them, the month's moments and their choices) and acts through the same commands.
+
+| Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring |
+|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand) | Lets them wait |
+| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal | Hires from outside; gives one more period |
+| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal | Hires from outside; gives one more period |
+| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal | Hires from outside; lets a manager go |
+| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered | Promotes from the team; lets a manager on a failed plan go |
+
+A sixth strategy, **sound practice with skip-levels**, plays as sound practice with monthly skip-level listening. Like sound practice with other habits at the line manager, it is reported and checked against nothing.
+
+The measures are the line manager's, over six review slots; regretted attrition counts heads rated meets or above lost from the group's teams. The checks are the line manager's four, against thresholds in the senior manager's own harness tuning, and a fifth, since a sound player managed out is the senior manager's particular way of being unfair:
+
+5. Sound practice's managed-out share is at most the maximum sound managed-out share.
+
+The test suite runs 20 seeds per senior strategy within the same budget; the report command prints the senior table beside the line manager's.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -69,6 +91,8 @@ The test suite runs 20 seeds per strategy and must stay within about 15 seconds;
 | When balance is checked | In the test suite with 20 seeds per strategy, plus a report command with more | Only in the report command | Every commit is checked, so content or tuning changes cannot quietly break balance. |
 | Context-blind choices | First or last offered choice | A hand-labelled "agreeable" choice per situation | Choice order carries no meaning, so first and last are honest stand-ins for a fixed habit, with no extra labelling. |
 | Keeping choice order meaningless | Authors vary where the better choice sits, and a check fails if more than half of situations put it first, or more than half put it last | The situation engine shuffling choices with its seeded generator when it presents them | Shuffling makes position unlearnable but can put choices in an order that reads badly (an "ignore it" before the options it ignores); an authored order with a spread check keeps the reading order in the writer's hands. |
+| Where a senior run starts | A line manager run from the seed, handed over at once to an outside hire, the same for every strategy | Play each strategy's own line manager run to a promotion first; let each strategy choose the handover | Most line manager runs are not promoted, so playing up to one would measure few senior runs and mix the two levels' balance; a shared handover keeps the senior measures about how each strategy plays the senior level. |
+| Managed out as a check | A fifth check at the senior manager: sound practice's managed-out share stays low | The line manager's four checks only | Playtests showed sound practice managed out at the senior manager while every other check could pass; the check holds the level to the HLD's learnable-over-ambiguous tenet. |
 
 ## Open Questions & Future Decisions
 

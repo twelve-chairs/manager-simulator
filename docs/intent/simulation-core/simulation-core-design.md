@@ -205,6 +205,7 @@ State is plain, serializable data. Every operation returns a new state and leave
 | Revising a rating | A rate effect may be marked as a revision, replacing the latest rating | Every rate effect adds a rating; ratings in the same game week count as one | Calibration adjusts ratings already given; counting the adjustment as a second rating would put people on a PIP from one review cycle. Same-week merging breaks when calibration falls in a later week than the evaluation. |
 | Removal after a failed PIP | Applied after the rest of the batch | Applied at the rate effect, in batch order | Content naturally submits a rating together with its consequences; removing the person mid-batch would make those later effects target a departed person and reject the batch. |
 | Judging outcomes | The core reports values; career levels and reviews decide burnout, dismissal and promotion | The core declares burnout or dismissal itself | What counts as failure differs by career level, which the core does not know about. |
+| Aggregate attrition rate | A healthy aggregate team loses about an eighth of its heads a year, and a struggling one about a quarter | A higher rate, so attrition dominates a senior manager's teams | Real teams lose roughly that share a year; at a higher rate a well-run team empties faster than it can be backfilled and good management cannot show. |
 
 ## Open Questions & Future Decisions
 

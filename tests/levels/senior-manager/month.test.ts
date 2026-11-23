@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SENIOR_TUNING, afterAdvanceSenior, endMonth, setSeniorHabit, type SeniorState } from '../../../src/levels/senior-manager';
+import { remember } from '../../../src/levels/senior-manager/review';
 import type { SimState } from '../../../src/sim';
 import { senior } from './fixtures';
 
@@ -102,6 +103,24 @@ describe('the habits at the month’s end', () => {
   });
 
   // @spec SENIOR-HABIT-007
+  it('backfills a head lost to attrition even when the player answers a moment before the month ends', () => {
+    const { level, sim } = senior(6);
+    const teamId = level.teamIds[1]!;
+    const before = sim.teams[teamId]!.aggregate!.headcount;
+    // the simulation advances and a head leaves
+    const left = edit(sim, (s) => {
+      const a = s.teams[teamId]!.aggregate!;
+      a.headcount -= 1;
+      a.ratings.unrated -= 1;
+    });
+    let l = afterAdvanceSenior(withHabits(level, { backfill: 'fast' }), left).level;
+    // answering a moment remembers the teams as they are now; the loss must not be forgotten
+    remember(l, left);
+    // fast backfill: the head is replaced by the end of the month
+    expect(month(l, left).sim.teams[teamId]!.aggregate!.headcount).toBe(before);
+  });
+
+  // @spec SENIOR-HABIT-007
   it('backfills a lost head after a month at lower skill fast, or two at the team’s skill holding the bar, stressed while it is missing', () => {
     const { level, sim } = senior(6);
     const teamId = level.teamIds[1]!;
@@ -167,15 +186,15 @@ describe('teams under their managers', () => {
     const m = managerOf(sim, teamId);
     const setup = (skill: number) => edit(sim, (s) => {
       s.people[m]!.skill = skill;
-      Object.assign(s.teams[teamId]!.aggregate!, { motivation: 50, stress: 50 });
+      Object.assign(s.teams[teamId]!.aggregate!, { motivation: 50, stress: 40 });
     });
     const coaching = withHabits(level, { oneOnOnes: 'monthly' });
     const strong = month(coaching, setup(85)).sim.teams[teamId]!.aggregate!;
     const weak = month(coaching, setup(15)).sim.teams[teamId]!.aggregate!;
     expect(strong.motivation).toBeGreaterThan(50);
-    expect(strong.stress).toBeLessThan(50);
+    expect(strong.stress).toBeLessThan(40);
     expect(weak.motivation).toBeLessThan(50);
-    expect(weak.stress).toBeGreaterThan(50);
+    expect(weak.stress).toBeGreaterThan(40);
     const handsOff = month(withHabits(coaching, { oversight: { ...coaching.habits.oversight, [m]: 'handsOff' } }), setup(15)).sim.teams[teamId]!.aggregate!;
     expect(handsOff.motivation).toBeLessThan(weak.motivation);
   });

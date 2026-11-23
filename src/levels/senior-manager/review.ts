@@ -69,9 +69,13 @@ export function afterAdvanceSenior(level: SeniorState, sim: SimState): { level: 
     if (was && now) for (const r of REGRETTED) regretted += Math.max(0, was[r] - now[r]);
   }
   if (regretted > 0) s.regretted.push({ week: played, count: regretted });
+  // Heads lost to attrition are noticed now, before any of the month's choices remembers the teams as they are.
   for (const t of s.teamIds) {
-    const ratings = sim.teams[t]?.aggregate?.ratings;
-    if (ratings) s.knownRatings[t] = { ...ratings };
+    const a = sim.teams[t]?.aggregate;
+    if (!a) continue;
+    for (let lost = (s.knownHeadcount[t] ?? a.headcount) - a.headcount; lost > 0; lost--) s.backfills.push({ teamId: t, since: sim.week, months: 0 });
+    s.knownHeadcount[t] = a.headcount;
+    s.knownRatings[t] = { ...a.ratings };
   }
   s.burnoutMonths = sim.player.stress >= LINE_TUNING.burnoutThreshold ? s.burnoutMonths + 1 : 0;
   return { level: s, burnedOut: s.burnoutMonths >= LINE_TUNING.burnoutWeeks };

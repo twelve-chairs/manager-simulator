@@ -225,8 +225,8 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
     }
     case 'replaceManager': {
       const promote = choiceId === 'promoteFromTeam';
-      const manager = generateManager(s, sim, promote ? { skill: randomInt(s, 20, 39) } : { skill: randomInt(s, 40, 59), trust: 50 });
-      if (promote) effects.push(team(t, 'skill', -T.restructureSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
+      const manager = generateManager(s, sim, promote ? { skill: randomInt(s, ...T.promotedSkill), trust: T.promotedTrust } : { skill: randomInt(s, 40, 59), trust: 50 });
+      if (promote) effects.push(team(t, 'skill', -T.promoteSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
       effects.push({ type: 'hire', teamId: t, person: manager, cause: { kind: 'action', actionId: 'senior.replaceManager' } });
       s.leniency[manager.id] = randomInt(s, 0, 2);
       s.habits.oversight[manager.id] = 'coaching';

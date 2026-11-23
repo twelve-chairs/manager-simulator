@@ -81,7 +81,7 @@ describe('managers’ ratings and plans', () => {
     const promoted = chooseSenior(nl, later, replace.id, 'promoteFromTeam');
     if (!promoted.ok) throw new Error(promoted.error);
     const a = later.teams[t]!.aggregate!;
-    expect(promoted.sim.teams[t]!.aggregate!).toMatchObject({ headcount: a.headcount - 1, skill: a.skill - T.restructureSkill });
+    expect(promoted.sim.teams[t]!.aggregate!).toMatchObject({ headcount: a.headcount - 1, skill: a.skill - T.promoteSkill });
     expect(seniorView(promoted.level, promoted.sim).teams.find((x) => x.id === t)!.managerId).not.toBeNull();
     const hired = chooseSenior(nl, later, replace.id, 'hire');
     if (!hired.ok) throw new Error(hired.error);
