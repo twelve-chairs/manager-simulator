@@ -2,6 +2,7 @@ import {
   attritionRiskOf,
   clamp100,
   emptyRatings,
+  gainHeads,
   isBehind,
   isOverdue,
   members,
@@ -30,6 +31,7 @@ import type {
   Team,
   TeamAggregate,
   PerformanceLevel,
+  Want,
 } from './types';
 
 export * from './types';
@@ -166,6 +168,103 @@ export function addTeam(state: SimState, input: { team: NewAggregateTeam; manage
     record(ctx, cause, { kind: 'person', id: manager.id }, 'status', undefined, 'active');
     record(ctx, cause, { kind: 'team', id: team.id }, 'leader', null, { kind: 'person', id: manager.id });
   }
+  return { ok: true, state: ctx.s, log: ctx.log };
+}
+
+/** A person to add outside the organization: the player's own manager or a peer. */
+export interface NewOutsider {
+  id: string;
+  name: string;
+  role: 'executive' | 'peer';
+  personality?: string;
+  want: Want;
+  trust: number;
+  motivation: number;
+  stress: number;
+}
+
+export type OperationOutcome = ({ ok: true } & OperationResult) | { ok: false; error: string };
+
+/** Adds a person who belongs to no team: the player's boss or a peer, whom situations can bind. */
+// @spec SIM-OUT-001, SIM-OUT-002
+export function addOutsider(state: SimState, person: NewOutsider, cause: Cause): OperationOutcome {
+  if (state.people[person.id]) return { ok: false, error: `person ${person.id} already exists` };
+  if (person.role !== 'executive' && person.role !== 'peer') return { ok: false, error: `a person outside the organization is an executive or a peer, not ${String(person.role)}` };
+  for (const field of ['trust', 'motivation', 'stress'] as const) {
+    if (!(person[field] >= 0 && person[field] <= 100)) return { ok: false, error: `person ${person.id}: ${field} must be from 0 to 100` };
+  }
+  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  ctx.s.people[person.id] = {
+    id: person.id,
+    name: person.name,
+    role: person.role,
+    skill: 50,
+    motivation: person.motivation,
+    stress: person.stress,
+    trust: person.trust,
+    want: person.want,
+    ...(person.personality !== undefined && { personality: person.personality }),
+    performance: 'unrated',
+    joinedWeek: ctx.s.week,
+    wantServedWeek: ctx.s.week,
+    lowMotivationWeeks: 0,
+    highStressWeeks: 0,
+    teamId: null,
+    status: 'active',
+    history: [],
+  };
+  record(ctx, cause, { kind: 'person', id: person.id }, 'status', undefined, 'active');
+  return { ok: true, state: ctx.s, log: ctx.log };
+}
+
+/** Moves heads at one performance level between aggregate teams: a reorganization, not attrition. */
+// @spec SIM-TEAM-010, SIM-TEAM-011, SIM-TEAM-014
+export function moveHeads(state: SimState, move: { from: string; to: string; level: PerformanceLevel; count: number }, cause: Cause): OperationOutcome {
+  const { from, to, level, count } = move;
+  const giver = state.teams[from];
+  const receiver = state.teams[to];
+  if (!giver) return { ok: false, error: `team ${from} does not exist` };
+  if (!receiver) return { ok: false, error: `team ${to} does not exist` };
+  if (!giver.aggregate || giver.form !== 'aggregate') return { ok: false, error: `team ${from} is not aggregate` };
+  if (!receiver.aggregate || receiver.form !== 'aggregate') return { ok: false, error: `team ${to} is not aggregate` };
+  if (from === to) return { ok: false, error: 'heads must move to another team' };
+  if (!PERFORMANCE_LEVELS.includes(level)) return { ok: false, error: `unknown performance level ${String(level)}` };
+  if (!Number.isInteger(count) || count < 1) return { ok: false, error: 'count must be a whole number of at least one' };
+  if (giver.aggregate.ratings[level] < count) return { ok: false, error: `team ${from} has fewer than ${count} heads at ${level}` };
+
+  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  const g = ctx.s.teams[from]!.aggregate!;
+  const r = ctx.s.teams[to]!.aggregate!;
+  const total = r.headcount + count;
+  for (const field of ['skill', 'motivation', 'stress'] as const) {
+    const after = clamp100((r[field] * r.headcount + g[field] * count) / total);
+    record(ctx, cause, { kind: 'team', id: to }, field, r[field], after);
+    r[field] = after;
+  }
+  const risk = attritionRiskOf(r.motivation, r.stress);
+  record(ctx, cause, { kind: 'team', id: to }, 'attritionRisk', r.attritionRisk, risk);
+  r.attritionRisk = risk;
+  const gBefore = { ...g.ratings };
+  record(ctx, cause, { kind: 'team', id: from }, 'headcount', g.headcount, g.headcount - count);
+  g.headcount -= count;
+  g.ratings[level] -= count;
+  ctx.log.push({ cause, target: { kind: 'team', id: from }, field: 'ratings', before: gBefore, after: { ...g.ratings } });
+  gainHeads(ctx, ctx.s.teams[to]!, count, level, cause);
+  return { ok: true, state: ctx.s, log: ctx.log };
+}
+
+/** Closes an aggregate team with no heads, no leader and no active project. Its finished projects keep its id. */
+// @spec SIM-TEAM-012, SIM-TEAM-013, SIM-TEAM-014
+export function closeTeam(state: SimState, teamId: string, cause: Cause): OperationOutcome {
+  const team = state.teams[teamId];
+  if (!team) return { ok: false, error: `team ${teamId} does not exist` };
+  if (team.form !== 'aggregate' || !team.aggregate) return { ok: false, error: `team ${teamId} is not aggregate` };
+  if (team.aggregate.headcount > 0) return { ok: false, error: `team ${teamId} still has ${team.aggregate.headcount} heads` };
+  if (team.leader !== null) return { ok: false, error: `team ${teamId} still has a leader` };
+  if (Object.values(state.projects).some((p) => p.teamId === teamId && p.status === 'active')) return { ok: false, error: `team ${teamId} still has an active project` };
+  const ctx: Ctx = { s: structuredClone(state), log: [] };
+  delete ctx.s.teams[teamId];
+  record(ctx, cause, { kind: 'team', id: teamId }, 'form', 'aggregate', undefined);
   return { ok: true, state: ctx.s, log: ctx.log };
 }
 

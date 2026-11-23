@@ -1,7 +1,8 @@
 /** Everything a person can want from the job. */
 export const WANTS = ['growth', 'recognition', 'stability', 'autonomy'] as const;
 export type Want = (typeof WANTS)[number];
-export type Role = 'engineer' | 'manager';
+/** `executive` and `peer` are people outside the organization: the player's own manager and peers at their level. */
+export type Role = 'engineer' | 'manager' | 'executive' | 'peer';
 export type PersonStatus = 'active' | 'departed' | 'aggregated';
 export const DEPARTURE_REASONS = ['quit', 'fired', 'transferred'] as const;
 export type DepartureReason = (typeof DEPARTURE_REASONS)[number];
@@ -52,7 +53,8 @@ export interface Person {
   lowMotivationWeeks: number;
   /** Consecutive weeks stress has been above the high-stress line. */
   highStressWeeks: number;
-  teamId: string;
+  /** The team they belong to, or lead; null for a person outside the organization. */
+  teamId: string | null;
   status: PersonStatus;
   departure?: { week: number; reason: DepartureReason };
   history: HistoryEntry[];

@@ -64,6 +64,18 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-TEAM-008**: When a person is set as a team's leader, the simulation core shall make their role `manager`.
 - [x] **SIM-TEAM-009**: When a hire effect names a leaderless aggregate team and a person with the role `manager`, the simulation core shall add that person as an active manager, `unrated` and joined at the current week, leading the team, and leave its headcount unchanged.
 - [x] **SIM-TEAM-005**: When an effect or rule changes the skill, motivation or stress of a detailed team, the simulation core shall apply the change to each of the team's active members.
+- [x] **SIM-TEAM-010**: When heads are moved between aggregate teams, the simulation core shall take the given count from the giving team's headcount and its count at the given performance level, add them to the receiving team's, set the receiving team's skill, motivation and stress to the headcount-weighted average of its own and the giving team's for the heads moved, recompute its attrition risk, leave the giving team's skill, motivation and stress unchanged, and record no departure.
+- [x] **SIM-TEAM-011**: If a head move names a team that does not exist or is not in aggregate form, names the same team as giver and receiver, has a count below 1, or moves more heads than the giving team holds at the given performance level, then the simulation core shall reject it with an error naming the problem and leave the state unchanged.
+- [x] **SIM-TEAM-012**: When a team is closed, the simulation core shall remove it from the organization.
+- [x] **SIM-TEAM-013**: If a team to be closed does not exist, is not in aggregate form, has any heads, has a leader or has an active project, then the simulation core shall reject the closing with an error naming the problem and leave the state unchanged.
+- [x] **SIM-TEAM-014**: When heads are moved or a team is closed, the simulation core shall record each change in the change log with the given cause.
+
+## People outside the organization
+
+- [x] **SIM-OUT-001**: When a person is added outside the organization, the simulation core shall add them as an active, `unrated` person joined at the current week, with the given id, name, role, personality, want, trust, motivation and stress, belonging to no team and leading none.
+- [x] **SIM-OUT-002**: If a person added outside the organization has an id that is already a person's, a role other than `executive` or `peer`, or a value outside 0 to 100, then the simulation core shall reject them with an error naming the problem and leave the state unchanged.
+- [x] **SIM-OUT-003**: When the simulation is advanced, the simulation core shall apply want drift to each active person outside the organization and no other rule: they shall not quit and shall count toward no team's work and no rule about the player's standing.
+- [x] **SIM-OUT-004**: If an effect would set a person outside the organization as a team's leader or move them into a team, then the simulation core shall reject its batch with an error naming the effect and leave the state unchanged.
 
 ## Performance level
 

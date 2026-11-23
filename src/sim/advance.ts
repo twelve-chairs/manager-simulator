@@ -83,6 +83,8 @@ function wantDrift(ctx: Ctx, weeks: number) {
 function departure(ctx: Ctx, weeks: number) {
   const cause = rule('rule.departure');
   for (const p of activePeople(ctx.s)) {
+    // People outside the organization never quit (SIM-OUT-003).
+    if (p.teamId === null) continue;
     const target = { kind: 'person', id: p.id } as const;
     const low = p.motivation < TUNING.lowMotivationLine ? p.lowMotivationWeeks + weeks : 0;
     record(ctx, cause, target, 'lowMotivationWeeks', p.lowMotivationWeeks, low);

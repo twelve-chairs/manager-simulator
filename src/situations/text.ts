@@ -32,7 +32,7 @@ export function render(template: string, sim: SimState, bindings: Record<string,
     if (property === undefined) return nameOf(sim, kind, id) ?? whole;
     if (kind === 'person' && property === 'team') {
       const teamId = sim.people[id]?.teamId;
-      return (teamId !== undefined ? sim.teams[teamId]?.name : undefined) ?? whole;
+      return (teamId !== undefined && teamId !== null ? sim.teams[teamId]?.name : undefined) ?? whole;
     }
     return whole;
   });

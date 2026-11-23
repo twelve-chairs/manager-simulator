@@ -42,6 +42,8 @@ function invalidReason(s: SimState, e: Effect): string | undefined {
     return undefined;
   };
   const team = (id: string) => (s.teams[id] ? undefined : `team ${id} does not exist`);
+  // @spec SIM-OUT-004
+  const outside = (id: string) => (s.people[id]?.teamId === null ? `person ${id} is outside the organization` : undefined);
   const project = (id: string) => (s.projects[id] ? undefined : `project ${id} does not exist`);
 
   switch (e.type) {
@@ -84,14 +86,14 @@ function invalidReason(s: SimState, e: Effect): string | undefined {
     case 'remove':
       return activePerson(e.personId);
     case 'move':
-      return activePerson(e.personId) ?? team(e.teamId);
+      return activePerson(e.personId) ?? outside(e.personId) ?? team(e.teamId);
     case 'setLeader': {
       const t = s.teams[e.teamId];
       if (!t) return `team ${e.teamId} does not exist`;
       // A person may replace the player as a team's leader, as when a promoted player hands their team on (SIM-EFFECT-022).
       if (t.leader !== null && !(t.leader.kind === 'player' && e.leader.kind === 'person')) return `team ${e.teamId} already has a leader`;
       if (e.leader.kind === 'person') {
-        const reason = activePerson(e.leader.id);
+        const reason = activePerson(e.leader.id) ?? outside(e.leader.id);
         if (reason) return reason;
         const led = leadsTeam(s, e.leader.id);
         if (led) return `person ${e.leader.id} already leads team ${led.id}`;

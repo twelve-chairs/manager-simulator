@@ -27,22 +27,22 @@ All simulated values are integers from 0 to 100 unless stated otherwise. A chang
 
 ### Person
 
-A person is an engineer or a manager below the player.
+A person is an engineer or a manager below the player, or one of the few people outside the organization the player deals with directly (see *Organization*).
 
 | Field | Meaning |
 |---|---|
 | `id`, `name` | Stable identity |
-| `role` | `engineer` or `manager` |
+| `role` | `engineer` or `manager`; for a person outside the organization, `executive` (the player's own manager) or `peer` (a manager at the player's level) |
 | `skill` | How good they are at their role (engineering for engineers, management for managers) |
 | `motivation` | How engaged they are |
 | `stress` | Current load and strain |
-| `trust` | Their trust in their own manager (the player, or a manager the player manages) |
+| `trust` | Their trust in their own manager (the player, or a manager the player manages); for a person outside the organization, their trust in the player |
 | `want` | What matters most to them: `growth`, `recognition`, `stability` or `autonomy` |
 | `performance` | Their performance level: `unrated`, or a rating of `below`, `partial`, `meets`, `exceeds` or `outstanding` (see *Performance level*) |
 | `joinedWeek` | Game week they joined; tenure is derived from it |
 | `wantServedWeek` | Game week their want was last served; starts at `joinedWeek` |
 | `lowMotivationWeeks`, `highStressWeeks` | Consecutive weeks motivation has been low or stress high; drive departure |
-| `teamId` | The team they belong to (for managers: the team they lead) |
+| `teamId` | The team they belong to (for managers: the team they lead); none for a person outside the organization |
 | `status` | `active`, `departed`, or `aggregated` (folded into an aggregate team; see *Team*) |
 | `departure` | When departed: the game week and reason (`quit`, `fired`, `transferred`) |
 | `history` | Notable things that happened to them (see *History*) |
@@ -86,7 +86,9 @@ What the player can do with their time is defined by the active career level, no
 
 ### Organization
 
-The state holds only the player's own organization: every team in it is under the player, directly or through managers they manage. Teams outside it (peers, dependencies) are not modeled.
+The state holds only the player's own organization: every team in it is under the player, directly or through managers they manage. Teams outside it (peers' organizations, dependencies) are not modeled.
+
+A career level may add a few **people outside the organization**: the player's own manager and peers at the player's level, whom higher levels make characters. Such a person belongs to no team and leads none, and is added as an active person with a role of `executive` or `peer`, a personality, a want and trust in the player. Effects and history apply to them as to anyone, so situations can bind them and record what happened between them and the player; but no advance rule but want drift touches them: they do no project work, never quit, and count toward no team and no rule about the player's standing.
 
 ### Team
 
@@ -104,6 +106,12 @@ Hiring into an aggregate team raises its headcount by one instead of adding a pe
 A team has at most one leader, and a person who leads a team is a manager: setting a person as a team's leader makes their role `manager`, as promoting an engineer to lead their team does. Moving a team's leader to another team makes them a member there and leaves their old team leaderless. Setting a leader on a team that already has one is invalid; the current leader must be removed or moved first.
 
 A team whose leader departs becomes **leaderless** until a new leader is set. Leaderless teams accumulate stress faster.
+
+Heads can be **moved between aggregate teams**: a number of heads at one performance level leave one aggregate team and join another, which takes them on at that level. The receiving team's skill, motivation and stress become the headcount-weighted average of its own and the moved heads', which carry the values of the team they left; the giving team's values are unchanged. Unlike a loss of headcount, a move takes heads from the rating it names, not one chosen at random, and records no departure: it is a reorganization, not attrition. Moving more heads than the team holds at that level is invalid.
+
+An aggregate team with no heads, no leader and no active projects can be **closed**: it leaves the organization. A team that still has any of them cannot be closed. Merging two groups is a sequence of these operations: move every head, reassign the projects, move or remove the leader, then close the emptied team.
+
+A career level that sees a manager's whole **group** of teams as one can **fold** them into one aggregate team: each team's heads and manager are moved into the group, its projects reassigned to it, and the emptied team closed. The core then simulates the group like any aggregate team, and keeps none of the teams it was made from.
 
 A team can also be **added** to a running simulation, as a higher career level does when it takes over a run and the player's group grows. An added team is in aggregate form, with its summary given and all its heads `unrated` unless rating counts are given, and may come with a new manager who leads it; it joins at the current week.
 
@@ -160,7 +168,7 @@ Each advance applies these rules in this order, every change recorded with its r
 2. **Setbacks.** Each active project may suffer a setback, with probability rising with risk and tech debt. A setback removes progress and raises the team's stress.
 3. **Stress.** Stress rises on teams with overdue or behind-schedule projects, and on leaderless teams; it recovers on teams that are on track.
 4. **Want drift.** A person whose want was last served longer ago than the drift threshold loses motivation; one whose want was served within it regains motivation slowly.
-5. **Departure.** A person may quit, with probability rising with how long their motivation has been low or their stress high, and with low trust. An aggregate team instead loses headcount according to its attrition risk. When a departing person leads a team, that team becomes leaderless.
+5. **Departure.** A person may quit, with probability rising with how long their motivation has been low or their stress high, and with low trust. An aggregate team instead loses headcount according to its attrition risk. When a departing person leads a team, that team becomes leaderless. People outside the organization never quit.
 6. **Player standing.** The player's reputation moves with the delivery health of the projects they are responsible for, and their stress moves with the number of teams in trouble that land on them: teams they lead directly, and teams with no leader. A team led by one of their managers is that manager's to carry; its trouble reaches a senior player through the escalations the career level makes.
 7. **Game time.** The game week advances by the step length.
 
@@ -179,6 +187,9 @@ Situations, career levels and debriefs read the state through read-only queries:
 | `advance` | state, step length in weeks | new state and change log |
 | `aggregateTeam` | state, team id, cause | new state with that team in aggregate form, and change log |
 | `addTeam` | state, an aggregate team (id, name, summary, optional rating counts), an optional new manager to lead it, cause | new state with the team added, and change log, or an error |
+| `addOutsider` | state, a new person (id, name, role `executive` or `peer`, personality, want, trust, motivation, stress), cause | new state with the person added outside the organization, and change log, or an error |
+| `moveHeads` | state, from team id, to team id, performance level, count, cause | new state with the heads moved, and change log, or an error |
+| `closeTeam` | state, team id, cause | new state without the team, and change log, or an error |
 | queries | state, query parameters | read-only results |
 
 State is plain, serializable data. Every operation returns a new state and leaves its input unchanged.
@@ -206,6 +217,9 @@ State is plain, serializable data. Every operation returns a new state and leave
 | Removal after a failed PIP | Applied after the rest of the batch | Applied at the rate effect, in batch order | Content naturally submits a rating together with its consequences; removing the person mid-batch would make those later effects target a departed person and reject the batch. |
 | Judging outcomes | The core reports values; career levels and reviews decide burnout, dismissal and promotion | The core declares burnout or dismissal itself | What counts as failure differs by career level, which the core does not know about. |
 | Aggregate attrition rate | A healthy aggregate team loses about an eighth of its heads a year, and a struggling one about a quarter | A higher rate, so attrition dominates a senior manager's teams | Real teams lose roughly that share a year; at a higher rate a well-run team empties faster than it can be backfilled and good management cannot show. |
+| Groups of teams | A group a career level sees as one is one aggregate team, folded from its teams |  Teams kept as separate aggregates under a new group layer | Every rule the core has for aggregate teams then applies to groups unchanged, and the level that needs groups sees each as one aggregate anyway; a group layer would add a hierarchy to the core only for the level to summarize it back. Project work scales with headcount, so a group's projects are sized for it by the level. |
+| Reorganizing aggregate teams | Operations that move heads between aggregate teams and close an empty one | Value effects on headcount; a single merge operation | A fall in headcount from a value effect is a loss, taking heads from random ratings, and career levels count it as attrition; a reorganization keeps the people and their ratings. Two small operations compose into splitting, merging and folding teams, which one merge operation would not. They are operations rather than effects, like adding a team, so situations cannot reshape the organization. |
+| The player's manager and peers | Active people outside the organization, belonging to no team, touched by want drift only | Kept in the career level's state; full members of a team | Situations bind and change people through the core, so characters the player deals with must be people there. Outside the organization, they do no work, never quit and leave the rules about teams and the player's standing as they were. |
 
 ## Open Questions & Future Decisions
 
@@ -213,9 +227,8 @@ State is plain, serializable data. Every operation returns a new state and leave
 1. Formulas and constants for each advance rule, settled during implementation and balancing.
 2. How many weeks a want must go unserved, or motivation stay low, before drift or departure begins.
 3. Whether the player has a want of their own that shapes their stress.
-4. How Director-and-above levels represent organizations of several aggregate teams (one aggregate per senior manager's org, or teams kept separate in aggregate form).
-5. Whether history is capped per person.
-6. Whether aggregate teams need a lasting record of notable events.
+4. Whether history is capped per person.
+5. Whether aggregate teams need a lasting record of notable events.
 
 ## References
 

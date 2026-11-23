@@ -48,6 +48,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-COND-012**: The situation engine shall give a person, team or project its id as its `id` property, a team led by a person that person's id as its `leader`, and a team led by the player or by no one no `leader` value.
 - [x] **SIT-COND-014**: When selection or resolution is given the weeks until the next review, the situation engine shall give `review.weeksAway` that number, and no value when it is not given.
 - [x] **SIT-COND-015**: The situation engine shall give a person their personality as their `personality` property, and no value when they have none.
+- [x] **SIT-COND-016**: The situation engine shall accept `engineer`, `manager`, `executive` and `peer` as values of a person's `role`, and treat a situation comparing `role` with any other literal as invalid.
 - [x] **SIT-COND-010**: The situation engine shall evaluate conditions without changing the simulation or engine state.
 
 ## Selecting situations

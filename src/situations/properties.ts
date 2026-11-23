@@ -43,7 +43,7 @@ const PROPERTIES: Record<Subject, Record<string, PropertyType>> = {
     trust: NUMBER,
     want: WANTS,
     personality: enumOf('personality', PERSONALITIES),
-    role: enumOf('role', ['engineer', 'manager']),
+    role: enumOf('role', ['engineer', 'manager', 'executive', 'peer']), // SIT-COND-016
     performance: RATING,
     plan: PLANS,
     contribution: NUMBER,
@@ -134,7 +134,7 @@ export function propertyValue(sim: SimState, subject: Subject, id: string, prope
         case 'correspondingRating':
           return correspondingRating(sim, id) ?? undefined;
         case 'team':
-          return p.teamId;
+          return p.teamId ?? undefined; // none for a person outside the organization
         case 'ledTeam':
           return ledTeam(sim, id);
         case 'tenureWeeks':

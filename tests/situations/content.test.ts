@@ -381,6 +381,13 @@ describe('place in the week and personality', () => {
     valid(sit({ day: 'monday', time: 'night' } as never), sit({ id: 'friday-only', day: 'friday' } as never), sit({ id: 'night-only', time: 'night' } as never));
   });
 
+  // @spec SIT-COND-016
+  it('accepts engineer, manager, executive and peer as a person’s role, and nothing else', () => {
+    const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
+    for (const role of ['engineer', 'manager', 'executive', 'peer']) valid(roleWhere({ value: 'engineer.role', is: role }));
+    expect(rejectionOf(roleWhere({ value: 'engineer.role', is: 'director' }))).toMatch(/director/);
+  });
+
   // @spec SIT-CONTENT-025
   it('rejects personalities that are not in the catalogue', () => {
     const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
