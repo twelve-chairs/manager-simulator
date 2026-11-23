@@ -1,8 +1,8 @@
 import { band } from '../line-manager';
 import { deliveredRatings, meanStep } from '../senior-manager';
-import { applyEffects, attritionRiskOf, planOf, PERFORMANCE_LEVELS, RATINGS, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
-import { leaderOf, quarterOf, rule } from './core';
-import { periodEndsThisQuarter } from './review';
+import { applyEffects, attritionRiskOf, behindScheduleProjects, overdueProjects, planOf, PERFORMANCE_LEVELS, RATINGS, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
+import { generateSeniorManager, leaderOf, quarterOf, randomInt, rule } from './core';
+import { periodEndsThisQuarter, quartersPlayed } from './review';
 import { takeSurvey } from './survey';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { DirectorHabits, DirectorState } from './types';
@@ -28,7 +28,8 @@ export function setDirectorHabit(level: DirectorState, _sim: SimState, command: 
   return { ok: true, level: s };
 }
 
-const value = (kind: 'person' | 'team', id: string, field: string, amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind, id }, field, amount, cause: rule(ruleId) });
+const energyless = (field: 'reputation', amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind: 'player' }, field, amount, cause: rule(ruleId) });
+const value = (kind: 'person' | 'team' | 'project', id: string, field: string, amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind, id }, field, amount, cause: rule(ruleId) });
 const energy = (amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind: 'player' }, field: 'stress', amount, cause: rule(ruleId) });
 
 function apply(sim: SimState, effects: Effect[], log: ChangeLogEntry[]): SimState {
@@ -71,14 +72,102 @@ function reRates(sim: SimState, groupId: string, target: Record<(typeof PERFORMA
 }
 
 /**
+ * What the quarter's end settles before the habits act: moments left waiting, senior managers arriving, bets moving,
+ * landing or failing, what a quarterly review left out coming to light, and peers going to the executive.
+ */
+// @spec DIR-MOMENT-006, DIR-BET-003, DIR-BET-004, DIR-QBR-003, DIR-PEER-002, DIR-PLAN-003
+function settleQuarter(s: DirectorState, sim0: SimState, log: ChangeLogEntry[]): SimState {
+  let sim = sim0;
+  const effects: Effect[] = [];
+  const executive = s.executiveId;
+  // Moments left waiting: heads held back, no bet funded, the review told straight, one more period for a plan.
+  for (const m of s.moments) {
+    if (m.status !== 'open') continue;
+    if (m.kind === 'headcount' && m.heads) effects.push(value('person', executive, 'trust', -m.heads * T.head.heldTrust, 'director.headcount'));
+    if (m.kind === 'finalEvaluation') s.heldEvaluations = s.heldEvaluations.filter((id) => id !== m.personId);
+    if (m.kind === 'review') {
+      const troubled = troubledIds(s, sim);
+      effects.push(value('person', executive, 'trust', T.review.straightTrust, 'director.review'), energyless('reputation', -troubled.length * T.review.troubleReputation, 'director.review'));
+    }
+    m.status = 'waited';
+  }
+  // Senior managers hired from outside arrive.
+  for (const [g, since] of Object.entries(s.arriving)) {
+    if (since > sim.week) continue;
+    delete s.arriving[g];
+    if (!sim.teams[g] || leaderOf(sim, g)) continue;
+    const hire = generateSeniorManager(s, sim, { skill: randomInt(s, [40, 59]), trust: 50 });
+    s.leniency[hire.id] = randomInt(s, [0, 2]);
+    effects.push({ type: 'hire', teamId: g, person: hire, cause: rule('director.newSenior') });
+  }
+  sim = apply(sim, effects.splice(0), log);
+
+  // Bets: slowed by a strained group, sped by a trusting peer, then landed or failed.
+  const b = T.bets;
+  for (const bet of s.bets) {
+    const p = sim.projects[bet.projectId];
+    const a = sim.teams[bet.groupId]?.aggregate;
+    if (!p || p.status !== 'active' || !a) continue;
+    if (band(a.stress) >= 3) effects.push(value('project', p.id, 'progress', -b.strainedSlow, 'director.bets'));
+    if (bet.peerId && (sim.people[bet.peerId]?.trust ?? 0) >= b.peerTrust) effects.push(value('project', p.id, 'progress', b.peerSpeed, 'director.bets'));
+  }
+  sim = apply(sim, effects.splice(0), log);
+  for (const g of s.groupIds) s.leaderlessEnds[g] = sim.teams[g] && !leaderOf(sim, g) ? (s.leaderlessEnds[g] ?? 0) + 1 : 0;
+  const kept = [];
+  for (const bet of s.bets) {
+    const p = sim.projects[bet.projectId];
+    const landed = p?.status === 'completed' && (s.completions[bet.projectId] ?? sim.week) <= p.deadlineWeek;
+    const failed =
+      !p || p.status === 'cancelled' || (p.status === 'completed' && !landed) || (p.status === 'active' && sim.week > p.deadlineWeek + b.grace) || !sim.teams[bet.groupId] || (s.leaderlessEnds[bet.groupId] ?? 0) >= 2;
+    if (landed) effects.push(energyless('reputation', bet.landing, 'director.bets'), value('person', executive, 'trust', bet.landing, 'director.bets'));
+    else if (failed) {
+      effects.push(energyless('reputation', -bet.failing, 'director.bets'), value('person', executive, 'trust', -bet.failing, 'director.bets'));
+      if (p?.status === 'active') effects.push({ type: 'cancelProject', projectId: p.id, cause: rule('director.bets') });
+    } else kept.push(bet);
+  }
+  s.bets = kept;
+
+  // What a quarterly review left out, still in trouble a quarter on, costs more than the truth would have.
+  const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
+  const stillOut = [];
+  for (const x of s.leftOut) {
+    if (x.week >= sim.week) {
+      stillOut.push(x);
+      continue;
+    }
+    const p = sim.projects[x.id];
+    if (!p || p.status === 'cancelled' || troubled.has(x.id)) effects.push(value('person', executive, 'trust', -T.review.caughtTrust, 'director.review'), energyless('reputation', -T.review.caughtReputation, 'director.review'));
+  }
+  s.leftOut = stillOut;
+
+  // A peer who distrusts the player takes it to the executive, once a period.
+  const period = Math.floor(quartersPlayed(s, sim) / T.reviewEveryQuarters);
+  for (const peer of s.peerIds) {
+    const p = sim.people[peer];
+    if (!p || p.status !== 'active' || p.trust >= T.peer.escalateBelow || s.escalated[peer] === period) continue;
+    s.escalated[peer] = period;
+    effects.push(
+      { type: 'value', target: { kind: 'person', id: executive }, field: 'trust', amount: -T.peer.escalateTrust, cause: rule('director.peer'), historyNote: 'Heard a peer’s complaint about you' },
+      { type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: 0, cause: rule('director.peer'), historyNote: 'Took a complaint about you to the executive' },
+    );
+  }
+  return apply(sim, effects, log);
+}
+
+function troubledIds(s: DirectorState, sim: SimState): string[] {
+  const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
+  return Object.values(sim.projects).filter((p) => p.status === 'active' && s.groupIds.includes(p.teamId) && troubled.has(p.id)).map((p) => p.id);
+}
+
+/**
  * Ends the quarter: the habits act, the listening tour visits, each group and senior manager drift, and at a period's
  * end the survey is taken, the groups are calibrated and the senior managers rated.
  */
-// @spec DIR-HABIT-004, DIR-HABIT-005, DIR-HABIT-006, DIR-DRIFT-001, DIR-DRIFT-002, DIR-DRIFT-003, DIR-DRIFT-004, DIR-PLAN-001, DIR-PLAN-002
+// @spec DIR-MOMENT-006, DIR-HABIT-004, DIR-HABIT-005, DIR-HABIT-006, DIR-DRIFT-001, DIR-DRIFT-002, DIR-DRIFT-003, DIR-DRIFT-004, DIR-PLAN-001, DIR-PLAN-002
 export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level: DirectorState; sim: SimState; log: ChangeLogEntry[] }> {
   const s = structuredClone(level);
   const log: ChangeLogEntry[] = [];
-  let sim = sim0;
+  let sim = settleQuarter(s, sim0, log);
   const effects: Effect[] = [];
   const leads = s.groupIds.map((g) => ({ groupId: g, id: leaderOf(sim, g) }));
   const above = [s.executiveId, ...s.peerIds].filter((id) => sim.people[id]?.status === 'active');

@@ -27,10 +27,12 @@ export function periodEndsThisQuarter(level: DirectorState, sim: SimState): bool
 }
 
 /** Tracks burnout after the simulation advances a quarter. */
-// @spec DIR-END-006
+// @spec DIR-END-006, DIR-BET-003
 export function afterAdvanceDirector(level: DirectorState, sim: SimState): { level: DirectorState; burnedOut: boolean } {
   const s = structuredClone(level);
   s.burnoutQuarters = sim.player.stress >= LINE_TUNING.burnoutThreshold ? s.burnoutQuarters + 1 : 0;
+  // Bets completed this quarter, by when, so a bet completed by its deadline lands.
+  for (const b of s.bets) if (sim.projects[b.projectId]?.status === 'completed' && s.completions[b.projectId] === undefined) s.completions[b.projectId] = sim.week - WEEKS;
   return { level: s, burnedOut: s.burnoutQuarters >= T.burnoutQuarters };
 }
 

@@ -106,6 +106,12 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
     heldEvaluations: [],
     calibrations: [],
     burnoutQuarters: 0,
+    moments: [],
+    arriving: {},
+    leftOut: [],
+    completions: {},
+    leaderlessEnds: {},
+    escalated: {},
     counters: { person: 0, team: 0, project: 0, moment: 0, goal: 0, bet: 0 },
   };
   let { sim, groupId } = foldGroup(senior, seniorSim, choice, level);

@@ -30,6 +30,40 @@ export interface Survey {
   groups: Record<string, SurveyEntry>;
 }
 
+export type DirectorMomentKind = 'finalEvaluation' | 'newSenior' | 'headcount' | 'bets' | 'surfaced' | 'trouble' | 'peerAsk' | 'orgDesign' | 'review';
+
+/** A strategy bet the executive offers: a project with a stake on landing and on failing. */
+export interface BetOffer {
+  id: string;
+  name: string;
+  scope: number;
+  /** Weeks from funding to its deadline. */
+  deadlineWeeks: number;
+  landing: number;
+  failing: number;
+  peerId: string | null;
+}
+
+export interface DirectorMoment {
+  id: string;
+  kind: DirectorMomentKind;
+  /** Week of the quarter, 0 to 12, and day of that week, 0 (Monday) to 4. */
+  week: number;
+  day: number;
+  time: 'morning' | 'afternoon';
+  title: string;
+  text: string;
+  status: 'open' | 'answered' | 'waited';
+  choices: { id: string; label: string }[];
+  groupId?: string;
+  /** The senior manager, peer or other person the moment is about. */
+  personId?: string;
+  /** Headcount planning: the heads given this quarter. */
+  heads?: number;
+  /** Strategy bets: what is on offer. */
+  offers?: BetOffer[];
+}
+
 export interface DirectorState {
   /** The level's own generator, apart from the simulation's and the situation engine's. */
   rngState: number;
@@ -61,5 +95,17 @@ export interface DirectorState {
   calibrations: { week: number; gap: number }[];
   /** Quarters in a row the player has ended at the edge. */
   burnoutQuarters: number;
+  /** The quarter's moments, in the order they play. */
+  moments: DirectorMoment[];
+  /** Per group: the week a senior manager hired from outside arrives to lead it. */
+  arriving: Record<string, number>;
+  /** Projects and bets a quarterly review left out, and the week it was given. */
+  leftOut: { id: string; week: number }[];
+  /** Per bet project id: the week it was completed. */
+  completions: Record<string, number>;
+  /** Per group: quarter ends in a row it has had no senior manager. */
+  leaderlessEnds: Record<string, number>;
+  /** Per peer: the review period in which they last went to the executive about the player. */
+  escalated: Record<string, number>;
   counters: { person: number; team: number; project: number; moment: number; goal: number; bet: number };
 }

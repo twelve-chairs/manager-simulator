@@ -39,4 +39,20 @@ export const DIRECTOR_TUNING = {
   wantServed: 6,
   wantUnserved: -4,
   seniorStressShare: 0.4,
+  /** The most moments a quarter holds. */
+  momentCap: 8,
+  /** Headcount: heads given at neutral standing, per point of the executive's trust and of reputation above 50, the most given, onboarding stress per head, a bet's progress per head, and the executive's trust lost per head held back. */
+  head: { base: 3, perTrust: 0.06, perReputation: 0.04, max: 8, onboardingStress: 2, betSpeed: 15, heldTrust: 2 },
+  /** Bets: how many are offered, their scope, weeks to deadline and stakes, weeks overdue before one fails, progress lost under a strained group, progress a trusting peer adds and the trust that takes, and how far promising more raises stakes. */
+  bets: { offers: [2, 3] as const, scope: [200, 350] as const, deadline: [26, 52] as const, landing: [6, 12] as const, failing: [8, 14] as const, grace: 13, strainedSlow: 20, peerSpeed: 15, peerTrust: 60, promiseFactor: 1.5 },
+  /** The quarterly review: trust telling it straight earns, reputation per thing in trouble, reputation leading with wins earns, what being found out costs, and what promising more earns. */
+  review: { straightTrust: 4, troubleReputation: 2, winsReputation: 4, caughtTrust: 10, caughtReputation: 8, promiseReputation: 3 },
+  /** Peers: the stress agreeing costs a group, trust agreeing earns, trust at which negotiating works and what it moves, trust refusing costs, and the trust below which a peer goes to the executive and what that costs. */
+  peer: { askStress: 6, agreeTrust: 8, negotiateAt: 50, negotiateTrust: 5, refuseTrust: 8, escalateBelow: 30, escalateTrust: 6 },
+  /** A group in trouble: what coaching fixes and grows, and what deciding fixes and costs. */
+  trouble: { coachFix: 8, coachGrowth: 3, decideFix: 15, decideEnergy: 6, decideTrust: 5 },
+  /** Org design: group sizes above which a split is offered and below which a merge is. */
+  org: { max: 32, min: 6 },
+  /** A senior manager promoted from the group: management skill, trust, and the group's skill lost. */
+  newSenior: { promotedSkill: [20, 39] as const, promotedTrust: 65, promoteSkill: 2 },
 };
