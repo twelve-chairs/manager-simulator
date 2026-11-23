@@ -4,6 +4,7 @@ import type { z } from 'zod';
 import {
   AI_TUNING,
   NO_CREDENTIALS,
+  addReading,
   checkReply,
   decide,
   decisionMessage,
@@ -67,6 +68,7 @@ describe('the AI playtester', () => {
     const m = decisionMessage(moment(), 'my notes', 'How week 2 went: Bo is less stressed.');
     expect(m).toContain('my notes');
     expect(m).toContain('How week 2 went');
+    expect(addReading(addReading('', 'The review: meets.'), 'How week 13 went.')).toMatch(/^The review: meets\.\n[\s\S]*How week 13 went\.$/);
     expect(m).toContain('Ada answers every question');
     expect(m).toContain('- `ask`: Ask what would make the job worth staying for');
     expect(m).toContain('`oneOnOnes` (1:1s), now `fortnightly`');

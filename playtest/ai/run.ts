@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { betterByTitle } from '../harness';
-import { InterviewSchema, decide, interviewMessage, scriptQuestions, systemPrompt, type AiClient, type Interview, type Persona, type Step } from './core';
+import { InterviewSchema, addReading, decide, interviewMessage, scriptQuestions, systemPrompt, type AiClient, type Interview, type Persona, type Step } from './core';
 import { act, moveOn, readPage } from './page';
 
 export interface AiRun {
@@ -40,7 +40,7 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
       stopped = 'ended';
       break;
     }
-    if (state.reading) lastRead = state.reading;
+    if (state.reading) lastRead = addReading(lastRead, state.reading);
     const screen = state.decision;
     if (!screen) {
       if (!(await moveOn(page, state))) throw new Error(`stuck on screen "${state.screen}", scene "${state.scene}"`);

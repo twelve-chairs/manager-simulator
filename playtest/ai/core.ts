@@ -126,12 +126,18 @@ export function systemPrompt(persona: Persona): string {
   ].join('\n\n');
 }
 
+/** Adds a recap or review to what the player has read since their last decision, keeping the order read. */
+// @spec PLAY-AI-002
+export function addReading(read: string, reading: string): string {
+  return read ? `${read}\n\n---\n\n${reading}` : reading;
+}
+
 /** The user message for one decision: the notebook, what was last read, and the screen. */
 // @spec PLAY-AI-002
 export function decisionMessage(screen: Screen, notebook: string, lastRead: string): string {
   const lines = [
     `Your notebook:\n${notebook || '(empty: you have just started)'}`,
-    ...(lastRead ? [`What you last read (a recap or a review):\n${lastRead}`] : []),
+    ...(lastRead ? [`What you read since your last decision (recaps and reviews, in order):\n${lastRead}`] : []),
     `The screen now (${screen.turn}): ${screen.title}\n${screen.text}`,
     `Choices (ids in backticks):\n${screen.choices.map((c) => `- \`${c.id}\`: ${c.label}`).join('\n') || '(none)'}`,
     screen.canWait ? 'You may also let this wait.' : 'This cannot be let wait.',
