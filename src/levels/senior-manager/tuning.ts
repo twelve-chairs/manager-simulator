@@ -88,14 +88,14 @@ export const SENIOR_TUNING = {
   lastReviewMonth: 36,
   /** The review's targets. */
   review: {
-    completedOnTime: { target: 1, tolerance: 1 },
-    onScheduleShare: { target: 0.3, tolerance: 0.15 },
+    completedOnTime: { target: 4, tolerance: 1 },
+    onScheduleShare: { target: 0.85, tolerance: 0.1 },
     regrettedAttrition: { target: 0, tolerance: 1 },
-    motivation: { target: 60, tolerance: 10 },
-    stress: { target: 45, tolerance: 10 },
-    managerGrowth: { target: 3, tolerance: 3 },
+    motivation: { target: 70, tolerance: 5 },
+    stress: { target: 15, tolerance: 8 },
+    managerGrowth: { target: 10, tolerance: 4 },
     healthHeld: { target: 0.67, tolerance: 0.2 },
-    calibrationQuality: { target: 0.85, tolerance: 0.1 },
+    calibrationQuality: { target: 0.9, tolerance: 0.1 },
     goal: { target: 0.5, tolerance: 0.4 },
   },
 };

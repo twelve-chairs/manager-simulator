@@ -168,7 +168,10 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     if (id) {
       const m = sim.people[id]!;
       effects.push(
-        person(id, 'motivation', served(m.want, oversight, s.habits, a.stress) ? T.wantServed : T.wantUnserved, 'senior.drift'),
+        // A month that serves their want is tagged as serving it, so the simulation counts the want as served.
+        served(m.want, oversight, s.habits, a.stress)
+          ? { type: 'value', target: { kind: 'person', id }, field: 'motivation', amount: T.wantServed, cause: rule('senior.drift'), wantTags: { serves: [m.want] } }
+          : person(id, 'motivation', T.wantUnserved, 'senior.drift'),
         person(id, 'stress', Math.round((a.stress - m.stress) * T.managerStressShare), 'senior.drift'),
       );
     }

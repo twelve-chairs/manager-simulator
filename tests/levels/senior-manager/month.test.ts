@@ -222,6 +222,17 @@ describe('teams under their managers', () => {
     const stressed = edit(growth, (s) => (s.teams[team]!.aggregate!.stress = 90));
     expect(month(level, stressed).sim.people[m!]!.stress).toBeGreaterThan(month(level, growth).sim.people[m!]!.stress);
   });
+
+  // @spec SENIOR-DRIFT-003
+  it('counts a month that serves a manager’s want as serving it, so the simulation’s want drift does not wear them down', () => {
+    const { level, sim } = senior(10);
+    const [m] = managers(level, sim);
+    const later = edit(sim, (s) => {
+      Object.assign(s.people[m!]!, { want: 'growth' });
+      s.week += 20;
+    });
+    expect(month(level, later).sim.people[m!]!.wantServedWeek).toBe(later.week);
+  });
 });
 
 describe('burnout', () => {
