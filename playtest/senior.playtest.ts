@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { attachSummary, firstSeedThatReaches, watch } from './harness';
+import { attachSummary, betterByTitle, firstSeedThatReaches, watch } from './harness';
+import { momentKind } from './metrics';
 
 const TRUST = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'];
 const SOUND = ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo'];
@@ -19,14 +20,17 @@ test('a sound player promoted to senior manager hands over by the rule and plays
   if (growers.length) expect(growers.filter((o) => TRUST.indexOf(o.trust) === best).map((o) => o.id)).toContain(choice);
   else expect(choice).toBe('hire');
 
-  // Every senior moment answered by sound practice's first offered preference, and calibration settled on the evidence.
+  // Every senior moment answered by sound practice's first offered preference, every situation by its better choice,
+  // and calibration settled on the evidence.
   expect(summary.seen.seniorChoices.length).toBeGreaterThan(0);
-  for (const { offered, chosen } of summary.seen.seniorChoices) {
+  const better = betterByTitle();
+  for (const { title, offered, chosen } of summary.seen.seniorChoices) {
     if (chosen === 'settle') {
       expect(offered).toContain('acceptAll');
       continue;
     }
-    const preferred = SOUND.find((id) => offered.includes(id)) ?? offered[0];
+    const situationBetter = momentKind(title, true) === null ? better[title] : undefined;
+    const preferred = momentKind(title, true) === null ? (situationBetter && offered.includes(situationBetter) ? situationBetter : offered[0]) : (SOUND.find((id) => offered.includes(id)) ?? offered[0]);
     expect(chosen, `offered ${offered.join(', ')}`).toBe(preferred);
   }
   // The run played until it ended, at the senior manager.

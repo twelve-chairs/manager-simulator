@@ -1,6 +1,8 @@
 import { expect, test, type Browser } from '@playwright/test';
 import { attachSummary, play, startSeeded, watch, type PlaySummary, type Strategy } from './harness';
 import { formatScorecard, scoreRun, scorecard } from './metrics';
+import { DEPS, playRun, realContent } from '../tests/balance/harness';
+import { sound } from '../tests/balance/strategies';
 
 /**
  * The success-metric playtests (docs/intent/playtest): scripted players measure a proxy for each of the HLD's
@@ -38,6 +40,18 @@ for (const player of PLAYERS) {
     for (const check of card.checks) expect(check.failures, check.id).toEqual([]);
   });
 }
+
+// @spec PLAY-RUN-007, PLAY-RUN-008
+test('the sound player gets the balance harness’s sound practice ratings at the line manager on every seed', async ({ browser, baseURL }) => {
+  const content = realContent();
+  const played = await Promise.all(SEEDS.map((seed) => playSeed(browser, baseURL, 'sound', seed)));
+  const differ = SEEDS.flatMap((seed, i) => {
+    const harness = playRun(sound, seed, content, DEPS).ratings;
+    const page = played[i]!.summary.reviews.slice(0, harness.length).map((r) => r.rating);
+    return page.join() === harness.join() ? [] : [`seed ${seed}: the page got ${page.join(', ') || 'none'}, the harness ${harness.join(', ')}`];
+  });
+  expect(differ).toEqual([]);
+});
 
 // @spec PLAY-CLOCK-001
 test('counts no words inside a closed disclosure but its summary', async ({ page }) => {

@@ -1,4 +1,6 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
+import { realContent } from '../tests/balance/harness';
+import { BETTER_CHOICES } from '../tests/balance/strategies';
 import { LINE_TITLES, SENIOR_TITLES, type Look, type PlayEvent } from './metrics';
 
 /** The save the game keeps in the browser's storage, and its format, as the save component writes them. */
@@ -69,7 +71,7 @@ export interface PlaySummary {
     /** The handover, if the run reached one: what was offered and what the player chose. */
     handover: { choice: string; options: { id: string; trust: string; want: string | null }[] } | null;
     /** Each senior manager moment: the choices offered and the one taken ('settle' for calibration settled on the evidence, null for waiting). */
-    seniorChoices: { offered: string[]; chosen: string | null }[];
+    seniorChoices: { title: string; offered: string[]; chosen: string | null }[];
   };
   energyTrail: string[];
   /** What the player read, clicked and saw, in order, for the success-metric scorecard (playtest/metrics.ts). */
@@ -85,6 +87,7 @@ export async function play(page: Page, options: PlayOptions): Promise<PlaySummar
     maxWeeks: options.maxWeeks ?? 400,
     // the page cannot import the title table, so it gets the patterns as text
     titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source) },
+    better: betterByTitle(),
   };
   return page.evaluate(playInPage, args);
 }
@@ -111,7 +114,18 @@ export async function attachSummary(testInfo: TestInfo, name: string, summary: P
  * selects, and every screen is checked as it goes. It is self-contained, because Playwright sends it to the page
  * as source.
  */
-type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[] } };
+type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[] }; better: Record<string, string> };
+
+/** The balance harness's better choice for each situation, by the title the page shows it under. */
+export function betterByTitle(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const s of realContent()) {
+    if (!Object.hasOwn(BETTER_CHOICES, s.id)) continue;
+    if (Object.hasOwn(out, s.title)) throw new Error(`two situations are titled "${s.title}"; the page cannot tell them apart`);
+    out[s.title] = BETTER_CHOICES[s.id]!;
+  }
+  return out;
+}
 
 function playInPage(options: InPage): PlaySummary {
   const q = (s: string, r: ParentNode = document) => r.querySelector<HTMLElement>(s);
@@ -124,7 +138,6 @@ function playInPage(options: InPage): PlaySummary {
   const ENERGY = ['running on fumes', 'tired', 'okay', 'good', 'fresh', 'at the edge'];
   const VERDICTS = ['above target', 'on target', 'below target'];
   const STATUSES = ['You dealt with it', 'You let it wait', 'It passed before you got to it'];
-  const BETTER = ['blameless', 'direct', 'ask', 'real-plan', 'honest', 'honest-let-go', 'separately', 'write-it', 'trade', 'sprint', 'buddy-up', 'time-off', 'ask-priorities', 'ask-delegation', 'ask-wants', 'cover', 'approve-replan', 'evidence', 'pair', 'write-first', 'team-choice', 'explain', 'agree-order', 'join-call', 'amber'];
   const COUNTED = /, (twice|\d+ times)$/;
   /** The titles of each career level's own moments (playtest/metrics.ts); any other moment is a situation. */
   const LINE_TITLES = new RegExp(options.titles.line, 'i');
@@ -314,26 +327,94 @@ function playInPage(options: InPage): PlaySummary {
     }
   };
 
+  const BANDS = {
+    stress: ['calm', 'steady', 'busy', 'strained', 'overwhelmed'],
+    skill: ['learning', 'developing', 'capable', 'strong', 'expert'],
+    energy: ['running on fumes', 'tired', 'okay', 'good', 'fresh'],
+    reputation: ['poor', 'mixed', 'fair', 'good', 'excellent'],
+  };
+  /** A band word as the balance harness's band number: 2 is "okay" energy, "busy" stress and "fair" reputation. */
+  const bandOf = (kind: keyof typeof BANDS, word: string) => BANDS[kind].indexOf(word.trim());
+  const OKAY = 2;
+  const card = (name: string) => qa('[data-panel=team] [data-person]').find((c) => text('[data-field=name]', c) === name) ?? null;
+
+  /**
+   * Sound practice at the line manager, as the balance design states it and the balance harness plays it
+   * (tests/balance/strategies.ts), reading the page's band words where the harness reads the view's bands.
+   */
+  // @spec PLAY-RUN-007
+  function lineSound(choices: HTMLElement[], by: (pred: (id: string, el: HTMLElement) => boolean) => HTMLElement | null): HTMLElement | null {
+    const title = text('[data-scene] [data-part=heading]');
+    const has = (id: string) => by((x) => x === id);
+    const rested = bandOf('energy', text('[data-field=energy]')) >= OKAY;
+    if (!isLevelMoment(title)) {
+      const better = options.better[title];
+      return (better ? has(better) : null) ?? choices[0] ?? null;
+    }
+    if (title.startsWith('Final evaluation')) return has('letGo');
+    const difficulty = q('[data-scene] [data-field=difficulty]') ? bandOf('skill', text('[data-scene] [data-field=difficulty]')) : undefined;
+    if (title === 'Night page') {
+      const name = /and (.+) is on call\.$/.exec(text('[data-scene] [data-part=text]'))?.[1] ?? '';
+      const onCall = card(name);
+      return onCall && difficulty !== undefined && bandOf('skill', text('[data-field=skill]', onCall)) >= difficulty ? has('leave') : has('backUp');
+    }
+    if (title.startsWith('Check-in: ')) {
+      const project = qa('[data-project]').find((p) => text('[data-field=name]', p) === title.slice('Check-in: '.length));
+      const schedule = project ? text('[data-field=schedule]', project) : 'on schedule';
+      if (schedule !== 'on schedule' && bandOf('reputation', text('[data-field=reputation]')) >= OKAY) return has('cutScope');
+      return rested ? has('replan') : has('pushOn');
+    }
+    // The engineers a choice offers, least stressed first, ties by id, as the harness orders them.
+    const offered = (prefix: string) =>
+      choices
+        .filter((c) => (c.dataset.choice ?? '').startsWith(prefix))
+        .map((c) => {
+          const [skill = '', stress = ''] = (q('[data-part=who]', c)?.textContent ?? '').split(', ');
+          return { el: c, id: c.dataset.choice!.slice(prefix.length), skill: bandOf('skill', skill), stress: bandOf('stress', stress) };
+        })
+        .sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
+    if (title === 'Interview') return rested ? has('self') : (offered('ask:')[0]?.el ?? has('skip'));
+    if (has('take')) return qa('[data-project]').length < 2 && rested ? has('take') : has('decline');
+    const givable = offered('give:');
+    const able = givable.find((p) => (difficulty === undefined || p.skill >= difficulty) && p.stress <= OKAY);
+    if (able) return able.el;
+    if (rested) return has('self');
+    // Tired, with no one able: a stretch for someone with room, or push back.
+    return givable.find((p) => p.stress <= OKAY)?.el ?? has('pushBack');
+  }
+
+  /** Sound practice's habit: the growth focus on whoever a goal names, or who wants growth, or the least skilled. */
+  // @spec PLAY-RUN-007
+  let habitsWeek = '';
+  function soundHabits() {
+    if (senior() || !['sound', 'mixed'].includes(options.strategy)) return;
+    const week = text('[data-field=week]');
+    if (week === habitsWeek) return;
+    habitsWeek = week;
+    const goals = qa('[data-goal] [data-field=text]').map((g) => g.textContent ?? '');
+    const people = qa('[data-panel=team] [data-person]').map((c) => ({ id: c.dataset.person!, name: text('[data-field=name]', c), want: text('[data-field=want]', c), skill: bandOf('skill', text('[data-field=skill]', c)) }));
+    const growth =
+      people.find((p) => goals.includes(`Help ${p.name} grow`)) ??
+      people.find((p) => p.want === 'growth') ??
+      [...people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0];
+    const select = q('[data-habit=growth]') as HTMLSelectElement | null;
+    if (growth && select && select.value !== growth.id) {
+      select.value = growth.id;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
   let easing = false;
   /** The scripted player's choice for the current moment, or null to let it wait. */
   function choose(): HTMLElement | null {
     const choices = qa('[data-scene] [data-choice]');
     const ids = choices.map((c) => c.dataset.choice ?? '');
     const by = (pred: (id: string, el: HTMLElement) => boolean) => choices.find((c) => pred(c.dataset.choice ?? '', c)) ?? null;
-    const who = (el: HTMLElement) => q('[data-part=who]', el)?.textContent ?? '';
-    const energy = text('[data-field=energy]');
-    const rested = ['okay', 'good', 'fresh'].includes(energy);
     const title = text('[data-scene] [data-part=heading]');
     // The strategies' own rule, kept as their runs were tuned against it: approvals count as situations here.
     const situation = !/^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding)/.test(title);
-    const sound = () =>
-      by((id) => BETTER.includes(id)) ??
-      by((id) => id === 'letGo') ??
-      by((id) => id === 'backUp') ??
-      by((id, el) => id.startsWith('give:') && !/strained|overwhelmed/.test(who(el)) && !/learning/.test(who(el))) ??
-      (rested ? by((id) => id === 'self' || id === 'replan' || (id === 'take' && qa('[data-project]').length < 2)) : null) ??
-      by((id, el) => id.startsWith('ask:') && !/strained|overwhelmed/.test(who(el))) ??
-      by((id) => ['cutScope', 'decline', 'pushBack', 'pushOn', 'skip'].includes(id));
+    // @spec PLAY-RUN-007
+    const sound = () => lineSound(choices, by);
     if (senior()) return seniorChoice(choices, by);
     const delegate = () => by((id) => id === 'leave') ?? by((id) => id.startsWith('give:') || id.startsWith('ask:')) ?? by((id) => id === 'take' || id === 'pushOn') ?? choices.at(-1) ?? null;
     const hero = () => by((id) => ['self', 'takeOver', 'replan', 'take'].includes(id)) ?? choices[0] ?? null;
@@ -378,7 +459,10 @@ function playInPage(options: InPage): PlaySummary {
       }
       return null;
     };
-    const sound = () => prefer(SENIOR_SOUND) ?? choices[0] ?? null;
+    const title = text('[data-scene] [data-part=heading]');
+    const better = isLevelMoment(title) ? undefined : options.better[title];
+    // A situation: its better choice from the table, or the first offered (PLAY-RUN-006).
+    const sound = () => (isLevelMoment(title) ? prefer(SENIOR_SOUND) : better ? by((x) => x === better) : null) ?? choices[0] ?? null;
     switch (options.strategy) {
       case 'hero':
       case 'heavyThenEase':
@@ -420,7 +504,8 @@ function playInPage(options: InPage): PlaySummary {
     press(q('[data-action=settle]'), true);
   }
 
-  if (options.strategy === 'sound' || options.strategy === 'decline' || options.strategy === 'waiter' || options.strategy === 'mixed') setHabit('oneOnOnes', /every week|weekly/i);
+  if (options.strategy === 'decline' || options.strategy === 'waiter') setHabit('oneOnOnes', /every week|weekly/i);
+  soundHabits();
   if (options.strategy === 'hero' || options.strategy === 'heavyThenEase') setHabit('nightPages', /you take/i);
   if (q('[data-scene]')?.dataset.scene === 'before-monday') {
     look();
@@ -474,6 +559,8 @@ function playInPage(options: InPage): PlaySummary {
     checkWeek(sc, lastSlot);
     look();
     layout();
+    // Habits change once a week, at its first scene, before any of its moments is answered, as the harness changes them.
+    if (sc !== 'recap') soundHabits();
     const sceneKey = `${text('[data-field=week]')}|${sc}|${text('[data-scene] [data-part=heading]')}|${text('[data-field=when]')}`;
     if (sc === 'moment' && !readScreens.has(sceneKey)) {
       const heading = text('[data-scene] [data-part=heading]');
@@ -526,14 +613,14 @@ function playInPage(options: InPage): PlaySummary {
     const offered = qa('[data-scene] [data-choice]').map((c) => c.dataset.choice ?? '');
     // Calibration, settled on the evidence by every player who plays sound practice for it.
     if (senior() && q('[data-scene] [data-calibration]') && (options.strategy === 'sound' || options.strategy === 'mixed' || options.strategy === 'waiter')) {
-      summary.seen.seniorChoices.push({ offered, chosen: 'settle' });
+      summary.seen.seniorChoices.push({ title, offered, chosen: 'settle' });
       const week = runWeek();
       settleOnEvidence();
       log.push({ kind: 'answer', week, title, reaction: q('[data-scene] [data-part=reaction]')?.textContent ?? null, chips: qa('[data-scene] [data-chip]').map((c) => c.textContent ?? ''), notes: [] });
       continue;
     }
     const choice = choose();
-    if (senior()) summary.seen.seniorChoices.push({ offered, chosen: choice?.dataset.choice ?? null });
+    if (senior()) summary.seen.seniorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? null });
     const week = runWeek();
     if (choice) {
       const before = firstNotes();
