@@ -6,7 +6,7 @@ import { play, startSeeded, watch } from './harness';
 
 /**
  * The AI playtester's driver with a fake client in place of Claude, so it costs nothing and runs with the playtests:
- * a scripted sound player carries a run to the director, then the fake plays on, taking the first valid action on
+ * a scripted sound player carries a run to the director's handover, then the fake plays on, taking the first valid action on
  * every screen. It checks that the driver reads every kind of decision screen and acts on it in the real page.
  */
 function fakeClient(): AiClient & { asked: string[] } {
@@ -37,7 +37,7 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   // Seed 108 reaches the director soonest under the scripted sound player; the rest are a fallback if tuning moves it.
   for (const seed of [108, 101, 102, 103, 104, 105, 106, 107]) {
     await startSeeded(page, seed);
-    const s = await play(page, { strategy: 'sound', seed, maxWeeks: 170 });
+    const s = await play(page, { strategy: 'sound', seed, maxWeeks: 170, until: 'directorHandover' });
     if (s.seen.directorHandover) {
       carried = true;
       break;
@@ -51,7 +51,12 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   expect(run.steps.filter((s) => s.note), 'every fake reply was valid').toEqual([]);
   // the screen text reaches the playtester, and nothing of the game's state does
   expect(client.asked.some((m) => m.includes('Your senior managers'))).toBe(true);
+  // How to play is open in a level's first turns, as a newcomer sees it
+  expect(client.asked.some((m) => m.includes('How to play'))).toBe(true);
   expect(client.asked.some((m) => /"seed"|rngState|leniency/.test(m))).toBe(false);
   expect(run.interviews.length).toBeGreaterThan(0);
+  // the interview after the promotion follows the director's first quarters, and is told of the promotion
+  expect(run.interviews[0]?.when).toMatch(/after the first promotion and \d+ turns/);
+  expect(client.asked.find((m) => m.includes('The facilitator asks you'))).toMatch(/You were promoted[\s\S]*director/i);
   expect(problems).toEqual([]);
 });

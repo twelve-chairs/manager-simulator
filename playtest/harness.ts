@@ -41,7 +41,7 @@ export async function startSeeded(page: Page, seed: number) {
 }
 
 export type Strategy = 'sound' | 'delegate' | 'hero' | 'decline' | 'waiter' | 'mixed' | 'heavyThenEase';
-export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning';
+export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning' | 'directorHandover';
 
 export interface PlayOptions {
   strategy: Strategy;
@@ -611,6 +611,8 @@ function playInPage(options: InPage): PlaySummary {
       if (toDirector) {
         summary.seen.directorHandover = { choice, options: offered.filter((o) => o.id !== 'hire') };
         directorBase = lastReviewWeek;
+        // left on the handover screen, for a player that takes over from here
+        if (options.until === 'directorHandover') return { ...summary, stoppedAt: 'director handover', violations: [...violations] };
       } else {
         summary.seen.handover = { choice, options: offered.filter((o) => o.id !== 'hire') };
         seniorBase = lastReviewWeek;

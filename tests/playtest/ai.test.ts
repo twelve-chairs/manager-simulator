@@ -9,6 +9,7 @@ import {
   decide,
   decisionMessage,
   hasCredentials,
+  interviewDue,
   interviewMessage,
   keepNotebook,
   renderReport,
@@ -18,6 +19,7 @@ import {
   type AiClient,
   type Reply,
   type Screen,
+  type Promotion,
   type Step,
 } from '../../playtest/ai/core';
 
@@ -121,10 +123,27 @@ describe('the AI playtester', () => {
     const questions = scriptQuestions(readFileSync(new URL('../../playtest/HUMAN.md', import.meta.url), 'utf8'));
     expect(questions.map((q) => q.heading)).toEqual(expect.arrayContaining(['A promotion in the first session', 'Promotion changes the job', 'Skill can be learned']));
     for (const q of questions) expect(q.questions.length).toBeGreaterThan(0);
-    const unpromoted = interviewMessage(questions, false, 'notes', ['first thought']);
+    const unpromoted = interviewMessage(questions, [], 'notes', ['first thought']);
     expect(unpromoted).not.toContain('### Promotion changes the job');
+    expect(unpromoted).not.toContain('You were promoted');
     expect(unpromoted).toContain('1. first thought');
-    expect(interviewMessage(questions, true, 'notes', [])).toContain('### Promotion changes the job');
+    const promoted = interviewMessage(questions, [{ title: 'You are now a senior manager', text: 'Three teams report to you.' }], 'notes', []);
+    expect(promoted).toContain('### Promotion changes the job');
+    expect(promoted).toMatch(/You were promoted[\s\S]*You are now a senior manager\nThree teams report to you\./);
+  });
+
+  // @spec PLAY-AI-006
+  it('holds the interview after a promotion until the new level’s first turns are played', () => {
+    expect(interviewDue(undefined, 'Week 9')).toBe(false);
+    const p: Promotion = { title: 'Senior', text: '', turns: [], interviewed: false };
+    const turns = Array.from({ length: AI_TUNING.turnsAfterPromotion }, (_, i) => `Month ${i + 1}`);
+    for (const t of turns) {
+      expect(interviewDue(p, t)).toBe(false);
+      expect(interviewDue(p, t), 'a second decision in the same turn').toBe(false);
+    }
+    expect(interviewDue(p, `Month ${AI_TUNING.turnsAfterPromotion + 1}`)).toBe(true);
+    p.interviewed = true;
+    expect(interviewDue(p, 'Month 9')).toBe(false);
   });
 
   // @spec PLAY-AI-007

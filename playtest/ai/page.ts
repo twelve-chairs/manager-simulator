@@ -35,8 +35,10 @@ export function readPage(page: Page): Promise<PageState> {
       return [{ id, label: (s.closest('label')?.querySelector('.habit-name')?.textContent ?? id).trim(), value: select.value, options: [...select.options].map((o) => ({ value: o.value, label: o.textContent ?? o.value })) }];
     });
     const panels = qa('[data-panel]')
-      // The header already holds the goals; the habits are read as controls.
-      .filter((p) => !['days', 'save', 'help', 'habits', 'goals'].includes(p.dataset.panel ?? ''))
+      // The header already holds the goals; the habits are read as controls; How to play is read while it is open, as
+      // a newcomer sees it in their first turns, and is otherwise only a closed heading.
+      .filter((p) => !['days', 'save', 'habits', 'goals'].includes(p.dataset.panel ?? ''))
+      .filter((p) => p.dataset.panel !== 'help' || (p as HTMLDetailsElement).open)
       .map((p) => words(p))
       .filter(Boolean);
     const text = [words(q('header.status')), ...panels, words(sceneEl ?? q('[data-screen]'))].filter(Boolean).join('\n\n');

@@ -37,7 +37,9 @@ export const AI_TUNING = {
   /** The notebook's longest length, in words; a longer reply is cut to it. */
   notebookWords: 300,
   /** Decisions before a run stops, by how far it goes. */
-  maxDecisions: { promotion: 220, director: 700, end: 900 },
+  maxDecisions: { promotion: 240, director: 720, end: 900 },
+  /** Turns played at a new level before the interview that follows a promotion. */
+  turnsAfterPromotion: 3,
 } as const;
 
 /** What the playtester replies to a decision. Every field is always present, so the schema is strict. */
@@ -160,12 +162,33 @@ export function scriptQuestions(human: string): { heading: string; questions: st
   return out;
 }
 
-/** The interview's message: the questions for the metrics reached, from the notebook and the think-aloud so far. */
+/** A promotion the run reached: its screen, and the turns played at the new level since. */
+export interface Promotion {
+  title: string;
+  text: string;
+  turns: string[];
+  interviewed: boolean;
+}
+
+/**
+ * Records a turn at the level a run was promoted to, and says whether the interview that follows the promotion is
+ * due: once the tuned number of turns has been played there, before the next turn's first decision.
+ */
 // @spec PLAY-AI-006
-export function interviewMessage(questions: { heading: string; questions: string[] }[], promoted: boolean, notebook: string, thinkAloud: string[]): string {
-  const asked = questions.filter((q) => promoted || q.heading !== 'Promotion changes the job');
+export function interviewDue(promotion: Promotion | undefined, turn: string): boolean {
+  if (!promotion || promotion.interviewed || !turn || promotion.turns.includes(turn)) return false;
+  if (promotion.turns.length >= AI_TUNING.turnsAfterPromotion) return true;
+  promotion.turns.push(turn);
+  return false;
+}
+
+/** The interview's message: the questions for the metrics reached, from the notebook, the think-aloud and the promotion screens. */
+// @spec PLAY-AI-006
+export function interviewMessage(questions: { heading: string; questions: string[] }[], promotions: Pick<Promotion, 'title' | 'text'>[], notebook: string, thinkAloud: string[]): string {
+  const asked = questions.filter((q) => promotions.length > 0 || q.heading !== 'Promotion changes the job');
   return [
     'The facilitator asks you some questions about your session. Answer each heading in your own words, as the player you are, from your notebook and what you thought as you played. Be specific and honest, including about what bored or confused you.',
+    ...(promotions.length > 0 ? [`You were promoted during the session. What the game showed you then:\n${promotions.map((p) => `${p.title}\n${p.text}`).join('\n\n---\n\n')}`] : []),
     `Your notebook:\n${notebook}`,
     `What you thought as you played, in order:\n${thinkAloud.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
     `Questions:\n${asked.map((q) => `### ${q.heading}\n${q.questions.map((x) => `- ${x}`).join('\n')}`).join('\n\n')}`,
