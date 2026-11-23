@@ -1,6 +1,6 @@
 import { band } from '../line-manager';
 import { applyEffects, attritionRiskOf, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
-import { managerOf, nextId, rule } from './core';
+import { leadOf, managerOf, nextId, rule } from './core';
 import { periodSnapshot, remember } from './review';
 import { SENIOR_TUNING } from './tuning';
 import type { Oversight, SeniorHabits, SeniorState } from './types';
@@ -69,7 +69,7 @@ function served(want: string, oversight: Oversight, habits: SeniorHabits, teamSt
  * Ends the month: the habits act, lost heads are backfilled, skip-level listening is held, and each team and its manager
  * move toward what the manager can sustain.
  */
-// @spec SENIOR-HABIT-004, SENIOR-HABIT-005, SENIOR-HABIT-006, SENIOR-HABIT-007, SENIOR-HABIT-008, SENIOR-DRIFT-001, SENIOR-DRIFT-002, SENIOR-DRIFT-003
+// @spec SENIOR-HABIT-004, SENIOR-HABIT-005, SENIOR-HABIT-006, SENIOR-HABIT-007, SENIOR-HABIT-008, SENIOR-DRIFT-001, SENIOR-DRIFT-002, SENIOR-DRIFT-003, SENIOR-MOMENT-011
 export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; recap: unknown }> {
   const s = structuredClone(level);
   const log: ChangeLogEntry[] = [];
@@ -78,7 +78,9 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
   if (sim.week > s.periodStart.week && (sim.week - s.startWeek) % (T.reviewEveryMonths * T.weeksPerMonth) === 0) s.periodStart = periodSnapshot(s, sim);
 
   const effects: Effect[] = [];
-  const managers = s.teamIds.map((t) => ({ teamId: t, id: managerOf(sim, t) }));
+  // Moments left unanswered are let wait.
+  s.moments = s.moments.map((x) => (x.status === 'open' ? { ...x, status: 'waited' as const } : x));
+  const managers = s.teamIds.map((t) => ({ teamId: t, id: leadOf(s, sim, t) }));
   const trustBefore = Object.fromEntries(managers.flatMap((m) => (m.id ? [[m.id, sim.people[m.id]!.trust]] : [])));
 
   // Oversight and 1:1s.
@@ -107,7 +109,7 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     s.listenedTo = [t];
     s.surfaced = [{ teamId: t, week: sim.week }];
     effects.push(player(T.skipLevelEnergy, 'senior.skipLevel'));
-    const m = managerOf(sim, t);
+    const m = leadOf(s, sim, t);
     if (m && trustBefore[m]! < T.skipLevelTrustBelow) effects.push(person(m, 'trust', -T.skipLevelTrust, 'senior.skipLevel'));
   }
 

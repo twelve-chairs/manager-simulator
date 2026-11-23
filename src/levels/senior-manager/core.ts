@@ -14,6 +14,12 @@ export const rule = (ruleId: string): Cause => ({ kind: 'rule', ruleId });
 /** A team's health, computed for a detailed team and stored for an aggregate one. */
 export const summarizeTeam = (sim: SimState, teamId: string): TeamAggregate => teamSummary(sim, teamId);
 
+/** The id of the person leading a team, if a person does and has started leading it. */
+export function leadOf(level: { arriving: Record<string, number> }, sim: SimState, teamId: string): string | null {
+  const starts = level.arriving[teamId];
+  return starts !== undefined && starts > sim.week ? null : managerOf(sim, teamId);
+}
+
 /** The id of the person leading a team, if a person does. */
 export function managerOf(sim: SimState, teamId: string): string | null {
   const leader = sim.teams[teamId]?.leader;

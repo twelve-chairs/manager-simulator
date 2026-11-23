@@ -21,6 +21,29 @@ export interface Backfill {
 /** A team's heads at each performance level. */
 export type RatingCounts = Record<'unrated' | 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding', number>;
 
+export type SeniorMomentKind = 'surfaced' | 'escalation' | 'staffing' | 'dispute' | 'approval' | 'newWork' | 'restructuring';
+
+/** One of the month's moments: a scene with a few choices. */
+export interface SeniorMoment {
+  id: string;
+  kind: SeniorMomentKind;
+  /** The week of the month, 0 to 3. */
+  week: number;
+  /** 0 is Monday, 4 is Friday. */
+  day: number;
+  time: 'morning' | 'afternoon' | 'night';
+  status: 'open' | 'answered' | 'waited';
+  title: string;
+  text: string;
+  teamId?: string;
+  otherTeamId?: string;
+  projectId?: string;
+  otherProjectId?: string;
+  /** For an approval: what the manager proposes. */
+  detail?: 'promote' | 'letGo';
+  choices: { id: string; label: string }[];
+}
+
 export interface SeniorState {
   /** The level's own generator, apart from the simulation's and the situation engine's. */
   rngState: number;
@@ -54,5 +77,13 @@ export interface SeniorState {
   completions: Record<string, number>;
   /** The review period's start: when, the managers' average skill, and each team's health bands. */
   periodStart: { week: number; skill: number; health: Record<string, { motivation: number; stress: number }> };
-  counters: { person: number; team: number; project: number; hire: number };
+  /** The month's moments, in the order they play. */
+  moments: SeniorMoment[];
+  /** Per team id: the week its manager last asked for an approval. */
+  lastApproval: Record<string, number>;
+  /** Whether the group has been offered its fourth team. */
+  restructured: boolean;
+  /** Per team id: the week a manager hired from outside starts leading it; until then the team is leaderless. */
+  arriving: Record<string, number>;
+  counters: { person: number; team: number; project: number; hire: number; moment: number };
 }

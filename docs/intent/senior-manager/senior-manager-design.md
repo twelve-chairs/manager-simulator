@@ -70,6 +70,8 @@ A month is a handful of moments, Monday of the first week to Friday of the last,
 - **Restructuring**: once the group has run a year, the player's manager offers a fourth team. Choose its manager: promote someone from one of the teams (that team loses a strong head) or hire from outside.
 - **Calibration** (see below), before each review.
 
+Approvals come from the teams' ratings rather than chance: a manager proposes a promotion when their team has a head rated *exceeds* or better, and letting someone go when it has one rated *below*, at most once every three months a team. A project counts as at risk for a dispute when its risk is *elevated* or worse. A manager hired from outside, at restructuring or to replace one let go, joins at once but starts leading the following month; until then their team is leaderless.
+
 Authored situations add written drama on top, tagged for this level and written about managers and teams.
 
 ## Calibration

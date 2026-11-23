@@ -1,6 +1,6 @@
 import { band } from '../line-manager';
 import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating, type SimState } from '../../sim';
-import { managerOf } from './core';
+import { leadOf } from './core';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorState } from './types';
 
@@ -56,7 +56,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
   for (const teamId of level.teamIds) {
     const team = sim.teams[teamId]!;
     const a = team.aggregate!;
-    const m = managerOf(sim, teamId);
+    const m = leadOf(level, sim, teamId);
     const person = m ? sim.people[m]! : null;
     if (person) {
       managers.push({

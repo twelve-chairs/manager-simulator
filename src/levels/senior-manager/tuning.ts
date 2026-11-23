@@ -42,6 +42,36 @@ export const SENIOR_TUNING = {
   wantServed: 3,
   wantUnserved: -2,
   managerStressShare: 0.25,
+  /** Moments: the most a month holds, and the risk at or above which a project counts as at risk for a dispute. */
+  momentCap: 5,
+  atRiskProject: 40,
+  /** Escalations: how much stepping in and coaching fix a team's stress, what they cost, and the skill coaching grows. */
+  stepInFix: 15,
+  stepInEnergy: 6,
+  coachFix: 8,
+  coachEnergy: 2,
+  coachGrowth: 3,
+  /** Staffing: the stress a moved head relieves and adds, and the trust a now-busy giving manager loses. */
+  moveRelief: 10,
+  moveStress: 6,
+  moveTrust: 5,
+  /** Disputes: the skill agreeing grows, the relief and trust cost of deciding, and the risk letting it run adds. */
+  agreeGrowth: 2,
+  agreeEnergy: 2,
+  decideRelief: 10,
+  decideTrust: 5,
+  letRunRisk: 8,
+  /** New work: the stress spreading it adds to every team, and the reputation declining it costs. */
+  spreadStress: 6,
+  declineWork: 3,
+  /** Approvals: the motivation an unearned promotion costs the team, the trust asking for evidence and refusing cost, and the weeks between a team's proposals. */
+  approvalDip: 5,
+  evidenceTrust: 2,
+  refuseTrust: 4,
+  approvalCooldownWeeks: 12,
+  /** Restructuring: the month it is offered from, and the skill a team loses when its strongest is promoted out. */
+  restructureMonth: 12,
+  restructureSkill: 5,
   /** Months before promotion is possible, and the month of the last review. */
   promotionFromMonth: 18,
   lastReviewMonth: 36,

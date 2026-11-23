@@ -66,7 +66,11 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     regretted: [],
     completions: {},
     periodStart: { week: lineSim.week, skill: 0, health: {} },
-    counters: { person: 0, team: 0, project: 0, hire: 0 },
+    moments: [],
+    lastApproval: {},
+    restructured: false,
+    arriving: {},
+    counters: { person: 0, team: 0, project: 0, hire: 0, moment: 0 },
   };
   let sim = lineSim;
   const teamId = line.teamId;
