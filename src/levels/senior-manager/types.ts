@@ -134,13 +134,14 @@ export interface SeniorState {
   arriving: Record<string, number>;
   /** Managers on a plan whose third low rating is held for a final evaluation. */
   heldEvaluations: string[];
-  /** Teams whose manager was let go, to be offered a new manager next month. */
-  replacing: string[];
   /** Each calibration's average gap, in rating steps, between the ratings settled and what the teams delivered. */
   calibrations: { week: number; gap: number }[];
   /** The review period's goals. */
   goals: SeniorGoal[];
   /** What the player could see when the month began. */
   monthStart: MonthStart | null;
+  /** Managers who joined the group after the handover, and those the player let go, for the career summary. */
+  joinedManagers: string[];
+  letGoManagers: string[];
   counters: { person: number; team: number; project: number; hire: number; moment: number; goal: number };
 }

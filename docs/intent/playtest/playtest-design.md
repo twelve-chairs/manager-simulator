@@ -23,7 +23,18 @@ Four principles shape it:
 - **First-timer.** Plays the way a new player does: mostly sound choices, sometimes a random choice, sometimes letting a moment wait. It is the existing playtests' *mixed* player: on each moment it lets the moment wait one time in ten, picks a random offered choice two times in ten, and otherwise plays sound practice, with 1:1s every week. Its randomness comes from its own seeded generator, so a run can be replayed.
 - **Sound.** The existing playtests' *sound* player, which plays sound practice on every moment. It is reported beside the first-timer as a reference, and nothing is checked against it.
 
-Each player plays a fixed set of **eight seeds**, from a new run until the run ends.
+Each player plays a fixed set of **eight seeds**, from a new run until the run ends, at whichever level it ends.
+
+### At the senior manager
+
+A run promoted from the line manager goes on at the senior manager, and every scripted player plays it too:
+
+- **The handover.** The player picks the engineer who trusts them most among those who want growth, if one trusts them at least *trusting*; otherwise an outside hire. That is the choice sound practice makes: someone likely to grow into the role, or a manager who already has it.
+- **Sound practice** keeps coaching oversight and fortnightly 1:1s, and on each moment: coaches a manager through an escalation or a problem a skip-level raised; moves a head between teams when asked; gets disputing managers to agree; gives new work to the team with room; asks for the evidence on an approval; promotes the new manager from the team when replacing one or adding a team; lets a manager on a failed plan go; and settles calibration on the evidence, moving every head to what its team delivered.
+- **The first-timer** plays sound practice with its random choices and waits, as at the first level.
+- **The naive players** keep their character: the hero steps in on every escalation and decides every dispute; the delegator lets managers handle everything and accepts every proposal; the decliner declines and refuses where it can; the waiter lets half the situations wait.
+
+The playtests check the senior manager's screens as they check the line manager's: the month wording, the managers panel, the calibration scene, the recap, the review and the career summary.
 
 ## The Session Clock
 
@@ -107,7 +118,7 @@ Each player's runs produce one scorecard, attached to the playtest's HTML report
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. The *Promotion changes the job* proxy, once a second career level exists.
+1. The *Promotion changes the job* proxy, now that a second career level exists, as its own change.
 2. Making *A promotion in the first session* a hard check, once the line manager level's pacing can meet it.
 3. Whether every quit should be foreshadowed on screen (a sign of restlessness, visible trust, or no base chance to quit), and then whether quits with a warning become a hard check.
 4. Thresholds for the reported proxies, set from the first rounds of human sessions.

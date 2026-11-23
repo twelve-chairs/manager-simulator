@@ -1,18 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
-import { attachSummary, play, startSeeded, watch, type PlayOptions, type PlaySummary } from './harness';
+import { expect, test } from '@playwright/test';
+import { attachSummary, firstSeedThatReaches, play, startSeeded, watch } from './harness';
 
 /**
  * Features a run reaches only sometimes. Each scenario tries a fixed list of seeds in order until one reaches the
  * scene it is about, so a failure always replays the same way.
  */
-async function firstSeedThatReaches(page: Page, seeds: number[], options: Omit<PlayOptions, 'seed'>, reached: (s: PlaySummary) => boolean) {
-  for (const seed of seeds) {
-    await startSeeded(page, seed);
-    const summary = await play(page, { ...options, seed });
-    if (reached(summary)) return { seed, summary };
-  }
-  throw new Error(`none of seeds ${seeds.join(', ')} reached the scene with a ${options.strategy} player`);
-}
 
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 

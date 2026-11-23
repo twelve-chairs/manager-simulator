@@ -43,14 +43,25 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Status
 
-**Early development, and playable from start to finish.** The first career level, **line manager**, runs in the browser from your first day to promotion, burnout, being managed out, or two years in without the promotion:
+**Early development, and playable from start to finish.** Two career levels run in the browser.
+
+**Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
 - a week of short scenes: design reviews, customer requests, night pages, interviews, project check-ins, and authored story situations;
 - five standing habits, quarterly goals from your manager and a review every 13 weeks;
-- a guided first three weeks, and How to play on hand throughout;
-- your run saves in the browser after every move, and can be exported to a file and imported again.
+- a guided first three weeks, and How to play on hand throughout.
 
-**Next up:** the senior manager level (managing managers), then director and above, where whole organizations become the people you look after.
+**Senior manager**, once promoted: you choose who leads your old team, then run three teams through their managers, a month at a time:
+
+- managers as people you coach, oversee, put on a plan or replace, and teams you see as their managers tell it, unless you look for yourself;
+- escalations, staffing, disputes between teams, approvals and a fourth team to take on;
+- calibration before each six-monthly review, and three years to earn the next promotion.
+
+The senior manager level is new and not yet balanced: its reviews are harder than they should be.
+
+Your run saves in the browser after every move, and can be exported to a file and imported again.
+
+**Next up:** balancing the senior manager level, then director and above, where whole organizations become the people you look after.
 
 ## Fiction, not advice
 
@@ -96,11 +107,11 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/sim/` | Simulation core |
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
-| `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews; not yet wired into the game, so not yet playable |
+| `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |
 | `src/save/` | Save / load: a run saved as its seed and commands, rebuilt by replaying them |
-| `src/ui/` | Browser UI; `index.html` at the root loads it |
+| `src/ui/` | Browser UI, with a renderer per career level; `index.html` at the root loads it |
 | `src/actions.ts` | Player action catalogue: every career level's action ids, which situation content is checked against |
 | `src/personalities.ts` | Personality catalogue: the traits career levels give people, which situation content is checked against |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |

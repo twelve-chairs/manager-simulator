@@ -83,10 +83,10 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
     const who = sim.people[managerId].name;
     drafts.push({ kind: 'finalEvaluation', teamId, managerId, title: `Final evaluation: ${who}`, text: `${who} is on an improvement plan, and ${name(sim, teamId)} is still struggling under them. A third low rating ends the plan. It's your call.`, choices: CHOICES.finalEvaluation });
   }
-  // Teams whose manager was let go, waiting for a new one.
-  for (const teamId of s.replacing) {
-    if (sim.teams[teamId]?.leader) continue;
-    drafts.push({ kind: 'replaceManager', teamId, title: `${name(sim, teamId)} needs a manager`, text: `${name(sim, teamId)} has had no manager since you let theirs go. Who leads it now?`, choices: CHOICES.replaceManager });
+  // Teams with no manager and none on the way, whether theirs was let go or quit.
+  for (const teamId of s.teamIds) {
+    if (sim.teams[teamId]?.leader || s.arriving[teamId] !== undefined) continue;
+    drafts.push({ kind: 'replaceManager', teamId, title: `${name(sim, teamId)} needs a manager`, text: `${name(sim, teamId)} has no manager. Who leads it now?`, choices: CHOICES.replaceManager });
   }
   // Calibration, in the last month before a review.
   if (periodEndsThisMonth(s, sim)) {
@@ -183,6 +183,7 @@ function addFourthTeam(s: SeniorState, sim: SimState, manager: ReturnType<typeof
   );
   if (!added.ok) throw new Error(`restructuring: ${added.error}`);
   s.teamIds.push(id);
+  s.joinedManagers.push(manager.id);
   s.leniency[manager.id] = randomInt(s, 0, 2);
   s.habits.oversight[manager.id] = 'coaching';
   if (startsWeek !== null) s.arriving[id] = startsWeek;
@@ -217,19 +218,19 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       if (choiceId === 'letGo') {
         // A third low rating ends the plan: the simulation lets them go, and the team waits for a new manager.
         effects.push({ type: 'rate', target: { kind: 'person', id }, rating: 'below', cause: { kind: 'action', actionId: 'senior.finalEvaluation' } });
-        s.replacing.push(t);
+        s.letGoManagers.push(id);
         reaction = `You let ${sim.people[id]!.name} go. ${name(sim, t)} is without a manager for now.`;
       } else reaction = `${sim.people[id]!.name} gets one more period. They know what it means.`;
       break;
     }
     case 'replaceManager': {
-      s.replacing = s.replacing.filter((x) => x !== t);
       const promote = choiceId === 'promoteFromTeam';
       const manager = generateManager(s, sim, promote ? { skill: randomInt(s, 20, 39) } : { skill: randomInt(s, 40, 59), trust: 50 });
       if (promote) effects.push(team(t, 'skill', -T.restructureSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
       effects.push({ type: 'hire', teamId: t, person: manager, cause: { kind: 'action', actionId: 'senior.replaceManager' } });
       s.leniency[manager.id] = randomInt(s, 0, 2);
       s.habits.oversight[manager.id] = 'coaching';
+      s.joinedManagers.push(manager.id);
       if (!promote) s.arriving[t] = sim.week + T.weeksPerMonth;
       reaction = promote ? `${manager.name} steps up from inside ${name(sim, t)}.` : `${manager.name} accepts, and starts next month.`;
       break;

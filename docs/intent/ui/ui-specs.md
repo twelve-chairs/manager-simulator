@@ -5,7 +5,7 @@ Design: [ui-design.md](ui-design.md)
 ## The page
 
 - [x] **UI-SHELL-001**: When the page starts with no saved run, or one that fails to load, the UI shall show the start screen and draw a new seed from the browser's cryptographic random source, and when the player begins, start a new run from that seed and show it.
-- [x] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the week phase, the review screen in the review phase, and the ended screen once the run has ended.
+- [x] **UI-SHELL-002**: When the UI shows a run, it shall show the week screen in the week phase, the review screen in the review phase, the handover screen in the handover phase, and the ended screen once the run has ended.
 - [x] **UI-SHELL-003**: When a command applies, the UI shall redraw the whole screen from the new run.
 - [x] **UI-SHELL-004**: If a command returns an error, then the UI shall show the error next to the control that sent it and leave the rest of the screen as it was.
 - [x] **UI-SHELL-005**: When the scene changes (after an answer, a wait, Continue, starting the week, closing the recap or ending the week), the UI shall move keyboard focus to the heading of the week screen's scene, or of the review or ended screen; after a habit change it shall keep focus on that habit's control.
@@ -14,6 +14,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-SHELL-009**: When the start screen is shown, the UI shall show the line "Every promotion is a new job.", the pitch the UI design sets, a **Start a new game** button that begins a run, and a **Load a saved game** button that opens the file picker for a save to import.
 - [x] **UI-SAVE-009**: When a run screen is shown, the UI shall offer the import of UI-SAVE-007 as a **Load a saved game** button that opens the file picker, beside **Export save** and **Discard and start over**.
 - [x] **UI-SHELL-010**: When the start screen is shown, the UI shall show the career ladder as an ordered list from line manager to director and above, each rung with its level name, "You manage" followed by who the player manages, and "Each turn is" followed by the length of a turn, as the UI design's table sets them.
+- [x] **UI-SHELL-013**: The UI shall start the game with the line manager and senior manager levels, in that order, so a promoted line manager is handed over to the senior manager.
 - [x] **UI-SHELL-011**: When the start screen shows the career ladder, the UI shall mark a rung **Playable now** when the game was started with any of the level modules the UI design assigns to that rung, and **Coming later** otherwise.
 - [x] **UI-SHELL-012**: When the start screen is shown, the UI shall show the copyright notice "© 2026 Twelve Chairs Software. All rights reserved."
 - [x] **UI-SHELL-008**: The UI shall not show a run's seed on any screen.
@@ -33,6 +34,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-WEEK-008**: When a choice for a moment applies, the UI shall show a change chip for each band in the level's view that differs from before the command (a person's motivation or stress, the player's energy or reputation, or a project's risk or tech debt) and for each person who left or joined the team, each naming who or what changed and marked good or bad for the player (lower stress, risk and tech debt are good; someone leaving is bad).
 - [x] **UI-WEEK-010**: When a choice for a moment applies, the UI shall show a change chip, marked neither good nor bad, with the newest memory note of each person who gained one from the command and has no band chip from it.
 - [x] **UI-WEEK-011**: The UI shall show every week number counting from 1, game week *w* as week *w* + 1: the header's week, a heading or button about a week that has ended or is starting (the recap's heading, Start week, the review's heading, the ended screen), and the line manager's project deadlines.
+- [x] **UI-WEEK-016**: When the active level's turn is a month, the UI shall name the turn as a month counting from 1 from the level's start week, in the header, the recap's heading ("How month *n* went"), its button ("Start month *n*"), the review's heading ("Month *n* review") and the weeks to the next review ("*n* months to your review"), and give a moment's place as its week of the month and day ("Week 2, Tuesday morning"), with the header's strip showing that week's five days.
 - [x] **UI-WEEK-012**: When the week screen is shown while the level says the player is at the burnout threshold, the UI shall show their energy word as "at the edge" in place of the band word.
 - [x] **UI-WEEK-013**: When the week screen is shown after the player has ended one or more consecutive weeks at the burnout threshold, the UI shall show under the energy a warning with that count and how many end the run ("You've ended 1 week at the edge. 4 in a row and you burn out.").
 - [x] **UI-WEEK-014**: When the week screen is shown while the player's energy band is running on fumes and no week has ended at the burnout threshold, the UI shall show under the energy the warning "You're close to the edge. Take something off your plate."
@@ -40,7 +42,7 @@ Design: [ui-design.md](ui-design.md)
 
 ## Help
 
-- [x] **UI-HELP-001**: When the week screen is shown, the UI shall show a collapsible How to play section with the help text's six topics (How to play, Moments, Habits, Your people, Energy, Reviews), open by default in game weeks 0 to 2 and closed by default after, keeping the player's choice to open or close it across redraws.
+- [x] **UI-HELP-001**: When the week screen is shown, the UI shall show a collapsible How to play section with the active level's help topics (for the line manager: How to play, Moments, Habits, Your people, Energy, Reviews; for the senior manager: How to play, Managers, What you're told, Calibration, Energy, Reviews), open by default in the level's first three turns and closed by default after, keeping the player's choice to open or close it across redraws.
 - [x] **UI-HELP-002**: When the week screen is shown for the line manager, the UI shall show the help text's line under the team, projects and habits panels' headings.
 
 ## Line manager panels and scenes
@@ -51,6 +53,24 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-LINE-006**: When the week screen is shown for the line manager, the UI shall show a habits panel, folded by default after week 0 and keeping the player's choice to open or close it across redraws, with a control per habit that sends a plan command changing it at once, offering the team's engineers by name for a habit that names one.
 - [x] **UI-LINE-007**: When the current moment is the line manager's, the UI shall show its difficulty as a band word where it has one, and beside each choice that gives the work or an interview to an engineer, that engineer's skill and stress band words.
 - [x] **UI-LINE-008**: When the recap is shown for the line manager, the UI shall show as what changed each engineer the level reports, with their band changes and that week's notes, each engineer rated at the end of the review period, each habit that fell back, each expired work item by its kind and its subject's name, each engineer whose final evaluation waits for the player, and each project the player's manager assigned, or "A quiet week." when there are none of these; and shall show as the routine part, inside the recap's disclosure, what each habit did and each goal's progress.
+
+## Handover
+
+- [x] **UI-HAND-001**: When the handover screen is shown, the UI shall say the player has been promoted to the next level and ask who leads their team now, offering each handover choice: an engineer with their name, skill and trust as band words and their want if a 1:1 revealed it, and the outside hire described as a capable manager the player doesn't know yet.
+- [x] **UI-HAND-002**: When the player picks a handover choice, the UI shall send the hand over command with that choice.
+
+## Senior manager panels and scenes
+
+- [x] **UI-SENIOR-001**: When the week screen is shown for the senior manager in the level's first month, until the player starts it, the UI shall show a scene before anything arrives with the senior manager's habits, a line on what each does, How to play, and a Start month 1 button.
+- [x] **UI-SENIOR-002**: When the week screen is shown for the senior manager, the UI shall show a card per manager with name, personality, performance level, motivation and stress as band words, management skill as a skill word, their want or that it is unknown, and their memory notes, and under it their team.
+- [x] **UI-SENIOR-003**: When the UI shows a senior manager's team, it shall show its name, headcount, motivation and stress as band words, attrition risk as a risk word, and its projects as the line manager's projects panel shows them, labelled "as *manager* tells it", or "as you saw it" when the view marks the bands as true; a team with no manager shall say "No manager yet".
+- [x] **UI-SENIOR-004**: When the week screen is shown for the senior manager, the UI shall show the senior manager's habits panel: oversight per manager, 1:1s with managers, backfill and skip-level listening, each sending a plan command when changed, and the help line under the managers and habits panels' headings.
+- [x] **UI-SENIOR-005**: When the current moment is the senior manager's calibration, the UI shall show for each team its manager's proposal beside what it delivered, as counts at each rating, with a control per rating to move a head down or up a rating, an Accept every proposal button that sends `acceptAll`, and a Settle calibration button that sends `settle:` with every team's moves.
+- [x] **UI-SENIOR-006**: When a choice of a senior manager moment depends on a manager, the UI shall show that manager's management skill as a skill word beside it.
+- [x] **UI-SENIOR-007**: After a senior manager choice applies, the UI shall show a chip for each band that moved in a manager's motivation, stress or management skill, a team's shown motivation or stress, the player's energy or reputation, and for each change in a team's headcount.
+- [x] **UI-SENIOR-008**: When the recap is shown for the senior manager, the UI shall show as what changed each manager and team the recap reports with its changes, heads that left or joined, and projects that slipped, or "A quiet month." when there are none, and inside the recap's disclosure, titled "The whole month", the habits' lines and each goal's progress.
+- [x] **UI-SENIOR-009**: When a review or the ended screen is shown for the senior manager, the UI shall name the senior measures (projects shipped on time, projects on schedule, people you'd have kept who left, team motivation, team stress, how much your managers grew, teams that held up, calibration quality, your reputation, and each goal by its text), and the ended screen's stayed ending shall read "You stayed a senior manager. Three years went by without the promotion."
+- [x] **UI-SENIOR-010**: When the ended screen's career summary reaches the senior manager, the UI shall add the senior manager's part: the months played at the level, and the managers who joined and who were let go.
 
 ## Saving
 
@@ -65,14 +85,14 @@ Design: [ui-design.md](ui-design.md)
 
 ## Band words
 
-- [x] **UI-BAND-001**: The UI shall name bands 0 to 4 as: motivation struggling, flat, fine, good, energized; stress calm, steady, busy, strained, overwhelmed; energy running on fumes, tired, okay, good, fresh; skill and work difficulty learning, developing, capable, strong, expert; risk and tech debt low, moderate, elevated, high, severe; reputation poor, mixed, fair, good, excellent.
+- [x] **UI-BAND-001**: The UI shall name bands 0 to 4 as: motivation struggling, flat, fine, good, energized; stress calm, steady, busy, strained, overwhelmed; energy running on fumes, tired, okay, good, fresh; skill and work difficulty learning, developing, capable, strong, expert; risk and tech debt low, moderate, elevated, high, severe; reputation poor, mixed, fair, good, excellent; trust wary, guarded, neutral, trusting, loyal.
 
 ## Review and end
 
-- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, staying a line manager, or managed out), the rating, the ceiling's reason when the review returned one, the score, each measure with its name, its value in words, its verdict in words and, in secondary text, its number, target and tolerance, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened in words ("You dealt with it" with its debrief text when resolved, "You let it wait" with the situation's wait debrief when ignored and it has one, "It passed before you got to it" when expired), and an Acknowledge button that sends the acknowledge command.
+- [x] **UI-REVIEW-001**: When the review screen is shown, the UI shall show the outcome in plain words (continuing, promoted, staying at the active level, or managed out), the rating, the ceiling's reason when the review returned one, the score, each measure with its name, its value in words, its verdict in words and, in secondary text, its number, target and tolerance, each of the quarter's debriefs with the situation's title (or its id when the loaded content has no such situation) and what happened in words ("You dealt with it" with its debrief text when resolved, "You let it wait" with the situation's wait debrief when ignored and it has one, "It passed before you got to it" when expired), and an Acknowledge button that sends the acknowledge command.
 - [x] **UI-LINE-009**: When the review screen is shown for the line manager, the UI shall name its measures projects shipped on time, projects on schedule, people who quit, team motivation, team stress, 1:1s held and your reputation, a goal by its text, and give their values in words: counts as numbers or none, shares as all, none or a percentage, motivation, stress and reputation as band words, and a goal as met or missed.
-- [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, stayed a line manager, or completed), show the final week's recap with its disclosure open, and offer a button that returns to the start screen with a new seed.
-- [x] **UI-END-002**: When the ended screen is shown, the UI shall show a career summary before the final week's recap: the weeks played, counting from 1, and the player's review ratings in order, followed by the level's part of the summary.
+- [x] **UI-END-001**: When the ended screen is shown, the UI shall say why the run ended (burnout, managed out, stayed at the level it ended at, or completed), show the final week's recap with its disclosure open, and offer a button that returns to the start screen with a new seed.
+- [x] **UI-END-002**: When the ended screen is shown, the UI shall show a career summary before the final week's recap: the weeks played, counting from 1, and the player's review ratings in order, followed by the part of the summary of each level the run reached, in order.
 - [x] **UI-LINE-010**: When the ended screen is shown for the line manager, the UI shall add to the career summary the projects shipped on time, the engineers who joined, and the engineers who left with why (quit, let go, moved).
 
 ## Content and build

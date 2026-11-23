@@ -110,8 +110,11 @@ describe('parsing', () => {
       { kind: 'wait', extra: 1 },
       { kind: 'plan' },
       JSON.parse('{"kind": "acknowledge", "__proto__": {}}'),
+      { kind: 'handover' },
+      { kind: 'handover', choice: 3 },
+      { kind: 'handover', choice: 'hire', extra: 1 },
     ]) reject(withCommand(bad));
-    for (const ok of [{ kind: 'endWeek' }, { kind: 'acknowledge' }, { kind: 'answer', momentId: 'p', choiceId: 'c' }, { kind: 'wait' }, { kind: 'plan', command: { anything: [1, 2] } }, { kind: 'plan', command: null }]) {
+    for (const ok of [{ kind: 'endWeek' }, { kind: 'acknowledge' }, { kind: 'answer', momentId: 'p', choiceId: 'c' }, { kind: 'wait' }, { kind: 'plan', command: { anything: [1, 2] } }, { kind: 'plan', command: null }, { kind: 'handover', choice: 'hire' }]) {
       expect(parseSave(JSON.stringify(withCommand(ok))).ok).toBe(true);
     }
   });

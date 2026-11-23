@@ -75,7 +75,8 @@ The screen follows the run's phase:
 - **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. A card gives tenure as "1 week here" or "N weeks here". Below the cards, open vacancies with their interview counts ("1 interview so far"), and the team's projects with progress against scope, deadline, schedule status as words (on schedule, behind, overdue), and risk and tech debt as words.
 - **Habits panel**, on every week screen, folded away by default after the first week: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
 - **Review** (review phase): the outcome in plain words (continuing, promoted, staying a line manager after the last review, or being managed out), so the player knows what acknowledging will do; the rating, and the ceiling's reason when one held it down; each measure by a plain name, its value in words and its verdict in words ("above target"), with the number and target in small print beside it for players who want them (a goal is named by its text, and its value is met or missed); the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened in the words the recap uses: "You dealt with it" with its debrief text, "You let it wait" with the situation's lesson for waiting when it has one, or "It passed before you got to it"), and an **Acknowledge** button.
-- **Ended**: why the run ended (burnout, managed out, stayed a line manager, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap with *The whole week* open, since that week's moments are what explain a burnout, and a button to start a new run. The seed is not shown here either.
+- **Handover** (handover phase): the promotion in plain words, and the one call the player makes as they leave their team: who leads it now (see *The Senior Manager's Screens*).
+- **Ended**: why the run ended (burnout, managed out, stayed at the level, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap with *The whole week* open, since that week's moments are what explain a burnout, and a button to start a new run. The seed is not shown here either.
 
 The level's renderer names its review measures and puts their values into words ("Team stress: strained", "Projects on schedule: all"), since only the level knows what each measure is.
 
@@ -84,6 +85,10 @@ The scene, header and recap are a shell shared by every level; the team panel, h
 ## Look
 
 The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, tiled across the background. It is drawn as a mask over a theme colour, so one image follows light and dark mode, and it stays faint behind the scene and the cards, which are opaque, so text keeps its contrast. The pattern ships as its own image file: the build never inlines an image into the stylesheet as a `data:` URL, which the page's Content-Security-Policy (`img-src 'self'`) would block.
+
+## Turns and Their Numbers
+
+A turn is a week at the line manager and a month at the senior manager, and the shell names it in the level's word: the header, the recap's heading ("How month 3 went"), its button ("Start month 4"), the review's heading ("Month 6 review") and the ended screen. Months count from 1 from the start of the senior manager level, as weeks count from 1 from the start of the run. Within a month, a moment says which week of the month and which day it falls on ("Week 2, Tuesday morning"), and the header's strip shows that week's five days. The weeks to the next review are shown in the level's turns ("3 months to your review").
 
 ## Week Numbers
 
@@ -130,7 +135,7 @@ Storage is passed to the app rather than reached for directly, so tests can supp
 
 ## Help Text
 
-The How to play section and the panel help lines teach the game's controls, not management (see the HLD's non-goals); the first weeks' onboarding situations, written as content, do the same in the story.
+Each level has its own How to play topics and panel help lines; the senior manager's are in *The Senior Manager's Screens*. The How to play section and the panel help lines teach the game's controls, not management (see the HLD's non-goals); the first weeks' onboarding situations, written as content, do the same in the story.
 
 | Topic | Text |
 |---|---|
@@ -147,6 +152,44 @@ The How to play section and the panel help lines teach the game's controls, not 
 | Projects | Projects move on their own. Risk and tech debt make setbacks more likely. |
 | Habits | Changes apply from this week's end, and to moments from next week. |
 
+## The Senior Manager's Screens
+
+The senior manager level keeps the shell (header, scene, recap, review, ended) and brings its own renderer.
+
+**The handover.** After the review that promotes a line manager is acknowledged, the screen says so ("You've been promoted to senior manager") and asks the one question the player answers as they leave their team: who leads it now. Each of the team's engineers is a choice, showing their name, skill in words, how much they trust the player in words (*wary*, *guarded*, *neutral*, *trusting*, *loyal*, the bands of trust) and their want if a 1:1 revealed it; the last choice is an outside hire, "a capable manager you don't know yet". Choosing sends the hand over command, and the first month begins.
+
+**The first month** opens, like the first week, on a scene before anything arrives: the senior manager's habits with a line on what each does, and How to play, closed by **Start month 1**.
+
+**The managers panel**, in place of the team panel: a card per manager with their name, personality, motivation and stress in words, their management skill in words ("manages: developing"), their want once a 1:1 has revealed it, and their memory. Under each manager, their team: its name, headcount ("6 people"), motivation and stress in words, how likely it is to lose people (attrition risk in words), and its projects as the line manager's projects panel shows them. A team's numbers are labelled by where they come from: "as Ada tells it", or "as you saw it" when close oversight or a skip-level showed the truth. A team without a manager says so ("No manager yet"). No engineer is ever shown.
+
+**The habits panel** has the four senior habits: oversight per manager (hands-off, coaching, close), 1:1s with managers, backfill and skip-level listening.
+
+**Calibration** is a scene of its own: for each team, its manager's proposal and what the team delivered, as counts at each rating side by side, and for each rating a control to move a head down or up a rating. **Accept every proposal** sends the calibration as proposed; **Settle calibration** sends every team's moves at once. Letting it wait lets the proposals stand.
+
+**Other moments** read as the line manager's do: where and when, the title and text, a button per choice. A choice that depends on a manager shows that manager's skill in words beside it, as a work moment shows an engineer's.
+
+**Change chips** compare the senior view before and after a choice: a manager's motivation, stress or management skill, a team's motivation or stress as shown, a team's headcount, and the player's energy and reputation.
+
+**The recap** shows what changed (managers, teams as shown, heads that left or joined, projects that slipped) and folds the routine (the habits' lines and the goals' progress) into *The whole month*, as the line manager's folds *The whole week*.
+
+**The review** names the senior measures: projects shipped on time, projects on schedule, people you'd have kept who left, the teams' motivation and stress, how much your managers grew, the teams that held up, calibration quality and your reputation; goals by their text.
+
+**The ended screen** says why the run ended at the level it ended at: "You stayed a senior manager. Three years went by without the promotion.", or burned out, managed out, or completed, as at the line manager. The career summary covers the whole run: the weeks played, each review's rating, the line manager's part, and the senior manager's part (the months played, the managers who joined and who were let go).
+
+| Topic | Text |
+|---|---|
+| How to play | Each month is a handful of moments. Your managers run the teams; you run your managers. Pick what you do, or let it wait. A recap ends the month. |
+| Managers | Your managers act for you. Coach them and they grow; step in and you fix it yourself, at a cost, and they learn nothing. |
+| What you're told | Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth. |
+| Calibration | Before each review your managers propose their teams' ratings. Compare them with what each team delivered, and move heads up or down. |
+| Energy | Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out. |
+| Reviews | Every six months your manager reviews delivery, retention, your teams' health, how your managers grew, calibration and the period's goals. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
+
+| Panel | Help line |
+|---|---|
+| Managers | Each team is shown as its manager tells it, unless you saw for yourself. |
+| Habits | Changes apply from this month's end, and to moments from next month. |
+
 ## Bands as Words
 
 The career level shows values as bands, 0 for the lowest. The UI names each band per kind of value:
@@ -159,8 +202,9 @@ The career level shows values as bands, 0 for the lowest. The UI names each band
 | Skill and work difficulty | learning, developing, capable, strong, expert |
 | Risk and tech debt | low, moderate, elevated, high, severe |
 | Reputation | poor, mixed, fair, good, excellent |
+| Trust | wary, guarded, neutral, trusting, loyal |
 
-The words are UI text; the bands come from the level. Skill and difficulty share words so the player can compare a piece of work with the person they might give it to.
+The words are UI text; the bands come from the level. A manager's management skill uses the skill words, and a team's attrition risk the risk words. Skill and difficulty share words so the player can compare a piece of work with the person they might give it to.
 
 ## Commands and Errors
 
@@ -174,7 +218,7 @@ A new run's seed is drawn from the browser's cryptographic random source. The pa
 
 ## Build
 
-Vite builds the page (a development dependency). The build compiles the situation content, bundles the TypeScript, and emits static files with no inline script, so the page can be served with a Content-Security-Policy that forbids inline script and `eval`. The production build also carries that policy itself, in a `<meta>` tag, so it applies on hosts that cannot send headers: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`. `connect-src 'none'` makes the no-network promise something the browser enforces. The development server injects styles inline for live reloading, so the tag is added only to the production build. Render functions are tested under Vitest in `happy-dom`, a development dependency that provides a DOM without a browser. End-to-end tests in Playwright (a development dependency) play the production build in Chromium, served as it is deployed: they cover what `happy-dom` cannot, such as the Content-Security-Policy, assets actually loading, focus and the browser's storage. **Playtests** go further: scripted players of different styles play whole runs from fixed seeds through the page's own controls, and every screen is checked as it goes (text quality, time order, the header against the scene, the team cards, the review and the career summary, nothing wider than the viewport), along with scenarios for features a run reaches only sometimes, saves, phone width, dark mode and the keyboard. They are slower, so they run on request and weekly in CI rather than on every commit, and the same suite can be pointed at a deployed copy, such as the live site. The success-metric playtests in the same suite measure a proxy for each of the HLD's success metrics (see the [playtest design](../playtest/playtest-design.md)). The code is linted with oxlint (a development dependency), whose correctness rules and two type-aware rules (no floating promises, no unnecessary type assertions) must pass with no warnings in every commit and CI run.
+Vite builds the page (a development dependency). The build compiles the situation content, bundles the TypeScript, and emits static files with no inline script, so the page can be served with a Content-Security-Policy that forbids inline script and `eval`. The production build also carries that policy itself, in a `<meta>` tag, so it applies on hosts that cannot send headers: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`. `connect-src 'none'` makes the no-network promise something the browser enforces. The development server injects styles inline for live reloading, so the tag is added only to the production build. Render functions are tested under Vitest in `happy-dom`, a development dependency that provides a DOM without a browser. End-to-end tests in Playwright (a development dependency) play the production build in Chromium, served as it is deployed: they cover what `happy-dom` cannot, such as the Content-Security-Policy, assets actually loading, focus and the browser's storage. **Playtests** go further: scripted players of different styles play whole runs from fixed seeds through the page's own controls, across every level a run reaches, and every screen is checked as it goes (text quality, time order, the header against the scene, the team cards, the review and the career summary, nothing wider than the viewport), along with scenarios for features a run reaches only sometimes, saves, phone width, dark mode and the keyboard. They are slower, so they run on request and weekly in CI rather than on every commit, and the same suite can be pointed at a deployed copy, such as the live site. The success-metric playtests in the same suite measure a proxy for each of the HLD's success metrics (see the [playtest design](../playtest/playtest-design.md)). The code is linted with oxlint (a development dependency), whose correctness rules and two type-aware rules (no floating promises, no unnecessary type assertions) must pass with no warnings in every commit and CI run.
 
 ## Decisions & Alternatives
 
@@ -198,6 +242,9 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | End-to-end tests | Playwright against the production build, in Chromium | Only unit tests in `happy-dom`; Vitest's browser mode | `happy-dom` has no Content-Security-Policy and no real asset loading, so a blocked background or script would pass every unit test. Playwright serves the real build; Vitest's browser mode tests modules, not the deployed page. |
 | Playtests | Whole runs played by scripted players in the browser, on request and weekly, against the local build or a deployed copy | Playing runs by hand; folding them into the end-to-end suite | Hand-played runs found most of the game's playability problems but are slow and easy to skip; in the end-to-end suite they would slow every commit. Fixed seeds keep every failure replayable. |
 | Linter | oxlint with its type-aware companion, oxlint-tsgolint | ESLint with typescript-eslint; Biome | typescript-eslint supports only TypeScript before 6.1, and the project builds with TypeScript 7; ESLint would need a second, older TypeScript and so lint against a different compiler. oxlint runs ESLint's core rules and ports of typescript-eslint's without TypeScript's JavaScript API, and its type-aware rules are built on TypeScript 7. Biome has no type-aware rules. |
+| A month on screen | Named in months from the level's start, with each moment's week of the month and day | Weeks throughout; a calendar of the month | Months are the senior manager's turn; weeks would make a six-month review read as 24 weeks. A calendar would show twenty days for a handful of moments. |
+| Trust at the handover | In words, the bands of trust | Hidden, as at the line manager; as a number | Choosing who leads your team is a judgement about people the player knows; trust is what makes a promoted engineer a developing manager, so hiding it would make the choice a guess. |
+| Calibration controls | Counts per rating beside the delivery, with a control per rating to move a head | Dragging heads between columns; one slider per team | Counts beside counts make the gap readable at a glance; per-rating controls work on a keyboard and at phone width. |
 | Invalid content | Dropped; listed on the page only in the development build | Always listed; failing to start | Players should not see authoring errors; authors should. The build already fails on invalid content, so this only matters for a bundle edited by hand. |
 
 ## Open Questions & Future Decisions

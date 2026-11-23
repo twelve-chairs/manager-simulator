@@ -115,7 +115,9 @@ function playerStanding(ctx: Ctx, weeks: number) {
   const inTrouble = active.filter((p) => isOverdue(s, p) || isBehind(s, p)).length;
   const onTrack = active.length - inTrouble;
   const repDelta = (onTrack - inTrouble) * TUNING.reputationPerProjectPerWeek * weeks;
-  const troubledTeams = teams(s).filter((t) => troubles(s, t) > 0).length;
+  // A team led by another person is theirs to carry; only teams the player leads, or with no leader, land on the player.
+  // @spec SIM-ADV-014
+  const troubledTeams = teams(s).filter((t) => (t.leader === null || t.leader.kind === 'player') && troubles(s, t) > 0).length;
   const stressDelta =
     troubledTeams > 0
       ? troubledTeams * TUNING.playerStressPerTroubledTeamPerWeek * weeks

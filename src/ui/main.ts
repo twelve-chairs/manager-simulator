@@ -1,5 +1,6 @@
 import bundle from 'virtual:situations';
 import { lineManagerLevel } from '../levels/line-manager';
+import { seniorManagerLevel } from '../levels/senior-manager';
 import { conductReview } from '../review';
 import { loadContent } from '../situations';
 import { createApp, type SaveStorage } from './app';
@@ -26,7 +27,8 @@ createApp(document.getElementById('app')!, {
   content: situations,
   contentErrors: errors,
   showContentErrors: import.meta.env.DEV,
-  deps: { levels: [lineManagerLevel], review: conductReview },
+  // A promoted line manager is handed over to the senior manager (UI-SHELL-013).
+  deps: { levels: [lineManagerLevel, seniorManagerLevel], review: conductReview },
   newSeed,
   version: __APP_VERSION__,
   storage: browserStorage(),

@@ -31,6 +31,19 @@ export interface CareerLevel<L = unknown> {
   scorecard(level: L, sim: SimState): unknown;
   assess(level: L, sim: SimState): Assessment;
   view(level: L, sim: SimState): unknown;
+  /** For a level reached by promotion: who or what the player chooses as it takes the run over. */
+  handoverChoices?(previous: unknown, sim: SimState): HandoverOption[];
+  /** For a level reached by promotion: converts the level below's state and the simulation, given the handover choice. */
+  takeOver?(previous: unknown, sim: SimState, choice: string): Result<{ sim: SimState; level: L }>;
+}
+
+/** One of the choices a level reached by promotion offers as it takes the run over. */
+export interface HandoverOption {
+  id: string;
+  name: string;
+  skill?: number;
+  trust?: number;
+  want?: string;
 }
 
 /** The performance review: rates the player and decides what happens next. */
@@ -50,7 +63,8 @@ export type Command =
   | { kind: 'answer'; momentId: string; choiceId: string }
   | { kind: 'wait' }
   | { kind: 'endWeek' }
-  | { kind: 'acknowledge' };
+  | { kind: 'acknowledge' }
+  | { kind: 'handover'; choice: string };
 
 /** A moment in the week's sequence: one of the level's, or a situation. */
 export interface WeekMoment {
@@ -69,10 +83,16 @@ export interface WeekMoment {
 export interface Run {
   seed: number;
   levelId: string;
+  /** The game week the active level began: 0 for the first level, the handover's week for one reached by promotion. */
+  levelStartWeek: number;
+  /** Each level the run has left by promotion, with its final state, for the end of the run to tell the whole career. */
+  earlierLevels: { levelId: string; level: unknown; sim: SimState; endWeek: number }[];
   sim: SimState;
   engine: EngineState;
   level: unknown;
-  phase: 'week' | 'review' | 'ended';
+  phase: 'week' | 'review' | 'handover' | 'ended';
+  /** In the handover phase, the next level's choices. */
+  handoverChoices: HandoverOption[] | null;
   /** The week's moments in the order they play. */
   week: WeekMoment[];
   /** The situations presented this week. */

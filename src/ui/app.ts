@@ -3,8 +3,10 @@ import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '
 import type { ContentError, Situation } from '../situations';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { HELP_OPEN_THROUGH_WEEK, HELP_TOPICS } from './help';
+import { HELP_OPEN_THROUGH_WEEK } from './help';
 import { lineManagerRenderer } from './line-manager';
+import { seniorManagerRenderer } from './senior-manager';
+import { band } from '../levels/line-manager';
 import { emphasis } from './text';
 
 export interface AppOptions {
@@ -76,6 +78,8 @@ export interface ScreenContext {
   errorFor: (control: string) => Child;
   /** Page state that survives a redraw, by key. */
   drafts: Map<string, Record<string, string>>;
+  /** Redraws the page, for a control that changes only page state (a calibration move). */
+  refresh: () => void;
 }
 
 /** A change chip: what moved, said in words, and whether it is good or bad for the player. */
@@ -110,12 +114,26 @@ export interface LevelRenderer {
   measureValue(view: unknown, id: string, value: number): string | undefined;
   /** The level's lines of the career summary at the end of a run. */
   career(view: unknown): Child;
+  /** The level's turn: a week or a month. */
+  turn: 'week' | 'month';
+  /** The level's How to play topics. */
+  help: readonly { id: string; title: string; text: string }[];
+  /** The scene before the level's first turn: where it is set, its heading and its line. */
+  firstTurn: { where: string; heading: string; intro: string };
+  /** The review's outcome and the run's ending for staying at the level. */
+  stayed: { outcome: string; ending: string };
 }
 
-const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer };
+const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer, 'senior-manager': seniorManagerRenderer };
+
+/** What the handover screen calls the level a promotion leads to. */
+const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager' };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const when = (m: { day: number; time: string }) => `${DAYS[m.day] ?? ''} ${m.time}`;
+/** Where in the turn a moment falls: its day and time, and in a month its week (UI-WEEK-016). */
+const when = (m: { day: number; time: string }, turn: 'week' | 'month' = 'week') =>
+  turn === 'month' ? `Week ${Math.floor(m.day / 5) + 1}, ${DAYS[m.day % 5] ?? ''} ${m.time}` : `${DAYS[m.day] ?? ''} ${m.time}`;
+const capital = (word: string) => word[0]!.toUpperCase() + word.slice(1);
 
 /** The reaction to the player's last choice, waiting to be read; only the page remembers it. */
 interface Reaction {
@@ -128,7 +146,6 @@ const OUTCOMES = {
   continue: 'You are continuing in your role.',
   promote: 'You are being promoted.',
   managedOut: 'You are being managed out.',
-  stayed: 'This was your last review as a line manager. Two years in, the promotion never came.',
 } as const;
 
 const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
@@ -137,9 +154,7 @@ const VERDICTS = { above: 'above target', at: 'on target', below: 'below target'
 const DEBRIEF_STATUS = { resolved: 'You dealt with it', ignored: 'You let it wait', expired: 'It passed before you got to it' } as const;
 
 const ENDINGS = {
-  burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
-  stayed: 'You stayed a line manager. Two years went by without the promotion.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 } as const;
 
@@ -155,7 +170,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   const drafts = new Map<string, Record<string, string>>();
   // Where the player is looking, kept only on the page (UI-WEEK-009): a reload never shows a reaction again.
   let reaction: Reaction | null = null;
-  let startedWeek0 = false;
+  /** The level start week of the first turn the player has started from its opening scene. */
+  let startedFirstTurn: number | null = null;
   let closedRecapWeek: number | null = null;
   /** Whether the player last left the recap's The whole week open; unset until they open or close it. Page state, never saved. */
   let wholeWeekOpen: boolean | undefined;
@@ -163,7 +179,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   /** Forgets where the player was looking, for a run that has just begun or been loaded. */
   const resetPage = () => {
     reaction = null;
-    startedWeek0 = false;
+    startedFirstTurn = null;
     closedRecapWeek = null;
     drafts.clear();
   };
@@ -462,21 +478,25 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const { run } = ctx;
     const status = renderer.status(ctx.view);
     const kind = sceneKind(run);
-    // While the recap shows, the header is about the week it recaps, the game week before the run's.
-    const week = shownWeek(kind === 'recap' ? run.sim.week - 1 : run.sim.week);
-    const now = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
+    const step = renderer.turn === 'month' ? 4 : 1;
+    // While the recap shows, the header is about the turn it recaps, the one before the run's.
+    const turnNumber = turnOf(run, renderer, kind === 'recap' ? run.sim.week - step : run.sim.week);
+    const day = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
+    // A month's strip shows the current week's five days.
+    const now = kind === 'done' ? 5 : renderer.turn === 'month' && day >= 0 ? day % 5 : day;
+    const toReview = weeksToReview(run, options.deps);
     return h(
       'section',
       { 'data-screen': 'week', class: 'week' },
       h(
         'header',
         { class: 'status' },
-        h('div', { class: 'week-number' }, 'Week ', h('strong', { 'data-field': 'week' }, week), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, weeksToReview(run, options.deps) ?? '?'), ' weeks'),
+        h('div', { class: 'week-number' }, `${capital(renderer.turn)} `, h('strong', { 'data-field': 'week' }, turnNumber), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, toReview === undefined ? '?' : toReview / step), ` ${renderer.turn}s`),
         h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': i < now ? 'past' : i === now ? 'now' : 'ahead' }, d.slice(0, 3)))),
         h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, status.edge?.at ? 'at the edge' : bandWord('energy', status.energy)),
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
         status.edge && status.edge.weeks > 0
-          ? h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${status.edge.weeks} ${status.edge.weeks === 1 ? 'week' : 'weeks'} at the edge. ${status.edge.limit} in a row and you burn out.`)
+          ? h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${status.edge.weeks} ${status.edge.weeks === 1 ? renderer.turn : `${renderer.turn}s`} at the edge. ${status.edge.limit} in a row and you burn out.`)
           : status.edge && status.energy === 0
             ? h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.")
             : null,
@@ -490,7 +510,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           kind === 'moment' || kind === 'reaction'
             ? h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => ctx.send({ kind: 'endWeek' }, 'end-week') }, 'End the week'), errorFor('end-week'))
             : null,
-          kind === 'before-monday' ? null : help(ctx)),
+          kind === 'before-monday' ? null : help(ctx, renderer)),
         h('aside', { class: 'side' }, renderer.panels(ctx)),
       ),
     );
@@ -500,8 +520,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   function sceneKind(run: Run): 'before-monday' | 'recap' | 'reaction' | 'moment' | 'done' {
     const played = run.week.some((m) => m.status !== 'open');
     if (reaction && run.week.some((m) => m.id === reaction!.momentId)) return 'reaction';
-    if (run.sim.week === 0 && !run.lastWeek && !played && !startedWeek0) return 'before-monday';
-    if (run.lastWeek && !played && closedRecapWeek !== run.sim.week) return 'recap';
+    // A level's first turn opens on its own scene; the recap that follows is of a turn played at this level.
+    if (run.sim.week === run.levelStartWeek && !played && startedFirstTurn !== run.levelStartWeek) return 'before-monday';
+    if (run.lastWeek && run.sim.week > run.levelStartWeek && !played && closedRecapWeek !== run.sim.week) return 'recap';
     return currentMoment(run) ? 'moment' : 'done';
   }
 
@@ -514,6 +535,10 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   // @spec UI-WEEK-011
   const shownWeek = (gameWeek: number) => gameWeek + 1;
 
+  /** The turn a game week falls in, as the player counts it from 1: a week of the run, or a month of the level. */
+  // @spec UI-WEEK-011, UI-WEEK-016
+  const turnOf = (run: Run, renderer: LevelRenderer, gameWeek: number) => (renderer.turn === 'month' ? Math.floor((gameWeek - run.levelStartWeek) / 4) + 1 : shownWeek(gameWeek));
+
   const heading = (text: Child) => h('h2', { 'data-part': 'heading', tabindex: -1 }, text);
 
   // @spec UI-WEEK-002, UI-WEEK-004, UI-WEEK-005, UI-WEEK-006, UI-WEEK-007, UI-WEEK-009
@@ -524,32 +549,32 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         return h(
           'section',
           { 'data-scene': 'before-monday', class: 'scene' },
-          h('p', { class: 'where' }, 'Before Monday'),
-          heading('How you run your team'),
-          h('p', {}, 'Your habits handle the routine, so the week can be about the moments that matter. You can change them any time.'),
+          h('p', { class: 'where' }, renderer.firstTurn.where),
+          heading(renderer.firstTurn.heading),
+          h('p', {}, renderer.firstTurn.intro),
           renderer.habits(ctx),
-          help(ctx, true),
-          h('button', { 'data-action': 'start-week', class: 'primary', onClick: () => moveOn(() => (startedWeek0 = true)) }, 'Start the week'),
+          help(ctx, renderer, true),
+          h('button', { 'data-action': 'start-week', class: 'primary', onClick: () => moveOn(() => (startedFirstTurn = run.levelStartWeek)) }, renderer.turn === 'month' ? 'Start month 1' : 'Start the week'),
         );
       case 'recap':
         return h(
           'section',
           { 'data-scene': 'recap', class: 'scene recap' },
           h('p', { class: 'where' }, 'The weekend'),
-          heading(`How week ${shownWeek(run.sim.week - 1)} went`),
+          heading(`How ${renderer.turn} ${turnOf(run, renderer, run.sim.week - (renderer.turn === 'month' ? 4 : 1))} went`),
           recapView(run, renderer, wholeWeekOpen ?? false),
-          h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start week ${shownWeek(run.sim.week)}`),
+          h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start ${renderer.turn} ${turnOf(run, renderer, run.sim.week)}`),
         );
       case 'reaction': {
         const m = run.week.find((x) => x.id === reaction!.momentId)!;
         return h(
           'section',
           { 'data-scene': 'reaction', 'data-moment': m.id, class: 'scene' },
-          h('p', { class: 'where' }, when(m)),
+          h('p', { class: 'where' }, when(m, renderer.turn)),
           heading(m.title),
           h('p', { 'data-part': 'reaction', class: 'reaction' }, m.status === 'expired' ? 'This passed: something changed before you got to it.' : emphasis(m.text ?? '')),
           reaction!.chips.length ? h('ul', { class: 'chips' }, reaction!.chips.map((c) => h('li', { 'data-chip': c.key, 'data-tone': c.tone, class: `chip ${c.tone}` }, c.text))) : null,
-          reaction!.passed.length ? h('ul', { 'data-part': 'passed', class: 'passed' }, reaction!.passed.map((p) => h('li', { 'data-moment': p.id }, `${when(p)}: ${p.title} has passed.`))) : null,
+          reaction!.passed.length ? h('ul', { 'data-part': 'passed', class: 'passed' }, reaction!.passed.map((p) => h('li', { 'data-moment': p.id }, `${when(p, renderer.turn)}: ${p.title} has passed.`))) : null,
           h('button', { 'data-action': 'continue', class: 'primary', onClick: () => moveOn(() => (reaction = null)) }, 'Continue'),
         );
       }
@@ -566,7 +591,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         return h(
           'section',
           { 'data-scene': 'moment', 'data-moment': m.id, class: 'scene' },
-          h('p', { class: 'where', 'data-field': 'when' }, when(m)),
+          h('p', { class: 'where', 'data-field': 'when' }, when(m, renderer.turn)),
           heading(details?.title ?? m.title),
           h('p', { 'data-part': 'text' }, emphasis(details?.text ?? '')),
           details?.detail ?? null,
@@ -620,9 +645,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             if (run.phase !== 'ended') wholeWeekOpen = (e.target as HTMLDetailsElement).open;
           },
         },
-        h('summary', {}, 'The whole week'),
+        h('summary', {}, `The whole ${renderer.turn}`),
         h('h3', {}, 'The week'),
-        h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m)} · ${m.title}: `), outcome(m)))),
+        h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m, renderer.turn)} · ${m.title}: `), outcome(m)))),
         part.routine,
       ),
     );
@@ -630,14 +655,16 @@ export function createApp(root: HTMLElement, options: AppOptions) {
 
   /** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
   // @spec UI-HELP-001
-  function help(ctx: ScreenContext, open?: boolean) {
+  function help(ctx: ScreenContext, renderer: LevelRenderer, open?: boolean) {
     const chosen = ctx.drafts.get('help')?.open;
-    const isOpen = open ?? (chosen === undefined ? ctx.run.sim.week <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
+    // Open in the level's first three turns.
+    const turnsIn = (ctx.run.sim.week - ctx.run.levelStartWeek) / (renderer.turn === 'month' ? 4 : 1);
+    const isOpen = open ?? (chosen === undefined ? turnsIn <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
     return h(
       'details',
       { 'data-panel': 'help', class: 'help', open: isOpen, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
       h('summary', {}, 'How to play'),
-      HELP_TOPICS.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
+      renderer.help.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
     );
   }
 
@@ -647,8 +674,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     return h(
       'section',
       { 'data-screen': 'review', class: 'review' },
-      h('h1', { 'data-part': 'heading', tabindex: -1 }, `Week ${shownWeek(ctx.run.sim.week - 1)} review`),
-      h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, OUTCOMES[review.outcome])),
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, `${capital(renderer.turn)} ${turnOf(ctx.run, renderer, ctx.run.sim.week - (renderer.turn === 'month' ? 4 : 1))} review`),
+      h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
       h(
@@ -701,6 +728,13 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('ul', {},
         h('li', {}, 'Weeks played: ', h('span', { 'data-field': 'weeks' }, shownWeek(run.sim.week - 1))),
         h('li', {}, 'Reviews: ', h('span', { 'data-field': 'ratings' }, ratings.length ? ratings.join(', ') : 'none yet')),
+        // Each level the run left by promotion tells its part, then the level it ended at.
+        run.earlierLevels.map((e) => {
+          const lvl = options.deps.levels.find((l) => l.params.id === e.levelId);
+          const r = RENDERERS[e.levelId];
+          // As that level saw the run when it left it, before the next level reshaped the organization.
+          return lvl && r ? r.career(lvl.view(e.level, e.sim)) : null;
+        }),
         renderer.career(view)),
     );
   }
@@ -711,16 +745,53 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
-      h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
+      h('p', { 'data-field': 'ending' }, run.ending === 'stayed' ? renderer.stayed.ending : run.ending === 'burnout' ? `You burned out. Four ${renderer.turn}s at the edge was too long.` : run.ending ? ENDINGS[run.ending] : ''),
       careerSummary(run, view, renderer),
-      // The final week's moments are what explain the ending, so The whole week is open here.
-      recapView(run, renderer, true),
+      // The final week's moments are what explain the ending, so The whole week is open here. A run that ended before
+      // its level played a turn has only the level below's recap, which this level's renderer cannot tell.
+      run.sim.week > run.levelStartWeek ? recapView(run, renderer, true) : null,
       h('button', { 'data-action': 'new-run', onClick: () => {
         state = { screen: 'start', seed: options.newSeed() };
         error = null;
         resetPage();
         render();
       } }, 'Start a new run'),
+    );
+  }
+
+  /** The promotion, and the one call the player makes as they leave their team: who leads it now. */
+  // @spec UI-HAND-001, UI-HAND-002
+  function handoverScreen(ctx: ScreenContext) {
+    const { run } = ctx;
+    const next = options.deps.levels[options.deps.levels.findIndex((l) => l.params.id === run.levelId) + 1];
+    const name = next ? (LEVEL_NAMES[next.params.id] ?? next.params.id) : 'the next level';
+    const team = Object.values(run.sim.teams).find((t) => t.leader?.kind === 'player');
+    // What the player knows of each engineer's want, from the level they are leaving.
+    const known = new Map(((ctx.view as { people?: { id: string; want: string }[] }).people ?? []).map((p) => [p.id, p.want]));
+    return h(
+      'section',
+      { 'data-screen': 'handover', class: 'handover' },
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, `You've been promoted to ${name}`),
+      h('p', { 'data-part': 'question' }, `Who leads ${team?.name ?? 'your team'} now?`),
+      h(
+        'div',
+        { class: 'choices' },
+        (run.handoverChoices ?? []).map((c) => {
+          const want = known.get(c.id);
+          return h(
+            'button',
+            { 'data-handover': c.id, class: 'choice', onClick: () => ctx.send({ kind: 'handover', choice: c.id }, 'handover') },
+            c.id === 'hire'
+              ? 'An outside hire: a capable manager you don\'t know yet'
+              : [
+                  h('strong', {}, c.name),
+                  h('small', {}, 'Skill ', h('span', { 'data-field': 'skill' }, bandWord('skill', band(c.skill ?? 0))), ' · ', h('span', { 'data-field': 'trust' }, bandWord('trust', band(c.trust ?? 0))),
+                    want && want !== 'unknown' ? [' · wants ', h('span', { 'data-field': 'want' }, want)] : null),
+                ],
+          );
+        }),
+        ctx.errorFor('handover'),
+      ),
     );
   }
 
@@ -745,8 +816,15 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       const found = levelOf(run);
       if (!found) screen = unavailableScreen(run);
       else {
-        const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts };
-        screen = run.phase === 'week' ? weekScreen(ctx, found.renderer) : run.phase === 'review' ? reviewScreen(ctx, found.renderer) : endedScreen(run, found.renderer, ctx.view);
+        const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts, refresh: render };
+        screen =
+          run.phase === 'week'
+            ? weekScreen(ctx, found.renderer)
+            : run.phase === 'review'
+              ? reviewScreen(ctx, found.renderer)
+              : run.phase === 'handover'
+                ? handoverScreen(ctx)
+                : endedScreen(run, found.renderer, ctx.view);
       }
     }
     root.replaceChildren();

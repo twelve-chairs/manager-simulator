@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { band } from '../../../src/levels/line-manager';
-import { seniorView } from '../../../src/levels/senior-manager';
+import { beginMonth, seniorView } from '../../../src/levels/senior-manager';
 import { applyEffects, type SimState } from '../../../src/sim';
 import { engineersOf, promotedLine, senior } from './fixtures';
 
@@ -92,5 +92,23 @@ describe('the group', () => {
     const view = seniorView(level, result.state);
     expect(view.teams.find((t) => t.id === teamId)!.managerId).toBeNull();
     expect(view.managers.map((m) => m.teamId)).not.toContain(teamId);
+  });
+});
+
+describe('what else the view gives the UI', () => {
+  // @spec SENIOR-VIS-007
+  it('gives the habits, the month’s moments, the player’s energy and reputation, and the career so far', () => {
+    const { level, sim } = senior(7);
+    const busy = structuredClone(sim);
+    for (const t of level.teamIds) busy.teams[t]!.aggregate!.stress = 80;
+    const begun = beginMonth(level, busy);
+    const view = seniorView(begun, busy);
+    expect(view.habits).toEqual(begun.habits);
+    expect(view.moments.map((m) => m.id)).toEqual(begun.moments.map((m) => m.id));
+    const e = view.moments.find((m) => m.kind === 'escalation')!;
+    expect(e).toMatchObject({ title: expect.any(String), text: expect.any(String), choices: expect.any(Array) });
+    expect(e.managerIds.length).toBeGreaterThan(0);
+    expect(view.player).toEqual({ energy: band(100 - busy.player.stress), reputation: band(busy.player.reputation), edge: { at: false, months: 0, limit: 4 } });
+    expect(view.career).toMatchObject({ months: 0, joined: [], letGo: [] });
   });
 });

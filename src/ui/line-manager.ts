@@ -2,7 +2,7 @@ import { RATING_WORDS, WORK_LABELS, band, type Habits, type HabitId, type Recap,
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { PANEL_HELP } from './help';
+import { HELP_TOPICS, PANEL_HELP } from './help';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** Each habit's name, what it does, and its settings' labels; engineer-naming habits list the team after the first. */
@@ -256,6 +256,13 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
 }
 
 export const lineManagerRenderer: LevelRenderer = {
+  turn: 'week',
+  help: HELP_TOPICS,
+  firstTurn: { where: 'Before Monday', heading: 'How you run your team', intro: 'Your habits handle the routine, so the week can be about the moments that matter. You can change them any time.' },
+  stayed: {
+    outcome: 'This was your last review as a line manager. Two years in, the promotion never came.',
+    ending: 'You stayed a line manager. Two years went by without the promotion.',
+  },
   panels,
   habits: (ctx) => habitControls(ctx, true),
   moment,

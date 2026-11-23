@@ -12,7 +12,7 @@ Design: [save-design.md](save-design.md)
 - [x] **SAVE-PARSE-001**: If the text of a save is longer than 5 MB, then the save component shall reject it without parsing it.
 - [x] **SAVE-PARSE-002**: If the text of a save is not valid JSON, then the save component shall reject it with an error and not throw.
 - [x] **SAVE-PARSE-003**: The save component shall reject a save that is not an object with exactly the fields `format`, `version`, `seed`, `content` and `commands`, whose format is not `manager-simulator-save`, whose version is not 2, whose seed is not a whole number from 0 to 4294967295, whose content is not a string of at most 64 characters, or whose commands are not a list of at most 10,000 entries.
-- [x] **SAVE-PARSE-004**: The save component shall reject a save containing a command that is not an object with exactly the fields of a known kind: `plan` with a `command`; `answer` with string `momentId` and `choiceId`; `wait`; `endWeek`; or `acknowledge`.
+- [x] **SAVE-PARSE-004**: The save component shall reject a save containing a command that is not an object with exactly the fields of a known kind: `plan` with a `command`; `answer` with string `momentId` and `choiceId`; `wait`; `endWeek`; `acknowledge`; or `handover` with a string `choice`.
 
 ## Restoring
 

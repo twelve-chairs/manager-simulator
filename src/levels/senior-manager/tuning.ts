@@ -14,8 +14,8 @@ export const SENIOR_TUNING = {
   teamSize: [4, 7] as const,
 
   /** Oversight: energy each month per manager, and the skill coaching grows. */
-  coachingEnergy: 2,
-  closeEnergy: 5,
+  coachingEnergy: 1,
+  closeEnergy: 3,
   coachingGrowth: 2,
   /** Close oversight: motivation a manager who wants autonomy loses each month, and trust after this many months. */
   closeAutonomyMotivation: 4,
@@ -49,7 +49,7 @@ export const SENIOR_TUNING = {
   stepInFix: 15,
   stepInEnergy: 6,
   coachFix: 8,
-  coachEnergy: 2,
+  coachEnergy: 1,
   coachGrowth: 3,
   /** Staffing: the stress a moved head relieves and adds, and the trust a now-busy giving manager loses. */
   moveRelief: 10,
@@ -57,7 +57,7 @@ export const SENIOR_TUNING = {
   moveTrust: 5,
   /** Disputes: the skill agreeing grows, the relief and trust cost of deciding, and the risk letting it run adds. */
   agreeGrowth: 2,
-  agreeEnergy: 2,
+  agreeEnergy: 1,
   decideRelief: 10,
   decideTrust: 5,
   letRunRisk: 8,

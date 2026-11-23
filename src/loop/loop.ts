@@ -6,8 +6,10 @@ import type { AnyLevel, ApplyResult, Command, Dependencies, Run, WeekMoment } fr
 // @spec LOOP-WEEK-007
 function timingOf(run: Run, level: AnyLevel): Timing {
   const { weeksPerStep: step, reviewEveryWeeks: cadence } = level.params;
-  const nextReviewWeek = (Math.floor(run.sim.week / cadence) + 1) * cadence;
-  return { weeksToReview: Math.ceil((nextReviewWeek - run.sim.week) / step) * step };
+  // Reviews count from the week the active level began.
+  const since = run.sim.week - run.levelStartWeek;
+  const nextReview = (Math.floor(since / cadence) + 1) * cadence;
+  return { weeksToReview: Math.ceil((nextReview - since) / step) * step };
 }
 
 /** Weeks until the run's next review is held, for display. */
@@ -22,13 +24,14 @@ const crossedReview = (from: number, to: number, cadence: number) => Math.floor(
 const TIME_ORDER = { morning: 0, afternoon: 1, night: 2 } as const;
 
 /** Begins the run's next week: the level makes its moments, situations are presented, and both are ordered into one sequence. */
-// @spec LOOP-WEEK-005, LOOP-WEEK-008
+// @spec LOOP-WEEK-005, LOOP-WEEK-008, LOOP-WEEK-010
 function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
   run.level = level.beginWeek(run.level, run.sim);
   const { engine, presented } = selectSituations(run.engine, run.sim, content, level.params.id, level.params.situationLimit, timingOf(run, level));
   run.engine = engine;
   run.presented = presented;
-  const situation = (p: (typeof presented)[number]): WeekMoment => ({ source: 'situation', id: p.id, day: p.day, time: p.time, title: content.find((x) => x.id === p.situationId)?.title ?? p.situationId, status: 'open' });
+  // A situation's day of the week is spread over a longer turn: day d becomes day d × the weeks per step (LOOP-WEEK-010).
+  const situation = (p: (typeof presented)[number]): WeekMoment => ({ source: 'situation', id: p.id, day: p.day * level.params.weeksPerStep, time: p.time, title: content.find((x) => x.id === p.situationId)?.title ?? p.situationId, status: 'open' });
   const urgent = (p: (typeof presented)[number]) => content.find((x) => x.id === p.situationId)?.priority === 'urgent';
   const moments: WeekMoment[] = [
     ...presented.filter(urgent).map(situation),
@@ -53,10 +56,13 @@ export function newRun(seed: number, content: Situation[], deps: Dependencies): 
   const run: Run = {
     seed,
     levelId: level.params.id,
+    levelStartWeek: 0,
+    earlierLevels: [],
     sim,
     engine: createEngine(seed),
     level: levelState,
     phase: 'week',
+    handoverChoices: null,
     week: [],
     presented: [],
     lastWeek: null,
@@ -86,7 +92,7 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
     run.ending = 'burnout';
     return { ok: true };
   }
-  if (crossedReview(fromWeek, run.sim.week, level.params.reviewEveryWeeks)) {
+  if (crossedReview(fromWeek - run.levelStartWeek, run.sim.week - run.levelStartWeek, level.params.reviewEveryWeeks)) {
     const { sim, ...result } = deps.review({ levelId: level.params.id, sim: run.sim, assessment: level.assess(run.level, run.sim), debriefs: quarterDebriefs(run) });
     run.sim = sim;
     run.review = result;
@@ -112,7 +118,7 @@ function quarterDebriefs(run: Run): DebriefRecord[] {
 }
 
 /** Applies a review's outcome. */
-// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003, LOOP-REV-004
+// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003, LOOP-REV-004, LOOP-REV-005
 function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies): Outcome {
   const outcome = run.review!.outcome;
   run.review = null;
@@ -123,10 +129,32 @@ function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Depe
     run.phase = 'ended';
     run.ending = 'completed';
   } else if (outcome === 'promote') {
-    return { ok: false, error: 'promotion to a higher career level is not designed yet' };
+    // Below the top: the next level offers its handover choices, and the hand over command takes the run on.
+    const next = deps.levels[deps.levels.indexOf(level) + 1]!;
+    if (!next.handoverChoices || !next.takeOver) return { ok: false, error: `level ${next.params.id} cannot take a run over` };
+    run.phase = 'handover';
+    run.handoverChoices = next.handoverChoices(run.level, run.sim);
   } else {
     beginWeek(run, level, content);
   }
+  return { ok: true };
+}
+
+/** Hands the run to the next level: it takes the run over with the player's choice and begins its first turn. */
+// @spec LOOP-HAND-001, LOOP-HAND-002, LOOP-HAND-004
+function handOver(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies, choice: unknown): Outcome {
+  const next = deps.levels[deps.levels.indexOf(level) + 1];
+  if (!next?.takeOver) return { ok: false, error: 'there is no level to hand the run over to' };
+  if (typeof choice !== 'string') return { ok: false, error: 'a handover names a choice' };
+  const taken = next.takeOver(run.level, run.sim, choice);
+  if (!taken.ok) return taken;
+  run.earlierLevels = [...run.earlierLevels, { levelId: run.levelId, level: run.level, sim: run.sim, endWeek: run.sim.week }];
+  run.levelId = next.params.id;
+  run.levelStartWeek = run.sim.week;
+  run.sim = taken.sim;
+  run.level = taken.level;
+  run.handoverChoices = null;
+  beginWeek(run, next, content);
   return { ok: true };
 }
 
@@ -159,6 +187,8 @@ function answer(run: Run, level: AnyLevel, content: Situation[], momentId: unkno
 const ALLOWED: Record<Run['phase'], Command['kind'][]> = {
   week: ['plan', 'answer', 'wait', 'endWeek'],
   review: ['acknowledge'],
+  // @spec LOOP-HAND-003
+  handover: ['handover'],
   ended: [],
 };
 
@@ -199,6 +229,9 @@ export function apply(run: Run, command: Command, content: Situation[], deps: De
       break;
     case 'acknowledge':
       outcome = acknowledge(next, level, content, deps);
+      break;
+    case 'handover':
+      outcome = handOver(next, level, content, deps, command.choice);
       break;
   }
   if (!outcome.ok) return { ok: false, error: outcome.error, run };

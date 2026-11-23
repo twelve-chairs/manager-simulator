@@ -4,9 +4,11 @@ Design: [playtest-design.md](playtest-design.md)
 
 ## Playing runs
 
-- [x] **PLAY-RUN-001**: When the success-metric playtests run, they shall play the first-timer and the sound player each on the same eight fixed seeds, every run from a new run until it ends.
+- [x] **PLAY-RUN-001**: When the success-metric playtests run, they shall play the first-timer and the sound player each on the same eight fixed seeds, every run from a new run until it ends, at whichever level it ends.
 - [x] **PLAY-RUN-002**: The success-metric playtests shall act only through the page's controls and measure only what the page shows, reading no save or game state after seeding a run.
 - [x] **PLAY-RUN-003**: When a first-timer meets a moment, it shall let the moment wait one time in ten, pick a random offered choice two times in ten, and otherwise make the sound player's choice, drawing from its own generator seeded with the run's seed.
+- [x] **PLAY-RUN-005**: When a scripted player reaches the handover, it shall choose the engineer who trusts the player most among those whose want it knows to be growth, if that engineer's trust is shown as *trusting* or better, and otherwise an outside hire.
+- [x] **PLAY-RUN-006**: When the sound player plays the senior manager, it shall keep coaching oversight of every manager and fortnightly 1:1s, and choose: coach on an escalation or a surfaced problem; move a head on a staffing request; agree on a dispute; give new work to the team with room; ask for the evidence on an approval; promote from the team when replacing a manager or adding a team; let a manager go at a final evaluation; and settle calibration by moving every head to what its team delivered.
 - [x] **PLAY-RUN-004**: When the success-metric playtests play the same player and seed against the same build, they shall produce the same scorecard.
 
 ## The session clock

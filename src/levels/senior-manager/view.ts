@@ -3,7 +3,8 @@ import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating
 import { leadOf } from './core';
 import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
-import type { SeniorState } from './types';
+import { LINE_TUNING } from '../line-manager';
+import type { CalibrationEntry, SeniorMoment, SeniorState } from './types';
 
 export interface ManagerView {
   id: string;
@@ -32,10 +33,26 @@ export interface TeamView {
   projects: { id: string; name: string; progress: number; scope: number; deadlineWeek: number; schedule: 'onSchedule' | 'behind' | 'overdue' }[];
 }
 
+export interface MomentView {
+  id: string;
+  kind: SeniorMoment['kind'];
+  title: string;
+  text: string;
+  teamId?: string;
+  choices: { id: string; label: string }[];
+  /** The managers whose skill the choices depend on. */
+  managerIds: string[];
+  calibration?: CalibrationEntry[];
+}
+
 export interface SeniorView {
   managers: ManagerView[];
   teams: TeamView[];
   goals: { id: string; text: string; progress: string }[];
+  habits: SeniorState['habits'];
+  moments: MomentView[];
+  player: { energy: number; reputation: number; edge: { at: boolean; months: number; limit: number } };
+  career: { months: number; joined: string[]; letGo: string[] };
 }
 
 /** What a manager remembers: their latest notes, newest first. */
@@ -94,5 +111,33 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
   }
   // @spec SENIOR-GOAL-002
   const goals = level.goals.map((g) => ({ id: g.id, ...goalStatus(g, level, sim) })).map(({ id, text, progress }) => ({ id, text, progress }));
-  return { managers, teams, goals };
+  // @spec SENIOR-VIS-007
+  const leads = (t?: string): string[] => {
+    const id = t ? leadOf(level, sim, t) : null;
+    return id ? [id] : [];
+  };
+  const moments: MomentView[] = level.moments.map((m) => ({
+    id: m.id,
+    kind: m.kind,
+    title: m.title,
+    text: m.text,
+    ...(m.teamId && { teamId: m.teamId }),
+    choices: m.choices,
+    managerIds: m.kind === 'calibration' ? m.calibration!.flatMap((c) => c.managerId ?? []) : m.kind === 'restructuring' ? [] : [...leads(m.teamId), ...leads(m.otherTeamId)],
+    ...(m.calibration && { calibration: m.calibration }),
+  }));
+  const named = (ids: string[]) => ids.map((id) => sim.people[id]?.name ?? id);
+  return {
+    managers,
+    teams,
+    goals,
+    habits: level.habits,
+    moments,
+    player: {
+      energy: band(100 - sim.player.stress),
+      reputation: band(sim.player.reputation),
+      edge: { at: sim.player.stress >= LINE_TUNING.burnoutThreshold, months: level.burnoutMonths, limit: LINE_TUNING.burnoutWeeks },
+    },
+    career: { months: (sim.week - level.startWeek) / SENIOR_TUNING.weeksPerMonth, joined: named(level.joinedManagers), letGo: named(level.letGoManagers) },
+  };
 }

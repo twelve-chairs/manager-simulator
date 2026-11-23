@@ -195,12 +195,21 @@ describe('advance', () => {
   });
 
   // @spec SIM-ADV-014
-  it('raises player stress with teams in trouble and lowers it when there are none', () => {
+  it('raises player stress with troubled teams the player leads or that have no leader, and lowers it when there are none', () => {
     const troubled = patch(quiet(), (st) => {
       st.teams.t2!.leader = null;
     });
     expect(advance(troubled, 4).state.player.stress).toBeGreaterThan(30);
     expect(advance(quiet(), 4).state.player.stress).toBeLessThan(30);
+    // An overdue project on t2, which m1 leads, is m1's to carry: the player still recovers.
+    const overdue = (teamId: string) =>
+      patch(quiet(), (st) => {
+        st.week = 30;
+        st.projects.late = { id: 'late', name: 'Late', teamId, scope: 100, progress: 0, risk: 10, techDebt: 10, deadlineWeek: 10, startWeek: 0, status: 'active' };
+      });
+    expect(advance(overdue('t2'), 4).state.player.stress).toBeLessThan(30);
+    // On t1, which the player leads, it lands on them.
+    expect(advance(overdue('t1'), 4).state.player.stress).toBeGreaterThan(30);
   });
 
   // @spec SIM-ADV-015

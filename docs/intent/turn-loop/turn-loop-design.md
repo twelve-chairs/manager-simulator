@@ -24,10 +24,12 @@ Four principles shape it:
 |---|---|
 | seed | The seed the run started from |
 | level id | The active career level |
+| level start week | The game week the active level began: 0 for the first level, the week of the handover for a level reached by promotion |
+| earlier levels | Each level the run has left by promotion, with its final state and the simulation as it left it, so the end of the run can tell the whole career as each level saw it |
 | simulation state | The simulation core's state |
 | engine state | The situation engine's state |
 | level state | The active career level's state |
-| phase | `week`, `review` or `ended` |
+| phase | `week`, `review`, `handover` or `ended` |
 | week | The week's moments in the order they play: for each, whether it is the level's or a situation, its id, its day and time, its title (kept so the recap can name it after the level has moved on), and what happened to it: open, answered (with its reaction or aftermath line), waited, or expired |
 | presented | The situations presented this week |
 | last week | The recap of the week just ended: the level's recap and what happened to each of the week's moments; empty until the first week ends |
@@ -50,6 +52,8 @@ A moment let wait is not an error. The level closes its own unanswered moments a
 
 **Review.** A review has been conducted; its result waits for the player. The only command is **acknowledge**, which applies the result: continue with the next week, promote, or end the run as managed out.
 
+**Handover.** A promotion has been acknowledged below the highest level, and the next level is taking the run over. The next level offers its handover choices (for the senior manager, who leads the player's old team). The only command is **hand over**, with one of the choices: the next level takes the run over from the level below, the run's level becomes the next level and its level start week the current week, and its first turn begins. A choice the next level rejects is an error, and the run is unchanged.
+
 **Ended.** No command is allowed.
 
 ## A Week
@@ -66,12 +70,14 @@ A run begins with week 0 in the week phase. **Beginning a week**:
 2. The level ends the week, returning the new simulation and level states and its recap. If the level returns an error, the command is an error and the run is unchanged.
 3. The simulation advances by the level's time step.
 4. The level's after-advance step runs. If it reports burnout, the run ends with `burnout`.
-5. If the advance reached or passed a multiple of the level's review cadence, the loop asks the performance review for a result and enters the review phase. A level's time step need not divide its cadence: a monthly level reviewed every 13 weeks is reviewed after the advance that crosses week 13, 26 and so on, so no review is skipped.
+5. If the advance reached or passed a multiple of the level's review cadence, counted from the level start week, the loop asks the performance review for a result and enters the review phase. A level's time step need not divide its cadence: a monthly level reviewed every 13 weeks is reviewed after the advance that crosses week 13, 26 and so on, so no review is skipped.
 6. Otherwise the next week begins.
+
+A turn is one time step of the active level: a week at the line manager, a month of four weeks at the senior manager. The loop calls each turn a week in its commands (begin week, end week). A level moment's day counts from the turn's first Monday, so a month's moments run over twenty working days. The situation engine places a situation on a day of the week, Monday to Friday; at a longer step the loop spreads it over the turn, day *d* becoming day *d* × the weeks per step, so a month's situations do not all fall in its first week.
 
 Whenever the loop selects or resolves situations, it tells the situation engine how many weeks remain until the next review is held: the weeks to the end of the step that reaches the next multiple of the cadence. With a one-week step, that is the cadence less the weeks since the last review. Content can then time evaluations to the review cycle.
 
-**Acknowledge** applies the review's result: `continue` begins the next week; `managedOut` ends the run; `stayed` ends the run, the player having reached the level's last review unpromoted; `promote` moves the run to the next career level, or ends it as `completed` when the player is at the highest level the game has.
+**Acknowledge** applies the review's result: `continue` begins the next week; `managedOut` ends the run; `stayed` ends the run, the player having reached the level's last review unpromoted; `promote` puts the run in the handover phase for the next career level, or ends it as `completed` when the player is at the highest level the game has.
 
 ## Career Level Contract
 
@@ -81,7 +87,7 @@ Every career level provides the same operations, so the loop runs any level and 
 |---|---|
 | parameters | Level id, time step in weeks, situations per week, review cadence |
 | start | Create the simulation and level states for a new run from a seed |
-| begin week | Prepare the week and make the level's moments for it |
+| begin week | Prepare the turn and make the level's moments for it |
 | moments | The week's level moments, each with its id, day, time, title and whether it is still open |
 | plan | Apply a level-specific command at once to the level, or reject it |
 | choose | Apply a choice for one of the level's open moments at once, returning new states, the change log and a reaction; or an error |
@@ -90,6 +96,8 @@ Every career level provides the same operations, so the loop runs any level and 
 | scorecard | The level's raw measures |
 | assess | The measures the performance review scores, each with its target, tolerance and direction, and whether promotion is possible yet |
 | view | What the player can see |
+| handover choices | For a level reached by promotion: who or what the player chooses as the level takes the run over from the level below |
+| take over | For a level reached by promotion: convert the run's simulation and the level below's state into this level's, given the handover choice, or reject the choice |
 
 A level supplies these through an adapter over its own operations (for the line manager, see its design's *Turn Loop Contract*).
 
@@ -124,14 +132,15 @@ The loop is given the career levels it can run and the performance review as dep
 | Moments the player passes | Allowed, as letting it wait; closed by their owner (the level at the week's end, the situation engine at its next selection) | Require every moment to be answered | Letting things wait is a real management choice that the level and debriefs can name; forcing an answer removes it. |
 | Recap | The level's recap and the outcome of every moment, held as the run's last week | The level's recap alone | The recap is where the week's consequences are explained; situations are part of the week. |
 | Burnout before review | The burnout check runs before a due review | Review first | A burned-out player does not sit through a review; the run has already ended. |
-| Promotion past the top level | Ends the run as `completed` | Keep playing the top level | The HLD ends a run on promotion past the top level; until more levels exist, the line manager is the top. |
+| Promotion past the top level | Ends the run as `completed` | Keep playing the top level | The HLD ends a run on promotion past the top level; until more levels exist, the highest level the loop is given is the top. |
+| Promotion below the top level | A handover phase with the next level's choices, then a hand over command | Hand over automatically; carry the choice in the acknowledge command | The handover is the player's first decision at the new level and deserves its own scene; a separate command keeps acknowledging a review the same at every outcome, and records the choice in the command list so a replayed run takes the same path. |
+| Review cadence at a later level | Counted from the week the level began | Counted from week 0 of the run | A level reached by promotion begins at whatever week the promotion came, which need not fall on its cadence; counting from its start gives it a full period before its first review. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Converting a run's state on promotion to a higher level: each higher level's design defines how it takes over a run from the level below. Until one does, a review that promotes the player below the highest level the loop is given has no way forward: acknowledging it is an error, and the run stays in the review phase. This cannot happen while the line manager is the only level.
-2. Undo within a week, which replaying the week's commands without the last one would make possible.
-3. Whether the command list is trimmed for long runs, at the cost of full replay.
+1. Undo within a week, which replaying the week's commands without the last one would make possible.
+2. Whether the command list is trimmed for long runs, at the cost of full replay.
 
 ## References
 

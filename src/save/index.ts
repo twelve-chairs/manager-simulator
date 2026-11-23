@@ -60,6 +60,8 @@ function commandError(c: unknown, i: number): string | undefined {
       return hasExactly(c, ['kind', 'momentId', 'choiceId']) && typeof c.momentId === 'string' && typeof c.choiceId === 'string'
         ? undefined
         : `${where} is not a valid answer`;
+    case 'handover':
+      return hasExactly(c, ['kind', 'choice']) && typeof c.choice === 'string' ? undefined : `${where} is not a valid handover`;
     case 'plan':
       // The inner command is the career level's to check when it is replayed.
       return hasExactly(c, ['kind', 'command']) ? undefined : `${where} is not a valid plan command`;

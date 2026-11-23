@@ -9,3 +9,4 @@ export { beginMonth, chooseSenior } from './moments';
 export { calibrateTeam, deliveredRatings, type CalibrationMove } from './calibration';
 export { goalStatus } from './goals';
 export { monthRecap, type SeniorRecap } from './recap';
+export { seniorManagerLevel } from './contract';

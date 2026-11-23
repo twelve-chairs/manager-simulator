@@ -87,6 +87,11 @@ describe('managers’ ratings and plans', () => {
     if (!hired.ok) throw new Error(hired.error);
     expect(hired.sim.teams[t]!.aggregate!.headcount).toBe(a.headcount);
     expect(seniorView(hired.level, hired.sim).teams.find((x) => x.id === t)!.managerId).toBeNull();
+    // a manager who quits leaves the team without one too, and it is offered a new manager the month after
+    const quit = applyEffects(later, [{ type: 'remove', personId: leader(later, level.teamIds[0]!), reason: 'quit', cause: { kind: 'rule', ruleId: 'test' } }]);
+    if (!quit.ok) throw new Error(quit.error.message);
+    const after = beginMonth(month.level, edit(quit.state, (x) => (x.week += 4)));
+    expect(after.moments.filter((x) => x.kind === 'replaceManager').map((x) => x.teamId)).toContain(level.teamIds[0]);
     // one more period keeps the manager, still on their plan
     const kept = chooseSenior(l, onPlan, fe.id, 'oneMorePeriod');
     if (!kept.ok) throw new Error(kept.error);

@@ -84,7 +84,7 @@ Calibrating on evidence, so each team's ratings match what it delivered, is the 
 
 ## Managers' Plans
 
-A manager rated low on what their team delivered and how it fared under them, for two periods in a row, goes on an improvement plan, as an engineer does at the first level; a third low rating is held for a final evaluation. Letting a manager go leaves their team leaderless until the player sets a new manager: promoted from the team, which takes a strong head out of it, or hired from outside, which takes a month. Either way the team's stress rises while it adjusts.
+A manager rated low on what their team delivered and how it fared under them, for two periods in a row, goes on an improvement plan, as an engineer does at the first level; a third low rating is held for a final evaluation. Letting a manager go leaves their team leaderless, as a manager who quits does, until the player sets a new manager; the month after a team is left without one, a moment offers it a new manager: promoted from the team, which takes a strong head out of it, or hired from outside, which takes a month. Either way the team's stress rises while it adjusts.
 
 ## The Period's Goals
 

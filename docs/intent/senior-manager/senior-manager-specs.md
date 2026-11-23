@@ -24,6 +24,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **SENIOR-VIS-002**: When the player's view is requested, the senior manager level shall show each team under its manager with its headcount, motivation and stress as bands, attrition risk as a band, and each of its projects with progress against scope, deadline and schedule status.
 - [x] **SENIOR-VIS-003**: While a team's manager has management skill below the *capable* band or trust in the player below 40, the senior manager level shall show that team's motivation, stress and attrition risk one band better than their true bands, unless the team's truth is shown.
 - [x] **SENIOR-VIS-004**: While the player's oversight of a team's manager is close, or in a month in which a skip-level session listened to that team, the senior manager level shall show that team's true bands and say that they come from what the player saw.
+- [x] **SENIOR-VIS-007**: When the player's view is requested, the senior manager level shall also give the habits, the month's moments with their kind, title, text, choices and the managers their choices depend on (and, for calibration, each team's entry), the player's energy and reputation as bands with whether they are at the edge and their months there, and the career so far: the months played, the managers who joined the group and those let go.
 - [x] **SENIOR-VIS-005**: The senior manager level shall never show a manager's leniency as a value.
 - [x] **SENIOR-VIS-006**: The senior manager level shall show no individual engineer of a team in aggregate form, except as named in situations and the recap.
 
@@ -46,7 +47,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Moments
 
-- [x] **SENIOR-MOMENT-001**: When a month begins, the senior manager level shall produce its moments for the month, up to a tuned cap, in this order: final evaluations of managers held for one; setting a new manager for a team whose manager was let go; calibration, in the last month before a review; problems surfaced by skip-level listening; escalations; staffing requests; cross-team disputes; approvals; new work for the group; and restructuring.
+- [x] **SENIOR-MOMENT-001**: When a month begins, the senior manager level shall produce its moments for the month, up to a tuned cap, in this order: final evaluations of managers held for one; setting a new manager for a team that has none; calibration, in the last month before a review; problems surfaced by skip-level listening; escalations; staffing requests; cross-team disputes; approvals; new work for the group; and restructuring.
 - [x] **SENIOR-MOMENT-002**: The senior manager level shall give each moment a week of the month, a day and a time, in order through the month.
 - [x] **SENIOR-MOMENT-003**: When a team's stress or attrition risk is in the *high* band or worse, or one of its projects is behind, the senior manager level shall be able to produce an escalation from its manager, offering to coach them through it, step in and fix it yourself, or let them handle it.
 - [x] **SENIOR-MOMENT-004**: When the player steps in on an escalation, the senior manager level shall fix the problem by a tuned amount, cost the player a tuned amount of energy and leave the manager's management skill unchanged; when the player coaches, it shall fix it by a smaller tuned amount if the manager's skill is at least *developing*, raise their skill and cost less energy; when the player lets them handle it, it shall fix it only if their skill is at least *capable*.
@@ -70,7 +71,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 - [x] **SENIOR-PLAN-001**: When a review period ends, the senior manager level shall rate each manager on their team's delivery and health under them in that period.
 - [x] **SENIOR-PLAN-002**: When a manager has been rated below *meets* at two period ends in a row, the senior manager level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
-- [x] **SENIOR-PLAN-003**: When the player lets a manager go, the senior manager level shall remove them, leave their team leaderless, and offer the next month a moment to set a new manager: promote from the team, lowering its skill, or hire from outside, leaving it leaderless one more month.
+- [x] **SENIOR-PLAN-003**: When the player lets a manager go, the senior manager level shall remove them and leave their team leaderless; and when a month begins with a team in the group that has no manager and none on the way, it shall offer a moment to set a new manager: promote from the team, lowering its skill, or hire from outside, leaving it leaderless one more month.
 
 ## Goals
 
@@ -93,7 +94,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Turn loop contract
 
-- [ ] **SENIOR-CONTRACT-001**: The senior manager level shall provide the turn loop's career level contract with a time step of four weeks, and a handover operation that takes a promoted line manager run and the handover choice and returns the run at this level.
+- [x] **SENIOR-CONTRACT-001**: The senior manager level shall provide the turn loop's career level contract with a time step of four weeks, its moments' days counted from the month's first Monday (week of the month × 5 + day), handover choices from the line manager state, a take over operation that takes the line manager state, the simulation and the handover choice and returns the simulation and this level's state, or an error, and the calibration moment answered as a whole: `acceptAll`, or `settle:` followed by a JSON object giving each team's moves, with any team it leaves out settled as proposed.
 
 ## Level state
 

@@ -72,10 +72,11 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     restructured: false,
     arriving: {},
     heldEvaluations: [],
-    replacing: [],
     calibrations: [],
     goals: [],
     monthStart: null,
+    joinedManagers: [],
+    letGoManagers: [],
     counters: { person: 0, team: 0, project: 0, hire: 0, moment: 0, goal: 0 },
   };
   let sim = lineSim;

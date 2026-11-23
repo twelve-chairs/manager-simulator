@@ -7,6 +7,7 @@ export const BAND_WORDS = {
   skill: ['learning', 'developing', 'capable', 'strong', 'expert'],
   risk: ['low', 'moderate', 'elevated', 'high', 'severe'],
   reputation: ['poor', 'mixed', 'fair', 'good', 'excellent'],
+  trust: ['wary', 'guarded', 'neutral', 'trusting', 'loyal'],
 } as const;
 
 export const bandWord = (kind: keyof typeof BAND_WORDS, band: number) => BAND_WORDS[kind][Math.max(0, Math.min(4, band))]!;

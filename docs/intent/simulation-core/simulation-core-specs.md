@@ -103,7 +103,7 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-ADV-011**: When the simulation is advanced, the simulation core shall give each active person a chance to quit that rises with how long their motivation has been low, how long their stress has been high, and how low their trust is.
 - [x] **SIM-ADV-012**: When the simulation is advanced, the simulation core shall reduce each aggregate team's headcount with a probability that rises with its attrition risk, taking each head lost from a performance level as SIM-PERF-016 describes.
 - [x] **SIM-ADV-013**: When the simulation is advanced, the simulation core shall move the player's reputation up when the projects they are responsible for are on track and down when they are overdue or behind.
-- [x] **SIM-ADV-014**: When the simulation is advanced, the simulation core shall raise the player's stress with the number of teams under them that are leaderless or have overdue or behind-schedule projects, and lower it when there are none.
+- [x] **SIM-ADV-014**: When the simulation is advanced, the simulation core shall raise the player's stress with the number of teams in trouble (leaderless, or with overdue or behind-schedule projects) that the player leads directly or that have no leader, and lower it when there are none; a team led by another person does not count.
 - [x] **SIM-ADV-015**: When the simulation is advanced by a step of N weeks, the simulation core shall scale each rule's magnitude with N.
 
 ## Queries
