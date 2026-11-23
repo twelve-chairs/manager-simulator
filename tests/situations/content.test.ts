@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { compileDirectory, compileSituations } from '../../scripts/compile-situations';
 import { createEngine, evaluateCondition, loadContent, type Situation } from '../../src/situations';
 import { startRun } from '../../src/levels/line-manager';
-import type { Rating } from '../../src/sim';
+import type { Cause, Rating } from '../../src/sim';
 import { realContent } from '../balance/harness';
 import { patch } from '../sim/fixtures';
 import { PERSONALITIES } from '../../src/personalities';
@@ -341,6 +341,14 @@ describe('loading and validation', () => {
     valid(roleWhere({ history: 'engineer', action: 'line-manager.delegate', withinWeeks: 8, atLeast: 2 }));
   });
 
+  // @spec SIT-CONTENT-028
+  it('rejects a history note that is not a non-empty string', () => {
+    const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
+    expect(rejectionOf(roleWhere({ history: 'engineer', note: 3, is: 0 }))).toMatch(/note/);
+    expect(rejectionOf(roleWhere({ history: 'engineer', note: '', is: 0 }))).toMatch(/note/);
+    valid(roleWhere({ history: 'engineer', action: 'line-manager.on-call', note: 'Handled a night page alone', withinWeeks: 8, atLeast: 3 }));
+  });
+
   // @spec SIT-CONTENT-022
   it('reserves player, week, review and it as names roles cannot take', () => {
     for (const name of ['player', 'week', 'review', 'it']) {
@@ -468,6 +476,35 @@ describe('written situations', () => {
       sim = expectResolved(resolve(after, sim, [newStarter], presentation, choice)).sim;
       sim = patch(sim, (s) => (s.week = 12));
       expect(select(after, sim, [newStarter]).presented, `after ${choice}`).toEqual([]);
+    }
+  });
+
+  // @spec SIT-COND-008, SIT-COND-013, SIT-COND-017
+  it('offers each follow-up only to someone whose history holds the earlier choice', () => {
+    type Memory = { cause: Cause; note?: string; times?: number };
+    const after = (situationId: string, choiceId: string): Memory => ({ cause: { kind: 'situation', situationId, choiceId } });
+    const page = (note: string, times: number): Memory => ({ cause: { kind: 'action', actionId: 'line-manager.on-call' }, note, times });
+    const followUps: [string, Memory][] = [
+      ['curve-follow-up', after('calibration', 'accept-curve')],
+      ['promotion-recruiter', after('promotion-case', 'hold-off')],
+      ['leave-asked-again', after('leave-in-crunch', 'wait-until-after')],
+      ['outage-hidden', after('incident-postmortem', 'blame')],
+      ['customer-again', after('customer-escalation', 'join-call')],
+      ['pages-together', page('Handled a night page with you', 2)],
+      ['pages-alone', page('Handled a night page alone', 3)],
+    ];
+    for (const [id, memory] of followUps) {
+      const situation = written(id);
+      const sim = patch(fresh(), (s) => (s.week = 20));
+      expect(select(engine(), sim, [situation]).presented, `${id} with no history`).toEqual([]);
+      const remembered = patch(sim, (s) => {
+        for (let i = 0; i < (memory.times ?? 1); i++) s.people.e1!.history.push({ week: 18, cause: memory.cause, ...(memory.note && { note: memory.note }) });
+      });
+      expect(select(engine(), remembered, [situation]).presented[0]?.bindings.engineer, id).toBe('e1');
+      if (memory.times && memory.times > 1) {
+        const once = patch(sim, (s) => s.people.e1!.history.push({ week: 18, cause: memory.cause, note: memory.note! }));
+        expect(select(engine(), once, [situation]).presented, `${id} after only one`).toEqual([]);
+      }
     }
   });
 

@@ -23,6 +23,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-019**: The situation engine shall treat a situation as invalid if two of its choices share an id, or two outcomes of one choice share an id.
 - [x] **SIT-CONTENT-020**: The situation engine shall treat a situation as invalid if a `history` condition gives an `action` together with a `situation` or `choice`.
 - [x] **SIT-CONTENT-021**: The situation engine shall treat a situation as invalid if a `history` condition's `action` is not in the player action catalogue.
+- [x] **SIT-CONTENT-028**: The situation engine shall treat a situation as invalid if a `history` condition's `note` is not a non-empty string.
 - [x] **SIT-CONTENT-022**: The situation engine shall treat a situation as invalid if a role is named `player`, `week`, `review` or `it`.
 - [x] **SIT-CONTENT-023**: The situation engine shall treat a situation as invalid if a condition in it nests more than 32 levels deep, counting each `all`, `any`, `not` and `count` as a level, and shall report it as invalid without throwing however deep the nesting.
 - [x] **SIT-CONTENT-024**: The situation engine shall treat a situation as invalid if its `day` is not one of `monday` to `friday`, or its `time` is not `morning`, `afternoon` or `night`.
@@ -44,6 +45,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-COND-011**: When evaluating a `count` nested inside another `count`, the situation engine shall bind `it` to the inner candidate, keeping the situation's roles visible.
 - [x] **SIT-COND-008**: When evaluating a `history` condition, the situation engine shall count the person's history entries matching the given situation, choice and any of the ratings listed in `rating`, within the last `withinWeeks` weeks (all of history when it is absent), and compare the count to the operand.
 - [x] **SIT-COND-013**: When a `history` condition gives an `action`, the situation engine shall count only the person's history entries caused by that player action.
+- [x] **SIT-COND-017**: When a `history` condition gives a `note`, the situation engine shall count only the person's history entries whose note is exactly that text.
 - [x] **SIT-COND-009**: When evaluating a `presented` condition, the situation engine shall count the times that situation was presented within the last `withinWeeks` weeks (ever, when it is absent), and compare the count to the operand, including the current presentation when evaluated inside a presented situation's choices or outcomes.
 - [x] **SIT-COND-012**: The situation engine shall give a person, team or project its id as its `id` property, a team led by a person that person's id as its `leader`, and a team led by the player or by no one no `leader` value.
 - [x] **SIT-COND-014**: When selection or resolution is given the weeks until the next review, the situation engine shall give `review.weeksAway` that number, and no value when it is not given.

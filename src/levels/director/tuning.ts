@@ -25,7 +25,7 @@ export const DIRECTOR_TUNING = {
   /** Quarters in a row at the edge that burn the player out. */
   burnoutQuarters: 2,
   /** Where the time goes: the trust the room above gains or loses, and the groups' motivation and senior managers' trust. */
-  time: { aboveTrust: 4, groupMotivation: 8, seniorTrust: 3 },
+  time: { aboveTrust: 4, groupMotivation: 9, seniorTrust: 3 },
   /** Staff meetings in a quarter: each senior manager's trust gained, and the player's energy spent. */
   staffMeeting: { weekly: { trust: 6, energy: 6 }, fortnightly: { trust: 3, energy: 3 } },
   /** The listening tour's energy. */

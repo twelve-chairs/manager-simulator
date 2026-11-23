@@ -1,6 +1,7 @@
+import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PERSONALITIES } from '../../../src/personalities';
-import { NAMES, WORK_KINDS, beginWeek, chooseMoment, type WorkItem } from '../../../src/levels/line-manager';
+import { CALLBACKS, LINE_TUNING, NAMES, WORK_KINDS, beginWeek, chooseMoment, type WorkItem } from '../../../src/levels/line-manager';
 import type { SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, expectRefused, momentFor, patch, projects, quietRun, run, seeds, teamOf, withItem } from './fixtures';
 
@@ -263,5 +264,63 @@ describe('answering moments', () => {
     }
     const answered = choose(level, sim, m.id, 'self');
     expect(chooseMoment(answered.level, answered.sim, m.id, 'self').ok).toBe(false);
+  });
+});
+
+describe('callbacks', () => {
+  /** A design review with one engineer offered, who remembers what the notes say, at the weeks before now given. */
+  function remembering(memories: { note: string; weeksAgo: number }[]) {
+    const { level, sim, id } = oneReview(20);
+    const give = momentFor(level, id).choices.find((c) => c.id.startsWith('give:'))!;
+    const who = give.id.slice('give:'.length);
+    const withMemories = patch(sim, (s) => {
+      s.week = 20;
+      for (const m of memories) s.people[who]!.history.push({ week: 20 - m.weeksAgo, cause: { kind: 'action', actionId: 'test' }, note: m.note });
+    });
+    return { level, sim: withMemories, momentId: momentFor(level, id).id, choiceId: give.id, who };
+  }
+  const line = (note: string, name: string) => CALLBACKS[note]!.replaceAll('{name}', name);
+
+  // @spec LINE-WORK-006
+  it('ends the reaction with a line bringing up the most recent memory the table holds', () => {
+    const r = remembering([
+      { note: 'Handled a night page alone', weeksAgo: 5 },
+      { note: 'You argued for them in calibration', weeksAgo: 2 },
+      { note: 'Took on a design review', weeksAgo: 1 },
+    ]);
+    const name = r.sim.people[r.who]!.name;
+    const out = choose(r.level, r.sim, r.momentId, r.choiceId);
+    expect(out.reaction.endsWith(line('You argued for them in calibration', name))).toBe(true);
+    expect(out.reaction).not.toContain(line('Handled a night page alone', name));
+  });
+
+  // @spec LINE-WORK-006, LINE-WORK-007
+  it('calls back only memories from the last weeks that the table holds, each once', () => {
+    const old = remembering([{ note: 'Handled a night page alone', weeksAgo: LINE_TUNING.callbackWeeks + 1 }]);
+    const name = old.sim.people[old.who]!.name;
+    expect(choose(old.level, old.sim, old.momentId, old.choiceId).reaction).not.toContain(line('Handled a night page alone', name));
+    const routine = remembering([{ note: 'Took on a design review', weeksAgo: 1 }]);
+    const plain = remembering([]);
+    expect(choose(routine.level, routine.sim, routine.momentId, routine.choiceId).reaction).toBe(choose(plain.level, plain.sim, plain.momentId, plain.choiceId).reaction);
+    // once called back, the same memory is not brought up again
+    const once = remembering([{ note: 'Handled a night page alone', weeksAgo: 2 }]);
+    const first = choose(once.level, once.sim, once.momentId, once.choiceId);
+    expect(first.reaction).toContain(line('Handled a night page alone', name));
+    const repeat = remembering([{ note: 'Handled a night page alone', weeksAgo: 2 }]);
+    const again = choose({ ...repeat.level, calledBack: first.level.calledBack }, repeat.sim, repeat.momentId, repeat.choiceId);
+    expect(again.reaction).not.toContain(line('Handled a night page alone', name));
+  });
+
+  // @spec LINE-WORK-007
+  it('holds lines only for memories its situations and moments record, each naming the person', () => {
+    expect(Object.keys(CALLBACKS).length).toBeGreaterThanOrEqual(15);
+    const sources = [
+      ...readdirSync(new URL('../../../content/situations/', import.meta.url)).map((f) => readFileSync(new URL(`../../../content/situations/${f}`, import.meta.url), 'utf8')),
+      readFileSync(new URL('../../../src/levels/line-manager/moments.ts', import.meta.url), 'utf8'),
+    ].join('\n');
+    for (const [note, text] of Object.entries(CALLBACKS)) {
+      expect(text, note).toContain('{name}');
+      expect(sources.includes(`historyNote: ${note}\n`) || sources.includes(`historyNote: ${note} }`) || sources.includes(`note: '${note}'`), `a memory recorded as "${note}"`).toBe(true);
+    }
   });
 });

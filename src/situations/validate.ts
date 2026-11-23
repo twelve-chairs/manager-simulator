@@ -191,7 +191,7 @@ function checkCondition(x: unknown, scope: Scope, where: string, depth = 0): voi
     return;
   }
   if (Object.hasOwn(o, 'history')) {
-    checkCountOperand(o, 'history', ['history', 'situation', 'choice', 'action', 'rating', 'withinWeeks'], where);
+    checkCountOperand(o, 'history', ['history', 'situation', 'choice', 'action', 'note', 'rating', 'withinWeeks'], where);
     const role = o.history;
     if (typeof role !== 'string' || !Object.hasOwn(scope.roles, role) || scope.roles[role] !== 'person')
       fail(at(where, 'history'), `${String(role)} is not a person role bound here`);
@@ -203,6 +203,8 @@ function checkCondition(x: unknown, scope: Scope, where: string, depth = 0): voi
         fail(at(where, 'action'), 'an action cannot be combined with a situation or choice; no history entry is caused by both');
       if (!PLAYER_ACTION_IDS.includes(action)) fail(at(where, 'action'), `${action} is not in the player action catalogue`);
     }
+    // @spec SIT-CONTENT-028
+    if (Object.hasOwn(o, 'note') && string(o, 'note', where) === '') fail(at(where, 'note'), 'must not be empty');
     if (Object.hasOwn(o, 'rating')) list(o.rating, at(where, 'rating')).forEach((r, i) => oneOf(r, RATINGS, at(at(where, 'rating'), i), 'a rating'));
     checkWindow(o, where);
     return;

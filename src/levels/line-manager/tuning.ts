@@ -53,6 +53,8 @@ export const LINE_TUNING = {
     coachingStress: 1,
   },
 
+  /** How many weeks back a memory can be brought up in a reaction. */
+  callbackWeeks: 8,
   work: {
     /** Player stress per unit of size for work done yourself. */
     selfStressPerSize: 1.2,

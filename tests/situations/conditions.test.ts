@@ -312,6 +312,22 @@ describe('history and presented', () => {
     ]);
   });
 
+  // @spec SIT-COND-017
+  it('counts only history entries with the note given', () => {
+    const page: Cause = { kind: 'action', actionId: 'line-manager.on-call' };
+    const result = applyEffects(fresh(), [
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'stress', amount: 1, cause: page, historyNote: 'Handled a night page alone' },
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'stress', amount: 1, cause: page, historyNote: 'Handled a night page alone' },
+      { type: 'value', target: { kind: 'person', id: 'e1' }, field: 'stress', amount: 1, cause: page, historyNote: 'Handled a night page with you' },
+    ]);
+    if (!result.ok) throw new Error(result.error.message);
+    check(result.state, { engineer: 'e1' }, [
+      [{ history: 'engineer', action: 'line-manager.on-call', note: 'Handled a night page alone', is: 2 }, true],
+      [{ history: 'engineer', note: 'Handled a night page with you', is: 1 }, true],
+      [{ history: 'engineer', note: 'Handled a night page', is: 0 }, true],
+    ]);
+  });
+
   // @spec SIT-COND-009
   it('counts presentations of a situation, ever or within a window', () => {
     const sim = fresh();

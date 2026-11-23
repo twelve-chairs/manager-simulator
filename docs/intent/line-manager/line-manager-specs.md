@@ -63,6 +63,8 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-INBOX-013**: When a week's end applies and the team has ended that week and the three weeks before with no active project, the line manager level shall start a new project on the team through the simulation core, named from the level's list, and its recap for that week shall name the project as one the player's manager assigned.
 - [x] **LINE-WORK-005**: When the line manager level makes an on-call moment, it shall offer backing up the engineer on call (a little stress for the player; the engineer's stress rises, and a difficulty above their skill brings the reduced consequence and raises their skill), taking over (the player's stress rises by the escalation's size, with no consequence), and leaving it to them (no cost to the player; the engineer's stress rises, and a difficulty above their skill brings the full consequence).
 - [x] **LINE-WORK-004**: When a level moment's choice applies, the line manager level shall return a reaction from its templates for that kind of moment and choice, chosen by the personality of the engineer involved where there is one.
+- [x] **LINE-WORK-006**: When a level moment's choice involving an engineer applies, and the engineer has a history entry from the last `callbackWeeks` weeks whose note the level's callback table holds and that no reaction has called back, the line manager level shall end the reaction with the table's line for the most recent such entry, filled with the engineer's name, and record that entry as called back.
+- [x] **LINE-WORK-007**: The line manager level shall call back each history entry at most once in a run, and never one whose note its callback table does not hold.
 
 ## Moments
 

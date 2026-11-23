@@ -1,3 +1,4 @@
+import { callBack } from './callbacks';
 import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type Rating, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
 import { reaction } from './reactions';
@@ -128,6 +129,8 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   const moment = s.moments.find((m) => m.id === momentId)!;
   const effects: Effect[] = [];
   let text: string;
+  /** The engineer the choice involves, whose memories its reaction can bring up. */
+  let involved: string | undefined;
   const engineer = (id: string) => sim.people[id]!;
   const gone = (id: string) => `${sim.people[id]?.name ?? id} is no longer on the team`;
 
@@ -175,6 +178,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
         personEffect(id, 'motivation', LINE_TUNING.work.interviewerMotivation, action(INTERVIEW), { serves: ['recognition'], note: 'Interviewed a candidate' }),
       );
       text = reaction('ask', 'interview', engineer(id));
+      involved = id;
     }
     if (vacancy.interviews >= LINE_TUNING.interviewsPerHire) {
       const hire = generatePerson(s, peopleNames(sim));
@@ -198,10 +202,12 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
         effects.push(playerEffect('stress', LINE_TUNING.work.backUpStress, cause), personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: 'Handled a night page with you' }));
         if (short) effects.push(personEffect(id, 'skill', LINE_TUNING.work.stretchSkill, cause), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
         text = reaction('backUp', thing, engineer(id));
+        involved = id;
       } else {
         effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: 'Handled a night page alone' }));
         if (short) effects.push(...consequence(item, 1, FELL_SHORT));
         text = reaction(short ? 'leaveShort' : 'leave', thing, engineer(id));
+        involved = id;
       }
       resolve(s, item);
     } else if (choiceId === 'pushBack') {
@@ -227,12 +233,16 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
       effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${thing}` }));
       if (stretch) effects.push(personEffect(id, 'skill', LINE_TUNING.work.stretchSkill, action(DELEGATE)), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
       text = reaction(stretch ? 'stretch' : 'give', thing, engineer(id));
+      involved = id;
       resolve(s, item);
     }
   }
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the choice: ${applied.error.message}` };
+  // @spec LINE-WORK-006
+  const recalled = involved !== undefined ? callBack(s, sim, involved) : null;
+  if (recalled) text = `${text} ${recalled}`;
   // A choice that costs the player energy ends the week's chance of being quiet.
   if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.tookOnWork = true;
   moment.status = 'answered';

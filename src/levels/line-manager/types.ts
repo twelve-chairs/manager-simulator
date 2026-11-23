@@ -81,6 +81,8 @@ export interface LineState {
   learnedWants: Record<string, { want: Want; week: number }>;
   /** Project id to the week it completed. */
   completions: Record<string, number>;
+  /** The memories a reaction has brought up, as person, week and note, so each is called back once. */
+  calledBack: string[];
   /** Project id to the week of its last check-in moment. */
   checkIns: Record<string, number>;
   /** Consecutive weeks the player's stress has been at or above the burnout threshold. */

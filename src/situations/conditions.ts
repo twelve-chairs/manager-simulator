@@ -132,11 +132,14 @@ export function evaluateCondition(condition: Condition, ctx: EvalContext): boole
     const choice = c.choice as string | undefined;
     const action = c.action as string | undefined;
     const ratings = c.rating as string[] | undefined;
+    const note = c.note as string | undefined;
     const n = person.history.filter(
       (h) =>
         (situation === undefined || (h.cause.kind === 'situation' && h.cause.situationId === situation)) &&
         (choice === undefined || (h.cause.kind === 'situation' && h.cause.choiceId === choice)) &&
         (action === undefined || (h.cause.kind === 'action' && h.cause.actionId === action)) &&
+        // @spec SIT-COND-017
+        (note === undefined || h.note === note) &&
         (ratings === undefined || (h.rating !== undefined && ratings.includes(h.rating))) &&
         inWindow(ctx, h.week, c.withinWeeks as number | undefined),
     ).length;
