@@ -88,7 +88,7 @@ The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, t
 
 ## Turns and Their Numbers
 
-A turn is a week at the line manager and a month at the senior manager, and the shell names it in the level's word: the header, the recap's heading ("How month 3 went"), its button ("Start month 4"), the review's heading ("Month 6 review") and the ended screen. Months count from 1 from the start of the senior manager level, as weeks count from 1 from the start of the run. Within a month, a moment says which week of the month and which day it falls on ("Week 2, Tuesday morning"), and the header's strip shows that week's five days. The weeks to the next review are shown in the level's turns ("3 months to your review").
+A turn is a week at the line manager, a month at the senior manager and a quarter at the director, and the shell names it in the level's word: the header, the recap's heading ("How month 3 went"), its button ("Start month 4"), the review's heading ("Month 6 review") and the ended screen. Months count from 1 from the start of the senior manager level, and quarters from the start of the director level, as weeks count from 1 from the start of the run. Within a month or a quarter, a moment says which week of it and which day it falls on ("Week 2, Tuesday morning"), and the header's strip shows that week's five days. The weeks to the next review are shown in the level's turns ("3 months to your review").
 
 ## Week Numbers
 
@@ -189,6 +189,54 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 |---|---|
 | Managers | Each team is shown as its manager tells it, unless you saw for yourself. |
 | Habits | Changes apply from this month's end, and to moments from next month. |
+
+## The Director's Screens
+
+The director level keeps the shell (header, scene, recap, review, ended) and brings its own renderer, as the senior manager does.
+
+**The handover.** After the review that promotes a senior manager is acknowledged, the screen says so ("You've been promoted to director") and asks who leads the player's group now. Each of their managers is a choice, showing their name, management skill in words, how much they trust the player in words and their want if known; the last choice is an outside hire, "a capable senior manager you don't know yet". Choosing sends the hand over command, and the first quarter begins.
+
+**The first quarter** opens on a scene before anything arrives: the director's habits with a line on what each does, and How to play, closed by **Start quarter 1**.
+
+**The senior managers panel**, in place of the managers panel: a card per senior manager with their name, personality, motivation and stress in words, management skill in words ("leads: capable"), their want once known, and their memory. Under each, their group: its name, headcount ("18 people"), its projects as the projects panel shows them, and its motivation, stress and attrition risk in words, labelled by where they come from: "at the survey in quarter 2", or "as you saw it" in a quarter the listening tour visited it. A group without a senior manager says so. No team or line manager inside a group is ever shown.
+
+**The upward panel**: the executive and the two peers, each as a card with their name, role ("your executive", "a peer director"), personality, how much they trust you in words, their want once known, and their memory.
+
+**The bets panel**: each funded bet with the group carrying it, its progress and deadline as a project shows them, and its stakes in words ("lands: a big win; fails: a hard knock"). With no bet funded, it says so.
+
+**The habits panel** has the three director habits: where your time goes, the staff meeting and the listening tour.
+
+**Headcount planning** is a scene of its own: the heads given this quarter, a stepper per group and per funded bet, and a count of heads still to place. **Place the heads** sends the placement; **Spread them**, **Give them all to the most stretched group** and **Hold them back** are one-press choices. Letting it wait holds them back.
+
+**Strategy bets** are a scene of their own: each bet on offer with its name, size, deadline, stakes and the peer it touches, and for each a choice of the group to carry it, or none. **Fund these bets** sends at most two; **Fund none** declines them all.
+
+**The quarterly review** reads as other moments do, with what the quarter held in its text and a button per way of telling it.
+
+**Other moments** read as at the earlier levels. A choice that depends on a senior manager shows their skill in words beside it.
+
+**Change chips** compare the director view before and after a choice: a senior manager's motivation, stress or management skill, a group's headcount, the executive's or a peer's trust, a bet's schedule, and the player's energy and reputation.
+
+**The recap** shows what changed (senior managers, a new survey's results, heads that left or joined, bets that landed, failed or slipped, and who above trusts you more or less) and folds the routine into *The whole quarter*.
+
+**The review** names the director measures: bets landed, projects shipped on time, people you'd have kept who left, the groups' motivation and stress at the survey, your executive's confidence and calibration quality; goals by their text.
+
+**The ended screen** says why the run ended at the director level ("You stayed a director. Three years went by without the promotion.", or burned out, managed out, or completed), and the career summary adds the director's part: the quarters played, and the senior managers who joined and who were let go.
+
+| Topic | Text |
+|---|---|
+| How to play | Each quarter is a run of moments. Your senior managers run the groups; you set the headcount, place the bets and answer to your executive. Pick what you do, or let it wait. A recap ends the quarter. |
+| The room above | Your executive and your peers each trust you more or less. Time with them earns headcount and backing; time away from your organization costs it. |
+| The survey | You see your groups' mood as the last engagement survey measured it, twice a year. A listening tour shows one group as it is now. |
+| Bets and the review | Fund bets your groups can carry. Each quarter you tell your executive how it went; what you leave out tends to come back. |
+| Energy | Your energy falls with what you take on yourself. Two quarters in a row at the edge and you burn out. |
+| Reviews | Every two quarters your executive reviews the bets, delivery, retention, your groups' health, their confidence in you and calibration. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
+
+| Panel | Help line |
+|---|---|
+| Senior managers | Each group's mood is from the last survey, unless your listening tour saw it this quarter. |
+| Upward | How much your executive and peers trust you shapes your headcount and your bets. |
+| Bets | A bet lands if its project ships by its deadline. |
+| Habits | Changes apply from this quarter's end, and to moments from next quarter. |
 
 ## Bands as Words
 

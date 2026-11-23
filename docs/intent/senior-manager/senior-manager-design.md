@@ -102,7 +102,7 @@ Each month ends with a recap, folded as the first level's is: what changed first
 - **The last review**: the sixth, at month 36. A player not promoted there has stayed a senior manager, and the run ends.
 - **Burnout**: four months in a row ending at the edge, as four weeks at the first level.
 - **Managed out**: as at the first level, the performance review ends the run when the player fails an improvement plan.
-- **Promotion past this level**: until the director level exists, it ends the run as completed, as promotion past the line manager does today.
+- **Promotion past this level**: the run continues at the director level, through its handover (see the [director design](../director/director-design.md)).
 
 A month should take about two and a half to three estimated minutes to play, by the success-metric playtests' session clock, so a promotion at month 18 comes about an hour into the level.
 

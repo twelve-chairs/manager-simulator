@@ -6,6 +6,7 @@ import { h, type Child } from './dom';
 import { HELP_OPEN_THROUGH_WEEK } from './help';
 import { lineManagerRenderer } from './line-manager';
 import { seniorManagerRenderer } from './senior-manager';
+import { directorRenderer } from './director';
 import { band } from '../levels/line-manager';
 import { emphasis } from './text';
 
@@ -114,8 +115,10 @@ export interface LevelRenderer {
   measureValue(view: unknown, id: string, value: number): string | undefined;
   /** The level's lines of the career summary at the end of a run. */
   career(view: unknown): Child;
-  /** The level's turn: a week or a month. */
-  turn: 'week' | 'month';
+  /** The level's turn: a week, a month or a quarter. */
+  turn: Turn;
+  /** For a level reached by promotion: the handover's question and how it describes the outside hire. */
+  handover?: { question: (team: string) => string; hire: string };
   /** The level's How to play topics. */
   help: readonly { id: string; title: string; text: string }[];
   /** The scene before the level's first turn: where it is set, its heading and its line. */
@@ -124,16 +127,21 @@ export interface LevelRenderer {
   stayed: { outcome: string; ending: string };
 }
 
-const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer, 'senior-manager': seniorManagerRenderer };
+export type Turn = 'week' | 'month' | 'quarter';
+/** Weeks in each kind of turn. */
+const STEP: Record<Turn, number> = { week: 1, month: 4, quarter: 13 };
+
+const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer, 'senior-manager': seniorManagerRenderer, director: directorRenderer };
 
 /** What the handover screen calls the level a promotion leads to. */
-const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager' };
+const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager', director: 'director' };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-/** Where in the turn a moment falls: its day and time, and in a month its week (UI-WEEK-016). */
-const when = (m: { day: number; time: string }, turn: 'week' | 'month' = 'week') =>
-  turn === 'month' ? `Week ${Math.floor(m.day / 5) + 1}, ${DAYS[m.day % 5] ?? ''} ${m.time}` : `${DAYS[m.day] ?? ''} ${m.time}`;
+/** Where in the turn a moment falls: its day and time, and in a month or a quarter its week (UI-WEEK-016). */
+const when = (m: { day: number; time: string }, turn: Turn = 'week') =>
+  turn !== 'week' ? `Week ${Math.floor(m.day / 5) + 1}, ${DAYS[m.day % 5] ?? ''} ${m.time}` : `${DAYS[m.day] ?? ''} ${m.time}`;
 const capital = (word: string) => word[0]!.toUpperCase() + word.slice(1);
+const NUMBER_WORDS: Record<number, string> = { 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six' };
 
 /** The reaction to the player's last choice, waiting to be read; only the page remembers it. */
 interface Reaction {
@@ -478,12 +486,12 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const { run } = ctx;
     const status = renderer.status(ctx.view);
     const kind = sceneKind(run);
-    const step = renderer.turn === 'month' ? 4 : 1;
+    const step = STEP[renderer.turn];
     // While the recap shows, the header is about the turn it recaps, the one before the run's.
     const turnNumber = turnOf(run, renderer, kind === 'recap' ? run.sim.week - step : run.sim.week);
     const day = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
-    // A month's strip shows the current week's five days.
-    const now = kind === 'done' ? 5 : renderer.turn === 'month' && day >= 0 ? day % 5 : day;
+    // A month's or a quarter's strip shows the current week's five days.
+    const now = kind === 'done' ? 5 : renderer.turn !== 'week' && day >= 0 ? day % 5 : day;
     const toReview = weeksToReview(run, options.deps);
     return h(
       'section',
@@ -537,7 +545,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
 
   /** The turn a game week falls in, as the player counts it from 1: a week of the run, or a month of the level. */
   // @spec UI-WEEK-011, UI-WEEK-016
-  const turnOf = (run: Run, renderer: LevelRenderer, gameWeek: number) => (renderer.turn === 'month' ? Math.floor((gameWeek - run.levelStartWeek) / 4) + 1 : shownWeek(gameWeek));
+  const turnOf = (run: Run, renderer: LevelRenderer, gameWeek: number) => (renderer.turn === 'week' ? shownWeek(gameWeek) : Math.floor((gameWeek - run.levelStartWeek) / STEP[renderer.turn]) + 1);
 
   const heading = (text: Child) => h('h2', { 'data-part': 'heading', tabindex: -1 }, text);
 
@@ -554,14 +562,14 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           h('p', {}, renderer.firstTurn.intro),
           renderer.habits(ctx),
           help(ctx, renderer, true),
-          h('button', { 'data-action': 'start-week', class: 'primary', onClick: () => moveOn(() => (startedFirstTurn = run.levelStartWeek)) }, renderer.turn === 'month' ? 'Start month 1' : 'Start the week'),
+          h('button', { 'data-action': 'start-week', class: 'primary', onClick: () => moveOn(() => (startedFirstTurn = run.levelStartWeek)) }, renderer.turn === 'week' ? 'Start the week' : `Start ${renderer.turn} 1`),
         );
       case 'recap':
         return h(
           'section',
           { 'data-scene': 'recap', class: 'scene recap' },
           h('p', { class: 'where' }, 'The weekend'),
-          heading(`How ${renderer.turn} ${turnOf(run, renderer, run.sim.week - (renderer.turn === 'month' ? 4 : 1))} went`),
+          heading(`How ${renderer.turn} ${turnOf(run, renderer, run.sim.week - STEP[renderer.turn])} went`),
           recapView(run, renderer, wholeWeekOpen ?? false),
           h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start ${renderer.turn} ${turnOf(run, renderer, run.sim.week)}`),
         );
@@ -658,7 +666,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   function help(ctx: ScreenContext, renderer: LevelRenderer, open?: boolean) {
     const chosen = ctx.drafts.get('help')?.open;
     // Open in the level's first three turns.
-    const turnsIn = (ctx.run.sim.week - ctx.run.levelStartWeek) / (renderer.turn === 'month' ? 4 : 1);
+    const turnsIn = (ctx.run.sim.week - ctx.run.levelStartWeek) / STEP[renderer.turn];
     const isOpen = open ?? (chosen === undefined ? turnsIn <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
     return h(
       'details',
@@ -674,7 +682,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     return h(
       'section',
       { 'data-screen': 'review', class: 'review' },
-      h('h1', { 'data-part': 'heading', tabindex: -1 }, `${capital(renderer.turn)} ${turnOf(ctx.run, renderer, ctx.run.sim.week - (renderer.turn === 'month' ? 4 : 1))} review`),
+      h('h1', { 'data-part': 'heading', tabindex: -1 }, `${capital(renderer.turn)} ${turnOf(ctx.run, renderer, ctx.run.sim.week - STEP[renderer.turn])} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' (score ', h('span', { 'data-field': 'score' }, review.score.toFixed(2)), ')'),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
@@ -745,7 +753,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
-      h('p', { 'data-field': 'ending' }, run.ending === 'stayed' ? renderer.stayed.ending : run.ending === 'burnout' ? `You burned out. Four ${renderer.turn}s at the edge was too long.` : run.ending ? ENDINGS[run.ending] : ''),
+      h('p', { 'data-field': 'ending' }, run.ending === 'stayed' ? renderer.stayed.ending : run.ending === 'burnout' ? `You burned out. ${capital(NUMBER_WORDS[renderer.status(view).edge?.limit ?? 4] ?? 'Too many')} ${renderer.turn}s at the edge was too long.` : run.ending ? ENDINGS[run.ending] : ''),
       careerSummary(run, view, renderer),
       // The final week's moments are what explain the ending, so The whole week is open here. A run that ended before
       // its level played a turn has only the level below's recap, which this level's renderer cannot tell.
@@ -766,13 +774,15 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const next = options.deps.levels[options.deps.levels.findIndex((l) => l.params.id === run.levelId) + 1];
     const name = next ? (LEVEL_NAMES[next.params.id] ?? next.params.id) : 'the next level';
     const team = Object.values(run.sim.teams).find((t) => t.leader?.kind === 'player');
-    // What the player knows of each engineer's want, from the level they are leaving.
-    const known = new Map(((ctx.view as { people?: { id: string; want: string }[] }).people ?? []).map((p) => [p.id, p.want]));
+    const words = next ? RENDERERS[next.params.id]?.handover : undefined;
+    // What the player knows of each person's want, from the level they are leaving: its engineers or its managers.
+    const view = ctx.view as { people?: { id: string; want: string }[]; managers?: { id: string; want: string }[] };
+    const known = new Map((view.people ?? view.managers ?? []).map((p) => [p.id, p.want]));
     return h(
       'section',
       { 'data-screen': 'handover', class: 'handover' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, `You've been promoted to ${name}`),
-      h('p', { 'data-part': 'question' }, `Who leads ${team?.name ?? 'your team'} now?`),
+      h('p', { 'data-part': 'question' }, words ? words.question(team?.name ?? 'your team') : `Who leads ${team?.name ?? 'your team'} now?`),
       h(
         'div',
         { class: 'choices' },
@@ -782,7 +792,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             'button',
             { 'data-handover': c.id, class: 'choice', onClick: () => ctx.send({ kind: 'handover', choice: c.id }, 'handover') },
             c.id === 'hire'
-              ? 'An outside hire: a capable manager you don\'t know yet'
+              ? (words?.hire ?? 'An outside hire: a capable manager you don\'t know yet')
               : [
                   h('strong', {}, c.name),
                   h('small', {}, 'Skill ', h('span', { 'data-field': 'skill' }, bandWord('skill', band(c.skill ?? 0))), ' · ', h('span', { 'data-field': 'trust' }, bandWord('trust', band(c.trust ?? 0))),
