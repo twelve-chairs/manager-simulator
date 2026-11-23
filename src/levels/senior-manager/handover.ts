@@ -3,6 +3,7 @@ import { addTeam, aggregateTeam, applyEffects, type Effect, type NewProject, typ
 import { generateManager, nextId, randomInt, rule, summarizeTeam, unusedName } from './core';
 import { DEFAULT_SENIOR_HABITS } from './habits';
 import { periodSnapshot, remember } from './review';
+import { setGoals } from './goals';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorState } from './types';
 
@@ -70,7 +71,12 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     lastApproval: {},
     restructured: false,
     arriving: {},
-    counters: { person: 0, team: 0, project: 0, hire: 0, moment: 0 },
+    heldEvaluations: [],
+    replacing: [],
+    calibrations: [],
+    goals: [],
+    monthStart: null,
+    counters: { person: 0, team: 0, project: 0, hire: 0, moment: 0, goal: 0 },
   };
   let sim = lineSim;
   const teamId = line.teamId;
@@ -144,5 +150,6 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
   }
   remember(level, sim);
   level.periodStart = periodSnapshot(level, sim);
+  setGoals(level, sim);
   return { ok: true, sim, level };
 }

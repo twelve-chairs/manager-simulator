@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest';
+import { assessSenior, beginMonth, chooseSenior, endMonth, seniorView, takeOver, type SeniorState } from '../../../src/levels/senior-manager';
+import type { SimState } from '../../../src/sim';
+import { promotedLine, senior } from './fixtures';
+
+const edit = (sim: SimState, change: (s: SimState) => void) => {
+  const copy = structuredClone(sim);
+  change(copy);
+  return copy;
+};
+const KINDS = ['growManager', 'zeroRegretted', 'shipProject', 'unstrainTeam'];
+
+describe('the period’s goals', () => {
+  // @spec SENIOR-GOAL-001
+  it('sets two or three goals from the group’s state as the period begins, and new ones each period', () => {
+    const { level } = senior(1);
+    expect(level.goals.length).toBeGreaterThanOrEqual(2);
+    expect(level.goals.length).toBeLessThanOrEqual(3);
+    for (const g of level.goals) expect(KINDS).toContain(g.kind);
+    expect(level.goals.map((g) => g.kind)).toContain('zeroRegretted');
+    // a strained team at the start of a period gets a goal to bring it out of the strained band
+    const line = promotedLine(2);
+    const r = takeOver(line.level, line.sim, 'hire');
+    if (!r.ok) throw new Error(r.error);
+    const strained = r.level.teamIds[1]!;
+    const next = edit(r.sim, (s) => {
+      s.week = r.level.startWeek + 24;
+      s.teams[strained]!.aggregate!.stress = 80;
+    });
+    const later = endMonth(r.level, next);
+    if (!later.ok) throw new Error(later.error);
+    expect(later.level.goals.some((g) => g.kind === 'unstrainTeam' && g.teamId === strained)).toBe(true);
+    expect(later.level.goals.map((g) => g.id)).not.toEqual(r.level.goals.map((g) => g.id));
+  });
+
+  // @spec SENIOR-GOAL-002
+  it('shows each goal with its progress', () => {
+    const { level, sim } = senior(3);
+    const view = seniorView(level, sim);
+    expect(view.goals.map((g) => g.id)).toEqual(level.goals.map((g) => g.id));
+    for (const g of view.goals) {
+      expect(g.text.length).toBeGreaterThan(0);
+      expect(g.progress.length).toBeGreaterThan(0);
+    }
+  });
+
+  // @spec SENIOR-GOAL-003
+  it('scores each goal at the review as achieved or missed', () => {
+    const { level, sim } = senior(4);
+    const at = edit(sim, (s) => (s.week = level.startWeek + 24));
+    const goals = assessSenior(level, at).measures.filter((m) => m.id.startsWith('goal:'));
+    expect(goals.map((m) => m.id)).toEqual(level.goals.map((g) => `goal:${g.id}`));
+    for (const m of goals) expect([0, 1]).toContain(m.value);
+  });
+});
+
+describe('the month’s recap', () => {
+  // @spec SENIOR-RECAP-001
+  it('tells what changed with the managers and teams, and the routine of habits and goals', () => {
+    const { level, sim } = senior(5);
+    const t = level.teamIds[1]!;
+    const s = edit(sim, (x) => {
+      for (const id of level.teamIds) Object.assign(x.teams[id]!.aggregate!, { stress: 30, motivation: 60 });
+      x.teams[t]!.aggregate!.stress = 75;
+    });
+    const l: SeniorState = beginMonth(level, s);
+    const escalation = l.moments.find((m) => m.kind === 'escalation' && m.teamId === t)!;
+    const answered = chooseSenior(l, s, escalation.id, 'stepIn');
+    if (!answered.ok) throw new Error(answered.error);
+    const r = endMonth(answered.level, answered.sim);
+    if (!r.ok) throw new Error(r.error);
+    const recap = r.recap as { changes: { teams: { id: string; changes: string[] }[]; managers: unknown[]; heads: unknown[]; slipped: unknown[] }; routine: { habits: string[]; goals: { text: string; progress: string }[] } };
+    expect(recap.changes.teams.find((x) => x.id === t)!.changes.join(' ')).toMatch(/stress/i);
+    expect(Array.isArray(recap.changes.managers)).toBe(true);
+    expect(Array.isArray(recap.changes.heads)).toBe(true);
+    expect(Array.isArray(recap.changes.slipped)).toBe(true);
+    expect(recap.routine.habits.length).toBeGreaterThan(0);
+    expect(recap.routine.goals.map((g) => g.text)).toEqual(r.level.goals.map((g) => seniorView(r.level, r.sim).goals.find((x) => x.id === g.id)!.text));
+  });
+});

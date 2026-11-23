@@ -1,6 +1,7 @@
 import { band } from '../line-manager';
 import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating, type SimState } from '../../sim';
 import { leadOf } from './core';
+import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorState } from './types';
 
@@ -34,6 +35,7 @@ export interface TeamView {
 export interface SeniorView {
   managers: ManagerView[];
   teams: TeamView[];
+  goals: { id: string; text: string; progress: string }[];
 }
 
 /** What a manager remembers: their latest notes, newest first. */
@@ -90,5 +92,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
         .map((p) => ({ id: p.id, name: p.name, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: overdue.has(p.id) ? 'overdue' : behind.has(p.id) ? 'behind' : 'onSchedule' })),
     });
   }
-  return { managers, teams };
+  // @spec SENIOR-GOAL-002
+  const goals = level.goals.map((g) => ({ id: g.id, ...goalStatus(g, level, sim) })).map(({ id, text, progress }) => ({ id, text, progress }));
+  return { managers, teams, goals };
 }

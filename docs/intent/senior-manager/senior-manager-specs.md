@@ -46,7 +46,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Moments
 
-- [ ] **SENIOR-MOMENT-001**: When a month begins, the senior manager level shall produce its moments for the month, up to a tuned cap, in this order: final evaluations of managers held for one; calibration, in the last month before a review; problems surfaced by skip-level listening; escalations; staffing requests; cross-team disputes; approvals; new work for the group; and restructuring.
+- [x] **SENIOR-MOMENT-001**: When a month begins, the senior manager level shall produce its moments for the month, up to a tuned cap, in this order: final evaluations of managers held for one; setting a new manager for a team whose manager was let go; calibration, in the last month before a review; problems surfaced by skip-level listening; escalations; staffing requests; cross-team disputes; approvals; new work for the group; and restructuring.
 - [x] **SENIOR-MOMENT-002**: The senior manager level shall give each moment a week of the month, a day and a time, in order through the month.
 - [x] **SENIOR-MOMENT-003**: When a team's stress or attrition risk is in the *high* band or worse, or one of its projects is behind, the senior manager level shall be able to produce an escalation from its manager, offering to coach them through it, step in and fix it yourself, or let them handle it.
 - [x] **SENIOR-MOMENT-004**: When the player steps in on an escalation, the senior manager level shall fix the problem by a tuned amount, cost the player a tuned amount of energy and leave the manager's management skill unchanged; when the player coaches, it shall fix it by a smaller tuned amount if the manager's skill is at least *developing*, raise their skill and cost less energy; when the player lets them handle it, it shall fix it only if their skill is at least *capable*.
@@ -60,32 +60,33 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Calibration
 
-- [ ] **SENIOR-CAL-001**: When the calibration moment is presented, the senior manager level shall show for each team its manager's proposed ratings, which are the ratings its delivery corresponds to raised by the manager's leniency, beside that delivery.
-- [ ] **SENIOR-CAL-002**: When the player calibrates a team, the senior manager level shall accept the proposal or move heads up or down a rating as the player chooses, apply the result with re-rate effects, and react through the manager: pleased at an accepted proposal, and losing trust by a tuned amount for each head moved below their proposal.
-- [ ] **SENIOR-CAL-003**: If a calibration moves more heads than a team holds at a rating, or names a rating not on the scale, then the senior manager level shall reject it with an error and leave the state unchanged.
-- [ ] **SENIOR-CAL-005**: When a month ends with the calibration moment unanswered, the senior manager level shall apply each manager's proposal as proposed.
-- [ ] **SENIOR-CAL-004**: When calibration applies, the senior manager level shall change each team's motivation by how far its ratings fall short of or exceed what it delivered, as tuned.
+- [x] **SENIOR-CAL-001**: When the calibration moment is presented, the senior manager level shall show for each team its manager's proposed ratings, which are the ratings its delivery corresponds to raised by the manager's leniency, beside that delivery.
+- [x] **SENIOR-CAL-002**: When the player calibrates a team, the senior manager level shall accept the proposal or move heads up or down a rating as the player chooses, apply the result with re-rate effects, and react through the manager: pleased at an accepted proposal, and losing trust by a tuned amount for each head moved below their proposal.
+- [x] **SENIOR-CAL-003**: If a calibration moves more heads than a team holds at a rating, or names a rating not on the scale, then the senior manager level shall reject it with an error and leave the state unchanged.
+- [x] **SENIOR-CAL-005**: When a month ends with the calibration moment unanswered, the senior manager level shall apply each manager's proposal as proposed.
+- [x] **SENIOR-CAL-004**: When calibration applies, the senior manager level shall change each team's motivation by how far its ratings fall short of or exceed what it delivered, as tuned.
 
 ## Managers' plans
 
-- [ ] **SENIOR-PLAN-001**: When a review period ends, the senior manager level shall rate each manager on their team's delivery and health under them in that period.
-- [ ] **SENIOR-PLAN-002**: When a manager has been rated below *meets* at two period ends in a row, the senior manager level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
-- [ ] **SENIOR-PLAN-003**: When the player lets a manager go, the senior manager level shall remove them, leave their team leaderless, and offer the next month a moment to set a new manager: promote from the team, lowering its skill, or hire from outside, leaving it leaderless one more month.
+- [x] **SENIOR-PLAN-001**: When a review period ends, the senior manager level shall rate each manager on their team's delivery and health under them in that period.
+- [x] **SENIOR-PLAN-002**: When a manager has been rated below *meets* at two period ends in a row, the senior manager level shall put them on an improvement plan, and when a third low rating would be due, hold it for a final evaluation moment, offering to let them go or give them one more period.
+- [x] **SENIOR-PLAN-003**: When the player lets a manager go, the senior manager level shall remove them, leave their team leaderless, and offer the next month a moment to set a new manager: promote from the team, lowering its skill, or hire from outside, leaving it leaderless one more month.
 
 ## Goals
 
-- [ ] **SENIOR-GOAL-001**: When a review period begins, the senior manager level shall set two or three goals for it from the group's state, drawn from: grow a named manager's management skill by a band, keep regretted attrition at zero, ship a named project by its deadline as it stood when the goal was set, and bring a named team out of the *strained* band.
-- [ ] **SENIOR-GOAL-002**: When the player's view is requested, the senior manager level shall show each goal with its progress.
+- [x] **SENIOR-GOAL-001**: When a review period begins, the senior manager level shall set two or three goals for it from the group's state, drawn from: grow a named manager's management skill by a band, keep regretted attrition at zero, ship a named project by its deadline as it stood when the goal was set, and bring a named team out of the *strained* band.
+- [x] **SENIOR-GOAL-002**: When the player's view is requested, the senior manager level shall show each goal with its progress.
+- [x] **SENIOR-GOAL-003**: When the level is assessed for a review, the senior manager level shall add each of the period's goals as a measure, scored as achieved or missed.
 
 ## Recap
 
-- [ ] **SENIOR-RECAP-001**: When a month ends, the senior manager level shall return a recap of what changed (each manager whose band changed or who gained a memory note other than from a habit, each team whose reported health changed band, heads who left or joined, and what slipped) and of the routine (what each habit did, and each goal's progress).
+- [x] **SENIOR-RECAP-001**: When a month ends, the senior manager level shall return a recap of what changed (each manager whose band changed or who gained a memory note other than from a habit, each team whose reported health changed band, heads who left or joined, and what slipped) and of the routine (what each habit did, and each goal's progress).
 
 ## Reviews and the end of the level
 
 - [x] **SENIOR-END-001**: The senior manager level shall advance the simulation four weeks per turn.
 - [x] **SENIOR-END-002**: The senior manager level shall be reviewed every six months, at months 6, 12, 18, 24, 30 and 36 of the level.
-- [ ] **SENIOR-END-003**: When the scorecard is requested, the senior manager level shall report delivery (projects across the group completed by their deadline in the period, and the share of active projects on schedule), retention and team health (regretted attrition, and the teams' average motivation and stress), managers' growth (the change in the managers' average management skill over the period, and whether each team's health held), and calibration quality (how closely the period's ratings matched what each team delivered).
+- [x] **SENIOR-END-003**: When the scorecard is requested, the senior manager level shall report delivery (projects across the group completed by their deadline in the period, and the share of active projects on schedule), retention and team health (regretted attrition, and the teams' average motivation and stress), managers' growth (the change in the managers' average management skill over the period, and whether each team's health held), and calibration quality (how closely the period's ratings matched what each team delivered).
 - [x] **SENIOR-END-004**: When the level is assessed for a review, the senior manager level shall report whether promotion is possible, which it is from the third review (month 18) on.
 - [x] **SENIOR-END-005**: When the level is assessed for a review, the senior manager level shall report that it is the level's last review at the sixth review (month 36), and not before.
 - [x] **SENIOR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of four consecutive months, then the senior manager level shall report that the player has burned out.

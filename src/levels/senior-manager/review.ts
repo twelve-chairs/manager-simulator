@@ -2,6 +2,7 @@ import { LINE_TUNING, band } from '../line-manager';
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { managerOf } from './core';
+import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
 import type { RatingCounts, SeniorState } from './types';
 
@@ -21,6 +22,11 @@ export const monthOf = (level: SeniorState, sim: SimState) => (sim.week - level.
 export function reviewDue(level: SeniorState, sim: SimState): boolean {
   const weeks = sim.week - level.startWeek;
   return weeks > 0 && weeks % PERIOD === 0;
+}
+
+/** Whether the month beginning now is the last of a review period. */
+export function periodEndsThisMonth(level: SeniorState, sim: SimState): boolean {
+  return (sim.week - level.startWeek + WEEKS) % PERIOD === 0;
 }
 
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -78,6 +84,8 @@ export interface SeniorScorecard {
   retention: { regretted: number };
   health: { motivation: number; stress: number };
   growth: { skillChange: number; healthHeld: number };
+  /** How closely the period's ratings matched what each team delivered, from 0 to 1; null when there was no calibration. */
+  calibration: number | null;
 }
 
 /** The measures the review reads, over the review period before the current week. */
@@ -101,6 +109,10 @@ export function seniorScorecard(level: SeniorState, sim: SimState): SeniorScorec
       skillChange: average(managersOf(level, sim).map((m) => sim.people[m]!.skill)) - level.periodStart.skill,
       healthHeld: level.teamIds.length ? held / level.teamIds.length : 1,
     },
+    calibration: (() => {
+      const last = level.calibrations.filter((c) => inPeriod(c.week, week)).at(-1);
+      return last ? Math.max(0, 1 - last.gap) : null;
+    })(),
   };
 }
 
@@ -109,7 +121,7 @@ export function seniorScorecard(level: SeniorState, sim: SimState): SeniorScorec
 export function assessSenior(level: SeniorState, sim: SimState): Assessment {
   const card = seniorScorecard(level, sim);
   const t = T.review;
-  const measure = (id: keyof typeof t, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
+  const measure = (id: Exclude<keyof typeof t, 'goal'>, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
   const month = monthOf(level, sim);
   return {
     measures: [
@@ -120,6 +132,9 @@ export function assessSenior(level: SeniorState, sim: SimState): Assessment {
       measure('stress', card.health.stress, 'lower'),
       measure('managerGrowth', card.growth.skillChange, 'higher'),
       measure('healthHeld', card.growth.healthHeld, 'higher'),
+      ...(card.calibration !== null ? [measure('calibrationQuality', card.calibration, 'higher')] : []),
+      // @spec SENIOR-GOAL-003
+      ...level.goals.map((g): Measure => ({ id: `goal:${g.id}`, value: goalStatus(g, level, sim).achieved ? 1 : 0, ...t.goal, better: 'higher' })),
     ],
     promotionPossible: month >= T.promotionFromMonth,
     lastReview: month >= T.lastReviewMonth,

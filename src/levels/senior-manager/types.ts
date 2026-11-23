@@ -21,7 +21,50 @@ export interface Backfill {
 /** A team's heads at each performance level. */
 export type RatingCounts = Record<'unrated' | 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding', number>;
 
-export type SeniorMomentKind = 'surfaced' | 'escalation' | 'staffing' | 'dispute' | 'approval' | 'newWork' | 'restructuring';
+export type SeniorMomentKind =
+  | 'finalEvaluation'
+  | 'replaceManager'
+  | 'calibration'
+  | 'surfaced'
+  | 'escalation'
+  | 'staffing'
+  | 'dispute'
+  | 'approval'
+  | 'newWork'
+  | 'restructuring';
+
+/** One team in the calibration moment: what it delivered, what its manager proposes, and what the player settled on. */
+export interface CalibrationEntry {
+  teamId: string;
+  managerId: string | null;
+  delivered: RatingCounts;
+  proposed: RatingCounts;
+  final: RatingCounts | null;
+}
+
+export type GoalKind = 'growManager' | 'zeroRegretted' | 'shipProject' | 'unstrainTeam';
+
+export interface SeniorGoal {
+  id: string;
+  kind: GoalKind;
+  /** The game week the goal was set. */
+  week: number;
+  managerId?: string;
+  /** For growing a manager: the skill band to reach. */
+  targetBand?: number;
+  projectId?: string;
+  /** For shipping a project: its deadline as it stood when the goal was set. */
+  deadlineWeek?: number;
+  teamId?: string;
+}
+
+/** What the player could see at a month's start, for the recap to compare against. */
+export interface MonthStart {
+  week: number;
+  managers: Record<string, { motivation: number; stress: number; skill: number }>;
+  teams: Record<string, { motivation: number; stress: number; attritionRisk: number; headcount: number }>;
+  projects: Record<string, string>;
+}
 
 /** One of the month's moments: a scene with a few choices. */
 export interface SeniorMoment {
@@ -41,6 +84,10 @@ export interface SeniorMoment {
   otherProjectId?: string;
   /** For an approval: what the manager proposes. */
   detail?: 'promote' | 'letGo';
+  /** For a final evaluation: the manager. */
+  managerId?: string;
+  /** For calibration: each team's proposal. */
+  calibration?: CalibrationEntry[];
   choices: { id: string; label: string }[];
 }
 
@@ -85,5 +132,15 @@ export interface SeniorState {
   restructured: boolean;
   /** Per team id: the week a manager hired from outside starts leading it; until then the team is leaderless. */
   arriving: Record<string, number>;
-  counters: { person: number; team: number; project: number; hire: number; moment: number };
+  /** Managers on a plan whose third low rating is held for a final evaluation. */
+  heldEvaluations: string[];
+  /** Teams whose manager was let go, to be offered a new manager next month. */
+  replacing: string[];
+  /** Each calibration's average gap, in rating steps, between the ratings settled and what the teams delivered. */
+  calibrations: { week: number; gap: number }[];
+  /** The review period's goals. */
+  goals: SeniorGoal[];
+  /** What the player could see when the month began. */
+  monthStart: MonthStart | null;
+  counters: { person: number; team: number; project: number; hire: number; moment: number; goal: number };
 }

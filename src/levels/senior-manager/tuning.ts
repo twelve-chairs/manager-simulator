@@ -72,6 +72,13 @@ export const SENIOR_TUNING = {
   /** Restructuring: the month it is offered from, and the skill a team loses when its strongest is promoted out. */
   restructureMonth: 12,
   restructureSkill: 5,
+  /** Calibration: a pleased manager's motivation, the trust each head marked below their proposal costs, and the motivation a team loses per rating step its ratings stray from its delivery. */
+  calAcceptMotivation: 3,
+  calTrustPerHead: 2,
+  calUnfairMotivation: 6,
+  /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, and the share of heads a rating either side. */
+  deliveryThresholds: [20, 35, 55, 72] as const,
+  deliverySpread: 0.2,
   /** Months before promotion is possible, and the month of the last review. */
   promotionFromMonth: 18,
   lastReviewMonth: 36,
@@ -84,5 +91,7 @@ export const SENIOR_TUNING = {
     stress: { target: 40, tolerance: 10 },
     managerGrowth: { target: 3, tolerance: 3 },
     healthHeld: { target: 0.67, tolerance: 0.2 },
+    calibrationQuality: { target: 0.8, tolerance: 0.2 },
+    goal: { target: 0.5, tolerance: 0.4 },
   },
 };

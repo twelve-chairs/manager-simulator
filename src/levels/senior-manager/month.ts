@@ -1,7 +1,11 @@
 import { band } from '../line-manager';
 import { applyEffects, attritionRiskOf, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { leadOf, managerOf, nextId, rule } from './core';
-import { periodSnapshot, remember } from './review';
+import { periodEndsThisMonth, periodSnapshot, remember } from './review';
+import { acceptRemaining, deliveredRatings, meanStep } from './calibration';
+import { setGoals } from './goals';
+import { monthRecap, snapshotMonth } from './recap';
+import { RATINGS, planOf } from '../../sim';
 import { SENIOR_TUNING } from './tuning';
 import type { Oversight, SeniorHabits, SeniorState } from './types';
 
@@ -70,12 +74,28 @@ function served(want: string, oversight: Oversight, habits: SeniorHabits, teamSt
  * move toward what the manager can sustain.
  */
 // @spec SENIOR-HABIT-004, SENIOR-HABIT-005, SENIOR-HABIT-006, SENIOR-HABIT-007, SENIOR-HABIT-008, SENIOR-DRIFT-001, SENIOR-DRIFT-002, SENIOR-DRIFT-003, SENIOR-MOMENT-011
+// @spec SENIOR-CAL-005, SENIOR-PLAN-001, SENIOR-PLAN-002, SENIOR-GOAL-001, SENIOR-RECAP-001
 export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; recap: unknown }> {
-  const s = structuredClone(level);
+  let s = structuredClone(level);
   const log: ChangeLogEntry[] = [];
   let sim = sim0;
-  // A new review period starts with this month: remember where it started from.
-  if (sim.week > s.periodStart.week && (sim.week - s.startWeek) % (T.reviewEveryMonths * T.weeksPerMonth) === 0) s.periodStart = periodSnapshot(s, sim);
+  const start = s.monthStart ?? snapshotMonth(s, sim);
+  // A new review period starts with this month: remember where it started from, and set its goals.
+  if (sim.week > s.periodStart.week && (sim.week - s.startWeek) % (T.reviewEveryMonths * T.weeksPerMonth) === 0) {
+    s.periodStart = periodSnapshot(s, sim);
+    setGoals(s, sim);
+  }
+  // Calibration left unanswered: every manager's proposal stands.
+  const calibration = s.moments.find((x) => x.kind === 'calibration' && x.status === 'open');
+  if (calibration) {
+    const r = acceptRemaining(s, sim, calibration.id);
+    if (!r.ok) return r;
+    s = r.level;
+    sim = r.sim;
+    log.push(...r.log);
+  }
+  // A final evaluation left unanswered gives the manager one more period.
+  for (const x of s.moments) if (x.kind === 'finalEvaluation' && x.status === 'open') s.heldEvaluations = s.heldEvaluations.filter((id) => id !== x.managerId);
 
   const effects: Effect[] = [];
   // Moments left unanswered are let wait.
@@ -164,6 +184,24 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     }),
     log,
   );
+  // At a period's end, each manager is rated on how their team delivered and fared under them.
+  if (periodEndsThisMonth(s, sim)) {
+    const ratings: Effect[] = [];
+    for (const t of s.teamIds) {
+      const id = leadOf(s, sim, t);
+      if (!id) continue;
+      const a = sim.teams[t]!.aggregate!;
+      const step = Math.round(meanStep(deliveredRatings(sim, t))) - (band(a.stress) >= 3 || band(a.motivation) <= 1 ? 1 : 0);
+      const rating = RATINGS[Math.max(0, Math.min(4, step))]!;
+      // A third low rating for a manager on a plan waits for the player's final evaluation.
+      if ((rating === 'below' || rating === 'partial') && planOf(sim, { kind: 'person', id }) === 'pip') {
+        if (!s.heldEvaluations.includes(id)) s.heldEvaluations.push(id);
+      } else ratings.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule('senior.managerRating') });
+    }
+    sim = apply(sim, ratings, log);
+  }
   remember(s, sim);
-  return { ok: true, level: s, sim, log, recap: {} };
+  const recap = monthRecap(s, sim, start);
+  s.monthStart = null;
+  return { ok: true, level: s, sim, log, recap };
 }

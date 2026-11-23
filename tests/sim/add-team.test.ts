@@ -57,3 +57,19 @@ describe('leaders', () => {
     expect(state.teams.t2!.leader).toEqual({ kind: 'person', id: 'e4' });
   });
 });
+
+describe('hiring a manager into an aggregate team', () => {
+  // @spec SIM-TEAM-009
+  it('adds a hired manager as the leader of a leaderless aggregate team, its headcount unchanged', () => {
+    const added = addTeam(patch(fresh(), (s) => (s.week = 20)), { team: team() }, ACTION);
+    if (!added.ok) throw new Error(added.error);
+    const { state } = expectOk(applyEffects(added.state, [{ type: 'hire', teamId: 't9', person: manager('m7'), cause: ACTION }]));
+    expect(state.teams.t9!.leader).toEqual({ kind: 'person', id: 'm7' });
+    expect(state.teams.t9!.aggregate!.headcount).toBe(5);
+    expect(state.people.m7).toMatchObject({ role: 'manager', status: 'active', teamId: 't9', performance: 'unrated', joinedWeek: 20 });
+    // an engineer hired into the same team, or a manager into a team that already has a leader, is a head
+    const led = expectOk(applyEffects(state, [{ type: 'hire', teamId: 't9', person: manager('m8'), cause: ACTION }])).state;
+    expect(led.teams.t9!.aggregate!.headcount).toBe(6);
+    expect(led.people.m8).toBeUndefined();
+  });
+});

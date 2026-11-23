@@ -1,7 +1,9 @@
 import { NAMES, band } from '../line-manager';
 import { addTeam, applyEffects, behindScheduleProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { generateManager, leadOf, nextId, randomInt, rule, unusedName } from './core';
-import { monthOf, remember } from './review';
+import { acceptRemaining, calibrationEntries } from './calibration';
+import { snapshotMonth } from './recap';
+import { monthOf, periodEndsThisMonth, remember } from './review';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorMoment, SeniorMomentKind, SeniorState } from './types';
 
@@ -10,6 +12,15 @@ type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
 type Draft = Omit<SeniorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
 
 const CHOICES: Record<SeniorMomentKind, { id: string; label: string }[]> = {
+  finalEvaluation: [
+    { id: 'letGo', label: 'Let them go' },
+    { id: 'oneMorePeriod', label: 'Give them one more period' },
+  ],
+  replaceManager: [
+    { id: 'promoteFromTeam', label: 'Promote someone from the team' },
+    { id: 'hire', label: 'Hire a manager from outside' },
+  ],
+  calibration: [{ id: 'acceptAll', label: 'Accept every proposal' }],
   surfaced: [
     { id: 'coach', label: 'Raise it with the manager and coach them through it' },
     { id: 'stepIn', label: 'Fix it yourself' },
@@ -57,13 +68,30 @@ const activeProjects = (sim: SimState, teamId: string) =>
     .sort((a, b) => b.risk - a.risk || (a.id < b.id ? -1 : 1));
 
 /** Begins a month: makes its moments from the group's state, up to the cap, in order, and sets them through the month. */
-// @spec SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009
+// @spec SENIOR-MOMENT-001, SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-PLAN-002, SENIOR-CAL-001
 export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   const s = structuredClone(level);
   for (const [t, week] of Object.entries(s.arriving)) if (week <= sim.week) delete s.arriving[t];
   const drafts: Draft[] = [];
   const health = (t: string) => sim.teams[t]!.aggregate!;
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
+
+  // Managers on a plan whose third low rating is due.
+  for (const managerId of s.heldEvaluations) {
+    const teamId = s.teamIds.find((t) => leadOf(s, sim, t) === managerId);
+    if (!teamId || sim.people[managerId]?.status !== 'active') continue;
+    const who = sim.people[managerId].name;
+    drafts.push({ kind: 'finalEvaluation', teamId, managerId, title: `Final evaluation: ${who}`, text: `${who} is on an improvement plan, and ${name(sim, teamId)} is still struggling under them. A third low rating ends the plan. It's your call.`, choices: CHOICES.finalEvaluation });
+  }
+  // Teams whose manager was let go, waiting for a new one.
+  for (const teamId of s.replacing) {
+    if (sim.teams[teamId]?.leader) continue;
+    drafts.push({ kind: 'replaceManager', teamId, title: `${name(sim, teamId)} needs a manager`, text: `${name(sim, teamId)} has had no manager since you let theirs go. Who leads it now?`, choices: CHOICES.replaceManager });
+  }
+  // Calibration, in the last month before a review.
+  if (periodEndsThisMonth(s, sim)) {
+    drafts.push({ kind: 'calibration', title: 'Calibration', text: 'Your managers bring their proposed ratings for the period. Set each team’s beside what it delivered.', calibration: calibrationEntries(s, sim), choices: CHOICES.calibration });
+  }
 
   // Problems skip-level listening surfaced last month.
   const surfaced = new Set(s.surfaced.map((x) => x.teamId));
@@ -129,6 +157,7 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
     s.counters.moment += 1;
     return { ...d, id: `sm${s.counters.moment}`, week: Math.floor(slot / 5), day: slot % 5, time: i % 2 ? 'afternoon' : 'morning', status: 'open' };
   });
+  s.monthStart = snapshotMonth(s, sim);
   return s;
 }
 
@@ -161,7 +190,7 @@ function addFourthTeam(s: SeniorState, sim: SimState, manager: ReturnType<typeof
 }
 
 /** Applies the player's choice for one of the month's open moments, and closes it. */
-// @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010
+// @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010, SENIOR-PLAN-003
 export function chooseSenior(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
   const found = level.moments.find((m) => m.id === momentId);
   if (!found || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
@@ -176,6 +205,35 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
   let next = sim;
 
   switch (moment.kind) {
+    case 'calibration': {
+      const r = acceptRemaining(level, sim, momentId);
+      if (!r.ok) return r;
+      const done = structuredClone(r.level);
+      return { ok: true, level: done, sim: r.sim, log: r.log, reaction: 'You accept every proposal. Your managers are pleased; the ratings say what they say.' };
+    }
+    case 'finalEvaluation': {
+      const id = moment.managerId!;
+      s.heldEvaluations = s.heldEvaluations.filter((x) => x !== id);
+      if (choiceId === 'letGo') {
+        // A third low rating ends the plan: the simulation lets them go, and the team waits for a new manager.
+        effects.push({ type: 'rate', target: { kind: 'person', id }, rating: 'below', cause: { kind: 'action', actionId: 'senior.finalEvaluation' } });
+        s.replacing.push(t);
+        reaction = `You let ${sim.people[id]!.name} go. ${name(sim, t)} is without a manager for now.`;
+      } else reaction = `${sim.people[id]!.name} gets one more period. They know what it means.`;
+      break;
+    }
+    case 'replaceManager': {
+      s.replacing = s.replacing.filter((x) => x !== t);
+      const promote = choiceId === 'promoteFromTeam';
+      const manager = generateManager(s, sim, promote ? { skill: randomInt(s, 20, 39) } : { skill: randomInt(s, 40, 59), trust: 50 });
+      if (promote) effects.push(team(t, 'skill', -T.restructureSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
+      effects.push({ type: 'hire', teamId: t, person: manager, cause: { kind: 'action', actionId: 'senior.replaceManager' } });
+      s.leniency[manager.id] = randomInt(s, 0, 2);
+      s.habits.oversight[manager.id] = 'coaching';
+      if (!promote) s.arriving[t] = sim.week + T.weeksPerMonth;
+      reaction = promote ? `${manager.name} steps up from inside ${name(sim, t)}.` : `${manager.name} accepts, and starts next month.`;
+      break;
+    }
     case 'surfaced':
     case 'escalation': {
       const skill = m ? band(sim.people[m]!.skill) : 0;

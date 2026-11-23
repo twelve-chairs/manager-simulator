@@ -187,7 +187,9 @@ function apply(ctx: Ctx, e: Effect) {
     }
     case 'hire': {
       const team = s.teams[e.teamId]!;
-      if (team.form === 'aggregate') return gainHeads(ctx, team, 1, 'unrated', e.cause);
+      // A manager hired to lead a leaderless aggregate team joins as a person who leads it (SIM-TEAM-009); anyone else is a head.
+      const leads = team.form === 'aggregate' && team.leader === null && e.person.role === 'manager';
+      if (team.form === 'aggregate' && !leads) return gainHeads(ctx, team, 1, 'unrated', e.cause);
       const p: Person = {
         ...e.person,
         performance: 'unrated',
@@ -201,6 +203,11 @@ function apply(ctx: Ctx, e: Effect) {
       };
       s.people[p.id] = p;
       record(ctx, e.cause, { kind: 'person', id: p.id }, 'status', undefined, 'active');
+      // @spec SIM-TEAM-009
+      if (leads) {
+        record(ctx, e.cause, { kind: 'team', id: team.id }, 'leader', null, { kind: 'person', id: p.id });
+        team.leader = { kind: 'person', id: p.id };
+      }
       return;
     }
     case 'remove':
