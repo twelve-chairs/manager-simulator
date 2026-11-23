@@ -84,8 +84,10 @@ describe('the handover to director', () => {
       const projects = Object.values(sim.projects).filter((p) => p.teamId === g);
       expect(projects).toHaveLength(2);
       for (const p of projects) {
-        expect(p.scope).toBeGreaterThanOrEqual(T.groupProjectScope[0]);
-        expect(p.scope).toBeLessThanOrEqual(T.groupProjectScope[1]);
+        const weeks = p.deadlineWeek - sim.week;
+        expect(weeks).toBeGreaterThanOrEqual(T.groupProjectDeadline[0]);
+        expect(p.scope).toBeGreaterThanOrEqual(weeks * T.groupProjectScopePerWeek[0]);
+        expect(p.scope).toBeLessThanOrEqual(weeks * T.groupProjectScopePerWeek[1]);
       }
     }
     for (const id of level.groupIds) {

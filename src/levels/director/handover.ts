@@ -151,10 +151,12 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
         id: nextId(level, 'project', 'gp', sim.projects),
         name: unusedName(level, NAMES.projects, Object.values(sim.projects).map((p) => p.name)),
         teamId: id,
-        scope: randomInt(level, T.groupProjectScope),
+        ...(() => {
+          const weeks = randomInt(level, T.groupProjectDeadline);
+          return { scope: weeks * randomInt(level, T.groupProjectScopePerWeek), deadlineWeek: sim.week + weeks };
+        })(),
         risk: randomInt(level, [10, 70]),
         techDebt: randomInt(level, [10, 50]),
-        deadlineWeek: sim.week + randomInt(level, T.groupProjectDeadline),
       };
       sim = apply(sim, [{ type: 'startProject', project, cause: HANDOVER }]);
     }

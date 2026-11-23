@@ -80,6 +80,26 @@ The measures are the line manager's, over six review slots; regretted attrition 
 
 The test suite runs 20 seeds per senior strategy within the same budget; the report command prints the senior table beside the line manager's.
 
+## The Director
+
+The director level is measured the same way, on its own. Each run starts the level directly: a line manager run from the seed is handed over to an outside hire at the senior manager, and that at once to an outside hire at the director, the same for every strategy. The run then plays through the turn loop with the real levels, review and content for up to 12 quarters (six reviews, the whole level), and a promotion completes it.
+
+A strategy sees what the player sees (the director's view: senior managers, groups as last surveyed, the executive and peers, the bets, the quarter's moments and their choices) and acts through the same commands.
+
+| Strategy | Habits | Headcount | Bets | Groups in trouble, surfaced problems | Peers' asks | Quarterly review | New senior managers, final evaluations, org design | Situations |
+|---|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets it wait (held back) | Lets them wait (none funded) | Lets them wait | Lets them wait | Lets it wait (told straight) | Lets them wait | Lets them wait |
+| **Hero** | Time upward | All to the most stretched group | Funds two, on the first groups | Takes the decision | Agrees | Promises more | Hires from outside; gives one more period; leaves the shape | Picks the first offered choice |
+| **Delegator** | Time with the organization, fortnightly staff meetings | Spreads them | Funds none | Coaches | Agrees | Leads with the wins | Promotes from the group; gives one more period; leaves the shape | Picks the first offered choice |
+| **Contrarian** | Defaults | Holds them back | Funds none | Replaces the senior manager | Refuses | Leads with the wins | Hires from outside; lets them go; leaves the shape | Picks the last offered choice |
+| **Sound practice** | Defaults (balanced time, weekly staff meetings) | Spreads them | Funds one, the offer with the least work per week to its deadline, on the group with the lowest stress | Coaches | Negotiates with a peer who trusts the player, agrees otherwise | Tells it straight | Promotes from the group; lets a senior manager on a failed plan go; splits a large group and merges a small one | Picks the situation's better choice from the better-choice table |
+
+A sixth strategy, **sound practice with a listening tour**, plays as sound practice with the quarterly listening tour, and is reported and checked against nothing.
+
+The measures are the line manager's, over six review slots; regretted attrition counts heads rated meets or above lost from the organization's groups. The checks are the senior manager's five, against thresholds in the director's own harness tuning.
+
+The test suite runs 20 seeds per director strategy within the same budget; the report command prints the director table beside the other two.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -93,12 +113,13 @@ The test suite runs 20 seeds per senior strategy within the same budget; the rep
 | Keeping choice order meaningless | Authors vary where the better choice sits, and a check fails if more than half of situations put it first, or more than half put it last | The situation engine shuffling choices with its seeded generator when it presents them | Shuffling makes position unlearnable but can put choices in an order that reads badly (an "ignore it" before the options it ignores); an authored order with a spread check keeps the reading order in the writer's hands. |
 | Where a senior run starts | A line manager run from the seed, handed over at once to an outside hire, the same for every strategy | Play each strategy's own line manager run to a promotion first; let each strategy choose the handover | Most line manager runs are not promoted, so playing up to one would measure few senior runs and mix the two levels' balance; a shared handover keeps the senior measures about how each strategy plays the senior level. |
 | Managed out as a check | A fifth check at the senior manager: sound practice's managed-out share stays low | The line manager's four checks only | Playtests showed sound practice managed out at the senior manager while every other check could pass; the check holds the level to the HLD's learnable-over-ambiguous tenet. |
+| Where a director run starts | A line manager run from the seed, handed over at once at both promotions to outside hires, the same for every strategy | Play each strategy up through both earlier levels | As at the senior manager: few runs reach the director by play, and a shared start keeps its measures about how each strategy plays this level. |
 | Choice order across levels | The spread check holds at each career level on its own | One check over every situation | A player meets one level's situations at a time; a spread that holds only across all of them could leave one level's better choices mostly first. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Strategies for higher career levels, written when those levels exist.
+1. Strategies for career levels above the director, written when those levels exist.
 2. Whether to check that sound practice wins on most individual seeds, not only on average.
 
 ## References

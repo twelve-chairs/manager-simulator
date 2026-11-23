@@ -107,6 +107,18 @@ describe('groups under their senior managers', () => {
     expect(ok(endQuarter(level, calm.state)).sim.people[lead]!.stress).toBeGreaterThan(0);
   });
 
+  // @spec DIR-DRIFT-002
+  it('counts a quarter that serves a senior manager’s want as serving it, so the simulation’s want drift does not wear them down', () => {
+    const { level, sim } = director(5);
+    const lead = leaderOf(sim, level.groupIds[1]!)!;
+    // Weekly staff meetings serve recognition; time with the organization serves growth.
+    const want = sim.people[lead]!.want;
+    const habits = { ...level.habits, staffMeeting: 'weekly' as const, time: want === 'autonomy' ? ('upward' as const) : ('organization' as const) };
+    const later = at(sim, sim.week + 20);
+    const r = ok(endQuarter({ ...level, habits }, later));
+    if (want !== 'stability') expect(r.sim.people[lead]!.wantServedWeek).toBe(later.week);
+  });
+
   // @spec DIR-DRIFT-003
   it('takes the engagement survey in the last quarter before a review, and not otherwise', () => {
     const { level, sim } = director(5);
@@ -129,6 +141,8 @@ describe('groups under their senior managers', () => {
     expect(r.level.calibrations.at(-1)!.gap).toBe(0);
     const raised = ok(endQuarter({ ...level, leniency: Object.fromEntries(Object.keys(level.leniency).map((id) => [id, 1])) }, at(sim, sim.week + 13)));
     expect(raised.level.calibrations.at(-1)!.gap).toBeGreaterThan(0);
+    // ratings above delivery cost the groups motivation
+    for (const g of level.groupIds) expect(raised.sim.teams[g]!.aggregate!.motivation).toBeLessThan(r.sim.teams[g]!.aggregate!.motivation);
   });
 });
 

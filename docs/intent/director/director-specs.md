@@ -43,7 +43,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-DRIFT-001**: When a quarter ends, the director level shall move each group's motivation and stress a tuned share of the way toward the levels its senior manager's management skill sustains, and set its attrition risk from them.
 - [x] **DIR-DRIFT-002**: When a quarter ends, the director level shall move each senior manager's motivation by whether their want was served that quarter and their stress toward their group's stress, as tuned.
 - [x] **DIR-DRIFT-003**: When the level begins, and when a quarter ends that is the last before a review, the director level shall take the engagement survey: record each group's motivation, stress and attrition risk bands and the quarter.
-- [x] **DIR-DRIFT-004**: When a review period ends, the director level shall calibrate each group's ratings without a scene: move its heads to the ratings its delivery corresponds to, then raise them by its senior manager's leniency, using re-rate effects.
+- [x] **DIR-DRIFT-004**: When a review period ends, the director level shall calibrate each group's ratings without a scene: move its heads to the ratings its delivery corresponds to, then raise them by its senior manager's leniency, using re-rate effects, and lower the group's motivation by a tuned amount for each rating step its ratings sit above what it delivered.
 
 ## Moments
 
@@ -90,7 +90,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Goals
 
-- [x] **DIR-GOAL-001**: When a review period begins, the director level shall set two or three goals for it from the organization's state, drawn from: land a named funded bet, keep regretted attrition at zero, bring a named group out of the *strained* band at the next survey, and keep a named peer's trust at *trusting* or better.
+- [x] **DIR-GOAL-001**: When a review period begins, the director level shall set two or three goals for it from the organization's state, drawn from: land a named funded bet, keep regretted attrition to at most a tuned number, bring a named group out of the *strained* band at the next survey, and keep a named peer's trust at *trusting* or better.
 - [x] **DIR-GOAL-002**: When the player's view is requested, the director level shall show each goal with its progress.
 - [x] **DIR-GOAL-003**: When the level is assessed for a review, the director level shall add each of the period's goals as a measure, scored as achieved or missed.
 
@@ -102,7 +102,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 - [x] **DIR-END-001**: The director level shall advance the simulation thirteen weeks per turn.
 - [x] **DIR-END-002**: The director level shall be reviewed every two quarters, at quarters 2, 4, 6, 8, 10 and 12 of the level.
-- [x] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), the executive's confidence (the executive's trust in the player), and calibration quality (how far the groups' ratings sit from what they delivered), each against a tuned target.
+- [x] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), and the executive's confidence (the executive's trust in the player), each against a tuned target.
 - [x] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on.
 - [x] **DIR-END-005**: When the level is assessed for a review, the director level shall report that it is the level's last review at the sixth review (quarter 12), and not before.
 - [x] **DIR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of two consecutive quarters, then the director level shall report that the player has burned out.

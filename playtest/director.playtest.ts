@@ -3,7 +3,7 @@ import { attachSummary, betterByTitle, firstSeedThatReaches, watch } from './har
 import { momentKind } from './metrics';
 
 const TRUST = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'];
-const SOUND = ['spread', 'coach', 'promote', 'letGo', 'negotiate', 'splitPromote', 'merge', 'straight'];
+const SOUND = ['spread', 'coach', 'promote', 'letGo', 'splitPromote', 'merge', 'straight'];
 
 // @spec PLAY-RUN-001, PLAY-RUN-009, UI-DIR-016
 test('a sound player promoted to director hands over by the rule and plays sound practice through the quarters', async ({ page }, testInfo) => {
@@ -28,6 +28,11 @@ test('a sound player promoted to director hands over by the rule and plays sound
   for (const { title, offered, chosen } of summary.seen.directorChoices) {
     if (momentKind(title, 'director') === 'Strategy bets') {
       expect(chosen).toBe('fund-bets');
+      continue;
+    }
+    // A peer's ask: negotiate with a trusting peer, agree otherwise; which one depends on the card, so either is sound.
+    if (momentKind(title, 'director') === 'Peer ask') {
+      expect(['negotiate', 'agree']).toContain(chosen);
       continue;
     }
     const situationBetter = momentKind(title, 'director') === null ? better[title] : undefined;

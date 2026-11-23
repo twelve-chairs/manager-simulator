@@ -460,7 +460,7 @@ function playInPage(options: InPage): PlaySummary {
   }
 
   /** Sound practice at the director, in order of preference among the choices a moment offers (PLAY-RUN-009). */
-  const DIRECTOR_SOUND = ['spread', 'coach', 'promote', 'letGo', 'negotiate', 'splitPromote', 'merge', 'straight'];
+  const DIRECTOR_SOUND = ['spread', 'coach', 'promote', 'letGo', 'splitPromote', 'merge', 'straight'];
   // @spec PLAY-RUN-009
   function directorChoice(choices: HTMLElement[], by: (pred: (id: string) => boolean) => HTMLElement | null): HTMLElement | null {
     const prefer = (order: string[]) => {
@@ -483,7 +483,15 @@ function playInPage(options: InPage): PlaySummary {
       picker.dispatchEvent(new Event('change', { bubbles: true }));
       return q('[data-action=fund-bets]');
     };
-    const sound = () => (situation ? (better ? by((x) => x === better) : null) ?? choices[0] ?? null : q('[data-scene] [data-detail=bets]') ? fundBets() : (prefer(DIRECTOR_SOUND) ?? choices[0] ?? null));
+    /** A peer's ask: negotiate with a peer whose card shows trusting or better, agree otherwise. */
+    const peerAsk = () => {
+      if (!by((x) => x === 'negotiate')) return null;
+      const name = /^(.+) needs something$/.exec(title)?.[1] ?? '';
+      const card = qa('[data-panel=upward] [data-outsider]').find((c) => text('[data-field=name]', c) === name);
+      const trust = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'].indexOf(card ? text('[data-field=trust]', card) : '');
+      return by((x) => x === (trust >= 3 ? 'negotiate' : 'agree'));
+    };
+    const sound = () => (situation ? (better ? by((x) => x === better) : null) ?? choices[0] ?? null : q('[data-scene] [data-detail=bets]') ? fundBets() : (peerAsk() ?? prefer(DIRECTOR_SOUND) ?? choices[0] ?? null));
     switch (options.strategy) {
       case 'hero':
       case 'heavyThenEase':

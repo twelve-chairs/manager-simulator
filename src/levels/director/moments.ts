@@ -58,8 +58,10 @@ function betOffers(level: DirectorState, sim: SimState): BetOffer[] {
   return Array.from({ length: randomInt(level, b.offers) }, () => ({
     id: `bo${++level.counters.bet}`,
     name: unusedName(level, NAMES.projects, Object.values(sim.projects).map((p) => p.name)),
-    scope: randomInt(level, b.scope),
-    deadlineWeeks: randomInt(level, b.deadline),
+    ...(() => {
+      const deadlineWeeks = randomInt(level, b.deadline);
+      return { deadlineWeeks, scope: deadlineWeeks * randomInt(level, b.scopePerWeek) };
+    })(),
     landing: randomInt(level, b.landing),
     failing: randomInt(level, b.failing),
     peerId: level.peerIds.length ? pick(level, level.peerIds) : null,

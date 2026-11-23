@@ -66,8 +66,6 @@ export interface DirectorScorecard {
   health: { motivation: number; stress: number };
   /** The executive's trust in the player. */
   confidence: number;
-  /** How closely the groups' ratings matched their delivery, from 0 to 1; null when no calibration fell in the period. */
-  calibration: number | null;
 }
 
 /** The measures the review reads, over the review period before the current week. */
@@ -78,13 +76,11 @@ export function directorScorecard(level: DirectorState, sim: SimState): Director
   const landed = level.betResults.filter((r) => r.landed && inPeriod(r.week, week)).length;
   const onTime = Object.entries(level.completions).filter(([id, when]) => inPeriod(when, week) && when <= (sim.projects[id]?.deadlineWeek ?? -1)).length;
   const surveyed = Object.values(level.survey.groups);
-  const last = level.calibrations.filter((c) => inPeriod(c.week, week)).at(-1);
   return {
     strategic: { betsLanded: funded ? landed / funded : null, projectsOnTime: onTime },
     retention: { regretted: level.regretted.filter((r) => inPeriod(r.week, week)).reduce((n, r) => n + r.count, 0) },
     health: { motivation: average(surveyed.map((g) => g.motivation)), stress: average(surveyed.map((g) => g.stress)) },
     confidence: sim.people[level.executiveId]?.trust ?? 0,
-    calibration: last ? Math.max(0, 1 - last.gap) : null,
   };
 }
 
@@ -103,7 +99,6 @@ export function assessDirector(level: DirectorState, sim: SimState): Assessment 
       measure('motivation', card.health.motivation, 'higher'),
       measure('stress', card.health.stress, 'lower'),
       measure('executiveConfidence', card.confidence, 'higher'),
-      ...(card.calibration !== null ? [measure('calibrationQuality', card.calibration, 'higher')] : []),
       ...level.goals.map((g): Measure => ({ id: `goal:${g.id}`, value: goalStatus(g, level, sim).achieved ? 1 : 0, ...t.goal, better: 'higher' })),
     ],
     promotionPossible: quarter >= T.promotionFromQuarter,

@@ -20,7 +20,7 @@ Four principles shape it:
 
 ## The Organization
 
-The player leads three **groups**. A group is one aggregate team in the simulation core, led by a senior manager: the teams it was made of are folded into it (see the simulation core's *Team*). Each group carries two or three projects, sized for a group: a group's project takes about as many quarters as a team's took months.
+The player leads three **groups**. A group is one aggregate team in the simulation core, led by a senior manager: the teams it was made of are folded into it (see the simulation core's *Team*). Each group carries two or three projects, sized for a group: a project's scope follows from its deadline, so a healthy group lands it near the deadline and a stretched one misses. A strategy bet is sized the same way.
 
 A senior manager is a person with the role `manager`, whose `skill` is their management skill. Like the second level's managers, each has a personality, motivation, stress, trust in the player, a want, a memory and a leniency, which now shapes the ratings their group's calibration produces.
 
@@ -56,7 +56,7 @@ The level then converts the run: the player's teams are folded into one group le
 
 Each quarter, the level moves each group's motivation and stress toward what its senior manager's management skill can sustain, as the second level does for teams, with magnitudes scaled to a quarter. Moments the player handles by coaching raise a senior manager's skill; taking a decision out of their hands solves it and teaches them nothing.
 
-Each group's ratings are calibrated by its senior manager before each review, without a scene: the group's ratings move toward what it delivered, and the senior manager's leniency shifts them up. A group whose senior manager runs lenient carries ratings above its delivery; it shows in the review's calibration measure and in the group's motivation when the next survey finds it.
+Each group's ratings are calibrated by its senior manager before each review, without a scene: the group's ratings move toward what it delivered, and the senior manager's leniency shifts them up. A group whose senior manager runs lenient carries ratings above its delivery, and its people notice: the group's motivation falls with how far its ratings stray, which the next survey finds. The review does not score calibration itself, since the player has no hand in it; a player who sees a group's motivation fall can coach or replace its senior manager.
 
 ## A Quarter's Moments
 
@@ -79,7 +79,7 @@ As at the second level: a senior manager rated low on what their group delivered
 
 ## The Period's Goals
 
-At the start of each review period, the executive sets two or three goals for it, drawn from the organization's state: land a named bet, keep regretted attrition at zero, lift a group out of the strained band at the next survey, keep a named peer's trust at *trusting* or better. Their progress shows all period, and they are scored at the review as extra measures.
+At the start of each review period, the executive sets two or three goals for it, drawn from the organization's state: land a named bet, lose no more than a tuned few of the people you would have kept, lift a group out of the strained band at the next survey, keep a named peer's trust at *trusting* or better. Their progress shows all period, and they are scored at the review as extra measures.
 
 ## The Recap
 
@@ -88,7 +88,7 @@ Each quarter ends with a recap, folded as the earlier levels' are: what changed 
 ## Scorecard, Reviews and the End of the Level
 
 - **Cadence**: a turn is a quarter of thirteen weeks. Reviews come every two quarters, after the second, fourth and so on, counting from the start of this level. The engagement survey is taken in the last quarter before each review.
-- **Scorecard**: strategic outcomes (bets landed against bets funded, and projects shipped on time); retention and health (regretted attrition, and the groups' motivation and stress as surveyed); the executive's confidence (the executive's trust in the player); and calibration quality (how closely the groups' ratings match their delivery). The period's goals are added as measures.
+- **Scorecard**: strategic outcomes (bets landed against bets funded, and projects shipped on time); retention and health (regretted attrition, and the groups' motivation and stress as surveyed); and the executive's confidence (the executive's trust in the player). The period's goals are added as measures.
 - **Promotion**: possible from the third review (quarter 6), when the performance review rates the player highly enough twice in a row.
 - **The last review**: the sixth, at quarter 12. A player not promoted there has stayed a director, and the run ends.
 - **Burnout**: two quarters in a row ending at the edge.
@@ -122,7 +122,7 @@ Committing to this level changes other segments, each walked through its own des
 | Size of the organization | Three groups, changed by splitting and merging | Four or more groups; a fixed shape | Three senior managers are few enough to know as characters, as three managers are at the second level; org design is a director's duty, so the shape should be the player's to change. |
 | Who leads the old group | The player chooses: one of their line managers, or an outside hire | Always an outside hire | Mirrors the second level's handover; growing a line manager into a senior manager is a choice with consequences the player can trace. |
 | How the organization's mood is seen | The engagement survey, twice a year; a listening tour shows one group now | Groups as their senior managers report them, as at the second level; always the true numbers | Reported numbers would repeat the second level's mechanic; a survey is how a director actually sees morale, and its lag makes listening worth its cost. |
-| Calibration | Done by the senior managers, seen in its results | A calibration scene as at the second level; an org-wide distribution the player sets | Running calibration was the second level's distinctive duty; repeating it would make this level the same thing with more people. Leniency still matters, through the review's calibration measure and the survey. |
+| Calibration | Done by the senior managers, seen in its results | A calibration scene as at the second level; an org-wide distribution the player sets | Running calibration was the second level's distinctive duty; repeating it would make this level the same thing with more people. Leniency still matters through the group's motivation, which the survey shows; the review does not score calibration, since a measure the player cannot act on teaches nothing. |
 | The executive and peers | Characters outside the organization, with trust in the player | Reputation alone; peers as names in situations | The job faces upward as much as down; trust held by people makes executive politics a matter of relationships, which situations and moments can show through people. |
 | The quarterly review presentation | A moment each quarter: straight, wins first, or promise more, with spin found out when its problem surfaces | A presentation mini-game; a fixed report | Presentations are a director's mechanic in the HLD; choosing how to tell the quarter is the decision, and delayed consequences make honesty learnable without a lecture. |
 | Headcount | Given each quarter by the executive, placed by the player | A budget set once a year; heads that arrive without a choice | A quarterly allotment ties headcount to the player's standing above and makes placing it a recurring decision. |

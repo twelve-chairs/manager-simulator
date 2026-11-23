@@ -1,9 +1,10 @@
 import { band } from '../line-manager';
 import type { SimState } from '../../sim';
 import { quarterOf } from './core';
+import { DIRECTOR_TUNING as T } from './tuning';
 import type { DirectorGoal, DirectorState } from './types';
 
-/** Sets the review period's goals from the organization's state: zero regretted attrition, and up to two more where they fit. */
+/** Sets the review period's goals from the organization's state: few regretted losses, and up to two more where they fit. */
 // @spec DIR-GOAL-001
 export function setGoals(level: DirectorState, sim: SimState) {
   const goals: Omit<DirectorGoal, 'id' | 'week'>[] = [{ kind: 'zeroRegretted' }];
@@ -22,7 +23,8 @@ export function goalStatus(goal: DirectorGoal, level: DirectorState, sim: SimSta
   switch (goal.kind) {
     case 'zeroRegretted': {
       const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
-      return { text: 'Keep everyone you would want to keep', progress: left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left', achieved: left === 0 };
+      const most = T.goalRegrettedMost;
+      return { text: `Lose no more than ${most} of the people you would want to keep`, progress: left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left', achieved: left <= most };
     }
     case 'unstrainGroup': {
       const name = sim.teams[goal.groupId!]?.name ?? 'The group';

@@ -43,7 +43,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Status
 
-**Early development, and playable from start to finish.** Three career levels run in the browser. The director is new and not yet balanced.
+**Early development, and playable from start to finish.** Three career levels run in the browser.
 
 **Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
@@ -66,7 +66,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** balancing the director, then the levels above it.
+**Next up:** written situations for the director, then the levels above it.
 
 ## Fiction, not advice
 

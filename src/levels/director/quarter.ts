@@ -216,7 +216,10 @@ export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level
     if (id) {
       const m = sim.people[id]!;
       effects.push(
-        value('person', id, 'motivation', served(m.want, s.habits, a.stress) ? T.wantServed : T.wantUnserved, 'director.drift'),
+        // A quarter that serves their want is tagged as serving it, so the simulation counts the want as served.
+        served(m.want, s.habits, a.stress)
+          ? { type: 'value', target: { kind: 'person', id }, field: 'motivation', amount: T.wantServed, cause: rule('director.drift'), wantTags: { serves: [m.want] } }
+          : value('person', id, 'motivation', T.wantUnserved, 'director.drift'),
         value('person', id, 'stress', Math.round((a.stress - m.stress) * T.seniorStressShare), 'director.drift'),
       );
     }
@@ -237,7 +240,10 @@ export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level
       const target = { unrated: 0, below: 0, partial: 0, meets: 0, exceeds: 0, outstanding: 0 };
       RATINGS.forEach((r, i) => (target[RATINGS[Math.min(4, i + lenient)]!] += delivered[r]));
       sim = apply(sim, reRates(sim, g, target), log);
-      gaps.push(Math.abs(meanStep(sim.teams[g]!.aggregate!.ratings) - meanStep(delivered)));
+      const gap = meanStep(sim.teams[g]!.aggregate!.ratings) - meanStep(delivered);
+      gaps.push(Math.abs(gap));
+      // Ratings above what the group delivered cost it motivation: its people notice.
+      if (gap > 0) sim = apply(sim, [value('team', g, 'motivation', -Math.round(gap * T.calibrationMotivation), 'director.calibration')], log);
     }
     s.calibrations.push({ week: sim.week, gap: gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0 });
 

@@ -218,7 +218,7 @@ The director level keeps the shell (header, scene, recap, review, ended) and bri
 
 **The recap** shows what changed (senior managers, a new survey's results, heads that left or joined, bets that landed, failed or slipped, and who above trusts you more or less) and folds the routine into *The whole quarter*.
 
-**The review** names the director measures: bets landed, projects shipped on time, people you'd have kept who left, the groups' motivation and stress at the survey, your executive's confidence and calibration quality; goals by their text.
+**The review** names the director measures: bets landed, projects shipped on time, people you'd have kept who left, the groups' motivation and stress at the survey, your executive's confidence and your reputation; goals by their text.
 
 **The ended screen** says why the run ended at the director level ("You stayed a director. Three years went by without the promotion.", or burned out, managed out, or completed), and the career summary adds the director's part: the quarters played, and the senior managers who joined and who were let go.
 
@@ -229,7 +229,7 @@ The director level keeps the shell (header, scene, recap, review, ended) and bri
 | The survey | You see your groups' mood as the last engagement survey measured it, twice a year. A listening tour shows one group as it is now. |
 | Bets and the review | Fund bets your groups can carry. Each quarter you tell your executive how it went; what you leave out tends to come back. |
 | Energy | Your energy falls with what you take on yourself. Two quarters in a row at the edge and you burn out. |
-| Reviews | Every two quarters your executive reviews the bets, delivery, retention, your groups' health, their confidence in you and calibration. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
+| Reviews | Every two quarters your executive reviews the bets, delivery, retention, your groups' health and their confidence in you. From your third review on, two strong reviews in a row earn a promotion. After three years without one, the run ends. |
 
 | Panel | Help line |
 |---|---|

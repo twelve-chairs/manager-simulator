@@ -102,13 +102,14 @@ describe('the recap', () => {
 
 describe('the scorecard', () => {
   // @spec DIR-END-003
-  it('reports strategic outcomes, retention and health, the executive’s confidence and calibration, each against a target', () => {
+  it('reports strategic outcomes, retention and health and the executive’s confidence, each against a target', () => {
     const { level, sim } = play(5, 2);
     const card = directorScorecard(level, sim);
     expect(card).toMatchObject({ strategic: { projectsOnTime: expect.any(Number) }, retention: { regretted: expect.any(Number) }, health: { motivation: expect.any(Number), stress: expect.any(Number) }, confidence: sim.people[level.executiveId]!.trust });
-    expect(card.calibration).not.toBeNull();
     const ids = assessDirector(level, sim).measures.map((m) => m.id);
-    for (const id of ['projectsOnTime', 'regrettedAttrition', 'motivation', 'stress', 'executiveConfidence', 'calibrationQuality']) expect(ids).toContain(id);
+    for (const id of ['projectsOnTime', 'regrettedAttrition', 'motivation', 'stress', 'executiveConfidence']) expect(ids).toContain(id);
+    // the senior managers' calibration is theirs, and not scored
+    expect(ids).not.toContain('calibrationQuality');
     for (const m of assessDirector(level, sim).measures) expect(m.tolerance).toBeGreaterThanOrEqual(0);
   });
 
