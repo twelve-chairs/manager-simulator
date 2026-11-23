@@ -75,7 +75,7 @@ The screen follows the run's phase:
 - **Team panel**, on every week screen: a card per engineer with their name, role and personality; their motivation and stress as words ("seems strained"); skill as a word; their want once a 1:1 has revealed it; and their memory, the latest notes of what happened between you, newest first. A card gives tenure as "1 week here" or "N weeks here". Below the cards, open vacancies with their interview counts ("1 interview so far"), and the team's projects with progress against scope, deadline, schedule status as words (on schedule, behind, overdue), and risk and tech debt as words.
 - **Habits panel**, on every week screen, folded away by default after the first week: each habit with a control to change it, sending a plan command at once. A habit that names an engineer offers the team's engineers by name.
 - **Review** (review phase): the outcome in plain words (continuing, promoted, staying a line manager after the last review, or being managed out), so the player knows what acknowledging will do; the rating, and the ceiling's reason when one held it down; each measure by a plain name, its value in words and its verdict in words ("above target"), with the number and target in small print beside it for players who want them (a goal is named by its text, and its value is met or missed); the score, the quarter's debriefs (each situation's title, or its id when the loaded content no longer has it, with what happened in the words the recap uses: "You dealt with it" with its debrief text, "You let it wait" with the situation's lesson for waiting when it has one, or "It passed before you got to it"), and an **Acknowledge** button.
-- **Ended**: why the run ended (burnout, managed out, stayed a line manager, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap, which is what explains a burnout, and a button to start a new run. The seed is not shown here either.
+- **Ended**: why the run ended (burnout, managed out, stayed a line manager, completed); a short **career summary** (how many weeks the run lasted, each review's rating in order, and the level's part: for the line manager, the projects shipped on time, who joined and who left and why), so a long run ends with its story rather than only its last week; the final week's recap with *The whole week* open, since that week's moments are what explain a burnout, and a button to start a new run. The seed is not shown here either.
 
 The level's renderer names its review measures and puts their values into words ("Team stress: strained", "Projects on schedule: all"), since only the level knows what each measure is.
 
@@ -95,14 +95,26 @@ After a choice applies, the UI compares the level's view before and after the co
 
 ## The Recap
 
-The recap tells the story of the week just ended, from the run's last week:
+The recap tells the story of the week just ended, from the run's last week. It shows first what changed, which the player needs before the next week, and folds away what they have already seen or can see elsewhere, so the weekend is a glance rather than a page to read.
+
+What changed, shown at once:
 
 - **Your people**: each engineer the level reports for the week (for the line manager, whose motivation or stress changed band, or who gained a memory note from a moment or situation), with what was recorded for them that week;
-- **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed");
-- **Habits**: what each habit did and any habit that fell back because its engineer left;
+- **Evaluations**: for the line manager, the engineers rated at the end of a review period;
+- **Habits that changed**: any habit that fell back because its engineer left;
 - **What slipped**: work that expired, by its kind and what it was about;
-- **New work**: a project the player's manager assigned to an idle team;
-- **Goals**: each goal's progress.
+- **Waiting for you**: for the line manager, each final evaluation held for Monday;
+- **New work**: a project the player's manager assigned to an idle team.
+
+When none of these has anything to show, the recap says "A quiet week." in their place.
+
+Below them, a disclosure, **The whole week**, closed until the player opens it, holds:
+
+- **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed"). The player read each reaction as it came;
+- **Habits**: what each habit did, which is the same routine most weeks;
+- **Goals**: each goal's progress, which the header also shows.
+
+On the ended screen the disclosure is open: the final week's moments are what explain how the run ended. On the week screen, once the player opens or closes the disclosure, that choice holds for later recaps until the page is reloaded, the same way the How to play section keeps its state. It is page state, never saved.
 
 ## Saving
 
@@ -127,7 +139,7 @@ The How to play section and the panel help lines teach the game's controls, not 
 | Habits | Habits are how you run the team every week: who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony there is, and whose growth you focus on. Change them any time. |
 | Your people | Everyone has a personality and remembers what happened between you. 1:1s build trust and reveal what each person wants; people whose wants go unserved lose motivation, and unhappy people leave. |
 | Energy | Your energy falls with the work you take on and recovers in quiet weeks, fastest in a week you take nothing on yourself. Push it to the edge for four weeks in a row and you burn out. |
-| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your fourth review on, two strong reviews in a row earn a promotion; three weak ones in a row and you're out. After three years without a promotion, the run ends. |
+| Reviews | Every 13 weeks your manager reviews delivery, retention, team health and the quarter's goals. From your third review on, two strong reviews in a row earn a promotion; three weak ones in a row and you're out. After two years without a promotion, the run ends. |
 
 | Panel | Help line |
 |---|---|
@@ -172,6 +184,7 @@ Vite builds the page (a development dependency). The build compiles the situatio
 | Level-specific screens | A renderer per career level for its panels, inside a shared shell | One generic renderer for every level | Each level is a different game with different panels; a shared shell keeps the scene, recap, reviews and endings consistent. |
 | The week on screen | One scene at a time, with the team and header around it | Every moment of the week listed at once | A list of the week's moments reads as a form to fill in; one scene at a time, with its reaction before the next, is what made the mockup feel like a game. |
 | Reactions | Shown after each choice until the player presses Continue | Shown above the next moment | Reading the reaction is the payoff of the choice; moving on at once buries it. |
+| The recap | What changed shown at once; the moments, routine habit lines and goals in a closed disclosure | Everything shown at once; a shorter recap with the folded parts removed | Shown at once, the recap was a third of each week's reading, and most of it repeated reactions the player had just read or goals the header shows. Removing those parts would lose the week's full story, which a player looking back still wants. |
 | What changed | Chips from comparing the view's bands before and after a choice, after the reaction, plus a chip for a new memory note when no band moved | Numbers changed; no chips; band chips only; a chip for every value change | The tenet puts people first, but a player learning the game needs to see that a choice landed; bands are what the view already shows. Band chips alone hid real costs, such as an engineer struggling through a night page without changing band; a chip per value change would be noise every week, and the note is the person's own account of what happened, which the tenet favours. |
 | Habits | Set before Monday in the first week, then in a panel at any time | Only in a panel | Habits are the player's main lever; meeting them first makes clear the routine is handled before the first moment arrives. |
 | Seed choice | Drawn from the browser's cryptographic random source | A fixed seed; the clock | A random seed gives a fresh run each time; the clock and `Math.random` are kept out of the game. |

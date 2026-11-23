@@ -39,6 +39,29 @@ for (const player of PLAYERS) {
   });
 }
 
+// @spec PLAY-CLOCK-001
+test('counts no words inside a closed disclosure but its summary', async ({ page }) => {
+  await startSeeded(page, SEEDS[0]!);
+  // One week: the run stops on its first recap, the last screen it read.
+  const summary = await play(page, { strategy: 'sound', seed: SEEDS[0]!, maxWeeks: 1 });
+  const reads = summary.events.filter((e) => e.kind === 'read');
+  const counts = await page.evaluate(() => {
+    // Word by word in each text node, so words in neighbouring elements are not run together.
+    const words = (root: Node) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n = 0;
+      for (let t = walker.nextNode(); t; t = walker.nextNode()) n += (t.textContent ?? '').split(/\s+/).filter(Boolean).length;
+      return n;
+    };
+    const scene = document.querySelector('[data-scene=recap]')!;
+    const whole = scene.querySelector('details[data-part=recap-whole-week]') as HTMLDetailsElement;
+    return { open: whole.open, all: words(scene), hidden: words(whole) - words(whole.querySelector('summary')!) };
+  });
+  expect(counts.open).toBe(false);
+  expect(counts.hidden).toBeGreaterThan(0);
+  expect(reads.at(-1)).toEqual({ kind: 'read', words: counts.all - counts.hidden });
+});
+
 // @spec PLAY-RUN-004
 test('the same player and seed record the same events', async ({ browser, baseURL }) => {
   const [a, b] = await Promise.all([playSeed(browser, baseURL, 'mixed', SEEDS[0]!, 26), playSeed(browser, baseURL, 'mixed', SEEDS[0]!, 26)]);

@@ -85,6 +85,9 @@ test('plays a week by mouse: a moment, its reaction, the end of the week and the
   await scene(page).locator('[data-action=finish-week]').click();
   await expect(scene(page)).toHaveAttribute('data-scene', 'recap');
   await expect(page.locator('[data-field=week]')).toHaveText('1');
+  // the week's moments are folded into The whole week, which opens on a click
+  await expect(scene(page).locator('[data-part=recap-moments] li').first()).toBeHidden();
+  await scene(page).locator('[data-part=recap-whole-week] summary').click();
   await expect(scene(page).locator('[data-part=recap-moments] li').first()).toBeVisible();
   expect(problems).toEqual([]);
 });

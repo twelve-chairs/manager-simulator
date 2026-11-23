@@ -230,23 +230,29 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
   }
 }
 
-/** The line manager's part of the recap: people, evaluations, habits, what slipped, goals. */
+/** The line manager's part of the recap: what changed (people, evaluations, what slipped...) and the routine (habits, goals). */
 // @spec UI-LINE-008
-function recap(run: Run, recapValue: unknown): Child {
+function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child } {
   const r = recapValue as Recap;
   const subject = ({ kind, id }: { kind: string; id: string }) =>
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
-  return [
-    part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
-    part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
-    part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
-    part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
-    part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
-    part('recap-held', 'Waiting for you', r.held.map((p) => h('li', { 'data-person': p.personId }, `${p.name}'s final evaluation waits for you on Monday.`))),
-    part('recap-assigned', 'New work', r.assigned.map((p) => h('li', {}, `Your manager assigned ${p.name} to the team.`))),
-    part('recap-goals', 'Goals', r.goals.map((g) => h('li', {}, g.text))),
-  ];
+  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length);
+  return {
+    changes: [
+      quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet week.') : null,
+      part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
+      part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
+      part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
+      part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
+      part('recap-held', 'Waiting for you', r.held.map((p) => h('li', { 'data-person': p.personId }, `${p.name}'s final evaluation waits for you on Monday.`))),
+      part('recap-assigned', 'New work', r.assigned.map((p) => h('li', {}, `Your manager assigned ${p.name} to the team.`))),
+    ],
+    routine: [
+      part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
+      part('recap-goals', 'Goals', r.goals.map((g) => h('li', {}, g.text))),
+    ],
+  };
 }
 
 export const lineManagerRenderer: LevelRenderer = {

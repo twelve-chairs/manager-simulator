@@ -14,7 +14,7 @@ Design: [playtest-design.md](playtest-design.md)
 The worse half of a person's bands is struggling or flat for motivation, and strained or overwhelmed for stress.
 
 
-- [x] **PLAY-CLOCK-001**: When a scene, review or ended screen is shown for the first time, the session clock shall add the time to read its words at 230 words a minute, and shall count no words from the team panel, the header, the habits panel or the habit controls shown Before Monday.
+- [x] **PLAY-CLOCK-001**: When a scene, review or ended screen is shown for the first time, the session clock shall add the time to read its words at 230 words a minute, and shall count no words from the team panel, the header, the habits panel, the habit controls shown Before Monday, or a closed disclosure other than its summary.
 - [x] **PLAY-CLOCK-002**: When a scripted player answers a moment or lets it wait, the session clock shall add 4 seconds.
 - [x] **PLAY-CLOCK-003**: When a scripted player makes any other click, the session clock shall add 1 second.
 

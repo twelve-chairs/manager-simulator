@@ -96,6 +96,10 @@ select { font: inherit; color: var(--ink); background: var(--surface); border: 1
 .memory { font-size: 0.8rem; color: var(--muted); font-style: italic; margin: 0.3rem 0 0; padding-left: 1rem; }
 details.habits, details.help { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 details summary { cursor: pointer; font-weight: 600; }
+/* The recap's The whole week: folded under what changed, so it reads as a quieter, secondary part. */
+details.whole-week { margin-top: 0.9rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
+details.whole-week summary { color: var(--accent-ink); }
+.recap .quiet { color: var(--muted); margin: 0; }
 
 /* Shared */
 table { border-collapse: collapse; width: 100%; }

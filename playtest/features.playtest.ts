@@ -81,11 +81,11 @@ test('warns that an honest evaluation of someone on a plan lets them go', async 
 });
 
 // @spec REVIEW-OUT-004, LINE-END-008, LOOP-REV-004, UI-END-001
-test('ends a steady run at the twelfth review, three years in', async ({ page }, testInfo) => {
+test('ends a steady run at the eighth review, two years in', async ({ page }, testInfo) => {
   const { seed, summary } = await firstSeedThatReaches(page, [61, 62, 63, 64, 65], { strategy: 'mixed' }, (s) => s.ending?.startsWith('You stayed') ?? false);
   await attachSummary(testInfo, `stayed-${seed}`, summary);
-  expect(summary.reviews).toHaveLength(12);
-  expect(summary.career[0]).toBe('Weeks played: 156');
+  expect(summary.reviews).toHaveLength(8);
+  expect(summary.career[0]).toBe('Weeks played: 104');
 });
 
 // @spec UI-REVIEW-001, SIT-CONTENT-026

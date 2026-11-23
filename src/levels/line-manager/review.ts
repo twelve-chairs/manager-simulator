@@ -59,7 +59,8 @@ export function scorecard(level: LineState, sim: SimState): Scorecard {
       stress: average(engineers.map((p) => p.stress)),
       oneOnOneShare: engineers.length ? hadOneOnOne / engineers.length : 0,
     },
-    promotionPossible: week >= 4 * period,
+    // @spec LINE-END-004
+    promotionPossible: week >= LINE_TUNING.promotionFromReview * period,
   };
 }
 

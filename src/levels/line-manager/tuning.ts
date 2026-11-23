@@ -17,8 +17,10 @@ export const LINE_TUNING = {
   /** Most level moments in one week, so a week stays a handful of scenes. */
   levelMomentCap: 5,
   reviewEveryWeeks: 13,
-  /** The level's last review is its twelfth: three years at a review every 13 weeks. */
-  lastReview: 12,
+  /** Promotion is possible from the third review (week 39), so a first session can reach one. */
+  promotionFromReview: 3,
+  /** The level's last review is its eighth: two years at a review every 13 weeks. */
+  lastReview: 8,
   /** Average team stress band (overwhelmed) at or above which a review's rating is capped at meets. */
   stretchedTeamBand: 4,
   /** Overwhelmed weeks in a review period beyond which the rating is capped at partial: more than half of 13. */

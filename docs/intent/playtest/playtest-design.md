@@ -29,7 +29,7 @@ Each player plays a fixed set of **eight seeds**, from a new run until the run e
 
 The **estimated session time** at any point of a run is the sum of:
 
-- **Reading.** The words of each scene, review and ended screen the first time it is shown, at **230 words a minute**. The team panel, the header and the habits panel are not counted, nor are the habit controls Before Monday shows: a player glances at them rather than reading them each time.
+- **Reading.** The words of each scene, review and ended screen the first time it is shown, at **230 words a minute**. The team panel, the header and the habits panel are not counted, nor are the habit controls Before Monday shows: a player glances at them rather than reading them each time. Nor is anything inside a closed disclosure but its summary, since the scripted players never open one.
 - **Deciding.** **4 seconds** for each moment answered or let wait.
 - **Moving on.** **1 second** for every other click (Continue, Start week, Finish the week, acknowledging a review).
 
@@ -41,7 +41,7 @@ The three constants live together in the playtest code.
 
 The HLD sets a session at 20 to 60 minutes. For each run, the scorecard records the estimated session time at the first review that promotes the player, and records "not promoted" for a run that ends without one. It reports the share of first-timer runs promoted within 60 estimated minutes, the **target share**, which is half: the HLD's metric speaks of playtesters as a group, and some first sessions go badly in any game. The target share is kept with the clock's constants.
 
-This is reported rather than checked. A review comes every 13 weeks, and a promotion needs two strong reviews in a row from the fourth review on, so the earliest promotion is at week 52, which the line manager level's pacing may put past an hour of play. The scorecard shows how far the game is from the metric; it becomes a hard check once the pacing can meet it.
+This is reported rather than checked. A promotion needs two strong reviews in a row from the third review on, so the earliest promotion is at week 39, and the share a first-timer reaches within an hour depends on pacing the scorecard is there to measure. It becomes a hard check once measured runs show the pacing meets the target share.
 
 ### Bad outcomes can be traced to earlier decisions
 

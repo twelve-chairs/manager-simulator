@@ -129,6 +129,8 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
     if (!root) return 0;
     const copy = root.cloneNode(true) as HTMLElement;
     for (const skip of copy.querySelectorAll('[data-panel=team], [data-panel=habits], [data-panel=projects], .habit, header.status')) skip.remove();
+    // A closed disclosure shows only its summary, and the scripted players never open one.
+    for (const hidden of copy.querySelectorAll('details:not([open]) > :not(summary)')) hidden.remove();
     const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
     let words = 0;
     for (let n = walker.nextNode(); n; n = walker.nextNode()) words += (n.textContent ?? '').split(/\s+/).filter(Boolean).length;

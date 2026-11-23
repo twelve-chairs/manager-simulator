@@ -101,7 +101,8 @@ export interface LevelRenderer {
   habits(ctx: ScreenContext): Child;
   moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined;
   chips(before: unknown, after: unknown): Chip[];
-  recap(run: Run, recap: unknown): Child;
+  /** The level's part of the recap: what changed, shown at once, and the routine, folded into The whole week. */
+  recap(run: Run, recap: unknown): { changes: Child; routine: Child };
   status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[]; edge?: { at: boolean; weeks: number; limit: number } };
   /** A measure's name on the review screen, when the level names it (a goal by its text). */
   measureName(view: unknown, id: string): string | undefined;
@@ -127,7 +128,7 @@ const OUTCOMES = {
   continue: 'You are continuing in your role.',
   promote: 'You are being promoted.',
   managedOut: 'You are being managed out.',
-  stayed: 'This was your last review as a line manager. Three years in, the promotion never came.',
+  stayed: 'This was your last review as a line manager. Two years in, the promotion never came.',
 } as const;
 
 const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
@@ -138,7 +139,7 @@ const DEBRIEF_STATUS = { resolved: 'You dealt with it', ignored: 'You let it wai
 const ENDINGS = {
   burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
-  stayed: 'You stayed a line manager. Three years went by without the promotion.',
+  stayed: 'You stayed a line manager. Two years went by without the promotion.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 } as const;
 
@@ -156,6 +157,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   let reaction: Reaction | null = null;
   let startedWeek0 = false;
   let closedRecapWeek: number | null = null;
+  /** Whether the player last left the recap's The whole week open; unset until they open or close it. Page state, never saved. */
+  let wholeWeekOpen: boolean | undefined;
   let focusScene = false;
   /** Forgets where the player was looking, for a run that has just begun or been loaded. */
   const resetPage = () => {
@@ -534,7 +537,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           { 'data-scene': 'recap', class: 'scene recap' },
           h('p', { class: 'where' }, 'The weekend'),
           heading(`How week ${shownWeek(run.sim.week - 1)} went`),
-          recapView(run, renderer),
+          recapView(run, renderer, wholeWeekOpen ?? false),
           h('button', { 'data-action': 'close-recap', class: 'primary', onClick: () => moveOn(() => (closedRecapWeek = run.sim.week)) }, `Start week ${shownWeek(run.sim.week)}`),
         );
       case 'reaction': {
@@ -592,17 +595,36 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     }
   }
 
-  /** The recap of the week just ended: every moment in order, then the level's part. */
-  function recapView(run: Run, renderer: LevelRenderer): Child {
+  /**
+   * The recap of the week just ended: what changed first, then The whole week, a disclosure holding every moment in
+   * order and the level's routine part, which the player has mostly seen already.
+   */
+  // @spec UI-WEEK-004, UI-WEEK-015
+  function recapView(run: Run, renderer: LevelRenderer, open: boolean): Child {
     if (!run.lastWeek) return null;
     const outcome = (m: WeekMoment) =>
       m.status === 'answered' ? (m.text ?? '') : m.status === 'waited' ? 'You let it wait.' : m.status === 'expired' ? 'It passed.' : '';
+    const part = renderer.recap(run, run.lastWeek.recap);
     return h(
       'div',
       { 'data-part': 'recap', class: 'recap' },
-      h('h3', {}, 'The week'),
-      h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m)} · ${m.title}: `), outcome(m)))),
-      renderer.recap(run, run.lastWeek.recap),
+      h('div', { 'data-part': 'recap-changes' }, part.changes),
+      h(
+        'details',
+        {
+          'data-part': 'recap-whole-week',
+          class: 'whole-week',
+          open,
+          onToggle: (e: Event) => {
+            // The ended screen always opens it; only the week screen's recap remembers the player's choice.
+            if (run.phase !== 'ended') wholeWeekOpen = (e.target as HTMLDetailsElement).open;
+          },
+        },
+        h('summary', {}, 'The whole week'),
+        h('h3', {}, 'The week'),
+        h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m)} · ${m.title}: `), outcome(m)))),
+        part.routine,
+      ),
     );
   }
 
@@ -691,7 +713,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
       h('p', { 'data-field': 'ending' }, run.ending ? ENDINGS[run.ending] : ''),
       careerSummary(run, view, renderer),
-      recapView(run, renderer),
+      // The final week's moments are what explain the ending, so The whole week is open here.
+      recapView(run, renderer, true),
       h('button', { 'data-action': 'new-run', onClick: () => {
         state = { screen: 'start', seed: options.newSeed() };
         error = null;

@@ -438,15 +438,46 @@ describe('the scene', () => {
     const { root } = makeApp({ run: r });
     expect(scene(root)).toBe('recap');
     expect(text(root, '[data-scene] .where')).toBe('The weekend');
-    expect($$(root, '[data-part=recap-moments] li').map((li) => li.dataset.moment)).toEqual(r.lastWeek!.moments.map((m) => m.id));
+    // What changed first, then the whole week folded away, then Start week.
+    const whole = $(root, '[data-part=recap-whole-week]') as HTMLDetailsElement;
+    expect(whole.tagName).toBe('DETAILS');
+    expect(whole.open).toBe(false);
+    expect(text(whole, 'summary')).toBe('The whole week');
+    const order = $$(root, '[data-part=recap-changes], [data-part=recap-whole-week], [data-action=close-recap]').map((el) => el.dataset.part ?? el.dataset.action);
+    expect(order).toEqual(['recap-changes', 'recap-whole-week', 'close-recap']);
+    expect($$(whole, '[data-part=recap-moments] li').map((li) => li.dataset.moment)).toEqual(r.lastWeek!.moments.map((m) => m.id));
     const answered = r.lastWeek!.moments.find((m) => m.status === 'answered')!;
-    expect(text(root, `[data-part=recap-moments] [data-moment="${answered.id}"]`)).toContain(answered.text!);
+    expect(text(whole, `[data-part=recap-moments] [data-moment="${answered.id}"]`)).toContain(answered.text!);
     expect(text(root, '[data-action=close-recap]')).toBe('Start week 2');
     click(root, '[data-action=close-recap]');
     expect(scene(root)).toBe('moment');
     // a reload after a moment of the new week has been played does not bring the recap back
     r = step(r, { kind: 'wait' });
     expect(scene(makeApp({ run: r }).root)).toBe('moment');
+  });
+
+  // @spec UI-WEEK-015
+  it('keeps the whole week open in later recaps once the player opens it, until the page reloads', () => {
+    const r = answerAndEnd(playing());
+    const { root } = makeApp({ run: r });
+    const whole = () => $(root, '[data-part=recap-whole-week]') as HTMLDetailsElement;
+    whole().open = true;
+    whole().dispatchEvent(new Event('toggle'));
+    click(root, '[data-action=close-recap]');
+    click(root, '[data-action=end-week]');
+    if (root.querySelector('[data-action=finish-week]')) click(root, '[data-action=finish-week]');
+    expect(scene(root)).toBe('recap');
+    expect(whole().open).toBe(true);
+    // closing it holds too
+    whole().open = false;
+    whole().dispatchEvent(new Event('toggle'));
+    click(root, '[data-action=close-recap]');
+    click(root, '[data-action=end-week]');
+    if (root.querySelector('[data-action=finish-week]')) click(root, '[data-action=finish-week]');
+    expect(whole().open).toBe(false);
+    // a page load starts closed again: the choice is page state, not part of the run
+    const reopened = makeApp({ run: answerAndEnd(playing()) }).root;
+    expect(($(reopened, '[data-part=recap-whole-week]') as HTMLDetailsElement).open).toBe(false);
   });
 
   // @spec UI-WEEK-009
@@ -560,14 +591,23 @@ describe('line manager panels', () => {
   });
 
   // @spec UI-LINE-008
-  it('adds the level’s part to the recap: people, habits, what slipped and goals', () => {
+  it('adds the level’s part to the recap: what changed at once, habits and goals in the whole week', () => {
     const r = answerAndEnd(playing());
     const recap = r.lastWeek!.recap as { habits: string[]; people: { personId: string }[]; expired: { itemId: string }[]; goals: { id: string; text: string }[] };
     const { root } = makeApp({ run: r });
-    expect($$(root, '[data-part=recap-people] li').map((li) => li.dataset.person)).toEqual(recap.people.map((p) => p.personId));
-    expect($$(root, '[data-part=recap-habits] li').map((li) => li.textContent)).toEqual(recap.habits);
-    expect($$(root, '[data-part=recap-slipped] li')).toHaveLength(recap.expired.length);
-    expect($$(root, '[data-part=recap-goals] li').map((li) => li.textContent)).toEqual(recap.goals.map((g) => g.text));
+    const changes = $(root, '[data-part=recap-changes]');
+    const whole = $(root, '[data-part=recap-whole-week]');
+    for (const part of ['recap-people', 'recap-evaluations', 'recap-habit-changes', 'recap-slipped', 'recap-held', 'recap-assigned']) expect(changes.querySelector(`[data-part=${part}]`), part).not.toBeNull();
+    for (const part of ['recap-habits', 'recap-goals']) expect(whole.querySelector(`[data-part=${part}]`), part).not.toBeNull();
+    expect($$(changes, '[data-part=recap-people] li').map((li) => li.dataset.person)).toEqual(recap.people.map((p) => p.personId));
+    expect($$(whole, '[data-part=recap-habits] li').map((li) => li.textContent)).toEqual(recap.habits);
+    expect($$(changes, '[data-part=recap-slipped] li')).toHaveLength(recap.expired.length);
+    expect($$(whole, '[data-part=recap-goals] li').map((li) => li.textContent)).toEqual(recap.goals.map((g) => g.text));
+    // A week where nothing changed says so, in place of the empty parts.
+    const quiet = structuredClone(r);
+    Object.assign(quiet.lastWeek!.recap as object, { people: [], evaluations: [], habitChanges: [], expired: [], held: [], assigned: [] });
+    expect(text(makeApp({ run: quiet }).root, '[data-part=recap-changes] [data-part=recap-quiet]')).toBe('A quiet week.');
+    if (recap.people.length) expect(root.querySelector('[data-part=recap-quiet]')).toBeNull();
     // a project the player's manager assigned to an idle team
     const assigned = structuredClone(r);
     (assigned.lastWeek!.recap as { assigned: { projectId: string; name: string }[] }).assigned = [{ projectId: 'p9', name: 'Ledger sync' }];
@@ -716,6 +756,8 @@ describe('review and end', () => {
     const ended = { ...last, phase: 'ended' as const, ending: 'burnout' as const };
     const { root, app } = makeApp({ run: ended, seeds: [7] });
     expect(text(root, '[data-field=ending]')).toMatch(/burn/i);
+    // the final week's moments are what explain the ending, so the whole week is open here
+    expect(($(root, '[data-part=recap-whole-week]') as HTMLDetailsElement).open).toBe(true);
     expect($$(root, '[data-part=recap-moments] li')).toHaveLength(last.lastWeek!.moments.length);
     click(root, '[data-action=new-run]');
     expect($(root, '[data-screen]').dataset.screen).toBe('start');

@@ -16,7 +16,7 @@ const RUNS: { strategy: Strategy; seed: number }[] = [
 const ENDINGS = {
   burnout: 'You burned out. Four weeks at the edge was too long.',
   managedOut: 'You were managed out after failing your improvement plan.',
-  stayed: 'You stayed a line manager. Three years went by without the promotion.',
+  stayed: 'You stayed a line manager. Two years went by without the promotion.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 };
 
@@ -37,11 +37,11 @@ for (const { strategy, seed } of RUNS) {
     // An ending matches the run that led to it.
     const last = summary.reviews.at(-1);
     if (summary.ending === ENDINGS.stayed) {
-      expect(last?.week).toBe('Week 156 review');
+      expect(last?.week).toBe('Week 104 review');
       expect(last?.outcome).toMatch(/last review as a line manager/);
     }
     if (summary.ending === ENDINGS.completed) expect(summary.reviews.slice(-2).every((r) => ['exceeds', 'outstanding'].includes(r.rating))).toBe(true);
     if (summary.ending === ENDINGS.managedOut) expect(summary.reviews.slice(-3).every((r) => ['partial', 'below'].includes(r.rating))).toBe(true);
-    expect(summary.weeks).toBeLessThanOrEqual(156);
+    expect(summary.weeks).toBeLessThanOrEqual(104);
   });
 }

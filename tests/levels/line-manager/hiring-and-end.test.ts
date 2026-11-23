@@ -124,10 +124,11 @@ describe('scorecard', () => {
   });
 
   // @spec LINE-END-004
-  it('allows promotion from week 52', () => {
+  it('allows promotion from week 39, the third review', () => {
     const { level, sim } = run(1);
-    expect(assess(level, patch(sim, (s) => (s.week = 51))).promotionPossible).toBe(false);
-    expect(assess(level, patch(sim, (s) => (s.week = 52))).promotionPossible).toBe(true);
+    expect(assess(level, patch(sim, (s) => (s.week = 26))).promotionPossible).toBe(false);
+    expect(assess(level, patch(sim, (s) => (s.week = 38))).promotionPossible).toBe(false);
+    expect(assess(level, patch(sim, (s) => (s.week = 39))).promotionPossible).toBe(true);
   });
 
   // @spec LINE-END-013
@@ -193,10 +194,10 @@ describe('scorecard', () => {
   });
 
   // @spec LINE-END-008
-  it('says the review at week 156, the twelfth, is the level’s last', () => {
+  it('says the review at week 104, the eighth, is the level’s last', () => {
     const { level, sim } = run(1);
-    expect(assess(level, patch(sim, (s) => (s.week = 143))).lastReview).toBe(false);
-    expect(assess(level, patch(sim, (s) => (s.week = 156))).lastReview).toBe(true);
+    expect(assess(level, patch(sim, (s) => (s.week = 91))).lastReview).toBe(false);
+    expect(assess(level, patch(sim, (s) => (s.week = 104))).lastReview).toBe(true);
   });
 
   // @spec LINE-END-009
