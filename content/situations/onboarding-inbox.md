@@ -27,4 +27,4 @@ choices:
         debrief: "Work you let wait keeps counting down, and past its last week it causes trouble. A night page is due the night it arrives."
 ---
 
-Your manager catches you after a design review you did yourself. "You can't do every piece of work that lands on the team, and you shouldn't try. *Give* work to someone who can grow into it, do what only you can, and decide what can wait."
+Your manager catches you after your first week. "You can't do every piece of work that lands on the team, and you shouldn't try. *Give* work to someone who can grow into it, do what only you can, and decide what can wait."

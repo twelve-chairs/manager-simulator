@@ -11,8 +11,13 @@ roles:
   - name: newcomer
     kind: person
     where:
-      value: newcomer.tenureWeeks
-      atMost: 4
+      all:
+        - value: newcomer.tenureWeeks
+          atMost: 4
+        # Once onboarded, either way, a newcomer is no longer new.
+        - history: newcomer
+          situation: new-starter
+          is: 0
   - name: buddy
     kind: person
     where:
@@ -28,6 +33,7 @@ choices:
             target: newcomer
             field: motivation
             amount: -4
+            historyNote: Pointed at the wiki on arrival
           - type: value
             target: newcomer
             field: stress
@@ -62,4 +68,4 @@ choices:
         debrief: "A named buddy is the cheapest onboarding there is; it costs the buddy a little time and pays back for months."
 ---
 
-{newcomer} started this week. Their laptop works; their calendar is empty.
+{newcomer} is new on the team. Their laptop works; their calendar is empty.

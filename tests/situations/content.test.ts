@@ -10,7 +10,7 @@ import type { Rating } from '../../src/sim';
 import { realContent } from '../balance/harness';
 import { patch } from '../sim/fixtures';
 import { PERSONALITIES } from '../../src/personalities';
-import { rejectionOf, sit, valid } from './fixtures';
+import { engine, expectResolved, fresh, presentOne, rejectionOf, resolve, select, sit, valid } from './fixtures';
 
 const FILE = `---
 id: quiet-1on1
@@ -443,6 +443,31 @@ describe('notes from ratings', () => {
     for (const { where, e } of rated) {
       const r = e as { rating: string; historyNote: string };
       expect({ where, note: r.historyNote.includes(words[r.rating]!) }).toEqual({ where, note: true });
+    }
+  });
+});
+
+describe('written situations', () => {
+  const written = (id: string) => {
+    const path = join(import.meta.dirname, `../../content/situations/${id}.md`);
+    const result = compileSituations([{ path, text: readFileSync(path, 'utf8') }]);
+    if (!result.ok) throw new Error(result.errors.map((e) => e.message).join('\n'));
+    return result.bundle[0]!;
+  };
+
+  // @spec SIT-COND-008
+  it('offers a new starter’s onboarding once, whichever way it went', () => {
+    const newStarter = written('new-starter');
+    for (const choice of ['docs', 'buddy-up']) {
+      let sim = patch(fresh(), (s) => {
+        s.week = 10;
+        s.people.e1!.joinedWeek = 9;
+      });
+      const { engine: after, presentation } = presentOne(engine(), sim, newStarter);
+      expect(presentation.bindings.newcomer).toBe('e1');
+      sim = expectResolved(resolve(after, sim, [newStarter], presentation, choice)).sim;
+      sim = patch(sim, (s) => (s.week = 12));
+      expect(select(after, sim, [newStarter]).presented, `after ${choice}`).toEqual([]);
     }
   });
 });
