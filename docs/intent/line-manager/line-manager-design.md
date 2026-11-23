@@ -107,6 +107,7 @@ At the end of each week the level reports its part of the week, for the turn loo
 
 - what each habit did ("Carmen signed four approvals", "You took two night pages");
 - how each work moment went, and what expired;
+- each project that shipped, and whether it made its deadline ("Report builder shipped on time.", "Report builder shipped 2 weeks late."): a finished project leaves the projects panel, and without this line the player cannot tell it shipped. A project completes while the simulation advances, after the rest of the recap is reported, so the recap's view asks the level which projects completed in the week just played;
 - who changed, in words, with the causes the simulation recorded ("Dario seems flat: no 1:1 in three weeks");
 - the goals' progress.
 

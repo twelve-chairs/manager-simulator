@@ -188,6 +188,16 @@ describe('the senior manager renderer', () => {
     const q = document.createElement('div');
     for (const c of [quiet.changes].flat(3)) if (c instanceof Node) q.append(c);
     expect(text(q, '[data-part=recap-quiet]')).toBe('A quiet month.');
+    // a project that shipped in the month just played, with its team
+    const shipped = structuredClone(run);
+    const p = Object.values(shipped.sim.projects).find((x) => level(shipped).teamIds.includes(x.teamId) && x.status === 'active')!;
+    Object.assign(p, { status: 'completed', deadlineWeek: shipped.sim.week - 4 });
+    level(shipped).completions[p.id] = shipped.sim.week - 4;
+    const withShipped = seniorManagerRenderer.recap(shipped, { changes: { managers: [], teams: [], heads: [], slipped: [] }, routine: { habits: [], goals: [] } });
+    const s = document.createElement('div');
+    for (const c of [withShipped.changes].flat(3)) if (c instanceof Node) s.append(c);
+    expect(text(s, '[data-part=recap-shipped] li')).toBe(`${p.name} shipped on time (${shipped.sim.teams[p.teamId]!.name}).`);
+    expect(s.querySelector('[data-part=recap-quiet]')).toBeNull();
     // and the shell titles the disclosure for a month
     const later = endWeeks(run, 1, both('continue'));
     const { root } = makeApp({ run: later, deps: both('continue') });

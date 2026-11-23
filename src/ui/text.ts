@@ -22,3 +22,6 @@ export function emphasis(text: string): Node[] {
   nodes.push(document.createTextNode(text.slice(last)));
   return nodes.filter((n) => n.nodeType !== Node.TEXT_NODE || n.textContent !== '');
 }
+
+/** How a project shipped against its deadline: "on time", "1 week late", "3 weeks late". */
+export const lateness = (weeks: number): string => (weeks <= 0 ? 'on time' : `${weeks} ${weeks === 1 ? 'week' : 'weeks'} late`);

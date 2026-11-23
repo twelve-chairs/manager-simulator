@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, scorecard, view, type Goal, type LineState } from '../../../src/levels/line-manager';
+import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
 import { behindScheduleProjects, correspondingRating, overdueProjects, type SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
@@ -537,5 +537,27 @@ describe('final evaluations', () => {
   it('puts a final evaluation first among the week’s moments', () => {
     const { begun } = heldMoment();
     expect(begun.moments[0]!.kind).toBe('finalEvaluation');
+  });
+});
+
+describe('shipped projects', () => {
+  // @spec LINE-RECAP-003
+  it('reports the projects completed in the week just played, and how late', () => {
+    const { level, sim } = run(1);
+    const [a, b] = projects(sim).map((id) => sim.projects[id]!);
+    const done = patch(sim, (s) => {
+      s.week = 10;
+      Object.assign(s.projects[a!.id]!, { status: 'completed', deadlineWeek: 9 });
+      Object.assign(s.projects[b!.id]!, { status: 'completed', deadlineWeek: 6 });
+    });
+    const after = afterAdvance(level, done).level;
+    expect(shippedLastWeek(after, done)).toEqual(
+      [
+        { projectId: a!.id, name: a!.name, weeksLate: 0 },
+        { projectId: b!.id, name: b!.name, weeksLate: 3 },
+      ].sort((x, y) => (x.projectId < y.projectId ? -1 : 1)),
+    );
+    const nextWeek = patch(done, (s) => (s.week = 11));
+    expect(shippedLastWeek(afterAdvance(after, nextWeek).level, nextWeek)).toEqual([]);
   });
 });

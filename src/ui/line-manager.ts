@@ -1,8 +1,9 @@
-import { RATING_WORDS, WORK_LABELS, band, type Habits, type HabitId, type Recap, type View } from '../levels/line-manager';
+import { RATING_WORDS, WORK_LABELS, band, shippedLastWeek, type Habits, type HabitId, type LineState, type Recap, type View } from '../levels/line-manager';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_TOPICS, PANEL_HELP } from './help';
+import { lateness } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** Each habit's name, what it does, and its settings' labels; engineer-naming habits list the team after the first. */
@@ -234,13 +235,15 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
 // @spec UI-LINE-008
 function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child } {
   const r = recapValue as Recap;
+  const shipped = shippedLastWeek(run.level as LineState, run.sim);
   const subject = ({ kind, id }: { kind: string; id: string }) =>
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
-  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length);
+  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet week.') : null,
+      part('recap-shipped', 'Shipped', shipped.map((p) => h('li', {}, `${p.name} shipped ${lateness(p.weeksLate)}.`))),
       part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
       part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
       part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SENIOR_TUNING, afterAdvanceSenior, endMonth, setSeniorHabit, type SeniorState } from '../../../src/levels/senior-manager';
+import { SENIOR_TUNING, afterAdvanceSenior, endMonth, setSeniorHabit, shippedLastMonth, type SeniorState } from '../../../src/levels/senior-manager';
 import { remember } from '../../../src/levels/senior-manager/review';
 import type { SimState } from '../../../src/sim';
 import { senior } from './fixtures';
@@ -249,5 +249,29 @@ describe('burnout', () => {
     }
     expect(out).toEqual([false, false, false, true]);
     expect(afterAdvanceSenior({ ...l, burnoutMonths: 2 }, edit(sim, (s) => (s.player.stress = 40))).level.burnoutMonths).toBe(0);
+  });
+});
+
+describe('shipped projects', () => {
+  // @spec SENIOR-RECAP-002
+  it('reports the projects of the player’s teams completed in the month just played, with their team, and how late', () => {
+    const { level, sim } = senior(2);
+    const mine = Object.values(sim.projects).filter((p) => level.teamIds.includes(p.teamId) && p.status === 'active');
+    const [a, b] = mine;
+    const end = sim.week + 4;
+    const done = edit(sim, (s) => {
+      s.week = end;
+      Object.assign(s.projects[a!.id]!, { status: 'completed', deadlineWeek: end - 1 });
+      Object.assign(s.projects[b!.id]!, { status: 'completed', deadlineWeek: end - 4 - 2 });
+    });
+    const after = afterAdvanceSenior(level, done).level;
+    const shipped = shippedLastMonth(after, done);
+    expect(shipped).toHaveLength(2);
+    expect(shipped).toEqual(expect.arrayContaining([
+      { projectId: a!.id, name: a!.name, team: sim.teams[a!.teamId]!.name, weeksLate: 0 },
+      { projectId: b!.id, name: b!.name, team: sim.teams[b!.teamId]!.name, weeksLate: 2 },
+    ]));
+    const later = edit(done, (s) => (s.week = end + 4));
+    expect(shippedLastMonth(afterAdvanceSenior(after, later).level, later)).toEqual([]);
   });
 });

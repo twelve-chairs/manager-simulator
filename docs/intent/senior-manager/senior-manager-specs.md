@@ -83,6 +83,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 ## Recap
 
 - [x] **SENIOR-RECAP-001**: When a month ends, the senior manager level shall return a recap of what changed (each manager whose band changed or who gained a memory note other than from a habit, each team whose reported health changed band, heads who left or joined, and what slipped) and of the routine (what each habit did, and each goal's progress).
+- [x] **SENIOR-RECAP-002**: When asked after an advance which projects shipped in the month just played, the senior manager level shall report each project of the player's teams completed in that month, with its team and how many weeks after its deadline it was completed, or none when it was completed by its deadline.
 
 ## Reviews and the end of the level
 

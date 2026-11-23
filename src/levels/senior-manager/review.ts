@@ -53,6 +53,19 @@ export function remember(level: SeniorState, sim: SimState) {
   }
 }
 
+/** The player's teams' projects completed in the month just played, with their team and how many weeks after their deadlines. */
+// @spec SENIOR-RECAP-002
+export function shippedLastMonth(level: SeniorState, sim: SimState): { projectId: string; name: string; team: string; weeksLate: number }[] {
+  const played = sim.week - WEEKS;
+  return Object.entries(level.completions)
+    .filter(([id, when]) => when === played && sim.projects[id])
+    .map(([id, when]) => {
+      const p = sim.projects[id]!;
+      return { projectId: id, name: p.name, team: sim.teams[p.teamId]?.name ?? p.teamId, weeksLate: Math.max(0, when - p.deadlineWeek) };
+    })
+    .sort((a, b) => (a.projectId < b.projectId ? -1 : a.projectId > b.projectId ? 1 : 0));
+}
+
 /** Records completions and heads lost to attrition, and tracks burnout, after the simulation advances a month. */
 // @spec SENIOR-END-006
 export function afterAdvanceSenior(level: SeniorState, sim: SimState): { level: SeniorState; burnedOut: boolean } {

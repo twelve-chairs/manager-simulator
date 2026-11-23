@@ -615,6 +615,20 @@ describe('line manager panels', () => {
     const held = structuredClone(r);
     (held.lastWeek!.recap as { held: { personId: string; name: string }[] }).held = [{ personId: 'e1', name: 'Wen Albrecht' }];
     expect(text(makeApp({ run: held }).root, '[data-part=recap-held] li')).toBe("Wen Albrecht's final evaluation waits for you on Monday.");
+    // projects that shipped in the week just played, from the level after the advance
+    const shipped = structuredClone(quiet);
+    const lineLevel = shipped.level as { completions: Record<string, number> };
+    const [p, q] = Object.values(shipped.sim.projects).filter((x) => x.status === 'active');
+    for (const [project, deadline] of [[p!, shipped.sim.week - 1], [q!, shipped.sim.week - 4]] as const) {
+      project.status = 'completed';
+      project.deadlineWeek = deadline;
+      lineLevel.completions[project.id] = shipped.sim.week - 1;
+    }
+    const shippedRoot = makeApp({ run: shipped }).root;
+    expect($$(shippedRoot, '[data-part=recap-shipped] li').map((li) => li.textContent).sort()).toEqual([`${p!.name} shipped on time.`, `${q!.name} shipped 3 weeks late.`].sort());
+    expect(shippedRoot.querySelector('[data-part=recap-quiet]')).toBeNull();
+    q!.deadlineWeek = shipped.sim.week - 2;
+    expect($$(makeApp({ run: shipped }).root, '[data-part=recap-shipped] li').map((li) => li.textContent)).toContain(`${q!.name} shipped 1 week late.`);
   });
 });
 

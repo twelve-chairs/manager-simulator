@@ -100,6 +100,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 
 - [x] **LINE-RECAP-001**: When a week's end applies, the line manager level shall report what each habit did, how each level moment was answered and what it led to, which work items expired, and the period's goal progress.
 - [x] **LINE-RECAP-002**: When a week's end applies, the line manager level shall report each engineer whose motivation or stress band changed that week, or who gained a history note that week whose cause is neither a habit nor the end-of-period evaluation, with each distinct note recorded for them that week once, leaving out the evaluation's note, which the recap's evaluations list carries, and how many times it was recorded when more than once.
+- [x] **LINE-RECAP-003**: When asked after an advance which projects shipped in the week just played, the line manager level shall report each of the team's projects completed in that week, with how many weeks after its deadline it was completed, or none when it was completed by its deadline.
 
 ## Reviews and the end of the level
 

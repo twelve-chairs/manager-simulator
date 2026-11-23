@@ -21,6 +21,16 @@ export function afterAdvance(level: LineState, sim: SimState): { level: LineStat
   return { level: s, burnedOut: s.burnoutWeeks >= LINE_TUNING.burnoutWeeks };
 }
 
+/** The team's projects completed in the week just played, and how many weeks after their deadlines. */
+// @spec LINE-RECAP-003
+export function shippedLastWeek(level: LineState, sim: SimState): { projectId: string; name: string; weeksLate: number }[] {
+  const played = sim.week - LEVEL.weeksPerStep;
+  return Object.entries(level.completions)
+    .filter(([id, when]) => when === played && sim.projects[id])
+    .map(([id, when]) => ({ projectId: id, name: sim.projects[id]!.name, weeksLate: Math.max(0, when - sim.projects[id]!.deadlineWeek) }))
+    .sort((a, b) => compareCodeUnits(a.projectId, b.projectId));
+}
+
 /** Whether a week falls in the `weeks` weeks before `week`. */
 const before = (when: number, week: number, weeks: number) => when >= week - weeks && when < week;
 
