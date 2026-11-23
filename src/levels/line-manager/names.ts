@@ -13,4 +13,9 @@ export const NAMES = {
     'Data export', 'Rate limiter', 'Settings redesign', 'Notification service', 'Report builder',
     'Feature flags', 'Inventory sync',
   ],
+  /** Fictional customer companies, for customer requests. */
+  customers: [
+    'Halden Freight', 'Corvel Health', 'Brightmoor Retail', 'Ostrava Bank', 'Pellucid Media', 'Tamsin Travel',
+    'Quillfield Insurance', 'Norrland Energy',
+  ],
 } as const;

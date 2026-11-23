@@ -148,10 +148,14 @@ function soundChoice(seen: Seen, m: Moment): string {
     return asked ? `ask:${asked.id}` : 'skip';
   }
   if (isIntake(m)) return view.projects.length < 2 && rested ? 'take' : 'decline';
+  // Debt the design review's text calls elevated or worse is worth slowing down for; the text is what the player reads.
+  if (has(m, 'payDown') && /tech debt is (elevated|high|severe)/.test(m.text)) return 'payDown';
   const givable = offered(seen, m, 'give:');
   const able = givable.find((p) => (m.difficulty === undefined || p.skill >= m.difficulty) && p.stress <= OKAY);
   if (able) return `give:${able.id}`;
   if (rested) return 'self';
+  // Tired, with no one able: the customer can take part of what they asked.
+  if (has(m, 'smaller')) return 'smaller';
   // Tired, with no one able: a stretch for someone with room lands part of the consequence; pushing back lands all of it.
   const stretch = givable.find((p) => p.stress <= OKAY);
   return stretch ? `give:${stretch.id}` : 'pushBack';

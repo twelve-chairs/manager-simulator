@@ -72,6 +72,8 @@ const BY_PERSONALITY = { give: GIVE, stretch: STRETCH, ask: ASK_INTERVIEW, backU
 const PLAIN = {
   self: 'You clear the time and do the {thing} yourself. It’s done properly, and it’s done by you.',
   pushBack: 'You push back on the {thing}. It’ll still be there next week.',
+  payDown: 'The team takes the time to fix the code the design builds on. {thing} slips a few days, and the next change there will be easier.',
+  smaller: 'You offer the customer part of what they asked for, sooner. They take it, a little grudgingly.',
   take: 'You take on the new work. The team gets a new project, and you get a fuller week.',
   decline: 'You decline the new work. The person asking is disappointed, but understands.',
   interview: 'You interview the candidate yourself. An hour well spent, and an hour gone.',

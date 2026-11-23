@@ -2,7 +2,7 @@ import { callBack } from './callbacks';
 import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type Rating, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
 import { reaction } from './reactions';
-import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL } from './tuning';
+import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL, PAY_DOWN, SMALLER_CHANGE } from './tuning';
 import { FELL_SHORT, WORK_LABELS, consequence, workChoices } from './work';
 import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, WorkItem } from './types';
 
@@ -115,7 +115,7 @@ export function addMoments(s: LineState, sim: SimState) {
 const resolve = (s: LineState, item: WorkItem) => (s.items = s.items.filter((i) => i.id !== item.id));
 
 /** Applies one choice for an open level moment at once and closes the moment. */
-// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005
+// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-011, LINE-INBOX-012
 // @spec LINE-HIRE-003, LINE-HIRE-004, LINE-CHECK-003, LINE-CHECK-004, LINE-CHECK-005, LINE-CHECK-006
 export function chooseMoment(level: LineState, sim: SimState, momentId: string, choiceId: string): LevelResult<ChoiceResult> {
@@ -215,6 +215,19 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
     } else if (choiceId === 'self') {
       effects.push(playerEffect('stress', Math.round(item.size * LINE_TUNING.work.selfStressPerSize), action(DO_IT_YOURSELF)));
       text = reaction('self', thing);
+      resolve(s, item);
+    } else if (choiceId === 'payDown' && item.subject.kind === 'project') {
+      const P = LINE_TUNING.payDown;
+      const p = sim.projects[item.subject.id]!;
+      // The slip is at most what is done, so progress never goes below zero.
+      const slip = Math.min(P.progress, Math.floor(p.progress));
+      if (slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(PAY_DOWN)));
+      effects.push(projectEffect(p.id, 'techDebt', -P.techDebt, action(PAY_DOWN)), playerEffect('stress', P.stress, action(PAY_DOWN)));
+      text = reaction('payDown', p.name);
+      resolve(s, item);
+    } else if (choiceId === 'smaller') {
+      effects.push(playerEffect('reputation', -LINE_TUNING.smallerChange.reputation, action(SMALLER_CHANGE)));
+      text = reaction('smaller', thing);
       resolve(s, item);
     } else if (choiceId === 'take') {
       const started = generateProject(s, projectNames(sim), s.teamId, sim.week, calmRisk(s));

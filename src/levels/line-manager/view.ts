@@ -2,12 +2,29 @@ import { behindScheduleProjects, overdueProjects, type HistoryEntry, type SimSta
 import { band, isEngineer, nameOf, teamEngineers, teamProjects } from './core';
 import { goalStatus } from './goals';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
-import { WORK_LABELS } from './work';
-import type { LevelMoment, LineState, View } from './types';
+import { NAMES } from './names';
+import { WORK_LABELS, itemNumber } from './work';
+import type { LevelMoment, LineState, View, WorkItem } from './types';
 
 export { band };
 
 const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
+
+/** Tech debt bands in the words the UI shows for them (UI-BAND-001), for the text of a design review. */
+const DEBT_WORDS = ['low', 'moderate', 'elevated', 'high', 'severe'] as const;
+
+/** Phrasings for routine work, picked by the item's number so the same week reads the same on replay. */
+const DESIGN_REVIEW = [
+  '{project} needs a design reviewed before the team builds on it. Its tech debt is {debt}, and if nobody reviews the design in time, the debt rises.',
+  'A design for {project} is waiting for review. Its tech debt is {debt}, and if the team builds on an unreviewed design, the debt rises.',
+  'The next part of {project} rests on a design nobody has checked yet. The project’s tech debt is {debt}, and if the review never happens, the debt rises.',
+];
+const CUSTOMER_REQUEST = [
+  '{customer} is asking for a change to {project}. If nobody answers in time, your reputation slips.',
+  '{customer} wants {project} to work differently for them, and soon. Leave them waiting and your reputation slips.',
+  'A request from {customer} about {project} has reached your team. If it goes unanswered, your reputation slips.',
+];
+const pick = (phrasings: readonly string[], item: WorkItem) => phrasings[itemNumber(item) % phrasings.length]!;
 
 /** The history an engineer remembers: entries with a note, leaving out a habit's routine notes such as each 1:1. */
 // @spec LINE-VIS-011
@@ -47,10 +64,16 @@ export function describeMoment(level: LineState, sim: SimState, m: LevelMoment):
   // @spec LINE-MOMENT-005
   if (m.kind === 'onCall') return { title: 'Night page', text: `A change from ${about} has taken production down, and ${nameOf(sim, m.personId!)} is on call.`, ...difficulty };
   switch (item?.kind) {
-    case 'designReview':
-      return { title: 'Design review', text: `${about} needs a design reviewed before the team builds on it.`, ...difficulty };
-    case 'customerRequest':
-      return { title: 'Customer request', text: `A customer is asking for a change to ${about}.`, ...difficulty };
+    // @spec LINE-MOMENT-006
+    case 'designReview': {
+      const debt = DEBT_WORDS[Math.min(4, band(sim.projects[item.subject.id]?.techDebt ?? 0))]!;
+      return { title: 'Design review', text: pick(DESIGN_REVIEW, item).replaceAll('{project}', about).replaceAll('{debt}', debt), ...difficulty };
+    }
+    // @spec LINE-MOMENT-007
+    case 'customerRequest': {
+      const customer = NAMES.customers[itemNumber(item) % NAMES.customers.length]!;
+      return { title: 'Customer request', text: pick(CUSTOMER_REQUEST, item).replaceAll('{project}', about).replaceAll('{customer}', customer), ...difficulty };
+    }
     case 'workIntake':
       return { title: 'New work on offer', text: 'Another team has work it wants yours to take on as a new project.', ...difficulty };
     default:

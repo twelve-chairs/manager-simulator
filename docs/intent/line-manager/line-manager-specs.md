@@ -50,7 +50,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-INBOX-002**: When work arrives while the team has fewer than two active projects, no work intake item is open, and no work intake was declined or expired in the three weeks before, the line manager level shall add a work intake item.
 - [x] **LINE-INBOX-003**: The line manager level shall give each work item a unique id, a kind, a subject, a size, a difficulty, and a last week equal to its arrival week plus its kind's expiry weeks.
 - [x] **LINE-WORK-001**: The line manager level shall hand release, access and expense approvals to the routine approvals habit, on-call escalations to the night pages habit, and make every design review, customer request and work intake a work moment.
-- [x] **LINE-WORK-002**: When the line manager level makes a work moment, it shall offer doing it yourself, giving it to the least stressed engineer whose skill band reaches the item's difficulty band, giving it to the least stressed engineer whose skill band falls short of it (ties broken by id), and pushing back, leaving out the item's requester and any suggestion with no engineer to fill it, and for work intake offer taking it on and declining instead.
+- [x] **LINE-WORK-002**: When the line manager level makes a work moment, it shall offer doing it yourself, giving it to the least stressed engineer whose skill band reaches the item's difficulty band, giving it to the least stressed engineer whose skill band falls short of it (ties broken by id), the trade its kind allows, and pushing back, leaving out the item's requester and any suggestion with no engineer to fill it, and for work intake offer taking it on and declining instead.
 - [x] **LINE-INBOX-004**: When the player does a work item themselves, the line manager level shall resolve it without its consequence and raise the player's stress by an amount that grows with its size.
 - [x] **LINE-INBOX-005**: When the player gives a work item to an engineer, the line manager level shall raise that engineer's stress, tagged as serving wants for growth and autonomy, add a history entry, and resolve the item.
 - [x] **LINE-INBOX-006**: When a work item given to an engineer has a difficulty above their skill, the line manager level shall apply the reduced version of its consequence and raise their skill.
@@ -65,6 +65,10 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-WORK-004**: When a level moment's choice applies, the line manager level shall return a reaction from its templates for that kind of moment and choice, chosen by the personality of the engineer involved where there is one.
 - [x] **LINE-WORK-006**: When a level moment's choice involving an engineer applies, and the engineer has a history entry from the last `callbackWeeks` weeks whose note the level's callback table holds and that no reaction has called back, the line manager level shall end the reaction with the table's line for the most recent such entry, filled with the engineer's name, and record that entry as called back.
 - [x] **LINE-WORK-007**: The line manager level shall call back each history entry at most once in a run, and never one whose note its callback table does not hold.
+- [x] **LINE-WORK-008**: When the line manager level makes a design review work moment for a project whose tech debt band is at least `payDown.band`, it shall offer fixing the debt the review touches first.
+- [x] **LINE-WORK-009**: When the player fixes the debt a design review touches, the line manager level shall lower the project's progress by `payDown.progress` and its tech debt by `payDown.techDebt`, raise the player's stress by `payDown.stress`, and resolve the item.
+- [x] **LINE-WORK-010**: When the line manager level makes a customer request work moment, it shall offer a smaller change.
+- [x] **LINE-WORK-011**: When the player offers a smaller change for a customer request, the line manager level shall lower the player's reputation by `smallerChange.reputation`, less than the request's expiry consequence, raise nobody's stress, and resolve the item.
 
 ## Moments
 
@@ -73,6 +77,8 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-003**: When the player picks a choice for one of the week's open level moments, the line manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the states unchanged.
 - [x] **LINE-MOMENT-004**: When a week's end applies, the line manager level shall close each level moment left unanswered as letting it wait: a work item stays open, an interview is skipped, a check-in changes nothing, and an on-call escalation expires with its consequence.
 - [x] **LINE-MOMENT-005**: When the line manager level describes an on-call moment, its text shall say that a change from the escalation's project has taken production down and name the engineer on call.
+- [x] **LINE-MOMENT-006**: When the line manager level describes a design review, its text shall be one of the kind's phrasings picked by the item's number, name the project and its tech debt band, and say that the debt rises if nobody reviews the design before it expires.
+- [x] **LINE-MOMENT-007**: When the line manager level describes a customer request, its text shall be one of the kind's phrasings picked by the item's number, name the project and a customer from the level's list of fictional companies picked by the item's number, and say that the player's reputation slips if nobody answers before it expires.
 
 ## Project check-ins
 

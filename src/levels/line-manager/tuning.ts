@@ -58,7 +58,7 @@ export const LINE_TUNING = {
   work: {
     /** Player stress per unit of size for work done yourself. */
     selfStressPerSize: 1.2,
-    delegateStress: 4,
+    delegateStress: 6,
     stretchSkill: 1,
     declineIntakeReputation: -2,
     interviewStress: 3,
@@ -70,8 +70,8 @@ export const LINE_TUNING = {
   /** Expected weekly number of each kind per active project (or, for expenses, per engineer); above 1, several can arrive. */
   arrivals: {
     approval: 0.6,
-    designReview: 0.4,
-    customerRequest: 0.3,
+    designReview: 0.2,
+    customerRequest: 0.15,
     /** On-call expectation at zero risk and tech debt, and the extra at both 100. */
     onCallBase: 0.1,
     onCallFromTrouble: 0.5,
@@ -109,6 +109,11 @@ export const LINE_TUNING = {
     growSkill: 8,
     teamStress: 40,
   },
+
+  /** Fixing the debt a design review touches: offered from this tech debt band; the project slows and its debt falls. */
+  payDown: { band: 1, progress: 6, techDebt: 15, stress: 2 },
+  /** Offering a customer a smaller change: less reputation lost than letting the request expire. */
+  smallerChange: { reputation: 1 },
 
   /** Consequences of an expired work item, at full strength. */
   expiry: {
@@ -148,6 +153,8 @@ export const DO_IT_YOURSELF = 'line-manager.self';
 export const DELEGATE = 'line-manager.delegate';
 export const ACCEPT_INTAKE = 'line-manager.accept-intake';
 export const DECLINE_INTAKE = 'line-manager.decline-intake';
+export const PAY_DOWN = 'line-manager.pay-down';
+export const SMALLER_CHANGE = 'line-manager.smaller-change';
 export const FINAL_EVALUATION = 'line-manager.final-evaluation';
 export const INTERVIEW = 'line-manager.interview';
 export const ON_CALL = 'line-manager.on-call';

@@ -17,6 +17,8 @@ export const PLAYER_ACTIONS = {
     'line-manager.interview',
     'line-manager.accept-intake',
     'line-manager.decline-intake',
+    'line-manager.pay-down',
+    'line-manager.smaller-change',
   ],
 } as const;
 

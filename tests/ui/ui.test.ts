@@ -14,7 +14,7 @@ const scene = (root: ParentNode) => $(root, '[data-scene]').dataset.scene;
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 /** A run in week 0 past Before Monday: a moment has been let wait, so the page opens on the current moment. */
-const playing = (seed = 1) => step(run(seed), { kind: 'wait' });
+const playing = (seed = 5) => step(run(seed), { kind: 'wait' });
 
 /** A run whose current moment is a line manager work moment offering to give the work to someone. */
 function atWorkMoment(): Run {
@@ -344,7 +344,7 @@ describe('the scene', () => {
     const closed = new Set<string>();
     const closing: AnyLevel = { ...L, moments: (l: LineState, s) => L.moments(l, s).map((m) => (closed.has(m.id) ? { ...m, open: false } : m)) };
     const deps = { ...DEPS, levels: [closing] };
-    const r = waitUntil(step(run(), { kind: 'wait' }), 'level', deps);
+    const r = waitUntil(playing(), 'level', deps);
     const target = r.week.find((x) => x.source === 'level' && x.status === 'open' && x.id !== current(r)!.id)!;
     closed.add(target.id);
     const { root } = makeApp({ run: r, deps });

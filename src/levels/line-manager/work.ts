@@ -86,6 +86,19 @@ function leastStressed(sim: SimState, ids: string[]): string | undefined {
   return [...ids].sort((a, b) => sim.people[a]!.stress - sim.people[b]!.stress || (a < b ? -1 : 1))[0];
 }
 
+/** The trade a kind of work allows, which who takes it does not settle: paying down debt, or a smaller change. */
+// @spec LINE-WORK-008, LINE-WORK-010
+function trade(sim: SimState, item: WorkItem): MomentChoice[] {
+  if (item.kind === 'designReview' && item.subject.kind === 'project' && band(sim.projects[item.subject.id]?.techDebt ?? 0) >= LINE_TUNING.payDown.band) {
+    return [{ id: 'payDown', label: 'Fix the debt it touches first' }];
+  }
+  if (item.kind === 'customerRequest') return [{ id: 'smaller', label: 'Offer a smaller change' }];
+  return [];
+}
+
+/** The number in a work item's id, which picks its phrasing and customer so a replay reads the same. */
+export const itemNumber = (item: WorkItem): number => Number(/(\d+)$/.exec(item.id)?.[1] ?? 0);
+
 /** The choices a work moment offers: do it, a safe pair of hands, a stretch, or push back; take or decline for work intake. */
 // @spec LINE-WORK-002
 export function workChoices(level: LineState, sim: SimState, item: WorkItem): MomentChoice[] {
@@ -98,6 +111,7 @@ export function workChoices(level: LineState, sim: SimState, item: WorkItem): Mo
   return [
     { id: 'self', label: 'Do it yourself' },
     ...[safe, stretch].filter((id): id is string => id !== undefined).map((id) => ({ id: `give:${id}`, label: `Give it to ${sim.people[id]!.name}` })),
+    ...trade(sim, item),
     { id: 'pushBack', label: 'Push back' },
   ];
 }

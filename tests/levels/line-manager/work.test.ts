@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PERSONALITIES } from '../../../src/personalities';
-import { CALLBACKS, LINE_TUNING, NAMES, WORK_KINDS, beginWeek, chooseMoment, type WorkItem } from '../../../src/levels/line-manager';
+import { CALLBACKS, LINE_TUNING, NAMES, WORK_KINDS, beginWeek, chooseMoment, view, type LineState, type WorkItem } from '../../../src/levels/line-manager';
 import type { SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, expectRefused, momentFor, patch, projects, quietRun, run, seeds, teamOf, withItem } from './fixtures';
 
@@ -119,6 +119,7 @@ describe('work moments', () => {
       Object.assign(s.people[a!]!, { skill: 80, stress: 40 });
       Object.assign(s.people[b!]!, { skill: 80, stress: 20 });
       Object.assign(s.people[c!]!, { skill: 20, stress: 10 });
+      s.projects[project(s).id]!.techDebt = 0;
     });
     const [, b, c] = engineers(sim);
     expect(momentFor(level, id).choices.map((x) => x.id)).toEqual(['self', `give:${b}`, `give:${c}`, 'pushBack']);
@@ -322,5 +323,94 @@ describe('callbacks', () => {
       expect(text, note).toContain('{name}');
       expect(sources.includes(`historyNote: ${note}\n`) || sources.includes(`historyNote: ${note} }`) || sources.includes(`note: '${note}'`), `a memory recorded as "${note}"`).toBe(true);
     }
+  });
+});
+
+/** A quiet run with one item of the kind open on the first project, whose tech debt is `debt`. */
+function oneOf(kind: 'designReview' | 'customerRequest', debt: number, id = 'w7') {
+  const q = quietRun(1);
+  const sim = patch(q.sim, (s) => (s.projects[project(s).id]!.techDebt = debt));
+  const made = withItem(q.level, { kind, subject: project(sim), size: WORK_KINDS[kind].size, difficulty: 50, lastWeek: sim.week + 2, id });
+  return { level: begin(made.level, sim), sim, id: made.id };
+}
+const edge = (b: number) => LINE_TUNING.bandEdges[b - 1]!;
+const textOf = (level: LineState, sim: SimState, ref: string) => view(level, sim).moments.find((m) => m.id === momentFor(level, ref).id)!.text;
+
+describe('trades in routine work', () => {
+  // @spec LINE-WORK-002, LINE-WORK-008
+  it('offers fixing the debt a design review touches once the project’s tech debt reaches the band, before pushing back', () => {
+    const P = LINE_TUNING.payDown;
+    const below = oneOf('designReview', edge(P.band) - 1);
+    expect(momentFor(below.level, below.id).choices.map((c) => c.id)).not.toContain('payDown');
+    const at = oneOf('designReview', edge(P.band));
+    const ids = momentFor(at.level, at.id).choices.map((c) => c.id);
+    expect(ids.at(-2)).toBe('payDown');
+    expect(ids.at(-1)).toBe('pushBack');
+  });
+
+  // @spec LINE-WORK-009
+  it('slows the project, lowers its tech debt and costs a little stress to fix the debt first', () => {
+    const P = LINE_TUNING.payDown;
+    const { level, sim, id } = oneOf('designReview', 60);
+    const p = project(sim).id;
+    const before = patch(sim, (s) => (s.projects[p]!.progress = 30));
+    const r = choose(level, before, momentFor(level, id).id, 'payDown');
+    expect(r.sim.projects[p]!.progress).toBe(30 - P.progress);
+    expect(r.sim.projects[p]!.techDebt).toBe(60 - P.techDebt);
+    expect(r.sim.player.stress).toBe(Math.min(100, before.player.stress + P.stress));
+    expect(r.level.items).toEqual([]);
+    expect(r.reaction.length).toBeGreaterThan(0);
+  });
+
+  // @spec LINE-WORK-002, LINE-WORK-010
+  it('offers a smaller change for a customer request, before pushing back', () => {
+    const { level, id } = oneOf('customerRequest', 0);
+    const ids = momentFor(level, id).choices.map((c) => c.id);
+    expect(ids.at(-2)).toBe('smaller');
+    expect(ids.at(-1)).toBe('pushBack');
+  });
+
+  // @spec LINE-WORK-011
+  it('costs less reputation than letting the request expire, and nobody’s stress, to offer a smaller change', () => {
+    const { level, sim, id } = oneOf('customerRequest', 0);
+    const start = patch(sim, (s) => (s.player.reputation = 50));
+    const r = choose(level, start, momentFor(level, id).id, 'smaller');
+    expect(r.sim.player.reputation).toBe(50 - LINE_TUNING.smallerChange.reputation);
+    expect(LINE_TUNING.smallerChange.reputation).toBeLessThan(-LINE_TUNING.expiry.customerRequestReputation);
+    expect(r.sim.player.stress).toBe(start.player.stress);
+    for (const pid of engineers(sim)) expect(r.sim.people[pid]!.stress).toBe(start.people[pid]!.stress);
+    expect(r.level.items).toEqual([]);
+  });
+
+  // @spec LINE-MOMENT-006
+  it('describes a design review with its project, its tech debt and what waiting costs, in phrasings picked by the item’s number', () => {
+    const texts = ['w1', 'w2', 'w3', 'w4'].map((n) => {
+      const r = oneOf('designReview', 60, n);
+      return textOf(r.level, r.sim, r.id);
+    });
+    const { sim } = oneOf('designReview', 60);
+    for (const t of texts) {
+      expect(t).toContain(sim.projects[project(sim).id]!.name);
+      expect(t).toMatch(/tech debt is high/);
+      expect(t).toMatch(/the debt rises/);
+    }
+    expect(new Set(texts).size).toBeGreaterThan(1);
+    const again = oneOf('designReview', 60, 'w2');
+    expect(textOf(again.level, again.sim, again.id)).toBe(texts[1]);
+  });
+
+  // @spec LINE-MOMENT-007
+  it('describes a customer request with a named customer, its project and what waiting costs', () => {
+    const texts = ['w1', 'w2', 'w3', 'w4'].map((n) => {
+      const r = oneOf('customerRequest', 0, n);
+      return textOf(r.level, r.sim, r.id);
+    });
+    const { sim } = oneOf('customerRequest', 0);
+    for (const t of texts) {
+      expect(t).toContain(sim.projects[project(sim).id]!.name);
+      expect(NAMES.customers.some((c) => t.includes(c))).toBe(true);
+      expect(t).toMatch(/your reputation slips/);
+    }
+    expect(new Set(texts).size).toBeGreaterThan(1);
   });
 });

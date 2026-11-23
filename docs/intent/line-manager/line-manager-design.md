@@ -66,11 +66,19 @@ Each week, hands-on **work items** arrive for the team's active projects and peo
 - **On-call escalations** are handled by the *night pages* habit: by the player directly, or as a moment for the engineer on call, where the player can back them up, take over, or leave it to them.
 - **Everything else** (design reviews, customer requests, work intake) becomes a **work moment**.
 
-A **work moment** presents the item in a sentence and offers, at most:
+A **work moment** presents the item and what waiting costs, and offers, at most:
 
 - **Do it yourself**: resolves it, at a stress cost for the player that grows with its size;
 - **Give it to** each of up to two engineers the level suggests (the least stressed whose skill band reaches the item's difficulty, and the least stressed who would be stretched by it): their stress rises and wants for growth or autonomy are served; if the item's difficulty is above their skill, it is a stretch: it resolves with a reduced consequence and their skill rises;
+- a **trade** its kind allows, below;
 - **Push back or let it wait**: nothing now; the item stays and expires at its last week with its consequence (a slipped project, a lost bit of reputation, a frustrated requester). Work intake offers **take it on** and **decline** instead.
+
+Who should take a piece of work is a question a player soon answers the same way every time: the skill that reaches it, the person least busy, their own energy. So design reviews and customer requests come about half as often as they would to keep the team merely busy, and each offers a trade that question does not settle:
+
+- A **design review** on a project whose tech debt is moderate or worse offers **fix the debt it touches first**: the team takes the time, so the project's progress slips a little and its tech debt falls, for a little of the player's stress. This is the player's one direct way to pay down debt, and it costs delivery now for fewer setbacks and night pages later.
+- A **customer request** offers **offer a smaller change**: the customer gets part of what they asked, so the player's reputation dips by less than letting the request expire would cost, and nobody's stress rises.
+
+The text names what is at stake, so the trade can be weighed: a design review says how much tech debt its project carries and that the debt rises if nobody reviews the design in time; a customer request names the customer, a fictional company, and says the player's reputation slips if nobody answers. Each kind has a few phrasings, picked by the item's number, as is the customer, so the same week reads the same on replay and the sentences don't repeat week after week.
 
 After the player declines work intake, or lets it expire, the next offer waits a few weeks (a tuning value), so saying no is not met with the same scene every week. A team that ends several weeks in a row with no active project (a tuning value) is not left idle: the player's manager assigns it a new project, and that week's recap says so. A team that ends more than half a review period's weeks with no active project is scored on it at the review: the on-schedule share counts as none rather than being left out, and the on-schedule goal counts as missed. Otherwise a player who declines all new work would face no measure at all for having nothing to deliver.
 
@@ -145,6 +153,7 @@ The level keeps its own serializable state beside the simulation's and the situa
 |---|---|---|---|
 | Core loop | Habits for routine work and care, moments for what needs a decision; see [decisions/moments-loop.md](../../decisions/moments-loop.md) | A weekly calendar and inbox planned by hand | The planner played as a test; habits remove repeated decisions, and moments carry the reactions that make play engaging. |
 | Where work moments come from | A work generator in the level, driven by project state; routine items absorbed by habits, the rest presented as templated work moments | Every work moment written as content | Keeps work pressure systemic, so busier and riskier projects really are harder and the balance checks mean something, and keeps delegation a lesson every week, not only in weeks content covers it. Story situations still add written drama on top. |
+| Routine work moments | Fewer design reviews and customer requests, each with a trade the question of who takes it does not settle (paying down debt, a smaller change), and the stake in its text | A habit that hands design reviews to someone; varied text alone | A habit removes the moments but leaves the player no way to pay down debt; varied text reads better but leaves a decision the player has already solved, repeated dozens of times. |
 | Time and energy | Energy is the player's stress; no hours | A weekly energy budget that moments spend | One number the simulation already has, with burnout already attached; a budget would bring back the planning the moments loop removes. |
 | Goals | Two or three per review period, scored as extra measures beside the scorecard | Goals replace the scorecard | Gives each quarter something to aim at while keeping the stable measures the balance checks rely on. |
 | When promotion opens | From the third review (week 39) | The fourth review (week 52); the second (week 26) | From the fourth, the earliest promotion came past an hour of play, so a first session could not reach one. From the second, sound practice was promoted in four runs of five and the first quarter, mostly onboarding, decided half of it; from the third it is about three in five, with naive play still rarely promoted. |

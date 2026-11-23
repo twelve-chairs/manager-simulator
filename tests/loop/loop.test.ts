@@ -180,7 +180,7 @@ describe('commands', () => {
     const closed = new Set<string>();
     const closing: AnyLevel = { ...L, moments: (l: LineState, s) => L.moments(l, s).map((m) => (closed.has(m.id) ? { ...m, open: false } : m)) };
     const d = { ...deps(), levels: [closing] };
-    const run = waitUntil(newRun(1, CONTENT, d), 'level', d);
+    const run = waitUntil(newRun(5, CONTENT, d), 'level', d);
     const target = run.week.find((x) => x.source === 'level' && x.status === 'open' && x.id !== current(run)!.id)!;
     closed.add(target.id);
     const answered = answerCurrent(run, 0, d);

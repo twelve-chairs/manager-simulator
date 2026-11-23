@@ -387,10 +387,14 @@ function playInPage(options: InPage): PlaySummary {
         .sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
     if (title === 'Interview') return rested ? has('self') : (offered('ask:')[0]?.el ?? has('skip'));
     if (has('take')) return qa('[data-project]').length < 2 && rested ? has('take') : has('decline');
+    // Debt the design review's text calls elevated or worse is worth slowing down for.
+    if (has('payDown') && /tech debt is (elevated|high|severe)/.test(text('[data-scene] [data-part=text]'))) return has('payDown');
     const givable = offered('give:');
     const able = givable.find((p) => (difficulty === undefined || p.skill >= difficulty) && p.stress <= OKAY);
     if (able) return able.el;
     if (rested) return has('self');
+    // Tired, with no one able: the customer can take part of what they asked.
+    if (has('smaller')) return has('smaller');
     // Tired, with no one able: a stretch for someone with room, or push back.
     return givable.find((p) => p.stress <= OKAY)?.el ?? has('pushBack');
   }
