@@ -37,9 +37,9 @@ Strategies are measuring instruments: their rules live in this document, not in 
 
 ## Better Choices
 
-Sound practice needs to know which choice in each situation is the better one. The harness keeps a table mapping each situation id to its better choice's id. Every line manager situation in the content must have an entry naming a choice the situation has, except onboarding situations (ids starting `onboarding-`), which have no better choice; a missing or wrong entry fails the harness, so adding a situation means deciding its better choice. Each such situation must also have a wait debrief, the lesson the review shows when the player let it wait, so a skipped situation still teaches something; a missing one fails the harness. When the table's choice is not offered (its `availableIf` does not hold), sound practice picks the first offered choice.
+Sound practice needs to know which choice in each situation is the better one. The harness keeps a table mapping each situation id to its better choice's id. Every situation in the content, at every career level, must have an entry naming a choice the situation has, except onboarding situations (ids starting `onboarding-`), which have no better choice; a missing or wrong entry fails the harness, so adding a situation means deciding its better choice. Each such situation must also have a wait debrief, the lesson the review shows when the player let it wait, so a skipped situation still teaches something; a missing one fails the harness. When the table's choice is not offered (its `availableIf` does not hold), sound practice picks the first offered choice.
 
-The naive strategies' first and last picks are honest only if choice order says nothing about which choice is better, and the same holds for a player, who would otherwise learn to pick a position rather than read the scene. Authors place the better choice where the scene reads best, and the harness holds the spread: it fails if more than half of the table's situations list their better choice first, or more than half list it last, in the order the situation file gives its choices.
+The naive strategies' first and last picks are honest only if choice order says nothing about which choice is better, and the same holds for a player, who would otherwise learn to pick a position rather than read the scene. Authors place the better choice where the scene reads best, and the harness holds the spread: it fails if, at any career level, more than half of the table's situations for that level list their better choice first, or more than half list it last, in the order the situation file gives its choices.
 
 ## Measures and Checks
 
@@ -64,13 +64,13 @@ The senior manager level is measured the same way, on its own. Each run starts t
 
 A strategy sees what the player sees (the senior manager's view: managers, teams as their managers report them, the month's moments and their choices) and acts through the same commands.
 
-| Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring |
-|---|---|---|---|---|---|---|
-| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand) | Lets them wait |
-| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal | Hires from outside; gives one more period |
-| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal | Hires from outside; gives one more period |
-| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal | Hires from outside; lets a manager go |
-| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered | Promotes from the team; lets a manager on a failed plan go |
+| Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring | Situations |
+|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand) | Lets them wait | Lets them wait |
+| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal | Hires from outside; gives one more period | Picks the first offered choice |
+| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal | Hires from outside; gives one more period | Picks the first offered choice |
+| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal | Hires from outside; lets a manager go | Picks the last offered choice |
+| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered | Promotes from the team; lets a manager on a failed plan go | Picks the situation's better choice from the better-choice table |
 
 A sixth strategy, **sound practice with skip-levels**, plays as sound practice with monthly skip-level listening. Like sound practice with other habits at the line manager, it is reported and checked against nothing.
 
@@ -93,6 +93,7 @@ The test suite runs 20 seeds per senior strategy within the same budget; the rep
 | Keeping choice order meaningless | Authors vary where the better choice sits, and a check fails if more than half of situations put it first, or more than half put it last | The situation engine shuffling choices with its seeded generator when it presents them | Shuffling makes position unlearnable but can put choices in an order that reads badly (an "ignore it" before the options it ignores); an authored order with a spread check keeps the reading order in the writer's hands. |
 | Where a senior run starts | A line manager run from the seed, handed over at once to an outside hire, the same for every strategy | Play each strategy's own line manager run to a promotion first; let each strategy choose the handover | Most line manager runs are not promoted, so playing up to one would measure few senior runs and mix the two levels' balance; a shared handover keeps the senior measures about how each strategy plays the senior level. |
 | Managed out as a check | A fifth check at the senior manager: sound practice's managed-out share stays low | The line manager's four checks only | Playtests showed sound practice managed out at the senior manager while every other check could pass; the check holds the level to the HLD's learnable-over-ambiguous tenet. |
+| Choice order across levels | The spread check holds at each career level on its own | One check over every situation | A player meets one level's situations at a time; a spread that holds only across all of them could leave one level's better choices mostly first. |
 
 ## Open Questions & Future Decisions
 

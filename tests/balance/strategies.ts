@@ -2,7 +2,7 @@ import type { View } from '../../src/levels/line-manager';
 import type { Command } from '../../src/loop';
 import type { Moment, Seen, Strategy } from './harness';
 
-/** The better choice in each line manager situation, as sound practice judges it. Onboarding situations have none. */
+/** The better choice in each situation, at every career level, as sound practice judges it. Onboarding situations have none. */
 export const BETTER_CHOICES: Record<string, string> = {
   'flight-risk-1on1': 'ask',
   'feedback-gap': 'direct',
@@ -25,6 +25,17 @@ export const BETTER_CHOICES: Record<string, string> = {
   'two-urgent-asks': 'agree-order',
   'customer-escalation': 'join-call',
   'status-update': 'amber',
+  // the senior manager
+  'senior-back-to-keyboard': 'help-move-back',
+  'senior-one-promotion-slot': 'on-evidence',
+  'senior-skip-level-surprise': 'raise-with-manager',
+  'senior-reorg-rumour': 'tell-what-you-know',
+  'senior-protected-low-performer': 'plan-with-dates',
+  'senior-running-hot': 'help-hand-off',
+  'senior-internal-poach': 'agree-timeline',
+  'senior-first-hard-conversation': 'sit-in',
+  'senior-credit-for-launch': 'name-team',
+  'senior-clash-in-public': 'private-then-together',
 };
 
 /** A band, as the view gives it: 2 is "okay" energy and "busy" stress. */

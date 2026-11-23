@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { realContent, summarize, table, type Summary } from './harness';
 import { SENIOR_BALANCE_TUNING, playSeniorRun, type SeniorSeen, type SeniorStrategy } from './senior';
-import { SENIOR_STRATEGIES, seniorIdle, seniorSound } from './senior-strategies';
+import { SENIOR_STRATEGIES, seniorContrarian, seniorDelegator, seniorHero, seniorIdle, seniorSound, seniorSoundSkip } from './senior-strategies';
+import { BETTER_CHOICES } from './strategies';
+import type { SeniorMoment } from './senior';
 
 const CONTENT = realContent();
 const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 20) }, (_, i) => i + 1);
@@ -18,6 +20,25 @@ const of = (name: string) => measure().find((s) => s.strategy === name)!;
 const naive = () => measure().filter((s) => s.naive);
 
 describe('playing senior manager runs', () => {
+  // @spec BAL-SENIOR-008
+  it('answers situations: idle waits, hero and delegator take the first choice, the contrarian the last, sound the better one', () => {
+    const [id, better] = Object.entries(BETTER_CHOICES)[0]!;
+    const seen = {} as SeniorSeen;
+    // level-moment choice ids around the better one, so a strategy's own preferences would show if it used them
+    const situation = (ids: string[]): SeniorMoment => ({ id: 'p1', source: 'situation', situationId: id, title: 't', text: 't', choices: ids.map((c) => ({ id: c, label: c })) });
+    for (const ids of [['coach', better, 'decide'], ['decide', 'letThem', better, 'coach']]) {
+      const m = situation(ids);
+      expect(seniorIdle.choose(seen, m)).toBe('wait');
+      expect(seniorHero.choose(seen, m)).toBe(ids[0]);
+      expect(seniorDelegator.choose(seen, m)).toBe(ids[0]);
+      expect(seniorContrarian.choose(seen, m)).toBe(ids.at(-1));
+      expect(seniorSound.choose(seen, m)).toBe(better);
+      expect(seniorSoundSkip.choose(seen, m)).toBe(better);
+    }
+    // the better choice not offered: the first offered one
+    expect(seniorSound.choose(seen, situation(['decide', 'coach']))).toBe('decide');
+  });
+
   // @spec BAL-SENIOR-001
   it('starts the senior manager from an outside hire and plays up to 36 months, acknowledging reviews', () => {
     const r = playSeniorRun(seniorIdle, 1, CONTENT);

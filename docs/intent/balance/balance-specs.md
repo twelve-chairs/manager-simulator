@@ -12,9 +12,9 @@ Design: [balance-design.md](balance-design.md)
 
 ## Better choices
 
-- [x] **BAL-CHOICE-001**: The balance harness shall fail if a line manager situation in the content, other than one whose id starts with `onboarding-`, has no entry in the better-choice table, or its entry names a choice the situation does not have.
-- [x] **BAL-CHOICE-002**: The balance harness shall fail if more than half of the situations in the better-choice table list their better choice first among their choices in the situation file, or more than half list it last.
-- [x] **BAL-CHOICE-003**: The balance harness shall fail if a line manager situation in the content, other than one whose id starts with `onboarding-`, has no wait debrief.
+- [x] **BAL-CHOICE-001**: The balance harness shall fail if a situation in the content, at any career level, other than one whose id starts with `onboarding-`, has no entry in the better-choice table, or its entry names a choice the situation does not have.
+- [x] **BAL-CHOICE-002**: The balance harness shall fail if, for any career level, more than half of that level's situations in the better-choice table list their better choice first among their choices in the situation file, or more than half list it last.
+- [x] **BAL-CHOICE-003**: The balance harness shall fail if a situation in the content, at any career level, other than one whose id starts with `onboarding-`, has no wait debrief.
 
 ## Measures
 
@@ -38,3 +38,4 @@ Design: [balance-design.md](balance-design.md)
 - [x] **BAL-SENIOR-005**: The balance harness shall fail unless, at the senior manager, sound practice's average review score exceeds every naive strategy's by at least the senior score margin, sound practice's promotion share is at least the senior minimum, no naive strategy's promotion share exceeds the senior maximum, and sound practice's burnout share is at most the senior maximum.
 - [x] **BAL-SENIOR-006**: The balance harness shall fail if, at the senior manager, sound practice's managed-out share exceeds the maximum sound managed-out share.
 - [x] **BAL-SENIOR-007**: When the balance report runs, it shall print the senior manager's table beside the line manager's.
+- [x] **BAL-SENIOR-008**: When a senior manager strategy meets a presented situation, idle shall let it wait, hero and the delegator shall pick the first offered choice, the contrarian the last, and sound practice, with or without skip-levels, the situation's better choice from the better-choice table, or the first offered choice when that one is not offered.

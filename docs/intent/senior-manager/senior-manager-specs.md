@@ -58,6 +58,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **SENIOR-MOMENT-009**: When the group has run 12 months with three teams, the senior manager level shall be able to produce a restructuring that adds a fourth team, offering to promote its manager from one of the teams, which lowers that team's skill, or hire from outside, which leaves the new team leaderless for a month.
 - [x] **SENIOR-MOMENT-010**: When the player picks a choice for one of the month's open level moments, the senior manager level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the state unchanged.
 - [x] **SENIOR-MOMENT-011**: When a month's end applies, the senior manager level shall close each level moment left unanswered as letting it wait.
+- [x] **SENIOR-MOMENT-012**: The situation content tagged for the senior manager level shall contain no effect that lowers an aggregate team's headcount.
 
 ## Calibration
 

@@ -55,11 +55,12 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 - managers as people you coach, oversee, put on a plan or replace, and teams you see as their managers tell it, unless you look for yourself;
 - escalations, staffing, disputes between teams, approvals and a fourth team to take on;
+- written situations about managers: one who wants to go back to engineering, two up for one promotion, a public clash, a rumoured reorg;
 - calibration before each six-monthly review, and three years to earn the next promotion.
 
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** situations written for the senior manager, then director and above, where whole organizations become the people you look after.
+**Next up:** director and above, where whole organizations become the people you look after.
 
 ## Fiction, not advice
 

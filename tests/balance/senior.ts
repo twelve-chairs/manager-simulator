@@ -29,6 +29,8 @@ export interface SeniorSeen {
 export interface SeniorMoment {
   id: string;
   source: 'level' | 'situation';
+  /** For a situation: which one it is, so sound practice can look up its better choice. */
+  situationId?: string;
   title: string;
   text: string;
   choices: { id: string; label: string }[];
@@ -96,7 +98,7 @@ function momentOf(run: Run, view: SeniorView, id: string): SeniorMoment {
   const entry = run.week.find((m) => m.id === id)!;
   if (entry.source === 'situation') {
     const p = run.presented.find((x) => x.id === id)!;
-    return structuredClone({ id, source: 'situation', title: entry.title, text: p.text, choices: p.choices });
+    return structuredClone({ id, source: 'situation', situationId: p.situationId, title: entry.title, text: p.text, choices: p.choices });
   }
   const m = view.moments.find((x) => x.id === id)!;
   return structuredClone({ id, source: 'level', title: m.title, text: m.text, choices: m.choices, kind: m.kind, ...(m.calibration && { calibration: m.calibration }), ...(m.teamId && { teamId: m.teamId }) });

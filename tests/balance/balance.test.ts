@@ -83,26 +83,32 @@ describe('playing runs', () => {
 });
 
 describe('better choices', () => {
+  const graded = () => CONTENT.filter((x) => !x.id.startsWith('onboarding-'));
+
   // @spec BAL-CHOICE-001
-  it('names a valid better choice for every line manager situation but onboarding', () => {
-    for (const s of CONTENT.filter((x) => x.levels.includes('line-manager') && !x.id.startsWith('onboarding-'))) {
+  it('names a valid better choice for every situation but onboarding, at every career level', () => {
+    for (const s of graded()) {
       expect({ situation: s.id, has: s.choices.some((c) => c.id === BETTER_CHOICES[s.id]) }).toEqual({ situation: s.id, has: true });
     }
   });
 
   // @spec BAL-CHOICE-003
-  it('has a lesson for letting it wait in every line manager situation but onboarding', () => {
-    for (const s of CONTENT.filter((x) => x.levels.includes('line-manager') && !x.id.startsWith('onboarding-'))) {
+  it('has a lesson for letting it wait in every situation but onboarding, at every career level', () => {
+    for (const s of graded()) {
       expect({ situation: s.id, has: typeof s.waitDebrief === 'string' }).toEqual({ situation: s.id, has: true });
     }
   });
 
   // @spec BAL-CHOICE-002
-  it('keeps the better choice from sitting first, or last, in most situations', () => {
-    const listed = CONTENT.filter((s) => Object.hasOwn(BETTER_CHOICES, s.id));
-    const at = (pick: (ids: string[]) => string | undefined) => listed.filter((s) => pick(s.choices.map((c) => c.id)) === BETTER_CHOICES[s.id]).map((s) => s.id);
-    const half = listed.length / 2;
-    expect({ first: at((ids) => ids[0]).length <= half, last: at((ids) => ids.at(-1)).length <= half }).toEqual({ first: true, last: true });
+  it('keeps the better choice from sitting first, or last, in most of each level’s situations', () => {
+    const levels = [...new Set(CONTENT.flatMap((s) => s.levels))];
+    expect(levels).toEqual(expect.arrayContaining(['line-manager', 'senior-manager']));
+    for (const level of levels) {
+      const listed = CONTENT.filter((s) => s.levels.includes(level) && Object.hasOwn(BETTER_CHOICES, s.id));
+      const at = (pick: (ids: string[]) => string | undefined) => listed.filter((s) => pick(s.choices.map((c) => c.id)) === BETTER_CHOICES[s.id]).length;
+      const half = listed.length / 2;
+      expect({ level, first: at((ids) => ids[0]) <= half, last: at((ids) => ids.at(-1)) <= half }).toEqual({ level, first: true, last: true });
+    }
   });
 });
 
