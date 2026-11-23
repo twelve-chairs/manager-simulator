@@ -20,7 +20,7 @@ The HLD: playtesters complete at least one promotion in their first session.
 
 **Watch for**
 - The week and the time on the clock at each review, and its rating.
-- Whether they reach a promotion before stopping, and when.
+- Whether they reach a promotion before stopping, and when. Promotion is possible from the third review (week 39) on, after two strong reviews in a row; How to play says so, but don't point them to it.
 - When their attention drops: skimming, sighing, checking the time.
 
 **Ask afterwards**
@@ -50,11 +50,13 @@ The HLD: every choice gets a reaction at once, and people bring past choices up 
 - Whether they read the reactions or click straight past them.
 - Moments when they notice someone remembers something ("she's still upset about...").
 - Choices they make without reading them.
+- Whether they open *The whole week* in the weekend recap, and what they were looking for when they did.
 
 **Ask afterwards**
 - Tell me about a choice that turned out to matter.
 - Did anyone on your team bring up something you'd done earlier?
 - Were there choices that didn't seem to matter? Which ones?
+- Did the weekend recap tell you what you needed before the next week?
 
 ### It feels like a game, not a test
 
