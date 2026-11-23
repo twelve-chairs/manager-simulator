@@ -34,10 +34,10 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   test.setTimeout(10 * 60_000);
   const problems = watch(page);
   let carried = false;
-  // Seed 108 reaches the director soonest under the scripted sound player; the rest are a fallback if tuning moves it.
-  for (const seed of [108, 101, 102, 103, 104, 105, 106, 107]) {
+  // Any seed whose scripted sound run reaches the director will do; which ones do moves with tuning and content.
+  for (let seed = 101; seed <= 140; seed++) {
     await startSeeded(page, seed);
-    const s = await play(page, { strategy: 'sound', seed, maxWeeks: 170, until: 'directorHandover' });
+    const s = await play(page, { strategy: 'sound', seed, maxWeeks: 200, until: 'directorHandover' });
     if (s.seen.directorHandover) {
       carried = true;
       break;

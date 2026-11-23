@@ -470,4 +470,22 @@ describe('written situations', () => {
       expect(select(after, sim, [newStarter]).presented, `after ${choice}`).toEqual([]);
     }
   });
+
+  // @spec SIT-COND-008, SIT-SEL-002
+  it('offers the over-limit expense once, and a precedent only after it was approved quietly', () => {
+    const expense = written('expense-outside-policy');
+    const precedent = written('expense-precedent');
+    expect(expense.choices.map((c) => c.id)).toContain('exception');
+    for (const choice of ['approve-quietly', 'exception', 'explain', 'reject']) {
+      let sim = patch(fresh(), (s) => (s.week = 10));
+      const { engine: after, presentation } = presentOne(engine(), sim, expense);
+      sim = expectResolved(resolve(after, sim, [expense, precedent], presentation, choice)).sim;
+      sim = patch(sim, (s) => (s.week = 30));
+      const next = select(after, sim, [expense, precedent]).presented;
+      expect(next.some((p) => p.situationId === 'expense-outside-policy'), `the expense again after ${choice}`).toBe(false);
+      const followUp = next.find((p) => p.situationId === 'expense-precedent');
+      if (choice === 'approve-quietly') expect(followUp?.bindings.precedent).toBe(presentation.bindings.engineer);
+      else expect(followUp, `a precedent after ${choice}`).toBeUndefined();
+    }
+  });
 });
