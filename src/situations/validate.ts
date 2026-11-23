@@ -232,6 +232,13 @@ function checkText(o: Obj, key: string, path: string, scope: Scope) {
 
 // ---- effects ----
 
+/** A history note is shown on the person's card as written, so a placeholder in it would appear literally. */
+// @spec SIT-CONTENT-027
+function historyNote(o: Obj, path: string) {
+  string(o, 'historyNote', path);
+  if (typeof o.historyNote === 'string' && /\{[^}]*\}/.test(o.historyNote)) fail(at(path, 'historyNote'), 'must not contain a placeholder');
+}
+
 const TEAM_FIELDS = [...new Set([...DETAILED_TEAM_FIELDS, ...AGGREGATE_TEAM_FIELDS])];
 const AGGREGATE_ONLY_FIELDS: readonly string[] = AGGREGATE_TEAM_FIELDS.filter((f) => !(DETAILED_TEAM_FIELDS as readonly string[]).includes(f));
 
@@ -279,7 +286,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
       finite(o, 'amount', path);
       if (Object.hasOwn(o, 'wantTags')) checkWantTags(o.wantTags, at(path, 'wantTags'));
       if (Object.hasOwn(o, 'historyNote')) {
-        string(o, 'historyNote', path);
+        historyNote(o, path);
         if (kind !== 'person') fail(at(path, 'historyNote'), 'history notes can only target a person');
       }
       return;
@@ -290,7 +297,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
       roleOf(o, 'target', 'person', scope, path);
       oneOf(o.rating, RATINGS, at(path, 'rating'), 'a rating');
       if (Object.hasOwn(o, 'revision') && typeof o.revision !== 'boolean') fail(at(path, 'revision'), 'must be true or false');
-      if (Object.hasOwn(o, 'historyNote')) string(o, 'historyNote', path);
+      if (Object.hasOwn(o, 'historyNote')) historyNote(o, path);
       return;
     }
     case 'reRate': {

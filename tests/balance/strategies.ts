@@ -15,6 +15,16 @@ export const BETTER_CHOICES: Record<string, string> = {
   'tech-debt-ask': 'sprint',
   'new-starter': 'buddy-up',
   'quiet-overload': 'time-off',
+  'conference-talk': 'cover',
+  'leave-in-crunch': 'approve-replan',
+  calibration: 'evidence',
+  'contractor-leaving': 'pair',
+  'remote-out-of-loop': 'write-first',
+  'team-event': 'team-choice',
+  'expense-outside-policy': 'explain',
+  'two-urgent-asks': 'agree-order',
+  'customer-escalation': 'join-call',
+  'status-update': 'amber',
 };
 
 /** A band, as the view gives it: 2 is "okay" energy and "busy" stress. */

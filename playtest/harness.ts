@@ -101,7 +101,7 @@ function playInPage(options: Required<PlayOptions>): PlaySummary {
   const ENERGY = ['running on fumes', 'tired', 'okay', 'good', 'fresh', 'at the edge'];
   const VERDICTS = ['above target', 'on target', 'below target'];
   const STATUSES = ['You dealt with it', 'You let it wait', 'It passed before you got to it'];
-  const BETTER = ['blameless', 'direct', 'ask', 'real-plan', 'honest', 'honest-let-go', 'separately', 'write-it', 'trade', 'sprint', 'buddy-up', 'time-off', 'ask-priorities', 'ask-delegation', 'ask-wants'];
+  const BETTER = ['blameless', 'direct', 'ask', 'real-plan', 'honest', 'honest-let-go', 'separately', 'write-it', 'trade', 'sprint', 'buddy-up', 'time-off', 'ask-priorities', 'ask-delegation', 'ask-wants', 'cover', 'approve-replan', 'evidence', 'pair', 'write-first', 'team-choice', 'explain', 'agree-order', 'join-call', 'amber'];
   const COUNTED = /, (twice|\d+ times)$/;
   /** The titles of the career level's own moments, for the event log; any other moment is a situation. Work items are titled by their kind in lower case ("release approval"). */
   const LEVEL_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;

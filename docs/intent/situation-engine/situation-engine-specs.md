@@ -28,6 +28,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-024**: The situation engine shall treat a situation as invalid if its `day` is not one of `monday` to `friday`, or its `time` is not `morning`, `afternoon` or `night`.
 - [x] **SIT-CONTENT-025**: The situation engine shall treat a situation as invalid if a condition compares `personality` with a literal, or gives `in` a list item, that is not in the personality catalogue.
 - [x] **SIT-CONTENT-026**: The situation engine shall treat a situation as invalid if its `waitDebrief` is present and is not a non-empty string, or contains a placeholder.
+- [x] **SIT-CONTENT-027**: The situation engine shall treat a situation as invalid if an effect's `historyNote` contains a placeholder.
 - [x] **SIT-CONTENT-015**: The content compiler shall parse YAML with its safe schema, rejecting custom types and aliases.
 - [x] **SIT-CONTENT-012**: The situation engine shall never execute content: no part of a situation is evaluated as code or used to build a regular expression.
 

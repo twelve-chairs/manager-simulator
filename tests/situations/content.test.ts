@@ -251,6 +251,18 @@ describe('loading and validation', () => {
     expect(rejectionOf(sit({ waitDebrief: 'Ask {engineer} later.' }))).toMatch(/waitDebrief/);
   });
 
+  // @spec SIT-CONTENT-027
+  it('rejects a history note with a placeholder, since notes are shown as written', () => {
+    const withEffect = (effect: unknown) =>
+      sit({ choices: [{ id: 'talk', label: 'Talk to {engineer}', outcomes: [{ id: 'fine', effects: [effect as never], aftermath: '{engineer} nods.', debrief: 'Talking helps.' }] }] });
+    const value = { type: 'value', target: 'engineer', field: 'motivation', amount: 5 };
+    const rate = { type: 'rate', target: 'engineer', rating: 'meets' };
+    expect(loadContent([withEffect({ ...value, historyNote: 'Took over a contractor\'s work' })]).errors).toEqual([]);
+    expect(loadContent([withEffect({ ...rate, historyNote: 'Rated after a hard quarter' })]).errors).toEqual([]);
+    expect(rejectionOf(withEffect({ ...value, historyNote: 'Took over the work on {project}' }))).toMatch(/historyNote/);
+    expect(rejectionOf(withEffect({ ...rate, historyNote: 'Rated by {engineer}' }))).toMatch(/historyNote/);
+  });
+
   // @spec SIT-CONTENT-013
   it('rejects bad weights, cooldowns, literal types, in-lists, rating levels and history subjects', () => {
     const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
