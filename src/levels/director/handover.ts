@@ -15,6 +15,8 @@ import {
 import { generateOutsider, generateSeniorManager, leaderOf, nextId, randomInt, rule, unusedName } from './core';
 import { DEFAULT_DIRECTOR_HABITS } from './habits';
 import { takeSurvey } from './survey';
+import { remember } from './review';
+import { setGoals } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { DirectorState } from './types';
 
@@ -112,6 +114,15 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
     completions: {},
     leaderlessEnds: {},
     escalated: {},
+    goals: [],
+    periodStart: seniorSim.week,
+    knownRatings: {},
+    regretted: [],
+    funded: [],
+    betResults: [],
+    quarterStart: null,
+    joined: [],
+    letGo: [],
     counters: { person: 0, team: 0, project: 0, moment: 0, goal: 0, bet: 0 },
   };
   let { sim, groupId } = foldGroup(senior, seniorSim, choice, level);
@@ -164,6 +175,8 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
     level.leniency[lead] = senior.leniency[lead] ?? randomInt(level, [0, 2]);
   }
   level.survey = takeSurvey(level, sim);
+  remember(level, sim);
+  setGoals(level, sim);
   return { ok: true, sim, level };
 }
 

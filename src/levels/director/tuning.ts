@@ -55,4 +55,15 @@ export const DIRECTOR_TUNING = {
   org: { max: 32, min: 6 },
   /** A senior manager promoted from the group: management skill, trust, and the group's skill lost. */
   newSenior: { promotedSkill: [20, 39] as const, promotedTrust: 65, promoteSkill: 2 },
+  /** The review's targets. */
+  review_targets: {
+    betsLanded: { target: 0.5, tolerance: 0.3 },
+    projectsOnTime: { target: 1, tolerance: 1 },
+    regrettedAttrition: { target: 0, tolerance: 2 },
+    motivation: { target: 60, tolerance: 10 },
+    stress: { target: 45, tolerance: 10 },
+    executiveConfidence: { target: 60, tolerance: 10 },
+    calibrationQuality: { target: 0.85, tolerance: 0.1 },
+    goal: { target: 0.5, tolerance: 0.4 },
+  },
 };

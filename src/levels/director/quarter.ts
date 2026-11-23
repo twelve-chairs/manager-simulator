@@ -2,7 +2,8 @@ import { band } from '../line-manager';
 import { deliveredRatings, meanStep } from '../senior-manager';
 import { applyEffects, attritionRiskOf, behindScheduleProjects, overdueProjects, planOf, PERFORMANCE_LEVELS, RATINGS, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { generateSeniorManager, leaderOf, quarterOf, randomInt, rule } from './core';
-import { periodEndsThisQuarter, quartersPlayed } from './review';
+import { periodEndsThisQuarter, quartersPlayed, remember } from './review';
+import { quarterRecap, snapshotQuarter, type DirectorRecap } from './recap';
 import { takeSurvey } from './survey';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { DirectorHabits, DirectorState } from './types';
@@ -98,6 +99,7 @@ function settleQuarter(s: DirectorState, sim0: SimState, log: ChangeLogEntry[]):
     if (!sim.teams[g] || leaderOf(sim, g)) continue;
     const hire = generateSeniorManager(s, sim, { skill: randomInt(s, [40, 59]), trust: 50 });
     s.leniency[hire.id] = randomInt(s, [0, 2]);
+    s.joined.push(hire.id);
     effects.push({ type: 'hire', teamId: g, person: hire, cause: rule('director.newSenior') });
   }
   sim = apply(sim, effects.splice(0), log);
@@ -119,6 +121,7 @@ function settleQuarter(s: DirectorState, sim0: SimState, log: ChangeLogEntry[]):
     const landed = p?.status === 'completed' && (s.completions[bet.projectId] ?? sim.week) <= p.deadlineWeek;
     const failed =
       !p || p.status === 'cancelled' || (p.status === 'completed' && !landed) || (p.status === 'active' && sim.week > p.deadlineWeek + b.grace) || !sim.teams[bet.groupId] || (s.leaderlessEnds[bet.groupId] ?? 0) >= 2;
+    if (landed || failed) s.betResults.push({ week: sim.week, projectId: bet.projectId, landed });
     if (landed) effects.push(energyless('reputation', bet.landing, 'director.bets'), value('person', executive, 'trust', bet.landing, 'director.bets'));
     else if (failed) {
       effects.push(energyless('reputation', -bet.failing, 'director.bets'), value('person', executive, 'trust', -bet.failing, 'director.bets'));
@@ -163,9 +166,10 @@ function troubledIds(s: DirectorState, sim: SimState): string[] {
  * Ends the quarter: the habits act, the listening tour visits, each group and senior manager drift, and at a period's
  * end the survey is taken, the groups are calibrated and the senior managers rated.
  */
-// @spec DIR-MOMENT-006, DIR-HABIT-004, DIR-HABIT-005, DIR-HABIT-006, DIR-DRIFT-001, DIR-DRIFT-002, DIR-DRIFT-003, DIR-DRIFT-004, DIR-PLAN-001, DIR-PLAN-002
-export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level: DirectorState; sim: SimState; log: ChangeLogEntry[] }> {
+// @spec DIR-RECAP-001, DIR-MOMENT-006, DIR-HABIT-004, DIR-HABIT-005, DIR-HABIT-006, DIR-DRIFT-001, DIR-DRIFT-002, DIR-DRIFT-003, DIR-DRIFT-004, DIR-PLAN-001, DIR-PLAN-002
+export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level: DirectorState; sim: SimState; log: ChangeLogEntry[]; recap: DirectorRecap }> {
   const s = structuredClone(level);
+  const start = s.quarterStart ?? snapshotQuarter(s, sim0);
   const log: ChangeLogEntry[] = [];
   let sim = settleQuarter(s, sim0, log);
   const effects: Effect[] = [];
@@ -253,5 +257,8 @@ export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level
     // The engagement survey, in the last quarter before the review.
     s.survey = takeSurvey(s, sim);
   }
-  return { ok: true, level: s, sim, log };
+  remember(s, sim);
+  const recap = quarterRecap(s, sim, start);
+  s.quarterStart = null;
+  return { ok: true, level: s, sim, log, recap };
 }

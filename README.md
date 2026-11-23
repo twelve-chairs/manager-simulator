@@ -107,7 +107,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/situations/` | Situation engine |
 | `src/levels/line-manager/` | Line manager career level |
 | `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews |
-| `src/levels/director/` | Director career level, in progress and not yet playable: the handover from a promoted senior manager, groups, the executive and peers, and what the player sees |
+| `src/levels/director/` | Director career level, built but not yet joined to the game: the handover from a promoted senior manager, groups and senior managers, the executive and peers, headcount, strategy bets, the quarterly review, goals, recaps and reviews |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |
 | `src/save/` | Save / load: a run saved as its seed and commands, rebuilt by replaying them |

@@ -12,7 +12,9 @@ import {
   type SimState,
 } from '../../sim';
 import { generateSeniorManager, leaderOf, nextId, pick, randomInt, unusedName } from './core';
-import { quartersPlayed } from './review';
+import { quartersPlayed, remember } from './review';
+import { setGoals } from './goals';
+import { snapshotQuarter } from './recap';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { Bet, BetOffer, DirectorMoment, DirectorState } from './types';
 
@@ -68,6 +70,8 @@ function betOffers(level: DirectorState, sim: SimState): BetOffer[] {
 // @spec DIR-MOMENT-001, DIR-MOMENT-002, DIR-MOMENT-003, DIR-MOMENT-004, DIR-PLAN-003, DIR-BET-001, DIR-QBR-001, DIR-PEER-001
 export function beginQuarter(level: DirectorState, sim: SimState): DirectorState {
   const s = structuredClone(level);
+  // A new review period begins with this quarter: its goals.
+  if (sim.week > s.periodStart && (sim.week - s.startWeek) % (T.reviewEveryQuarters * T.weeksPerQuarter) === 0) setGoals(s, sim);
   type Draft = Omit<DirectorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
   const first: Draft[] = [];
   const optional: Draft[] = [];
@@ -125,6 +129,7 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
     s.moments.push({ ...d, id: `dm${++s.counters.moment}`, week, day: i % 5, time: i % 2 ? 'afternoon' : 'morning', status: 'open' });
   });
   s.moments.push({ ...review, id: `dm${++s.counters.moment}`, week: 12, day: 4, time: 'afternoon', status: 'open' });
+  s.quarterStart = snapshotQuarter(s, sim);
   return s;
 }
 
@@ -188,6 +193,7 @@ function fund(s: DirectorState, sim: SimState, m: DirectorMoment, plan: Record<s
   }
   const next = apply(sim, effects, log);
   s.bets.push(...bets);
+  s.funded.push(...bets.map((b) => ({ week: sim.week, projectId: b.projectId })));
   return { ok: true, sim: next };
 }
 
@@ -243,6 +249,7 @@ function split(s: DirectorState, sim0: SimState, groupId: string, promote: boole
   sim = apply(sim, projects.filter((_, i) => i % 2 === 1).map((p): Effect => ({ type: 'reassignProject', projectId: p.id, teamId: id, cause })), log);
   if (manager) {
     s.leniency[manager.id] = randomInt(s, [0, 2]);
+    s.joined.push(manager.id);
     sim = apply(sim, [value('team', groupId, 'skill', -T.newSenior.promoteSkill, 'director.orgDesign')], log);
   } else s.arriving[id] = sim.week;
   s.groupIds.push(id);
@@ -266,6 +273,7 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
       s.heldEvaluations = s.heldEvaluations.filter((id) => id !== lead);
       if (choiceId === 'letGo') {
         sim = apply(sim, [{ type: 'remove', personId: lead!, reason: 'fired', cause: { kind: 'action', actionId: 'director.finalEvaluation' } }], log);
+        s.letGo.push(lead!);
         reaction = `${name(sim0, lead!)} leaves. Their group needs a new senior manager.`;
       } else reaction = `${name(sim0, lead!)} has one more period to turn it around.`;
       break;
@@ -275,6 +283,7 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
         const promoted = generateSeniorManager(s, sim, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
         sim = apply(sim, [{ type: 'hire', teamId: g, person: promoted, cause: { kind: 'action', actionId: 'director.newSenior' } }, value('team', g, 'skill', -T.newSenior.promoteSkill, 'director.newSenior')], log);
         s.leniency[promoted.id] = randomInt(s, [0, 2]);
+        s.joined.push(promoted.id);
         reaction = `${promoted.name}, one of ${groupName(sim, g)}'s managers, steps up to lead it.`;
       } else {
         s.arriving[g] = sim.week;
@@ -328,6 +337,7 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
         reaction = `You make the call. It works, and ${name(sim0, lead!)} learns nothing from it.`;
       } else {
         sim = apply(sim, [{ type: 'remove', personId: lead!, reason: 'fired', cause: { kind: 'action', actionId: 'director.trouble' } }], log);
+        s.letGo.push(lead!);
         reaction = `${name(sim0, lead!)} goes. ${groupName(sim, g)} has no senior manager for now.`;
       }
       break;
@@ -371,5 +381,7 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
     }
   }
   m.status = 'answered';
+  // Heads moved or added by a choice are not lost to attrition: remember the groups as they are now.
+  remember(s, sim);
   return { ok: true, level: s, sim, log, reaction };
 }

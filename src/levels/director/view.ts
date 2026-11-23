@@ -1,7 +1,10 @@
 import { band } from '../line-manager';
 import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating, type SimState } from '../../sim';
+import { LINE_TUNING } from '../line-manager';
 import { leaderOf, quarterOf } from './core';
-import type { DirectorState } from './types';
+import { goalStatus } from './goals';
+import { DIRECTOR_TUNING as T } from './tuning';
+import type { BetOffer, DirectorMoment, DirectorState } from './types';
 
 type Schedule = 'onSchedule' | 'behind' | 'overdue';
 
@@ -56,12 +59,28 @@ export interface BetView {
   failing: number;
 }
 
+export interface DirectorMomentView {
+  id: string;
+  kind: DirectorMoment['kind'];
+  title: string;
+  text: string;
+  choices: { id: string; label: string }[];
+  groupId?: string;
+  personId?: string;
+  heads?: number;
+  offers?: BetOffer[];
+}
+
 export interface DirectorView {
   seniorManagers: SeniorManagerView[];
   groups: GroupView[];
   upward: OutsiderView[];
   bets: BetView[];
   habits: DirectorState['habits'];
+  moments: DirectorMomentView[];
+  goals: { id: string; text: string; progress: string }[];
+  player: { energy: number; reputation: number; edge: { at: boolean; quarters: number; limit: number } };
+  career: { quarters: number; joined: string[]; letGo: string[] };
 }
 
 /** What someone remembers: their latest notes, newest first. */
@@ -116,5 +135,35 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
     const p = sim.projects[b.projectId];
     return p ? [{ projectId: p.id, name: p.name, groupId: b.groupId, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: schedule(p.id), landing: b.landing, failing: b.failing }] : [];
   });
-  return { seniorManagers, groups, upward, bets, habits: level.habits };
+  // @spec DIR-VIS-005
+  const moments: DirectorMomentView[] = level.moments.map((m) => ({
+    id: m.id,
+    kind: m.kind,
+    title: m.title,
+    text: m.text,
+    choices: m.choices,
+    ...(m.groupId && { groupId: m.groupId }),
+    ...(m.personId && { personId: m.personId }),
+    ...(m.heads !== undefined && { heads: m.heads }),
+    ...(m.offers && { offers: m.offers }),
+  }));
+  const named = (ids: string[]) => ids.map((id) => sim.people[id]?.name ?? id);
+  return {
+    seniorManagers,
+    groups,
+    upward,
+    bets,
+    habits: level.habits,
+    moments,
+    goals: level.goals.map((g) => {
+      const { text, progress } = goalStatus(g, level, sim);
+      return { id: g.id, text, progress };
+    }),
+    player: {
+      energy: band(100 - sim.player.stress),
+      reputation: band(sim.player.reputation),
+      edge: { at: sim.player.stress >= LINE_TUNING.burnoutThreshold, quarters: level.burnoutQuarters, limit: T.burnoutQuarters },
+    },
+    career: { quarters: (sim.week - level.startWeek) / T.weeksPerQuarter, joined: named(level.joined), letGo: named(level.letGo) },
+  };
 }

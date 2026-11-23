@@ -64,6 +64,29 @@ export interface DirectorMoment {
   offers?: BetOffer[];
 }
 
+export type DirectorGoalKind = 'landBet' | 'zeroRegretted' | 'unstrainGroup' | 'peerTrust';
+
+export interface DirectorGoal {
+  id: string;
+  kind: DirectorGoalKind;
+  /** The game week the goal was set. */
+  week: number;
+  projectId?: string;
+  groupId?: string;
+  personId?: string;
+}
+
+export type RatingCounts = Record<'unrated' | 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding', number>;
+
+/** What the player could see as a quarter began, for the recap. */
+export interface QuarterStart {
+  week: number;
+  seniorManagers: Record<string, { motivation: number; stress: number; skill: number }>;
+  headcount: Record<string, number>;
+  trust: Record<string, number>;
+  surveyQuarter: number;
+}
+
 export interface DirectorState {
   /** The level's own generator, apart from the simulation's and the situation engine's. */
   rngState: number;
@@ -107,5 +130,20 @@ export interface DirectorState {
   leaderlessEnds: Record<string, number>;
   /** Per peer: the review period in which they last went to the executive about the player. */
   escalated: Record<string, number>;
+  /** The review period's goals, and the week the period began. */
+  goals: DirectorGoal[];
+  periodStart: number;
+  /** Each group's rating counts as the level last saw them, so heads lost from them can be counted. */
+  knownRatings: Record<string, RatingCounts>;
+  /** Heads rated meets or better that left, by the week they left. */
+  regretted: { week: number; count: number }[];
+  /** Bets funded and how they ended, by week. */
+  funded: { week: number; projectId: string }[];
+  betResults: { week: number; projectId: string; landed: boolean }[];
+  /** What the player could see as the quarter began. */
+  quarterStart: QuarterStart | null;
+  /** Senior managers who joined after the handover, and those the player let go, for the career summary. */
+  joined: string[];
+  letGo: string[];
   counters: { person: number; team: number; project: number; moment: number; goal: number; bet: number };
 }

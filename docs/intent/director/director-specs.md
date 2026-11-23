@@ -26,7 +26,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-VIS-002**: When the player's view is requested, the director level shall show each group under its senior manager with its current headcount and projects (progress against scope, deadline and schedule status), and its motivation, stress and attrition risk as bands as the last engagement survey measured them, with the survey's quarter, or as they are now in a quarter the listening tour visited it.
 - [x] **DIR-VIS-003**: When the player's view is requested, the director level shall show the executive and each peer with their name, personality, role, trust in the player as a band, memory, and their want once known.
 - [x] **DIR-VIS-004**: When the player's view is requested, the director level shall show each funded bet with the group carrying it, its project's progress against scope, deadline and schedule status, and what it stakes on landing and on failing.
-- [ ] **DIR-VIS-005**: When the player's view is requested, the director level shall also give the habits, the quarter's moments with their kind, title, text and choices, the player's energy and reputation as bands with whether they are at the edge, the goals with their progress, and the career summary.
+- [x] **DIR-VIS-005**: When the player's view is requested, the director level shall also give the habits, the quarter's moments with their kind, title, text and choices, the player's energy and reputation as bands with whether they are at the edge, the goals with their progress, and the career summary.
 - [x] **DIR-VIS-006**: The director level shall never show a senior manager's leniency as a value, and shall show no team or line manager inside a group except as named in situations and the recap.
 
 ## Habits
@@ -90,27 +90,27 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Goals
 
-- [ ] **DIR-GOAL-001**: When a review period begins, the director level shall set two or three goals for it from the organization's state, drawn from: land a named funded bet, keep regretted attrition at zero, bring a named group out of the *strained* band at the next survey, and keep a named peer's trust at *trusting* or better.
-- [ ] **DIR-GOAL-002**: When the player's view is requested, the director level shall show each goal with its progress.
-- [ ] **DIR-GOAL-003**: When the level is assessed for a review, the director level shall add each of the period's goals as a measure, scored as achieved or missed.
+- [x] **DIR-GOAL-001**: When a review period begins, the director level shall set two or three goals for it from the organization's state, drawn from: land a named funded bet, keep regretted attrition at zero, bring a named group out of the *strained* band at the next survey, and keep a named peer's trust at *trusting* or better.
+- [x] **DIR-GOAL-002**: When the player's view is requested, the director level shall show each goal with its progress.
+- [x] **DIR-GOAL-003**: When the level is assessed for a review, the director level shall add each of the period's goals as a measure, scored as achieved or missed.
 
 ## Recap
 
-- [ ] **DIR-RECAP-001**: When a quarter ends, the director level shall return a recap of what changed (each senior manager whose band changed or who gained a memory note other than from a habit, a new survey's results, heads who left or joined, bets that landed, failed or slipped, and changes in the executive's and peers' trust) and of the routine (what each habit did, and each goal's progress).
+- [x] **DIR-RECAP-001**: When a quarter ends, the director level shall return a recap of what changed (each senior manager whose band changed or who gained a memory note other than from a habit, a new survey's results, heads who left or joined, bets that landed, failed or slipped, and changes in the executive's and peers' trust) and of the routine (what each habit did, and each goal's progress).
 
 ## Reviews and the end of the level
 
 - [x] **DIR-END-001**: The director level shall advance the simulation thirteen weeks per turn.
 - [x] **DIR-END-002**: The director level shall be reviewed every two quarters, at quarters 2, 4, 6, 8, 10 and 12 of the level.
-- [ ] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), the executive's confidence (the executive's trust in the player), and calibration quality (how far the groups' ratings sit from what they delivered), each against a tuned target.
+- [x] **DIR-END-003**: When the scorecard is requested, the director level shall report strategic outcomes (bets landed against bets funded in the period, and projects completed by their deadline), retention and health (regretted attrition, and the groups' average motivation and stress as last surveyed), the executive's confidence (the executive's trust in the player), and calibration quality (how far the groups' ratings sit from what they delivered), each against a tuned target.
 - [x] **DIR-END-004**: When the level is assessed for a review, the director level shall report whether promotion is possible, which it is from the third review (quarter 6) on.
 - [x] **DIR-END-005**: When the level is assessed for a review, the director level shall report that it is the level's last review at the sixth review (quarter 12), and not before.
 - [x] **DIR-END-006**: When the simulation has advanced, if the player's stress has been at or above the line manager level's burnout threshold at the end of two consecutive quarters, then the director level shall report that the player has burned out.
 
 ## Turn loop contract
 
-- [ ] **DIR-CONTRACT-001**: The director level shall provide the turn loop's career level contract with a time step of thirteen weeks, its moments' days counted from the quarter's first Monday (week of the quarter × 5 + day), handover choices from the senior manager state, and a take over operation that takes the senior manager state, the simulation and the handover choice and returns the simulation and the director state, or an error.
+- [x] **DIR-CONTRACT-001**: The director level shall provide the turn loop's career level contract with a time step of thirteen weeks, its moments' days counted from the quarter's first Monday (week of the quarter × 5 + day), handover choices from the senior manager state, and a take over operation that takes the senior manager state, the simulation and the handover choice and returns the simulation and the director state, or an error.
 
 ## Level state
 
-- [ ] **DIR-STATE-001**: The director level shall keep its state (habits, the senior managers' leniency, the quarter's moments, funded bets, headcount given and placed, what quarterly reviews left out, the last survey, the listening tour's rotation, plans, goals and the burnout and review counters) serializable as plain data, derived only from the run's seed and commands.
+- [x] **DIR-STATE-001**: The director level shall keep its state (habits, the senior managers' leniency, the quarter's moments, funded bets, headcount given and placed, what quarterly reviews left out, the last survey, the listening tour's rotation, plans, goals and the burnout and review counters) serializable as plain data, derived only from the run's seed and commands.
