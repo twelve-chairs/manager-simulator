@@ -13,7 +13,7 @@ The engine does not render anything (the UI does), interleave situations with th
 
 Four principles shape it:
 
-- **Content is data, never code.** Situations are written as files and loaded as data. Trigger conditions, choice availability and outcomes are expressed in a small, fixed condition language that the engine evaluates; nothing in a situation file is executed. This keeps situations writable without touching code, and keeps content files safe to load (see `.claude/rules/security.md`).
+- **Content is data, never code.** Situations are written as files and loaded as data. Trigger conditions, choice availability and outcomes are expressed in a small, fixed condition language that the engine evaluates; nothing in a situation file is executed. This keeps situations writable without touching code, and keeps content files safe to load (see `.claude/rules/security-and-privacy.md`).
 - **Situations are about someone.** A situation names the roles it needs ("the engineer", "their lead"), and the engine fills them with people, teams or projects that match the role's conditions. The same situation lands on different people across runs, for reasons the simulation state can explain.
 - **Context decides outcomes, not dice.** A choice's outcome is selected by conditions on the current state, never by a random roll. The same choice can go well or badly depending on, say, the person's trust or the player's reputation, and a player can learn why. The same mechanism lets a reaction be written for a person's personality: an outcome conditioned on `engineer.personality` carries the aftermath line for that kind of person. Randomness is used only to choose which situations appear and who they bind to.
 - **Every outcome can be explained.** Each resolved situation leaves a short aftermath line for the moment and a debrief record that the performance review can use to connect later outcomes to earlier choices.
@@ -232,4 +232,4 @@ The content compiler (`scripts/`) is a build-time tool: it reads `content/situat
 - [High-level design](../../high-level-design.md)
 - [Simulation core](../simulation-core/simulation-core-design.md)
 - [Decision: Simulated organization with authored situations](../../decisions/simulation-and-situations.md)
-- [Security rule](../../../.claude/rules/security.md)
+- [Security rule](../../../.claude/rules/security-and-privacy.md)

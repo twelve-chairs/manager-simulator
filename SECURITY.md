@@ -25,4 +25,4 @@ Out of scope: issues that need an already compromised browser or machine, and th
 
 ## How the project stays secure
 
-The rules every change is checked against are in [.claude/rules/security.md](.claude/rules/security.md). Every push is scanned by CodeQL, secret scanning and OpenSSF Scorecard, and Dependabot keeps the development tools and workflow actions up to date.
+The rules every change is checked against are in [.claude/rules/security-and-privacy.md](.claude/rules/security-and-privacy.md). Every push is scanned by CodeQL, secret scanning and OpenSSF Scorecard, and Dependabot keeps the development tools and workflow actions up to date.

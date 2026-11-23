@@ -201,4 +201,4 @@ Vite builds the page (a development dependency). The build compiles the situatio
 - [Line manager level](../line-manager/line-manager-design.md)
 - [Situation engine](../situation-engine/situation-engine-design.md)
 - [Performance review](../performance-review/performance-review-design.md)
-- [Security rule](../../../.claude/rules/security.md)
+- [Security rule](../../../.claude/rules/security-and-privacy.md)

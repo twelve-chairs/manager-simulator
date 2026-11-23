@@ -109,7 +109,7 @@ changed and why.
 2. If `package.json` or `package-lock.json` changed, run `npm audit --omit=dev`.
    Moderate or higher blocks the commit; dev-only advisories are reported.
 
-3. Read the full diff against `.claude/rules/security.md`. Grep the changed
+3. Read the full diff against `.claude/rules/security-and-privacy.md`. Grep the changed
    files for the sinks it names:
 
    ```bash

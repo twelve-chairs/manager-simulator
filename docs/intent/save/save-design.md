@@ -85,4 +85,4 @@ The UI wires these to storage, the file picker and the download link; they hold 
 - [High-level design](../../high-level-design.md)
 - [Turn loop](../turn-loop/turn-loop-design.md)
 - [Presentation / UI](../ui/ui-design.md)
-- [Security rule](../../../.claude/rules/security.md)
+- [Security rule](../../../.claude/rules/security-and-privacy.md)

@@ -4,7 +4,7 @@ description: Comprehensive, repo-wide security and privacy audit of Manager Simu
 argument-hint: [source | deps | build | full]
 ---
 
-`/commit` checks each **diff** against `.claude/rules/security.md`. This skill
+`/commit` checks each **diff** against `.claude/rules/security-and-privacy.md`. This skill
 checks **everything that already exists**: old code that predates a rule,
 history that was never scanned, drift between what the design promises (no
 network, no tracking, local-only) and what the code does, and what actually
@@ -18,7 +18,7 @@ runs section 7. `full` or nothing runs everything.
 **This is an audit, not a fix.** Don't edit, commit or push anything while it
 runs. Report first (section 8). The user decides what to fix, and each fix goes
 through `/commit` like any other change. The standard is
-`.claude/rules/security.md`. Where it conflicts with a documented decision in
+`.claude/rules/security-and-privacy.md`. Where it conflicts with a documented decision in
 `docs/high-level-design.md` or an LLD under `docs/intent/`, the design wins;
 read them before reporting something as a violation.
 
@@ -56,7 +56,7 @@ git log --all --diff-filter=A --name-only --format= | sort -u | grep -Ei '\.env|
 
 - Any secret in history is **Critical** even if since deleted: the repo is
   public. The remedy is revoke and rotate, not a history rewrite.
-- `.gitignore` still covers everything `.claude/rules/security.md` says must
+- `.gitignore` still covers everything `.claude/rules/security-and-privacy.md` says must
   never be committed.
 - `.claude/settings.json` (if tracked) holds no tokens or absolute local paths.
 - **Confidential or personal material.** Read `docs/references/` and all
@@ -167,7 +167,7 @@ Present the report in chat in this structure:
 ## Findings
 ### [CRITICAL|HIGH|MEDIUM|LOW|INFO] <short title>
 - **Where:** `path/to/file.ts:line`
-- **Rule:** <section of .claude/rules/security.md>
+- **Rule:** <section of .claude/rules/security-and-privacy.md>
 - **Issue:** <what is wrong>
 - **Exploit scenario:** <concrete: who, what input, what they gain>
 - **Fix:** <specific change>
