@@ -62,3 +62,23 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   expect(client.asked.find((m) => m.includes('The facilitator asks you'))).toMatch(/You were promoted[\s\S]*director/i);
   expect(problems).toEqual([]);
 });
+
+// @spec PLAY-AI-010
+test('the AI playtester keeps what it played when a request fails, and holds no interview', async ({ page }) => {
+  await startSeeded(page, 101);
+  const working = fakeClient();
+  let calls = 0;
+  const failing: AiClient = {
+    async ask(system, user, schema, effort) {
+      calls += 1;
+      if (calls > 3) throw new Error('400 Your credit balance is too low\nmore detail');
+      return working.ask(system, user, schema, effort);
+    },
+  };
+  const run = await playAi(page, failing, { persona: 'new-manager', until: 'end', maxDecisions: 60 });
+  expect(run.steps).toHaveLength(3);
+  expect(run.interviews).toEqual([]);
+  expect(run.error).toBe('400 Your credit balance is too low');
+  expect(run.reached).toMatch(/stopped by an error: 400 Your credit balance is too low\)$/);
+  expect(calls).toBe(4);
+});
