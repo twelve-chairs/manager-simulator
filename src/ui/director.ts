@@ -1,3 +1,4 @@
+import { draftObject } from './drafts';
 import type { DirectorRecap, DirectorView } from '../levels/director';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
@@ -144,7 +145,7 @@ function panels(ctx: ScreenContext): Child {
 function headcount(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
   const v = viewOf(ctx);
   const key = `headcount:${m.id}`;
-  const counts: Record<string, number> = JSON.parse(ctx.drafts.get(key)?.counts ?? '{}');
+  const counts = draftObject<number>(ctx.drafts.get(key)?.counts);
   const given = m.heads ?? 0;
   const placed = Object.values(counts).reduce((a, b) => a + b, 0);
   const set = (target: string, by: number) => () => {
@@ -179,7 +180,7 @@ function headcount(ctx: ScreenContext, m: DirectorView['moments'][number]): Chil
 function bets(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
   const v = viewOf(ctx);
   const key = `bets:${m.id}`;
-  const picks: Record<string, string> = JSON.parse(ctx.drafts.get(key)?.picks ?? '{}');
+  const picks = draftObject<string>(ctx.drafts.get(key)?.picks);
   const peers = new Map(v.upward.map((u) => [u.id, u.name]));
   return h(
     'div',

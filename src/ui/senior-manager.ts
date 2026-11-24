@@ -1,3 +1,4 @@
+import { draftObject } from './drafts';
 import { quitLastMonth, shippedLastMonth, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
 import type { Run } from '../loop';
 import { RATINGS, type Rating } from '../sim';
@@ -116,7 +117,7 @@ function panels(ctx: ScreenContext): Child {
 function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]): Child {
   const v = viewOf(ctx);
   const key = `calibration:${moment.id}`;
-  const moves: Record<string, { from: Rating; to: Rating; count: number }[]> = JSON.parse(ctx.drafts.get(key)?.moves ?? '{}');
+  const moves = draftObject<{ from: Rating; to: Rating; count: number }[]>(ctx.drafts.get(key)?.moves);
   const save = () => {
     ctx.drafts.set(key, { moves: JSON.stringify(moves) });
     ctx.refresh();
