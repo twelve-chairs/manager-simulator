@@ -56,8 +56,12 @@ choices:
             field: trust
             amount: 3
             historyNote: You explained the expense policy
+          - type: value
+            target: engineer
+            field: motivation
+            amount: -2
         aftermath: "{engineer} is a little out of pocket, but knows exactly why, and what to book next time."
-        debrief: "Explaining the policy keeps it fair and keeps the person on side. Most people want to know the rule more than to break it."
+        debrief: "Explaining the policy keeps it fair and keeps the person on side, though they still pay the difference for a hotel they had no choice about. Most people want to know the rule more than to break it."
   - id: reject
     label: Reject the claim
     outcomes:

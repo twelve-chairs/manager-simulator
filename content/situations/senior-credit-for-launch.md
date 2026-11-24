@@ -31,8 +31,9 @@ choices:
           - { type: value, target: manager, field: motivation, amount: 6, wantTags: { serves: [recognition] }, historyNote: Was named for the launch at the all-hands }
           - { type: value, target: manager, field: trust, amount: 3 }
           - { type: value, target: team, field: motivation, amount: 4 }
-        aftermath: "Heads turn towards {team}. {manager} goes a little red."
-        debrief: Passing credit down costs you nothing your own manager won't see anyway, and it's remembered by the people who did the work.
+          - { type: value, target: player, field: reputation, amount: -2 }
+        aftermath: "Heads turn towards {team}. {manager} goes a little red. Afterwards your own manager asks, half joking, what you did on it."
+        debrief: Passing credit down gives away a moment of your own visibility, at a level where visibility is part of the job. It's remembered by the people who did the work.
   - id: accept-thanks
     label: Accept the thanks
     outcomes:
@@ -53,4 +54,4 @@ choices:
         debrief: Credit you keep for a team's work is a small gain for you and a real loss to them.
 ---
 
-At the all-hands, your own manager thanks you by name for {team}'s launch, which is nearly done and going well.
+At the all-hands, your own manager thanks you by name for {team}'s launch, which is nearly done and going well. It's the kind of moment your own manager remembers at review time.

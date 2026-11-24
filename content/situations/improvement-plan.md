@@ -30,11 +30,15 @@ choices:
             field: stress
             amount: 5
           - type: value
+            target: player
+            field: stress
+            amount: 5
+          - type: value
             target: engineer
             field: trust
             amount: 3
         aftermath: "{engineer} has a clear target and a reason to think it's reachable."
-        debrief: "A plan with specific goals and real support gives someone a fair chance to succeed, and many do."
+        debrief: "A plan with specific goals and real support gives someone a fair chance to succeed, and many do. The weekly check-ins are hours of your own, every week, for as long as it runs."
       - id: going-through-motions
         effects:
           - type: value
@@ -46,6 +50,10 @@ choices:
             target: engineer
             field: motivation
             amount: -3
+          - type: value
+            target: player
+            field: stress
+            amount: 5
         aftermath: "{engineer} signs it, but doesn't look like they believe it."
         debrief: "A plan only works if the person still wants the job. Low motivation needs a real conversation before goals can help."
   - id: paper-trail
@@ -66,4 +74,4 @@ choices:
         debrief: "An improvement plan written to justify an exit tends to become one, and the rest of the team notices how it was done."
 ---
 
-HR has sent the improvement plan template for {engineer}. It has a lot of empty boxes.
+HR has sent the improvement plan template for {engineer}. It has a lot of empty boxes. A real plan means weekly check-ins you'll have to make time for; a plan written for the file takes an afternoon.
