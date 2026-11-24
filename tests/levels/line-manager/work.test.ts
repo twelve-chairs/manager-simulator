@@ -218,31 +218,24 @@ describe('work moments', () => {
   });
 });
 
+/** A night page on call for the first engineer, whose skill is given, against a difficulty-60 page. */
+function paged(skill: number) {
+  const q = quietRun(1);
+  const onCall = engineers(q.sim)[0]!;
+  const sim = patch(q.sim, (s) => (s.people[onCall]!.skill = skill));
+  const { level, id } = withItem(q.level, { kind: 'onCall', subject: project(sim), size: 8, difficulty: 60, lastWeek: sim.week });
+  return { level: begin(level, sim), sim, id, onCall };
+}
+
 describe('on-call moments', () => {
-  /** A page this week, under the rotation, with the engineer on call set to the given skill. */
-  function paged(skill: number) {
-    const q = quietRun(1);
-    const onCall = engineers(q.sim)[0]!;
-    const sim = patch(q.sim, (s) => (s.people[onCall]!.skill = skill));
-    const { level, id } = withItem(q.level, { kind: 'onCall', subject: project(sim), size: 8, difficulty: 60, lastWeek: sim.week });
-    return { level: begin(level, sim), sim, id, onCall };
-  }
-
   // @spec LINE-WORK-005
-  it('offers backing up, taking over, or leaving it to the engineer on call', () => {
+  it('offers rolling back, backing up, taking over, or leaving it to the engineer on call', () => {
     const p = project(quietRun(1).sim).id;
-    const able = paged(90);
-    const m = momentFor(able.level, able.id);
-    expect(m.choices.map((c) => c.id)).toEqual(['backUp', 'takeOver', 'leave']);
-    expect(m.personId).toBe(able.onCall);
-
-    const left = choose(able.level, able.sim, m.id, 'leave');
-    expect(left.sim.player.stress).toBe(able.sim.player.stress);
-    expect(left.sim.people[able.onCall]!.stress).toBeGreaterThan(able.sim.people[able.onCall]!.stress);
-    expect(left.sim.projects[p]!.risk).toBe(able.sim.projects[p]!.risk);
-
     const out = paged(30);
     const mo = momentFor(out.level, out.id);
+    expect(mo.choices.map((c) => c.id)).toEqual(['rollBack', 'backUp', 'takeOver', 'leave']);
+    expect(mo.personId).toBe(out.onCall);
+    expect(paged(90).level.moments.filter((m) => m.kind === 'onCall')).toEqual([]);
     const leftOut = choose(out.level, out.sim, mo.id, 'leave');
     const backed = choose(out.level, out.sim, mo.id, 'backUp');
     const took = choose(out.level, out.sim, mo.id, 'takeOver');
@@ -251,6 +244,27 @@ describe('on-call moments', () => {
     expect(backed.sim.people[out.onCall]!.skill).toBeGreaterThan(out.sim.people[out.onCall]!.skill);
     expect(took.sim.player.stress - out.sim.player.stress).toBeGreaterThan(backed.sim.player.stress - out.sim.player.stress);
     expect(backed.sim.player.stress).toBeGreaterThan(out.sim.player.stress);
+    expect(leftOut.sim.player.stress).toBe(out.sim.player.stress);
+    expect(leftOut.sim.people[out.onCall]!.stress).toBeGreaterThan(out.sim.people[out.onCall]!.stress);
+  });
+
+  // @spec LINE-WORK-012
+  it('ends the outage at once when the change is rolled back, at a cost in progress, teaching nobody', () => {
+    const R = LINE_TUNING.rollBack;
+    const out = paged(30);
+    const p = project(out.sim).id;
+    const start = patch(out.sim, (s) => (s.projects[p]!.progress = 20));
+    const r = choose(out.level, start, momentFor(out.level, out.id).id, 'rollBack');
+    expect(r.sim.projects[p]!.progress).toBe(20 - R.progress);
+    expect(r.sim.projects[p]!.risk).toBe(start.projects[p]!.risk);
+    expect(r.sim.player.reputation).toBe(start.player.reputation);
+    expect(r.sim.people[out.onCall]!.stress).toBe(start.people[out.onCall]!.stress + R.stress);
+    expect(r.sim.people[out.onCall]!.skill).toBe(start.people[out.onCall]!.skill);
+    expect(r.level.items).toEqual([]);
+    expect(r.reaction.length).toBeGreaterThan(0);
+    // never below zero
+    const fresh = patch(out.sim, (s) => (s.projects[p]!.progress = 2));
+    expect(choose(out.level, fresh, momentFor(out.level, out.id).id, 'rollBack').sim.projects[p]!.progress).toBe(0);
   });
 });
 
@@ -293,6 +307,22 @@ describe('callbacks', () => {
     const out = choose(r.level, r.sim, r.momentId, r.choiceId);
     expect(out.reaction.endsWith(line('You argued for them in calibration', name))).toBe(true);
     expect(out.reaction).not.toContain(line('Handled a night page alone', name));
+  });
+
+  // @spec LINE-WORK-006
+  it('never brings up an earlier night page in the reaction to a night page', () => {
+    const out = paged(30);
+    const remember = (note: string) =>
+      patch(out.sim, (s) => s.people[out.onCall]!.history.push({ week: s.week - 1, cause: { kind: 'action', actionId: 'line-manager.on-call' }, note }));
+    const m = momentFor(out.level, out.id).id;
+    for (const [note, choice] of [['Handled a night page with you', 'leave'], ['Handled a night page alone', 'backUp']] as const) {
+      const r = choose(out.level, remember(note), m, choice);
+      expect(r.reaction).not.toContain(CALLBACKS[note]!.replaceAll('{name}', out.sim.people[out.onCall]!.name));
+      expect(r.level.calledBack).toEqual([]);
+    }
+    // a page memory still comes up elsewhere
+    const review = remembering([{ note: 'Handled a night page with you', weeksAgo: 1 }]);
+    expect(choose(review.level, review.sim, review.momentId, review.choiceId).reaction).toContain('sitting in on that page');
   });
 
   // @spec LINE-WORK-006, LINE-WORK-007

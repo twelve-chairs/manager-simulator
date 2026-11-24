@@ -19,7 +19,7 @@ describe('a week’s moments', () => {
     // a vacancy brings an interview moment, a page under the rotation an on-call moment
     const gone = patch(sim, (s) => (s.people[engineers(sim)[4]!]!.status = 'departed'));
     let l2 = { ...quietRun(1).level, vacancies: [{ id: 'v1', interviews: 0 }] };
-    l2 = withItem(l2, { kind: 'onCall', subject: project(gone), size: 8, difficulty: 30, lastWeek: gone.week }).level;
+    l2 = withItem(l2, { kind: 'onCall', subject: project(gone), size: 8, difficulty: 90, lastWeek: gone.week }).level;
     const kinds = begin(l2, gone).moments.map((m) => m.kind).sort();
     expect(kinds).toEqual(['interview', 'onCall']);
   });
@@ -40,7 +40,7 @@ describe('a week’s moments', () => {
   it('places pages at night, interviews on Wednesday and work through the week', () => {
     let { level, sim } = quietRun(1);
     level = { ...level, vacancies: [{ id: 'v1', interviews: 0 }] };
-    level = withItem(level, { kind: 'onCall', subject: project(sim), size: 8, difficulty: 30, lastWeek: sim.week }).level;
+    level = withItem(level, { kind: 'onCall', subject: project(sim), size: 8, difficulty: 90, lastWeek: sim.week }).level;
     for (let i = 0; i < 3; i++) level = withItem(level, { kind: 'designReview', subject: project(sim), lastWeek: sim.week + 2 + i, id: `w${i}` }).level;
     const moments = begin(level, sim).moments;
     for (const m of moments) {

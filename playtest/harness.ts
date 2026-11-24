@@ -348,7 +348,6 @@ function playInPage(options: InPage): PlaySummary {
   /** A band word as the balance harness's band number: 2 is "okay" energy, "busy" stress and "fair" reputation. */
   const bandOf = (kind: keyof typeof BANDS, word: string) => BANDS[kind].indexOf(word.trim());
   const OKAY = 2;
-  const card = (name: string) => qa('[data-panel=team] [data-person]').find((c) => text('[data-field=name]', c) === name) ?? null;
 
   /**
    * Sound practice at the line manager, as the balance design states it and the balance harness plays it
@@ -365,11 +364,8 @@ function playInPage(options: InPage): PlaySummary {
     }
     if (title.startsWith('Final evaluation')) return has('letGo');
     const difficulty = q('[data-scene] [data-field=difficulty]') ? bandOf('skill', text('[data-scene] [data-field=difficulty]')) : undefined;
-    if (title === 'Night page') {
-      const name = /and (.+) is on call\.$/.exec(text('[data-scene] [data-part=text]'))?.[1] ?? '';
-      const onCall = card(name);
-      return onCall && difficulty !== undefined && bandOf('skill', text('[data-field=skill]', onCall)) >= difficulty ? has('leave') : has('backUp');
-    }
+    // Only pages beyond the engineer on call reach a moment: back them up with energy to spare, or roll the change back.
+    if (title === 'Night page') return rested ? has('backUp') : has('rollBack');
     if (title.startsWith('Check-in: ')) {
       const project = qa('[data-project]').find((p) => text('[data-field=name]', p) === title.slice('Check-in: '.length));
       const schedule = project ? text('[data-field=schedule]', project) : 'on schedule';

@@ -133,10 +133,8 @@ function soundChoice(seen: Seen, m: Moment): string {
   if (m.source === 'situation') return has(m, BETTER_CHOICES[m.situationId!] ?? '') ? BETTER_CHOICES[m.situationId!]! : first(m);
   // Someone still delivering poorly at the end of an improvement plan is weighing on the team.
   if (m.kind === 'finalEvaluation') return 'letGo';
-  if (m.kind === 'onCall') {
-    const onCall = view.people.find((p) => p.id === m.personId);
-    return onCall && m.difficulty !== undefined && onCall.skill >= m.difficulty ? 'leave' : 'backUp';
-  }
+  // Only pages beyond the engineer on call reach a moment: back them up with energy to spare, or roll the change back.
+  if (m.kind === 'onCall') return rested ? 'backUp' : 'rollBack';
   if (m.kind === 'checkIn') {
     const p = view.projects.find((x) => x.id === m.projectId);
     if (p && p.schedule !== 'onSchedule' && view.player.reputation >= OKAY) return 'cutScope';

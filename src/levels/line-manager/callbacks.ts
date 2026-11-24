@@ -29,6 +29,9 @@ export const CALLBACKS: Readonly<Record<string, string>> = {
   'Given one more quarter': '{name} knows this quarter is their last chance. It shows in how carefully they answer.',
 };
 
+/** Night pages' memories: a reaction to a night page never brings one up, since any line about the last page reads as an answer to this one. */
+const NIGHT_PAGE_NOTES: ReadonlySet<string> = new Set(['Handled a night page with you', 'Handled a night page alone']);
+
 /** The key a called-back memory is recorded by: the person, the week and the note. */
 const keyOf = (personId: string, week: number, note: string) => `${personId}@${week}:${note}`;
 
@@ -38,13 +41,14 @@ const keyOf = (personId: string, week: number, note: string) => `${personId}@${w
  * so the choice's own memory is not brought up by it.
  */
 // @spec LINE-WORK-006, LINE-WORK-007
-export function callBack(level: LineState, sim: SimState, personId: string): string | null {
+export function callBack(level: LineState, sim: SimState, personId: string, onNightPage = false): string | null {
   const person = sim.people[personId];
   if (!person) return null;
   const since = sim.week - LINE_TUNING.callbackWeeks;
   for (const entry of [...person.history].reverse()) {
     if (entry.week < since) break;
     if (!entry.note || !Object.hasOwn(CALLBACKS, entry.note)) continue;
+    if (onNightPage && NIGHT_PAGE_NOTES.has(entry.note)) continue;
     const key = keyOf(personId, entry.week, entry.note);
     if (level.calledBack.includes(key)) continue;
     level.calledBack.push(key);

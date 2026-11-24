@@ -119,7 +119,7 @@ describe('what a check-in and a night page say', () => {
   it('says a change from the project took production down, and who is on call', () => {
     const q = quietRun(1);
     const p = projects(q.sim)[0]!;
-    const l = withItem(q.level, { kind: 'onCall', subject: { kind: 'project', id: p }, size: 8, difficulty: 30, lastWeek: q.sim.week }).level;
+    const l = withItem(q.level, { kind: 'onCall', subject: { kind: 'project', id: p }, size: 8, difficulty: 90, lastWeek: q.sim.week }).level;
     const begun = begin(l, q.sim);
     const m = begun.moments.find((x) => x.kind === 'onCall')!;
     const text = textOf(begun, q.sim, 'onCall');
@@ -134,7 +134,7 @@ describe('check-ins among the week’s moments', () => {
   it('comes after pages and before interviews and work, on Monday morning', () => {
     const { level, sim, p } = risky();
     let l = { ...level, vacancies: [{ id: 'v1', interviews: 0 }] };
-    l = withItem(l, { kind: 'onCall', subject: { kind: 'project', id: p }, size: 8, difficulty: 30, lastWeek: sim.week }).level;
+    l = withItem(l, { kind: 'onCall', subject: { kind: 'project', id: p }, size: 8, difficulty: 90, lastWeek: sim.week }).level;
     for (let i = 0; i < 6; i++) l = withItem(l, { kind: 'designReview', subject: { kind: 'project', id: p }, lastWeek: sim.week + 2 + i, id: `w${i}` }).level;
     const moments = begin(l, sim).moments;
     expect(moments.map((m) => m.kind)).toEqual(['onCall', 'checkIn', 'interview', 'work', 'work'].slice(0, LINE_TUNING.levelMomentCap));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { setHabit } from '../../../src/levels/line-manager';
+import { LINE_TUNING, setHabit } from '../../../src/levels/line-manager';
 import { beginWeek } from '../../../src/levels/line-manager';
 import { begin, end, engineers, expectRefused, habit, nextWeek, patch, projects, quietRun, run, withItem } from './fixtures';
 
@@ -16,7 +16,7 @@ describe('habits', () => {
   it('applies a change to this week’s habit effects and later weeks’ moments, not moments already made', () => {
     let { level, sim } = quietRun(1);
     const [a] = engineers(sim) as [string];
-    level = withItem(level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 30, lastWeek: 0 }).level;
+    level = withItem(level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 90, lastWeek: 0 }).level;
     level = begin(level, sim);
     const onCall = level.moments.find((m) => m.kind === 'onCall');
     expect(onCall).toBeDefined();
@@ -112,8 +112,13 @@ describe('night pages', () => {
   });
 
   // @spec LINE-HABIT-011
-  it('rotates pages through the team by week, or gives them to the most skilled', () => {
-    const { level, sim } = quietRun(1);
+  it('rotates pages beyond the engineer on call through the team by week, or gives them to the most skilled', () => {
+    const q = quietRun(1);
+    const level = q.level;
+    // Everyone below the page's difficulty, so every page is a moment.
+    const sim = patch(q.sim, (s) => engineers(q.sim).forEach((id) => (s.people[id]!.skill = 30)));
+    const page = (l: typeof level, s: typeof sim) =>
+      withItem(l, { kind: 'onCall', subject: { kind: 'project', id: projects(s)[0]! }, size: 8, difficulty: 90, lastWeek: s.week }).level;
     const people = engineers(sim);
     const onCallIn = (week: number) => {
       const s = patch(sim, (st) => (st.week = week));
@@ -127,9 +132,29 @@ describe('night pages', () => {
     const two = begin(page(page(level, sim), sim), sim);
     expect(two.moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[0], people[0]]);
 
-    const skilled = patch(sim, (s) => (s.people[people[3]!]!.skill = 90));
+    const skilled = patch(sim, (s) => (s.people[people[3]!]!.skill = 70));
     const seniors = begin(page(habit(level, skilled, 'nightPages', 'seniors'), skilled), skilled);
     expect(seniors.moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[3]]);
+  });
+
+  // @spec LINE-HABIT-011, LINE-HABIT-013
+  it('lets the engineer on call handle a page their skill reaches, with no moment, as if left to them', () => {
+    const q = quietRun(1);
+    const [first] = engineers(q.sim);
+    const sim = patch(q.sim, (s) => (s.people[first!]!.skill = 70));
+    const routine = withItem(q.level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 65, lastWeek: sim.week }).level;
+    const begun = begin(routine, sim);
+    expect(begun.moments.filter((m) => m.kind === 'onCall')).toEqual([]);
+    const ended = end(begun, sim);
+    const quiet = end(begin(q.level, sim), sim);
+    const who = ended.sim.people[first!]!;
+    expect(who.stress - quiet.sim.people[first!]!.stress).toBe(LINE_TUNING.work.delegateStress);
+    expect(who.history.filter((h) => h.week === sim.week).map((h) => h.note)).toContain('Handled a night page alone');
+    expect(ended.sim.player.stress).toBe(quiet.sim.player.stress);
+    expect(ended.sim.player.reputation).toBe(quiet.sim.player.reputation);
+    expect(ended.recap.expired).toEqual([]);
+    expect(ended.level.items.filter((i) => i.kind === 'onCall')).toEqual([]);
+    expect(ended.recap.habits).toContain(`${who.name} handled 1 night page on their own.`);
   });
 });
 

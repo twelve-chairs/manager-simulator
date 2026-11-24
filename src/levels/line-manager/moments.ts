@@ -2,7 +2,7 @@ import { callBack } from './callbacks';
 import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type Rating, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
 import { reaction } from './reactions';
-import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL, PAY_DOWN, SMALLER_CHANGE } from './tuning';
+import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL, PAY_DOWN, ROLL_BACK, SMALLER_CHANGE } from './tuning';
 import { FELL_SHORT, WORK_LABELS, consequence, workChoices } from './work';
 import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, WorkItem } from './types';
 
@@ -35,6 +35,7 @@ function dueCheckIns(level: LineState, sim: SimState): string[] {
 }
 
 const ON_CALL_CHOICES: MomentChoice[] = [
+  { id: 'rollBack', label: 'Roll the change back' },
   { id: 'backUp', label: 'Back them up' },
   { id: 'takeOver', label: 'Take over' },
   { id: 'leave', label: 'Leave it to them' },
@@ -85,9 +86,17 @@ export function addMoments(s: LineState, sim: SimState) {
     make({ kind: 'finalEvaluation', ref: held.personId, day: 0, time: 'afternoon', choices: finalEvaluationChoices(sim, held.personId, held.rating) });
   }
   // Night pages next: they cannot wait for another week.
+  // @spec LINE-HABIT-011
+  // A page the engineer on call can handle is theirs, with no moment; only pages beyond them come to the player.
   const onCall = onCallEngineer(s, sim);
   if (onCall) {
-    for (const [i, item] of open(['onCall']).entries()) {
+    s.routinePages = Object.fromEntries(Object.entries(s.routinePages).filter(([id]) => s.items.some((i) => i.id === id && i.lastWeek >= week)));
+    const pages = open(['onCall']).filter((item) => !Object.hasOwn(s.routinePages, item.id));
+    for (const item of pages.filter((i) => band(sim.people[onCall]!.skill) >= band(i.difficulty))) {
+      s.routinePages[item.id] = onCall;
+      covered.add(item.id);
+    }
+    for (const [i, item] of pages.filter((p) => !covered.has(p.id)).entries()) {
       if (room <= 0) break;
       make({ kind: 'onCall', ref: item.id, personId: onCall, day: i % 5, time: 'night', choices: structuredClone(ON_CALL_CHOICES) });
     }
@@ -115,7 +124,7 @@ export function addMoments(s: LineState, sim: SimState) {
 const resolve = (s: LineState, item: WorkItem) => (s.items = s.items.filter((i) => i.id !== item.id));
 
 /** Applies one choice for an open level moment at once and closes the moment. */
-// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011
+// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011, LINE-WORK-012
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-011, LINE-INBOX-012
 // @spec LINE-HIRE-003, LINE-HIRE-004, LINE-CHECK-003, LINE-CHECK-004, LINE-CHECK-005, LINE-CHECK-006
 export function chooseMoment(level: LineState, sim: SimState, momentId: string, choiceId: string): LevelResult<ChoiceResult> {
@@ -195,7 +204,14 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
       if (choiceId !== 'takeOver' && !isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
       const short = isEngineer(s, sim, id) && item.difficulty > engineer(id).skill;
       const cause = action(ON_CALL);
-      if (choiceId === 'takeOver') {
+      if (choiceId === 'rollBack') {
+        const R = LINE_TUNING.rollBack;
+        const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+        const slip = p ? Math.min(R.progress, Math.floor(p.progress)) : 0;
+        if (p && slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(ROLL_BACK)));
+        if (isEngineer(s, sim, id)) effects.push(personEffect(id, 'stress', R.stress, action(ROLL_BACK)));
+        text = reaction('rollBack', p?.name ?? thing);
+      } else if (choiceId === 'takeOver') {
         effects.push(playerEffect('stress', item.size, cause));
         text = reaction('takeOver', thing, sim.people[id]);
       } else if (choiceId === 'backUp') {
@@ -254,7 +270,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the choice: ${applied.error.message}` };
   // @spec LINE-WORK-006
-  const recalled = involved !== undefined ? callBack(s, sim, involved) : null;
+  const recalled = involved !== undefined ? callBack(s, sim, involved, moment.kind === 'onCall') : null;
   if (recalled) text = `${text} ${recalled}`;
   // A choice that costs the player energy ends the week's chance of being quiet.
   if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.tookOnWork = true;

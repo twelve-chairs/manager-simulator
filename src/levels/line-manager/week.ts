@@ -1,5 +1,5 @@
 import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type Effect, type HistoryEntry, type SimState } from '../../sim';
-import { RATING_WORDS, action, band, calmRisk, generateProject, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
+import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
@@ -93,8 +93,21 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${able.length} of ${theirs.length} routine approvals.`);
   }
 
+  // @spec LINE-HABIT-013
+  // Night pages the engineer on call could handle are theirs, as if the player had left the page to them.
+  const handled = new Map<string, number>();
+  for (const item of s.items.filter((i) => i.kind === 'onCall' && Object.hasOwn(s.routinePages, i.id))) {
+    const id = s.routinePages[item.id]!;
+    signed.add(item.id);
+    if (!isEngineer(s, sim, id)) continue;
+    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page alone' }));
+    handled.set(id, (handled.get(id) ?? 0) + 1);
+  }
+  for (const [id, n] of handled) recap.habits.push(`${nameOf(sim, id)} handled ${n} night page${n === 1 ? '' : 's'} on their own.`);
+  s.routinePages = {};
+
   // Night pages with no moment this week (you take pages, they arrived while you did, or nobody could be on call) are yours.
-  const covered = new Set(s.moments.filter((m) => m.week === week).map((m) => m.ref));
+  const covered = new Set([...s.moments.filter((m) => m.week === week).map((m) => m.ref), ...signed]);
   const pages = s.items.filter((i) => i.kind === 'onCall' && !covered.has(i.id));
   for (const item of pages) {
     effects.push(playerEffect('stress', item.size * t.pageStressPerSize, action(HABIT_CAUSE.nightPages)));

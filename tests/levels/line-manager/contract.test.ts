@@ -34,7 +34,7 @@ describe('the turn loop contract', () => {
     const q = quietRun(1);
     const p = { kind: 'project' as const, id: projects(q.sim)[0]! };
     let l = { ...q.level, vacancies: [{ id: 'v1', interviews: 0 }] };
-    l = withItem(l, { kind: 'onCall', subject: p, size: 8, difficulty: 30, lastWeek: q.sim.week, id: 'page' }).level;
+    l = withItem(l, { kind: 'onCall', subject: p, size: 8, difficulty: 90, lastWeek: q.sim.week, id: 'page' }).level;
     l = withItem(l, { kind: 'designReview', subject: p, lastWeek: q.sim.week + 2, id: 'review' }).level;
     l = begin(l, q.sim);
     const openIn = (level: typeof l, sim: typeof q.sim) => Object.fromEntries(L.moments(level, sim).map((m) => [level.moments.find((x) => x.id === m.id)!.ref, m.open]));

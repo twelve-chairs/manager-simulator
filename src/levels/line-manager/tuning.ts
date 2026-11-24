@@ -112,6 +112,8 @@ export const LINE_TUNING = {
 
   /** Fixing the debt a design review touches: offered from this tech debt band; the project slows and its debt falls. */
   payDown: { band: 1, progress: 6, techDebt: 15, stress: 2 },
+  /** Rolling back the change behind a night page: progress lost, and the on-call engineer's stress. */
+  rollBack: { progress: 5, stress: 3 },
   /** Offering a customer a smaller change: less reputation lost than letting the request expire. */
   smallerChange: { reputation: 1 },
 
@@ -154,6 +156,7 @@ export const DELEGATE = 'line-manager.delegate';
 export const ACCEPT_INTAKE = 'line-manager.accept-intake';
 export const DECLINE_INTAKE = 'line-manager.decline-intake';
 export const PAY_DOWN = 'line-manager.pay-down';
+export const ROLL_BACK = 'line-manager.roll-back';
 export const SMALLER_CHANGE = 'line-manager.smaller-change';
 export const FINAL_EVALUATION = 'line-manager.final-evaluation';
 export const INTERVIEW = 'line-manager.interview';

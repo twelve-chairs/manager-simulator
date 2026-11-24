@@ -18,6 +18,7 @@ export const PLAYER_ACTIONS = {
     'line-manager.accept-intake',
     'line-manager.decline-intake',
     'line-manager.pay-down',
+    'line-manager.roll-back',
     'line-manager.smaller-change',
   ],
 } as const;

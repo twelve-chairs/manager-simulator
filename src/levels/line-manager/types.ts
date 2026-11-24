@@ -83,6 +83,8 @@ export interface LineState {
   completions: Record<string, number>;
   /** The memories a reaction has brought up, as person, week and note, so each is called back once. */
   calledBack: string[];
+  /** This week's night pages the engineer on call handles on their own: item id to that engineer. */
+  routinePages: Record<string, string>;
   /** Project id to the week of its last check-in moment. */
   checkIns: Record<string, number>;
   /** Consecutive weeks the player's stress has been at or above the burnout threshold. */
