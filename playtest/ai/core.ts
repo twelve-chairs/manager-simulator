@@ -168,7 +168,7 @@ export function decisionMessage(screen: Screen, notebook: string, lastRead: stri
   ];
   if (screen.habits.length) lines.push(`Habits:\n${screen.habits.map((h) => `- \`${h.id}\` (${h.label}), now \`${h.value}\`; options: ${h.options.map((o) => `\`${o.value}\` (${o.label})`).join(', ')}`).join('\n')}`);
   if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${screen.placement.targets.map((t) => `- \`${t.id}\`: ${t.label}`).join('\n')}`);
-  if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several):\n${screen.calibration.moves.map((m) => `- \`${m.id}\`: ${m.label}`).join('\n')}`);
+  if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several; moves apply in the order given, so a head moved into a row can be moved on from it):\n${screen.calibration.moves.map((m) => `- \`${m.id}\`: ${m.label}`).join('\n')}`);
   if (screen.funding) lines.push(`Bets on offer:\n${screen.funding.offers.map((o) => `- \`${o.id}\`: ${o.label}`).join('\n')}\nGroups that could carry one:\n${screen.funding.groups.map((g) => `- \`${g.id}\`: ${g.label}`).join('\n')}`);
   return lines.join('\n\n');
 }

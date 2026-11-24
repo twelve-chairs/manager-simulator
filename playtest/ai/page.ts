@@ -56,7 +56,7 @@ export function readPage(page: Page): Promise<PageState> {
     const choices = qa('[data-scene] [data-choice]').map((b) => ({ id: b.dataset.choice!, label: words(b) }));
     const headcount = q('[data-scene] [data-detail=headcount]');
     const bets = q('[data-scene] [data-detail=bets]');
-    const calibration = qa('[data-scene] [data-move]');
+    const calibration = qa('[data-scene] [data-calibration]');
     const firstPicker = bets ? (q('[data-offer] select', bets) as unknown as HTMLSelectElement | null) : null;
     return {
       screen,
@@ -77,12 +77,18 @@ export function readPage(page: Page): Promise<PageState> {
             targets: qa('[data-step-up]', headcount).map((b) => ({ id: b.dataset.stepUp!, label: (b.closest('li')?.querySelector('span')?.textContent ?? b.dataset.stepUp!).trim() })),
           },
         }),
+        // Every move between neighbouring ratings, not only the buttons showing now: moving a head into a row gives
+        // that row its own buttons, as a player sees after their first click.
         ...(calibration.length > 0 && {
           calibration: {
-            moves: calibration.map((b) => {
-              const team = (b.closest('[data-calibration]')?.querySelector('h3, h4, strong, caption')?.textContent ?? b.dataset.move!.split(':')[0]!).trim();
-              const from = b.dataset.move!.split(':')[1];
-              return { id: b.dataset.move!, label: `${team}: ${from} ${(b.textContent ?? '').trim().toLowerCase()}` };
+            moves: calibration.flatMap((table) => {
+              const id = table.dataset.calibration!;
+              const team = (q('h3', table)?.textContent ?? id).trim();
+              const ratings = ['below', 'partial', 'meets', 'exceeds', 'outstanding'];
+              return ratings.flatMap((r, i) => [
+                ...(i > 0 ? [{ id: `${id}:${r}:${ratings[i - 1]}`, label: `${team}: ${r} down to ${ratings[i - 1]}` }] : []),
+                ...(i < ratings.length - 1 ? [{ id: `${id}:${r}:${ratings[i + 1]}`, label: `${team}: ${r} up to ${ratings[i + 1]}` }] : []),
+              ]);
             }),
           },
         }),
