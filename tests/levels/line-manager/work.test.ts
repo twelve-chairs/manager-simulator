@@ -286,12 +286,13 @@ const hasMoment = (level: LineState, ref: string) => level.moments.some((m) => m
 
 describe('routine design reviews', () => {
   // @spec LINE-WORK-001, LINE-WORK-013
-  it('hands a review someone can handle unstrained, on a low-debt project, to the least stressed of them, with no moment', () => {
+  it('hands a review someone can handle unstrained, on a project with no worse than moderate debt, to the least stressed of them, with no moment', () => {
     const r = review(10, 50, { 0: { skill: 70, stress: 30 }, 1: { skill: 55, stress: 20 }, 2: { skill: 30, stress: 0 } });
     expect(hasMoment(r.level, 'r1')).toBe(false);
     expect(r.level.routineReviews).toEqual({ r1: r.ids[1] });
     // a debt worth paying down, a review beyond everyone, or only strained engineers who could take it: a moment
-    expect(hasMoment(review(30, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
+    expect(hasMoment(review(30, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1'), 'moderate debt is still routine').toBe(false);
+    expect(hasMoment(review(45, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
     expect(hasMoment(review(10, 90, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
     const strained = review(10, 50, { 0: { skill: 70, stress: 65 } });
     expect(hasMoment(strained.level, 'r1')).toBe(true);
@@ -420,7 +421,7 @@ describe('trades in routine work', () => {
     // Beyond everyone, so a moment though the debt is low (LINE-WORK-013).
     const below = oneOf('designReview', edge(P.band) - 1, 'w7', 95);
     expect(momentFor(below.level, below.id).choices.map((c) => c.id)).not.toContain('payDown');
-    const at = oneOf('designReview', edge(P.band));
+    const at = oneOf('designReview', edge(P.band), 'w7', 95);
     const ids = momentFor(at.level, at.id).choices.map((c) => c.id);
     expect(ids.at(-2)).toBe('payDown');
     expect(ids.at(-1)).toBe('pushBack');

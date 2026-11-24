@@ -57,7 +57,7 @@ export const LINE_TUNING = {
   callbackWeeks: 8,
   work: {
     /** Player stress per unit of size for work done yourself. */
-    selfStressPerSize: 1.2,
+    selfStressPerSize: 1.4,
     delegateStress: 6,
     stretchSkill: 1,
     declineIntakeReputation: -2,

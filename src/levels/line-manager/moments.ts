@@ -119,7 +119,7 @@ export function addMoments(s: LineState, sim: SimState) {
   s.routineReviews = Object.fromEntries(Object.entries(s.routineReviews).filter(([id, who]) => s.items.some((i) => i.id === id) && isEngineer(s, sim, who)));
   for (const item of open(['designReview']).filter((i) => !Object.hasOwn(s.routineReviews, i.id))) {
     const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-    if (!p || band(p.techDebt) >= LINE_TUNING.payDown.band) continue;
+    if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) continue;
     const able = teamEngineers(s, sim)
       .filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty) && band(sim.people[id]!.stress) < STRAINED)
       .sort((a, b) => sim.people[a]!.stress - sim.people[b]!.stress || (a < b ? -1 : 1));
