@@ -41,7 +41,7 @@ export async function startSeeded(page: Page, seed: number) {
 }
 
 export type Strategy = 'sound' | 'delegate' | 'hero' | 'decline' | 'waiter' | 'mixed' | 'heavyThenEase';
-export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning' | 'directorHandover';
+export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning' | 'seniorHandover' | 'directorHandover';
 
 export interface PlayOptions {
   strategy: Strategy;
@@ -617,6 +617,7 @@ function playInPage(options: InPage): PlaySummary {
       } else {
         summary.seen.handover = { choice, options: offered.filter((o) => o.id !== 'hire') };
         seniorBase = lastReviewWeek;
+        if (options.until === 'seniorHandover') return { ...summary, stoppedAt: 'senior handover', violations: [...violations] };
       }
       read('handover', q('[data-screen]'));
       press(q(`[data-handover="${choice}"]`));

@@ -21,6 +21,8 @@ export interface Screen {
   placement?: { heads: number; targets: { id: string; label: string }[] };
   /** Strategy bets: each offer and the groups that could carry it. */
   funding?: { offers: { id: string; label: string }[]; groups: { id: string; label: string }[] };
+  /** Calibration: each move of one head the scene offers, by its id (team:from:to). */
+  calibration?: { moves: { id: string; label: string }[] };
   /** Whether the moment can be let wait. */
   canWait: boolean;
 }
@@ -52,10 +54,11 @@ export const ReplySchema = z.object({
   thinkAloud: z.string().describe('What you are thinking, in one to four sentences, as a player thinking aloud.'),
   feeling: z.enum(['clear', 'unsure', 'confused', 'surprised']).describe('How clear this screen and its choices were to you.'),
   action: z.object({
-    kind: z.enum(['choose', 'wait', 'place', 'fund']),
+    kind: z.enum(['choose', 'wait', 'place', 'fund', 'calibrate']),
     choiceId: z.string().describe('For choose: the id of the choice. Otherwise an empty string.'),
     place: z.array(z.object({ target: z.string(), count: z.number().int() })).describe('For place: where each head goes. Otherwise empty.'),
     fund: z.array(z.object({ offerId: z.string(), groupId: z.string() })).describe('For fund: each bet funded and the group to carry it. Otherwise empty.'),
+    calibrate: z.array(z.object({ move: z.string(), count: z.number().int() })).describe('For calibrate: each move and how many heads to move that way, then settle. Empty settles as proposed. Otherwise empty.'),
   }),
   habits: z.array(z.object({ habit: z.string(), value: z.string() })).describe('Habit changes to make before acting, if any. Usually empty.'),
   notebook: z.string().describe('Your notebook, rewritten: what you have learned about the game, what you suspect, what you would do differently. Under 300 words.'),
@@ -73,7 +76,8 @@ export type Action =
   | { kind: 'choose'; choiceId: string }
   | { kind: 'wait' }
   | { kind: 'place'; place: Record<string, number> }
-  | { kind: 'fund'; fund: Record<string, string> };
+  | { kind: 'fund'; fund: Record<string, string> }
+  | { kind: 'calibrate'; calibrate: Record<string, number> };
 
 /** Checks a reply against what the screen offers, returning the action and habit changes to make, or why not. */
 // @spec PLAY-AI-003
@@ -115,6 +119,16 @@ export function checkReply(screen: Screen, reply: Reply): { ok: true; action: Ac
       if (Object.keys(fund).length > 2) return { ok: false, reason: 'At most two bets can be funded.' };
       return { ok: true, action: { kind: 'fund', fund }, habits: reply.habits };
     }
+    case 'calibrate': {
+      if (!screen.calibration) return { ok: false, reason: 'There is no calibration on this screen.' };
+      const calibrate: Record<string, number> = {};
+      for (const m of a.calibrate) {
+        if (!screen.calibration.moves.some((x) => x.id === m.move)) return { ok: false, reason: `"${m.move}" is not a move on offer. The moves are: ${screen.calibration.moves.map((x) => x.id).join(', ')}.` };
+        if (m.count < 1) return { ok: false, reason: 'Move at least one head, or leave the move out.' };
+        calibrate[m.move] = (calibrate[m.move] ?? 0) + m.count;
+      }
+      return { ok: true, action: { kind: 'calibrate', calibrate }, habits: reply.habits };
+    }
   }
 }
 
@@ -129,7 +143,7 @@ export function systemPrompt(persona: Persona): string {
     `Who you are: ${PERSONAS[persona]}`,
     'You know only what the screen shows you and what you wrote in your notebook. Play as yourself: choose what you would really choose, and do not try to game the rules.',
     'Each time, think aloud briefly, say how clear the screen was, take one action the screen offers, and rewrite your notebook.',
-    'Actions: "choose" one of the listed choices by its id; "wait" to let the moment pass when the screen allows it; "place" to place the quarter\'s heads (targets and counts); "fund" to fund at most two bets, naming each bet\'s carrying group. You may also change habits before acting, using the habit and option ids shown.',
+    'Actions: "choose" one of the listed choices by its id; "wait" to let the moment pass when the screen allows it; "place" to place the quarter\'s heads (targets and counts); "fund" to fund at most two bets, naming each bet\'s carrying group; "calibrate" to move heads between ratings in a calibration (each move once per head), then settle it. You may also change habits before acting, using the habit and option ids shown.',
   ].join('\n\n');
 }
 
@@ -154,6 +168,7 @@ export function decisionMessage(screen: Screen, notebook: string, lastRead: stri
   ];
   if (screen.habits.length) lines.push(`Habits:\n${screen.habits.map((h) => `- \`${h.id}\` (${h.label}), now \`${h.value}\`; options: ${h.options.map((o) => `\`${o.value}\` (${o.label})`).join(', ')}`).join('\n')}`);
   if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${screen.placement.targets.map((t) => `- \`${t.id}\`: ${t.label}`).join('\n')}`);
+  if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several):\n${screen.calibration.moves.map((m) => `- \`${m.id}\`: ${m.label}`).join('\n')}`);
   if (screen.funding) lines.push(`Bets on offer:\n${screen.funding.offers.map((o) => `- \`${o.id}\`: ${o.label}`).join('\n')}\nGroups that could carry one:\n${screen.funding.groups.map((g) => `- \`${g.id}\`: ${g.label}`).join('\n')}`);
   return lines.join('\n\n');
 }

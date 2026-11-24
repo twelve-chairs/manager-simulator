@@ -19,11 +19,15 @@ function fakeClient(): AiClient & { asked: string[] } {
       const choice = /Choices \(ids in backticks\):\n- `([^`]+)`/.exec(user)?.[1] ?? '';
       const heads = /Heads to place: (\d+)\. Targets:\n- `([^`]+)`/.exec(user);
       const bet = /Bets on offer:\n- `([^`]+)`[\s\S]*Groups that could carry one:\n- `([^`]+)`/.exec(user);
+      const move = /Calibration moves[^\n]*\n- `([^`]+)`/.exec(user);
+      const none = { place: [], fund: [], calibrate: [] };
       const action = heads
-        ? { kind: 'place', choiceId: '', place: [{ target: heads[2], count: Number(heads[1]) }], fund: [] }
+        ? { ...none, kind: 'place', choiceId: '', place: [{ target: heads[2], count: Number(heads[1]) }] }
         : bet
-          ? { kind: 'fund', choiceId: '', place: [], fund: [{ offerId: bet[1], groupId: bet[2] }] }
-          : { kind: 'choose', choiceId: choice, place: [], fund: [] };
+          ? { ...none, kind: 'fund', choiceId: '', fund: [{ offerId: bet[1], groupId: bet[2] }] }
+          : move
+            ? { ...none, kind: 'calibrate', choiceId: '', calibrate: [{ move: move[1], count: 1 }] }
+            : { ...none, kind: 'choose', choiceId: choice };
       return schema.parse({ thinkAloud: 'A fake thought.', feeling: 'clear', action, habits: [], notebook: 'Fake notes.' });
     },
   };
@@ -83,4 +87,26 @@ test('the AI playtester keeps what it played when a request fails, and holds no 
   expect(run.error).toBe('400 Your credit balance is too low');
   expect(run.reached).toMatch(/stopped by an error: 400 Your credit balance is too low\)$/);
   expect(calls).toBe(4);
+});
+
+// @spec PLAY-AI-002, PLAY-AI-003
+test('the AI playtester moves heads in a senior manager calibration, with a fake client', async ({ page }) => {
+  test.setTimeout(10 * 60_000);
+  const problems = watch(page);
+  let carried = false;
+  for (let seed = 101; seed <= 140; seed++) {
+    await startSeeded(page, seed);
+    const s = await play(page, { strategy: 'sound', seed, maxWeeks: 120, until: 'seniorHandover' });
+    if (s.seen.handover) {
+      carried = true;
+      break;
+    }
+  }
+  expect(carried, 'a scripted run reached the senior manager').toBe(true);
+  const client = fakeClient();
+  // Six months reach the first review's calibration.
+  const run = await playAi(page, client, { persona: 'new-manager', until: 'director', maxDecisions: 40 });
+  expect(run.steps.some((s) => s.action.kind === 'calibrate'), 'a calibration was settled with a move').toBe(true);
+  expect(run.steps.filter((s) => s.note), 'every fake reply was valid').toEqual([]);
+  expect(problems).toEqual([]);
 });

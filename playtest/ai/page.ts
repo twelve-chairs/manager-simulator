@@ -56,6 +56,7 @@ export function readPage(page: Page): Promise<PageState> {
     const choices = qa('[data-scene] [data-choice]').map((b) => ({ id: b.dataset.choice!, label: words(b) }));
     const headcount = q('[data-scene] [data-detail=headcount]');
     const bets = q('[data-scene] [data-detail=bets]');
+    const calibration = qa('[data-scene] [data-move]');
     const firstPicker = bets ? (q('[data-offer] select', bets) as unknown as HTMLSelectElement | null) : null;
     return {
       screen,
@@ -74,6 +75,15 @@ export function readPage(page: Page): Promise<PageState> {
           placement: {
             heads: Number(q('[data-field=heads-given]', headcount)?.textContent ?? 0),
             targets: qa('[data-step-up]', headcount).map((b) => ({ id: b.dataset.stepUp!, label: (b.closest('li')?.querySelector('span')?.textContent ?? b.dataset.stepUp!).trim() })),
+          },
+        }),
+        ...(calibration.length > 0 && {
+          calibration: {
+            moves: calibration.map((b) => {
+              const team = (b.closest('[data-calibration]')?.querySelector('h3, h4, strong, caption')?.textContent ?? b.dataset.move!.split(':')[0]!).trim();
+              const from = b.dataset.move!.split(':')[1];
+              return { id: b.dataset.move!, label: `${team}: ${from} ${(b.textContent ?? '').trim().toLowerCase()}` };
+            }),
           },
         }),
         ...(bets && {
@@ -106,6 +116,17 @@ export async function act(page: Page, screen: Screen, action: Action, habits: { 
     case 'fund':
       for (const [offer, group] of Object.entries(action.fund)) await page.locator(`[data-offer="${offer}"] select`).selectOption(group);
       await page.locator('[data-action=fund-bets]').click();
+      return;
+    case 'calibrate':
+      // Each click moves one head; a move whose row has emptied disappears, so the clicks stop there.
+      for (const [move, count] of Object.entries(action.calibrate)) {
+        for (let i = 0; i < count; i++) {
+          const button = page.locator(`[data-move="${move}"]`);
+          if ((await button.count()) === 0) break;
+          await button.first().click();
+        }
+      }
+      await page.locator('[data-action=settle]').click();
       return;
   }
 }

@@ -37,7 +37,7 @@ const moment = (over: Partial<Screen> = {}): Screen => ({
 const reply = (over: Partial<Reply> = {}, action: Partial<Reply['action']> = {}): Reply => ({
   thinkAloud: 'She seems withdrawn; I should ask.',
   feeling: 'clear',
-  action: { kind: 'choose', choiceId: 'ask', place: [], fund: [], ...action },
+  action: { kind: 'choose', choiceId: 'ask', place: [], fund: [], calibrate: [], ...action },
   habits: [],
   notebook: 'Quiet engineers may be flight risks.',
   ...over,
@@ -98,6 +98,13 @@ describe('the AI playtester', () => {
     const heads = moment({ placement: { heads: 3, targets: [{ id: 'group:g1', label: 'Payments' }, { id: 'group:g2', label: 'Search' }] } });
     expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 2 }, { target: 'group:g2', count: 1 }] }))).toMatchObject({ ok: true, action: { kind: 'place', place: { 'group:g1': 2, 'group:g2': 1 } } });
     expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 4 }] })).ok).toBe(false);
+    const calibration = moment({ calibration: { moves: [{ id: 't1:outstanding:exceeds', label: 'Platform: outstanding down to exceeds' }, { id: 't1:meets:exceeds', label: 'Platform: meets up to exceeds' }] } });
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't1:outstanding:exceeds', count: 2 }] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: { 't1:outstanding:exceeds': 2 } } });
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: {} } });
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't9:meets:below', count: 1 }] })).ok).toBe(false);
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't1:meets:exceeds', count: 0 }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({}, { kind: 'calibrate', choiceId: '', calibrate: [] })).ok, 'no calibration on this screen').toBe(false);
+    expect(decisionMessage(calibration, '', '')).toMatch(/Calibration moves[\s\S]*`t1:outstanding:exceeds`: Platform: outstanding down to exceeds/);
     expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g9', count: 1 }] })).ok).toBe(false);
     const bets = moment({ funding: { offers: [{ id: 'bo1', label: 'A' }, { id: 'bo2', label: 'B' }, { id: 'bo3', label: 'C' }], groups: [{ id: 'g1', label: 'P' }] } });
     expect(checkReply(bets, reply({}, { kind: 'fund', choiceId: '', fund: [{ offerId: 'bo1', groupId: 'g1' }] }))).toMatchObject({ ok: true, action: { kind: 'fund', fund: { bo1: 'g1' } } });
