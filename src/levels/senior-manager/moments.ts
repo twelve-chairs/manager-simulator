@@ -76,8 +76,19 @@ function surfacedIssue(sim: SimState, teamId: string, behind: ReadonlySet<string
   if (band(a.stress) >= T.strainedBand) return 'on-call and late nights are wearing everyone down';
   if (band(a.attritionRisk) >= 2) return 'a couple of people have started looking around';
   if (band(a.motivation) <= 1) return 'nobody can say any more why the work matters';
-  return "the team's priorities keep changing with no explanation";
+  // Nothing badly wrong: one of the everyday frictions, a different one month to month and team to team.
+  return EVERYDAY_ISSUES[(Math.floor(sim.week / T.weeksPerMonth) + Number(teamId.replace(/\D/g, '') || 0)) % EVERYDAY_ISSUES.length]!;
 }
+
+/** What engineers raise at a skip-level when nothing is badly wrong. */
+const EVERYDAY_ISSUES = [
+  "the team's priorities keep changing with no explanation",
+  'the build has got slow enough that people batch their changes to avoid it',
+  'there are too many meetings to get a run of focused work in',
+  'nobody is sure who decides on the shared service the team depends on',
+  'on-call handovers keep dropping things between shifts',
+  'reviews wait days for the one person who knows the old code',
+] as const;
 
 /** Begins a month: makes its moments from the group's state, up to the cap, in order, and sets them through the month. */
 // @spec SENIOR-MOMENT-001, SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-PLAN-002, SENIOR-CAL-001
@@ -158,7 +169,20 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   // Under the habit of giving work to teams with room, only a strained team makes it the player's call; one with room is
   // given it at the month's end (SENIOR-MOMENT-013).
   const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0 && (s.habits.newWork === 'ask' || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand));
-  if (idle) drafts.push({ kind: 'newWork', teamId: idle, title: 'New work for the group', text: `Your manager has a new project for the group. ${name(sim, idle)} has nothing on.`, choices: CHOICES.newWork });
+  if (idle) {
+    const team = name(sim, idle);
+    drafts.push({
+      kind: 'newWork',
+      teamId: idle,
+      title: 'New work for the group',
+      text: `Your manager has a new project for the group. ${team} has nothing on.`,
+      choices: [
+        { id: 'give', label: `Give it to ${team}` },
+        { id: 'giveAlways', label: `Give it to ${team}, and hand new work to a team with room from now on` },
+        ...CHOICES.newWork.filter((c) => c.id !== 'give'),
+      ],
+    });
+  }
   // The fourth team, once the group has run a year.
   if (!s.restructured && s.teamIds.length === 3 && monthOf(s, sim) >= T.restructureMonth) {
     drafts.push({ kind: 'restructuring', title: 'A fourth team', text: 'Your manager wants your group to take on a fourth team. It needs a manager.', choices: CHOICES.restructuring });
@@ -330,8 +354,9 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
           cause: { kind: 'action', actionId: 'senior.newWork' },
         });
         if (choiceId === 'spread') for (const id of s.teamIds) effects.push(team(id, 'stress', T.spreadStress, 'senior.newWork'));
+        if (choiceId === 'giveAlways') s.habits.newWork = 'assign';
       }
-      reaction = choiceId === 'decline' ? 'Your manager takes it elsewhere, and remembers.' : choiceId === 'spread' ? 'Everyone takes a slice. Everyone is a little busier.' : `${name(sim, t)} takes it on.`;
+      reaction = choiceId === 'decline' ? 'Your manager takes it elsewhere, and remembers.' : choiceId === 'spread' ? 'Everyone takes a slice. Everyone is a little busier.' : choiceId === 'giveAlways' ? `${name(sim, t)} takes it on. From now on, new work goes to a team with room unless one is strained.` : `${name(sim, t)} takes it on.`;
       break;
     }
     case 'restructuring': {

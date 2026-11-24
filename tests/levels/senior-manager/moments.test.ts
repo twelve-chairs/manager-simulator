@@ -59,7 +59,7 @@ describe('new work assigned', () => {
 describe('a month’s moments', () => {
   // @spec SENIOR-MOMENT-002
   // @spec SENIOR-HABIT-008
-  it('names what a skip-level surfaced: a project behind, strain, people looking, low motivation, or shifting priorities', () => {
+  it('names what a skip-level surfaced: a project behind, strain, people looking, low motivation, or an everyday friction', () => {
     const { level, sim } = calm(4);
     const t = level.teamIds[1]!;
     const told = (change: (s: SimState) => void) => {
@@ -71,7 +71,10 @@ describe('a month’s moments', () => {
     expect(told((s) => (s.teams[t]!.aggregate!.stress = 70))).toMatch(/wearing everyone down/);
     expect(told((s) => (s.teams[t]!.aggregate!.attritionRisk = 50))).toMatch(/started looking around/);
     expect(told((s) => (s.teams[t]!.aggregate!.motivation = 15))).toMatch(/why the work matters/);
-    expect(told(() => {})).toMatch(/priorities keep changing/);
+    // nothing badly wrong: an everyday friction, a different one another month
+    const everyday = told(() => {});
+    expect(everyday).toMatch(/engineers told you .+\. .+ hasn't mentioned it/);
+    expect(told((s) => (s.week += 4))).not.toBe(everyday);
   });
 
   it('sets each moment in a week, day and time of the month, in order through the month', () => {
@@ -208,7 +211,11 @@ describe('a month’s moments', () => {
     const l = beginMonth(level, idle);
     const w = find(l, 'newWork');
     expect(w).toMatchObject({ teamId: t });
-    expect(w.choices.map((x) => x.id)).toEqual(['give', 'decline', 'spread']);
+    expect(w.choices.map((x) => x.id)).toEqual(['give', 'giveAlways', 'decline', 'spread']);
+    expect(w.choices[0]!.label).toContain(idle.teams[t]!.name);
+    const always = answer(l, idle, w, 'giveAlways');
+    expect(Object.values(always.sim.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(1);
+    expect(always.level.habits.newWork).toBe('assign');
     const given = answer(l, idle, w, 'give').sim;
     expect(Object.values(given.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(1);
     const spread = answer(l, idle, w, 'spread').sim;

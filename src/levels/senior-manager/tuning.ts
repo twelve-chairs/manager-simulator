@@ -70,7 +70,7 @@ export const SENIOR_TUNING = {
   approvalDip: 5,
   evidenceTrust: 2,
   refuseTrust: 4,
-  approvalCooldownWeeks: 12,
+  approvalCooldownWeeks: 26,
   /** Restructuring: the month it is offered from, and the skill a team loses when its strongest is promoted out. */
   restructureMonth: 12,
   restructureSkill: 5,
