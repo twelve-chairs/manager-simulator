@@ -4,7 +4,7 @@ import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
 import { HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
-import { EXPIRED, arriveWork, consequence } from './work';
+import { EXPIRED, arriveWork, consequence, tallyProgress } from './work';
 import type { LevelResult, LineState, Recap, WeekResult } from './types';
 
 /** Starts a week: work arrives, the period's goals are set if it is new, and the week's moments are made. */
@@ -19,6 +19,8 @@ export function beginWeek(level: LineState, sim: SimState): LineState {
   s.weekStart = {
     week: sim.week,
     people: Object.fromEntries(teamEngineers(s, sim).map((id) => [id, { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress }])),
+    projects: Object.fromEntries(teamProjects(s, sim).map((id) => [id, sim.projects[id]!.progress])),
+    causes: {},
   };
   addMoments(s, sim);
   return s;
@@ -156,6 +158,7 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
   let after = applied.state;
   const log = [...applied.log];
+  tallyProgress(s, log);
 
   // Final evaluations from last period are settled this week, answered or not.
   s.heldEvaluations = s.heldEvaluations.filter((h) => !s.moments.some((m) => m.week === week && m.kind === 'finalEvaluation' && m.ref === h.personId));

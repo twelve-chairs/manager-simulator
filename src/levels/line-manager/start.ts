@@ -41,7 +41,8 @@ export function startRun(seed: number): { sim: SimState; level: LineState } {
     goals: [],
     goalsPeriod: -1,
     habitNotes: [],
-    weekStart: { week: -1, people: {} },
+    weekStart: { week: -1, people: {}, projects: {}, causes: {} },
+    projectMoves: { week: -1, moves: [] },
     counters: { item: 0, vacancy: 0, person: 0, project: 0, moment: 0, goal: 0 },
   };
 

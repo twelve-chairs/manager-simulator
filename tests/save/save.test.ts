@@ -142,7 +142,7 @@ describe('restoring', () => {
     // so this plays with a review that always continues and no burnout: the limit guards against any level, or a
     // tampered save, that runs on.
     const endless: Dependencies = {
-      levels: [{ ...lineManagerLevel, afterAdvance: (l, sim) => ({ ...lineManagerLevel.afterAdvance(l, sim), burnedOut: false }) }],
+      levels: [{ ...lineManagerLevel, afterAdvance: (l, sim, log) => ({ ...lineManagerLevel.afterAdvance(l, sim, log), burnedOut: false }) }],
       review: (input) => ({ ...conductReview(input), outcome: 'continue' }),
     };
     const commands: Save['commands'] = [];

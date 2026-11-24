@@ -3,7 +3,7 @@ import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, typ
 import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
 import { reaction } from './reactions';
 import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL, PAY_DOWN, ROLL_BACK, SMALLER_CHANGE } from './tuning';
-import { FELL_SHORT, WORK_LABELS, consequence, workChoices } from './work';
+import { FELL_SHORT, WORK_LABELS, consequence, tallyProgress, workChoices } from './work';
 import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, WorkItem } from './types';
 
 /** The engineer the night pages habit puts on call this week, if any. */
@@ -269,6 +269,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the choice: ${applied.error.message}` };
+  tallyProgress(s, applied.log);
   // @spec LINE-WORK-006
   const recalled = involved !== undefined ? callBack(s, sim, involved, moment.kind === 'onCall') : null;
   if (recalled) text = `${text} ${recalled}`;

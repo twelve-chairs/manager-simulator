@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, quitLastWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
+import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, movedLastWeek, quitLastWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
 import { behindScheduleProjects, correspondingRating, overdueProjects, type SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
@@ -558,6 +558,56 @@ describe('shipped projects', () => {
     ]);
     const calm = patch(after, (s) => Object.assign(s.people[a!]!, { lowMotivationWeeks: 0, highStressWeeks: 0, trust: 60, history: [] }));
     expect(quitLastWeek(level, calm)).toEqual([{ personId: a, name: after.people[a!]!.name, lowMotivationWeeks: 0, highStressWeeks: 0, lowTrust: false }]);
+  });
+
+  // @spec LINE-RECAP-005
+  it('reports how each project moved in the week just played, and what moved it', () => {
+    const { level, sim } = run(1);
+    const [a, b] = projects(sim).map((id) => sim.projects[id]!);
+    const week = sim.week;
+    const started: LineState = {
+      ...level,
+      weekStart: { ...level.weekStart, week, projects: { [a!.id]: 9, [b!.id]: 20 }, causes: { [a!.id]: { payDown: -6 } } },
+    };
+    // After the week: a is at 3 (9, less 6 for the debt) and b at 15 (a situation took 5). The advance then adds work and a setback.
+    const work = { kind: 'rule', ruleId: 'rule.projectWork' } as const;
+    const setback = { kind: 'rule', ruleId: 'rule.setbacks' } as const;
+    const advanced = patch(sim, (s) => {
+      s.week = week + 1;
+      s.projects[a!.id]!.progress = 4;
+      s.projects[b!.id]!.progress = 18;
+    });
+    const log = [
+      { cause: work, target: { kind: 'project', id: a!.id }, field: 'progress', before: 3, after: 10 },
+      { cause: work, target: { kind: 'project', id: b!.id }, field: 'progress', before: 15, after: 18 },
+      { cause: setback, target: { kind: 'project', id: a!.id }, field: 'progress', before: 10, after: 4 },
+    ] as const;
+    const after = afterAdvance(started, advanced, [...log]).level;
+    expect(movedLastWeek(after, advanced)).toEqual(
+      [
+        { projectId: a!.id, name: a!.name, start: 9, end: 4, scope: a!.scope, causes: [{ cause: 'payDown', amount: -6 }, { cause: 'setback', amount: -6 }, { cause: 'work', amount: 7 }] },
+        { projectId: b!.id, name: b!.name, start: 20, end: 18, scope: b!.scope, causes: [{ cause: 'situations', amount: -5 }, { cause: 'work', amount: 3 }] },
+      ].sort((x, y) => (x.projectId < y.projectId ? -1 : 1)),
+    );
+    const later = patch(advanced, (s) => (s.week = week + 2));
+    expect(movedLastWeek(after, later)).toEqual([]);
+  });
+
+  // @spec LINE-RECAP-005
+  it('counts what the level’s own choices cost a project as the week goes', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const sim = patch(q.sim, (s) => Object.assign(s.projects[p]!, { techDebt: 60, progress: 30 }));
+    const made = withItem({ ...q.level, weekStart: { ...q.level.weekStart, week: sim.week, projects: { [p]: 30 }, causes: {} } }, { kind: 'designReview', subject: { kind: 'project', id: p }, size: 2, difficulty: 50, lastWeek: sim.week + 2 });
+    const level = begin(made.level, sim);
+    const r = choose(level, sim, momentFor(level, made.id).id, 'payDown');
+    const next = nextWeek(r.level, r.sim);
+    const move = movedLastWeek(next.level, next.sim).find((m) => m.projectId === p)!;
+    expect(move.start).toBe(30);
+    expect(move.end).toBe(next.sim.projects[p]!.progress);
+    expect(move.causes[0]).toEqual({ cause: 'payDown', amount: -LINE_TUNING.payDown.progress });
+    expect(move.causes.some((c) => c.cause === 'situations')).toBe(false);
+    expect(move.start + move.causes.reduce((n, c) => n + c.amount, 0)).toBe(move.end);
   });
 
   // @spec LINE-RECAP-003

@@ -40,8 +40,9 @@ function play(seed: number, quarters: number, pick: (kind: string, choices: stri
     const end = ok(directorLevel.endWeek(level, sim));
     level = end.level;
     recaps.push(end.recap as DirectorRecap);
-    sim = advance(end.sim, directorLevel.params.weeksPerStep).state;
-    const after = directorLevel.afterAdvance(level, sim);
+    const advanced = advance(end.sim, directorLevel.params.weeksPerStep);
+    sim = advanced.state;
+    const after = directorLevel.afterAdvance(level, sim, advanced.log);
     level = after.level;
     if (after.burnedOut) break;
     if (reviewDue(level, sim)) expect(directorLevel.assess(level, sim).measures.length).toBeGreaterThan(0);

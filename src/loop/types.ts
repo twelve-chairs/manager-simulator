@@ -27,7 +27,8 @@ export interface CareerLevel<L = unknown> {
   plan(level: L, sim: SimState, command: unknown): Result<{ level: L }>;
   choose(level: L, sim: SimState, momentId: string, choiceId: string): Result<{ level: L; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;
   endWeek(level: L, sim: SimState): Result<{ level: L; sim: SimState; log: ChangeLogEntry[]; recap: unknown }>;
-  afterAdvance(level: L, sim: SimState): { level: L; burnedOut: boolean };
+  /** Runs after the simulation advances, with the advance's change log, so the level can report what the simulation's rules did. */
+  afterAdvance(level: L, sim: SimState, log: ChangeLogEntry[]): { level: L; burnedOut: boolean };
   scorecard(level: L, sim: SimState): unknown;
   assess(level: L, sim: SimState): Assessment;
   view(level: L, sim: SimState): unknown;

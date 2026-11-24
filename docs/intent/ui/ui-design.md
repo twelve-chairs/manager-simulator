@@ -108,6 +108,7 @@ What changed, shown at once:
 - **Evaluations**: for the line manager, the engineers rated at the end of a review period;
 - **Habits that changed**: any habit that fell back because its engineer left;
 - **What slipped**: work that expired, by its kind and what it was about;
+- **Projects that lost ground**: for the line manager, each project that went backwards or had a setback, with what moved it;
 - **Waiting for you**: for the line manager, each final evaluation held for Monday;
 - **New work**: a project the player's manager assigned to an idle team.
 
@@ -117,6 +118,7 @@ Below them, a disclosure, **The whole week**, closed until the player opens it, 
 
 - **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed"). The player read each reaction as it came;
 - **Habits**: what each habit did, which is the same routine most weeks;
+- **Projects**: for the line manager, how each project moved and why, which most weeks is the team's work alone;
 - **Goals**: each goal's progress, which the header also shows.
 
 On the ended screen the disclosure is open: the final week's moments are what explain how the run ended. On the week screen, once the player opens or closes the disclosure, that choice holds for later recaps until the page is reloaded, the same way the How to play section keeps its state. It is page state, never saved.

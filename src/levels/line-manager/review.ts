@@ -1,17 +1,55 @@
 import { compareCodeUnits } from '../../sim';
-import { RATINGS, behindScheduleProjects, overdueProjects, type HistoryEntry, type Person, type SimState } from '../../sim';
+import { RATINGS, behindScheduleProjects, overdueProjects, type ChangeLogEntry, type HistoryEntry, type Person, type SimState } from '../../sim';
 import { band, reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
 import { goalStatus } from './goals';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import type { Assessment, Measure } from '../../review';
-import type { LineState, Scorecard } from './types';
+import type { LevelProgressCause, LineState, ProgressCause, ProjectMove, Scorecard } from './types';
 
-/** Records completions, keeps vacancies in step and tracks burnout, after the simulation advances. */
-// @spec LINE-END-005, LINE-END-006, LINE-HIRE-002
-export function afterAdvance(level: LineState, sim: SimState): { level: LineState; burnedOut: boolean } {
+const LEVEL_CAUSES: LevelProgressCause[] = ['payDown', 'rollBack', 'approvals'];
+/** The simulation's rules that move progress while it advances (simulation core, SIM-ADV-001). */
+const ADVANCE_CAUSES: Record<string, ProgressCause> = { 'rule.setbacks': 'setback', 'rule.projectWork': 'work' };
+
+/**
+ * How each of the team's active projects moved in the week just played: the level's own choices as it counted them,
+ * the setback and work rules from the advance's log, and what remains of the change before the advance, which only
+ * the week's situations can have made.
+ */
+function projectMoves(level: LineState, sim: SimState, log: ChangeLogEntry[], playedWeek: number): ProjectMove[] {
+  const start = level.weekStart.week === playedWeek ? level.weekStart : { projects: {} as Record<string, number>, causes: {} as LineState['weekStart']['causes'] };
+  const moves: ProjectMove[] = [];
+  for (const id of Object.keys(sim.projects).sort(compareCodeUnits)) {
+    const p = sim.projects[id]!;
+    if (p.teamId !== level.teamId || p.status !== 'active') continue;
+    const advanced: Partial<Record<ProgressCause, number>> = {};
+    for (const e of log) {
+      const cause = e.cause.kind === 'rule' ? ADVANCE_CAUSES[e.cause.ruleId] : undefined;
+      if (cause && e.target.kind === 'project' && e.target.id === id && e.field === 'progress') advanced[cause] = (advanced[cause] ?? 0) + (Number(e.after) - Number(e.before));
+    }
+    const from = start.projects[id] ?? 0;
+    const counted = start.causes[id] ?? {};
+    const beforeAdvance = p.progress - (advanced.setback ?? 0) - (advanced.work ?? 0);
+    const situations = beforeAdvance - from - LEVEL_CAUSES.reduce((n, c) => n + (counted[c] ?? 0), 0);
+    const amounts: [ProgressCause, number][] = [...LEVEL_CAUSES.map((c): [ProgressCause, number] => [c, counted[c] ?? 0]), ['situations', situations], ['setback', advanced.setback ?? 0], ['work', advanced.work ?? 0]];
+    const causes = amounts.filter(([, amount]) => amount !== 0).map(([cause, amount]) => ({ cause, amount }));
+    if (causes.length) moves.push({ projectId: id, name: p.name, start: from, end: p.progress, scope: p.scope, causes });
+  }
+  return moves;
+}
+
+/** How the team's projects moved in the week just played, and what moved them. */
+// @spec LINE-RECAP-005
+export function movedLastWeek(level: LineState, sim: SimState): ProjectMove[] {
+  return level.projectMoves.week === sim.week - LEVEL.weeksPerStep ? level.projectMoves.moves : [];
+}
+
+/** Records completions and how projects moved, keeps vacancies in step and tracks burnout, after the simulation advances. */
+// @spec LINE-END-005, LINE-END-006, LINE-HIRE-002, LINE-RECAP-005
+export function afterAdvance(level: LineState, sim: SimState, log: ChangeLogEntry[] = []): { level: LineState; burnedOut: boolean } {
   const s = structuredClone(level);
   const playedWeek = sim.week - LEVEL.weeksPerStep;
+  s.projectMoves = { week: playedWeek, moves: projectMoves(s, sim, log, playedWeek) };
   for (const id of Object.keys(sim.projects).sort(compareCodeUnits)) {
     const p = sim.projects[id]!;
     if (p.teamId === s.teamId && p.status === 'completed' && !Object.hasOwn(s.completions, id)) s.completions[id] = playedWeek;

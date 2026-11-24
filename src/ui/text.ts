@@ -1,3 +1,4 @@
+import type { ProgressCause, ProjectMove } from '../levels/line-manager';
 /**
  * Emphasis: `*text*`, or `_text_` standing as its own word, with no space just inside the markers. Underscores inside
  * a word (deploy_job_runner) and doubled markers (**strong**) are not emphasis. Fixed pattern; never built from content.
@@ -37,4 +38,22 @@ export function quitLine(q: { name: string; lowMotivationWeeks: number; highStre
   const clauses = [...(spells.length ? [`after ${spells.join(' and ')}`] : []), ...(q.lowTrust ? ['trusting you little'] : [])];
   const why = clauses.length ? `${q.name} quit, ${clauses.join(', ')}.` : `${q.name} quit, for reasons of their own.`;
   return q.lastMemory ? `${why} The last thing between you: ${q.lastMemory}.` : why;
+}
+
+const MOVE_CAUSES: Record<ProgressCause, string> = {
+  payDown: 'fixing the debt first',
+  rollBack: 'rolling the change back',
+  approvals: 'approvals that slipped',
+  situations: 'this week’s situations',
+  setback: 'a setback',
+  work: 'the team’s work',
+};
+
+/** A line for how a project moved in a week: where it went from and to, and each cause's amount, costs first. */
+// @spec UI-LINE-011
+export function moveLine(m: ProjectMove): string {
+  const causes = [...m.causes].sort((a, b) => Number(a.amount > 0) - Number(b.amount > 0));
+  const parts = causes.map((c) => `${MOVE_CAUSES[c.cause]} ${c.amount < 0 ? 'cost' : 'added'} ${Math.abs(Math.round(c.amount))}`);
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}` : (parts[0] ?? '');
+  return `${m.name} went from ${Math.round(m.start)} to ${Math.round(m.end)} of ${m.scope}: ${list}.`;
 }

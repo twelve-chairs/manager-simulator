@@ -641,6 +641,24 @@ describe('line manager panels', () => {
     q!.deadlineWeek = shipped.sim.week - 2;
     expect($$(makeApp({ run: shipped }).root, '[data-part=recap-shipped] li').map((li) => li.textContent)).toContain(`${q!.name} shipped 1 week late.`);
   });
+
+  // @spec UI-LINE-011
+  it('shows a project that lost ground or had a setback among what changed, and the rest in the routine part', () => {
+    const moved = answerAndEnd(playing());
+    const [m, n] = Object.values(moved.sim.projects).filter((x) => x.status === 'active');
+    (moved.level as { projectMoves: unknown }).projectMoves = {
+      week: moved.sim.week - 1,
+      moves: [
+        { projectId: m!.id, name: m!.name, start: 9, end: 4, scope: 60, causes: [{ cause: 'setback', amount: -6 }, { cause: 'work', amount: 1 }] },
+        { projectId: n!.id, name: n!.name, start: 9, end: 16, scope: 60, causes: [{ cause: 'work', amount: 7 }] },
+      ],
+    };
+    const root = makeApp({ run: moved }).root;
+    expect(text(root, '[data-part=recap-lost-ground] li')).toBe(`${m!.name} went from 9 to 4 of 60: a setback cost 6, and the team’s work added 1.`);
+    expect(text(root, '[data-part=recap-projects] li')).toBe(`${n!.name} went from 9 to 16 of 60: the team’s work added 7.`);
+    expect($(root, '[data-part=recap-whole-week]').querySelector('[data-part=recap-projects]')).not.toBeNull();
+    expect($(root, '[data-part=recap-changes]').querySelector('[data-part=recap-lost-ground]')).not.toBeNull();
+  });
 });
 
 describe('band words', () => {

@@ -50,7 +50,7 @@ choices:
             amount: 4
             wantTags:
               serves: [autonomy]
-        aftermath: "{engineer} leads the clean-up. The build gets faster."
+        aftermath: "{engineer} leads the clean-up, and {project} slips a few days. The build gets faster."
         debrief: "Paying down debt costs a little progress now and buys back speed and safety for the rest of the project."
 ---
 

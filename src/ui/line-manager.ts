@@ -1,9 +1,9 @@
-import { RATING_WORDS, WORK_LABELS, band, quitLastWeek, shippedLastWeek, type Habits, type HabitId, type LineState, type Recap, type View } from '../levels/line-manager';
+import { RATING_WORDS, WORK_LABELS, band, movedLastWeek, quitLastWeek, shippedLastWeek, type Habits, type HabitId, type LineState, type Recap, type View } from '../levels/line-manager';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_TOPICS, PANEL_HELP } from './help';
-import { lateness, quitLine } from './text';
+import { lateness, moveLine, quitLine } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** Each habit's name, what it does, and its settings' labels; engineer-naming habits list the team after the first. */
@@ -232,15 +232,19 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
 }
 
 /** The line manager's part of the recap: what changed (people, evaluations, what slipped...) and the routine (habits, goals). */
-// @spec UI-LINE-008, UI-QUIT-001
+// @spec UI-LINE-008, UI-LINE-011, UI-QUIT-001
 function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child } {
   const r = recapValue as Recap;
   const shipped = shippedLastWeek(run.level as LineState, run.sim);
   const quits = quitLastWeek(run.level as LineState, run.sim);
+  // A project that went backwards or had a setback is news; the rest moved by the team's work, most weeks alone.
+  const moves = movedLastWeek(run.level as LineState, run.sim);
+  const lostGround = moves.filter((m) => m.end < m.start || m.causes.some((c) => c.cause === 'setback'));
+  const moved = moves.filter((m) => !lostGround.includes(m));
   const subject = ({ kind, id }: { kind: string; id: string }) =>
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
-  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length || quits.length);
+  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length || quits.length || lostGround.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet week.') : null,
@@ -249,12 +253,14 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
       part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
       part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
       part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
+      part('recap-lost-ground', 'Projects that lost ground', lostGround.map((m) => h('li', { 'data-project': m.projectId }, moveLine(m)))),
       part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
       part('recap-held', 'Waiting for you', r.held.map((p) => h('li', { 'data-person': p.personId }, `${p.name}'s final evaluation waits for you on Monday.`))),
       part('recap-assigned', 'New work', r.assigned.map((p) => h('li', {}, `Your manager assigned ${p.name} to the team.`))),
     ],
     routine: [
       part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),
+      part('recap-projects', 'Projects', moved.map((m) => h('li', { 'data-project': m.projectId }, moveLine(m)))),
       part('recap-goals', 'Goals', r.goals.map((g) => h('li', {}, g.text))),
     ],
   };

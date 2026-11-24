@@ -78,9 +78,9 @@ export function end(level: LineState, sim: SimState) {
 /** Ends the week, advances the simulation one week and runs the level's after-advance step. */
 export function nextWeek(level: LineState, sim: SimState) {
   const ended = end(level, sim);
-  const advanced = advance(ended.sim, 1).state;
-  const after = afterAdvance(ended.level, advanced);
-  return { level: after.level, sim: advanced, burnedOut: after.burnedOut, recap: ended.recap };
+  const advanced = advance(ended.sim, 1);
+  const after = afterAdvance(ended.level, advanced.state, advanced.log);
+  return { level: after.level, sim: advanced.state, burnedOut: after.burnedOut, recap: ended.recap };
 }
 
 /** Adds a work item directly; the level's open items are plain data. */

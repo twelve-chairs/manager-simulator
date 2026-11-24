@@ -1,10 +1,31 @@
-import type { Effect, SimState } from '../../sim';
+import type { ChangeLogEntry, Effect, SimState } from '../../sim';
 import { band, playerEffect, personEffect, projectEffect, random, randomInt, rule, subjectValid, teamEngineers, teamProjects } from './core';
-import { LINE_TUNING, WORK_KINDS } from './tuning';
-import type { LineState, MomentChoice, WorkItem, WorkKind } from './types';
+import { LINE_TUNING, PAY_DOWN, ROLL_BACK, WORK_KINDS } from './tuning';
+import type { LevelProgressCause, LineState, MomentChoice, WorkItem, WorkKind } from './types';
 
-export const EXPIRED = rule('line-manager.work-expired');
-export const FELL_SHORT = rule('line-manager.work-fell-short');
+const EXPIRED_RULE = 'line-manager.work-expired';
+const FELL_SHORT_RULE = 'line-manager.work-fell-short';
+export const EXPIRED = rule(EXPIRED_RULE);
+export const FELL_SHORT = rule(FELL_SHORT_RULE);
+
+/** The level's causes of a change to a project's progress, by what the simulation recorded as the cause. */
+function progressCause(cause: ChangeLogEntry['cause']): LevelProgressCause | null {
+  if (cause.kind === 'action') return cause.actionId === PAY_DOWN ? 'payDown' : cause.actionId === ROLL_BACK ? 'rollBack' : null;
+  if (cause.kind === 'rule') return cause.ruleId === EXPIRED_RULE || cause.ruleId === FELL_SHORT_RULE ? 'approvals' : null;
+  return null;
+}
+
+/** Adds what the level's own choices and work did to each project's progress to the week's count, for the recap. */
+// @spec LINE-RECAP-005
+export function tallyProgress(s: LineState, log: ChangeLogEntry[]): void {
+  for (const e of log) {
+    if (e.target.kind !== 'project' || e.field !== 'progress') continue;
+    const cause = progressCause(e.cause);
+    if (!cause) continue;
+    const counts = (s.weekStart.causes[e.target.id] ??= {});
+    counts[cause] = (counts[cause] ?? 0) + (Number(e.after) - Number(e.before));
+  }
+}
 
 /** What each kind of work is called in moments and the recap. */
 export const WORK_LABELS: Record<WorkKind, string> = {

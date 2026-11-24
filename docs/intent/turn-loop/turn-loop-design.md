@@ -69,7 +69,7 @@ A run begins with week 0 in the week phase. **Beginning a week**:
 1. Every moment still open in the sequence is marked let wait.
 2. The level ends the week, returning the new simulation and level states and its recap. If the level returns an error, the command is an error and the run is unchanged.
 3. The simulation advances by the level's time step.
-4. The level's after-advance step runs. If it reports burnout, the run ends with `burnout`.
+4. The level's after-advance step runs, given the advance's change log, so the level can report what the simulation's own rules did that turn, such as a project's setback. If it reports burnout, the run ends with `burnout`.
 5. If the advance reached or passed a multiple of the level's review cadence, counted from the level start week, the loop asks the performance review for a result and enters the review phase. A level's time step need not divide its cadence: a monthly level reviewed every 13 weeks is reviewed after the advance that crosses week 13, 26 and so on, so no review is skipped.
 6. Otherwise the next week begins.
 

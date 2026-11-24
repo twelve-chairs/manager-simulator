@@ -84,8 +84,9 @@ function endWeek(run: Run, level: AnyLevel, content: Situation[], deps: Dependen
   if (!committed.ok) return committed;
   run.lastWeek = { recap: committed.recap, moments: structuredClone(run.week) };
   const fromWeek = committed.sim.week;
-  run.sim = advance(committed.sim, level.params.weeksPerStep).state;
-  const after = level.afterAdvance(committed.level, run.sim);
+  const advanced = advance(committed.sim, level.params.weeksPerStep);
+  run.sim = advanced.state;
+  const after = level.afterAdvance(committed.level, run.sim, advanced.log);
   run.level = after.level;
   if (after.burnedOut) {
     run.phase = 'ended';

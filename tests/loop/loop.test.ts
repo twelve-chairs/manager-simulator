@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { lineManagerLevel, type LineState } from '../../src/levels/line-manager';
 import { apply, newRun, replay, type AnyLevel, type Command, type Run } from '../../src/loop';
 import { debriefsSince, selectSituations, type Situation } from '../../src/situations';
-import { advance } from '../../src/sim';
+import { advance, type ChangeLogEntry, type SimState } from '../../src/sim';
 import { conductReview } from '../../src/review';
 import { plain } from '../situations/fixtures';
 import { CONTENT, answerCurrent, choicesOf, current, deps, endWeeks, step, stubReview, waitUntil } from './fixtures';
@@ -206,14 +206,20 @@ describe('a week', () => {
   });
 
   // @spec LOOP-WEEK-002, LOOP-WEEK-005
-  it('ends the week, advances, runs after-advance, then begins the next week', () => {
+  it('ends the week, advances, runs after-advance with the advance’s log, then begins the next week', () => {
     const run = start(2);
     const next = step(run, { kind: 'endWeek' });
     const ended = L.endWeek(level(run), run.sim);
     if (!ended.ok) throw new Error(ended.error);
-    const advanced = advance(ended.sim, L.params.weeksPerStep).state;
-    const after = L.afterAdvance(ended.level, advanced);
+    const advancedWith = advance(ended.sim, L.params.weeksPerStep);
+    const advanced = advancedWith.state;
+    const after = L.afterAdvance(ended.level, advanced, advancedWith.log);
     const begun = L.beginWeek(after.level, advanced);
+    // The after-advance step is given the advance's change log.
+    let given: unknown = null;
+    const watching = { ...deps(), levels: [{ ...L, afterAdvance: (l: never, sim: SimState, log: ChangeLogEntry[]) => ((given = log), L.afterAdvance(l, sim, log)) }] };
+    step(newRun(2, CONTENT, watching), { kind: 'endWeek' }, watching);
+    expect(given).toEqual(advancedWith.log);
     expect(next.sim.week).toBe(1);
     expect(next.sim).toEqual(advanced);
     expect(next.level).toEqual(begun);
@@ -293,8 +299,8 @@ describe('a week', () => {
     expect(calls[0]!.levelId).toBe('line-manager');
     const ended = L.endWeek(level(beforeReview), beforeReview.sim);
     if (!ended.ok) throw new Error(ended.error);
-    const advanced = advance(ended.sim, 1).state;
-    expect(calls[0]!.assessment).toEqual(L.assess(L.afterAdvance(ended.level, advanced).level, advanced));
+    const advanced = advance(ended.sim, 1);
+    expect(calls[0]!.assessment).toEqual(L.assess(L.afterAdvance(ended.level, advanced.state, advanced.log).level, advanced.state));
     // every situation presented since week 0: the closed ones as recorded, the last week's still-open ones as ignored
     const closed = debriefsSince(beforeReview.engine, 0);
     const stillOpen = beforeReview.presented.map((p) => ({ week: 12, situationId: p.situationId, bindings: p.bindings, status: 'ignored' }));

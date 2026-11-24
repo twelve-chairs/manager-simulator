@@ -69,6 +69,21 @@ export interface Vacancy {
   interviews: number;
 }
 
+/** The level's own choices and work that change a project's progress. */
+export type LevelProgressCause = 'payDown' | 'rollBack' | 'approvals';
+/** What moves a project's progress in a week: the level's choices, the week's situations, a setback and the team's work. */
+export type ProgressCause = LevelProgressCause | 'situations' | 'setback' | 'work';
+
+/** How a project moved in a week, from its progress when the week began to after the advance, and what moved it. */
+export interface ProjectMove {
+  projectId: string;
+  name: string;
+  start: number;
+  end: number;
+  scope: number;
+  causes: { cause: ProgressCause; amount: number }[];
+}
+
 export interface LineState {
   rngState: number;
   teamId: string;
@@ -106,8 +121,19 @@ export interface LineState {
   goalsPeriod: number;
   /** Habit fall-backs made when the week began, for that week's recap. */
   habitNotes: string[];
-  /** Each engineer's motivation and stress when the week began, so the recap can say who changed; week -1 before any week has begun. */
-  weekStart: { week: number; people: Record<string, { motivation: number; stress: number }> };
+  /**
+   * Each engineer's motivation and stress and each project's progress when the week began, so the recap can say who
+   * changed and how projects moved, and what the level's own choices have cost or added to each project since; week -1
+   * before any week has begun.
+   */
+  weekStart: {
+    week: number;
+    people: Record<string, { motivation: number; stress: number }>;
+    projects: Record<string, number>;
+    causes: Record<string, Partial<Record<LevelProgressCause, number>>>;
+  };
+  /** How the team's projects moved in the week that began at `week`, reported after the advance. */
+  projectMoves: { week: number; moves: ProjectMove[] };
   /** Counters for generated ids. */
   counters: { item: number; vacancy: number; person: number; project: number; moment: number; goal: number };
 }

@@ -255,8 +255,9 @@ describe('the shape of a session', () => {
         }
         const end = directorLevel.endWeek(level, sim);
         if (!end.ok) throw new Error(end.error);
-        level = directorLevel.afterAdvance(end.level, advance(end.sim, 13).state).level;
-        sim = advance(end.sim, 13).state;
+        const advanced = advance(end.sim, 13);
+        level = directorLevel.afterAdvance(end.level, advanced.state, advanced.log).level;
+        sim = advanced.state;
       }
     }
     for (const k of ['Headcount', 'Strategy bets', 'Quarterly review']) expect(kinds).toContain(k);
