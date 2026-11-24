@@ -3,7 +3,7 @@ import type { ProgressCause, ProjectMove } from '../levels/line-manager';
  * Emphasis: `*text*`, or `_text_` standing as its own word, with no space just inside the markers. Underscores inside
  * a word (deploy_job_runner) and doubled markers (**strong**) are not emphasis. Fixed pattern; never built from content.
  */
-const EMPHASIS = /(?<!\*)\*(?![\s*])([^*\n]+?)(?<!\s)\*(?!\*)|(?<![\w_])_(?![\s_])([^_\n]+?)(?<!\s)_(?![\w_])/g;
+const EMPHASIS = /(?<!\*)\*(?![\s*])([^*\n]+?)(?<!\s)\*(?!\*)|(?<!\w)_(?![\s_])([^_\n]+?)(?<!\s)_(?!\w)/g;
 
 /**
  * Situation text with Markdown emphasis shown as `em` elements. Text is set as text, so nothing else in the string
