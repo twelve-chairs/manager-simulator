@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SENIOR_TUNING, afterAdvanceSenior, endMonth, quitLastMonth, setSeniorHabit, shippedLastMonth, type SeniorState } from '../../../src/levels/senior-manager';
+import { SENIOR_TUNING, afterAdvanceSenior, endMonth, headsLostLastMonth, quitLastMonth, setSeniorHabit, shippedLastMonth, type SeniorState } from '../../../src/levels/senior-manager';
 import { remember } from '../../../src/levels/senior-manager/review';
 import type { SimState } from '../../../src/sim';
 import { senior } from './fixtures';
@@ -267,6 +267,29 @@ describe('managers who quit', () => {
     expect(quitLastMonth(level, after)).toEqual([
       { personId: m, name: sim.people[m!]!.name, lowMotivationWeeks: 0, highStressWeeks: 8, lowTrust: false, lastMemory: 'Agreed to give managing another year' },
     ]);
+  });
+});
+
+describe('engineers who left a team', () => {
+  // @spec SENIOR-RECAP-004
+  it('reports each team that lost heads in the month just played, and how many were rated meets or better', () => {
+    const { level, sim } = senior(1);
+    const [t1, t2] = level.teamIds as [string, string];
+    remember(level, sim);
+    const ratings = sim.teams[t1]!.aggregate!.ratings;
+    const keep = ratings.meets > 0 ? 'meets' : ratings.exceeds > 0 ? 'exceeds' : 'outstanding';
+    const after = edit(sim, (s) => {
+      s.week += 4;
+      const a = s.teams[t1]!.aggregate!;
+      a.headcount -= 2;
+      a.ratings[keep] -= 1;
+      a.ratings.partial += 0;
+    });
+    const advanced = afterAdvanceSenior(level, after).level;
+    expect(headsLostLastMonth(advanced, after)).toEqual([{ teamId: t1, name: sim.teams[t1]!.name, count: 2, regretted: 1 }]);
+    expect(headsLostLastMonth(advanced, after).some((x) => x.teamId === t2)).toBe(false);
+    // a month later, nothing new
+    expect(headsLostLastMonth(advanced, edit(after, (s) => (s.week += 4)))).toEqual([]);
   });
 });
 

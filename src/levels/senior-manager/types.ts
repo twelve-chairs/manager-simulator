@@ -120,6 +120,8 @@ export interface SeniorState {
   knownRatings: Record<string, RatingCounts>;
   /** Heads rated meets or better that left, by the week they left. */
   regretted: { week: number; count: number }[];
+  /** Heads each team lost while the simulation advanced, by the week the month began: how many, and how many rated meets or better. */
+  headsLost: { week: number; teamId: string; count: number; regretted: number }[];
   /** Per project id: the week it was completed. */
   completions: Record<string, number>;
   /** The review period's start: when, the managers' average skill, and each team's health bands. */

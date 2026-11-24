@@ -65,6 +65,7 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     knownHeadcount: {},
     knownRatings: {},
     regretted: [],
+    headsLost: [],
     completions: {},
     periodStart: { week: lineSim.week, skill: 0, health: {} },
     moments: [],

@@ -29,6 +29,14 @@ export const lateness = (weeks: number): string => (weeks <= 0 ? 'on time' : `${
 
 /** A line for someone who quit: what led to it, clause by clause, and the last thing between you. */
 // @spec UI-QUIT-001
+/** A team that lost engineers in the month just played, and how many of them the player would have kept. */
+export function headsLostLine(x: { name: string; count: number; regretted: number }): string {
+  const lost = `${x.name} lost ${x.count} engineer${x.count === 1 ? '' : 's'}`;
+  if (x.regretted === 0) return `${lost}.`;
+  if (x.count === 1) return `${lost}, one you'd have kept.`;
+  return `${lost}, ${x.regretted === 1 ? '1 of them one' : `${x.regretted} of them ones`} you'd have kept.`;
+}
+
 export function quitLine(q: { name: string; lowMotivationWeeks: number; highStressWeeks: number; lowTrust: boolean; lastMemory?: string }): string {
   const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;
   const spells = [

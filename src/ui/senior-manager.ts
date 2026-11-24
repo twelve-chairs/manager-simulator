@@ -1,10 +1,10 @@
 import { draftObject } from './drafts';
-import { quitLastMonth, shippedLastMonth, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
+import { headsLostLastMonth, quitLastMonth, shippedLastMonth, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
 import type { Run } from '../loop';
 import { RATINGS, type Rating } from '../sim';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { lateness, quitLine } from './text';
+import { headsLostLine, lateness, quitLine } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The senior manager's How to play topics. */
@@ -213,12 +213,13 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const c = r.changes;
   const shipped = shippedLastMonth(run.level as SeniorState, run.sim);
   const quits = quitLastMonth(run.level as SeniorState, run.sim);
-  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || shipped.length || quits.length);
+  const lost = headsLostLastMonth(run.level as SeniorState, run.sim);
+  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || shipped.length || quits.length || lost.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet month.') : null,
       part('recap-shipped', 'Shipped', shipped.map((p) => h('li', {}, `${p.name} shipped ${lateness(p.weeksLate)} (${p.team}).`))),
-      part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-manager': q.personId }, quitLine(q)))),
+      part('recap-left', 'Who left', [...quits.map((q) => h('li', { 'data-manager': q.personId }, quitLine(q))), ...lost.map((x) => h('li', { 'data-team': x.teamId }, headsLostLine(x)))]),
       part('recap-managers', 'Your managers', c.managers.map((m) => h('li', { 'data-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
       part('recap-teams', 'Your teams', c.teams.map((t) => h('li', { 'data-team': t.id }, `${t.name}: ${t.changes.join(' and ')}.`))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, `${x.name}: ${x.change > 0 ? `${x.change} joined` : `${-x.change} left`}.`))),

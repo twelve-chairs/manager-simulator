@@ -59,6 +59,15 @@ export function quitLastMonth(level: SeniorState, sim: SimState): Quit[] {
   return quitsIn(sim, sim.week - WEEKS, (p) => p.role === 'manager' && p.teamId !== null && level.teamIds.includes(p.teamId), (h) => h.filter((e) => e.note));
 }
 
+/** The player's teams that lost heads while the simulation advanced the month just played: how many, and how many they would have kept. */
+// @spec SENIOR-RECAP-004
+export function headsLostLastMonth(level: SeniorState, sim: SimState): { teamId: string; name: string; count: number; regretted: number }[] {
+  const played = sim.week - WEEKS;
+  return level.headsLost
+    .filter((x) => x.week === played)
+    .map((x) => ({ teamId: x.teamId, name: sim.teams[x.teamId]?.name ?? x.teamId, count: x.count, regretted: x.regretted }));
+}
+
 /** The player's teams' projects completed in the month just played, with their team and how many weeks after their deadlines. */
 // @spec SENIOR-RECAP-002
 export function shippedLastMonth(level: SeniorState, sim: SimState): { projectId: string; name: string; team: string; weeksLate: number }[] {
@@ -85,7 +94,11 @@ export function afterAdvanceSenior(level: SeniorState, sim: SimState): { level: 
   for (const t of s.teamIds) {
     const was = s.knownRatings[t];
     const now = sim.teams[t]?.aggregate?.ratings;
-    if (was && now) for (const r of REGRETTED) regretted += Math.max(0, was[r] - now[r]);
+    let kept = 0;
+    if (was && now) for (const r of REGRETTED) kept += Math.max(0, was[r] - now[r]);
+    regretted += kept;
+    const lost = (s.knownHeadcount[t] ?? 0) - (sim.teams[t]?.aggregate?.headcount ?? 0);
+    if (lost > 0 && s.knownHeadcount[t] !== undefined) s.headsLost.push({ week: played, teamId: t, count: lost, regretted: Math.min(kept, lost) });
   }
   if (regretted > 0) s.regretted.push({ week: played, count: regretted });
   // Heads lost to attrition are noticed now, before any of the month's choices remembers the teams as they are.
