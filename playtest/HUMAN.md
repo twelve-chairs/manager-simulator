@@ -5,7 +5,7 @@ This is the script for one playtest session: one player, one facilitator, 30 to 
 ## Setup
 
 - **The game:** the live site, https://twelve-chairs.github.io/manager-simulator/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a later session.
-- **The version:** write down the version from the bottom of the start screen ("Version v0.1.61 (07ccf45)") before the player starts.
+- **The version:** write down the version from the bottom of the start screen ("Version v0.2.12 (c9462d8)") before the player starts.
 - **The player:** someone who hasn't played before. Note whether they manage people, have been managed, or neither; don't screen anyone out.
 - **Time:** let them play for up to 60 minutes. Stop earlier if they want to stop, and note when and why.
 - **Think aloud:** ask them to say what they're thinking as they play: what they expect a choice to do, and what they make of what happens.
@@ -29,7 +29,8 @@ The HLD: playtesters complete at least one promotion in their first session.
 
 **Watch for**
 - The week and the time on the clock at each review, and its rating.
-- Whether they reach a promotion before stopping, and when. Promotion is possible from the third review (week 39) on, after two strong reviews in a row; How to play says so, but don't point them to it.
+- Whether they reach a promotion before stopping, and when. Promotion is possible from the third review (week 39) on, after two strong reviews in a row; How to play and the line under the header say so, but don't point them to either.
+- Whether they read the header's promotion line at all, and when it changes after a review.
 - When their attention drops: skimming, sighing, checking the time.
 
 **Ask afterwards**
@@ -45,6 +46,7 @@ The HLD: playtesters can explain at least one bad outcome by pointing to an earl
 - Bad outcomes: someone quitting, a low rating, a project going overdue, the burnout warning.
 - Whether they connect one to something earlier, out loud ("that's because I...").
 - Bad outcomes that surprise them ("where did that come from?").
+- Whether they use the recap's reasons: a project that lost ground lists what cost it, and someone who became more stressed lists what raised it ("more stressed (signing approvals)").
 
 **Ask afterwards**
 - What was the worst thing that happened in your run?
@@ -57,7 +59,7 @@ The HLD: every choice gets a reaction at once, and people bring past choices up 
 
 **Watch for**
 - Whether they read the reactions or click straight past them.
-- Moments when they notice someone remembers something ("she's still upset about...").
+- Moments when they notice someone remembers something ("she's still upset about..."), in a reaction or in the recap, where someone sometimes brings up something from an earlier week.
 - Choices they make without reading them.
 - Whether they open *The whole week* in the weekend recap, and what they were looking for when they did.
 
@@ -73,7 +75,8 @@ The HLD: playtesters describe a session as playing a game. If they describe it a
 
 **Watch for**
 - Words they use for the experience while playing: "game", "story", "quiz", "test", "form".
-- Repetition they comment on ("this again").
+- Repetition they comment on ("this again"), and which scene it was.
+- New work on offer: it comes only while someone, the player included, is strained. Whether they see why it costs something to say yes.
 - Moments of enjoyment or frustration, and what was on screen.
 
 **Ask afterwards**
@@ -89,7 +92,7 @@ The HLD: playtesters asked "what changed when you were promoted?" name concrete 
 - How they react to the promotion, and how they choose who leads their old team or group.
 - At the senior manager, the first months: whether they notice that turns are now months, that they see their managers rather than their engineers, and that the teams are shown as their managers report them; and the first calibration: whether they understand what they are being asked to set, and what they set it by.
 - At the director, the first quarters: whether they notice that turns are now quarters, that a group's mood comes from a survey taken twice a year, and that their executive and peers are people whose trust moves; how they place the quarter's headcount and choose bets; and at the quarterly review, whether they tell it straight, and why.
-- Habits from the level before they look for and don't find, and the new ones they try.
+- Habits from the level before they look for and don't find, and the new ones they try, including handing new work to a team with room.
 - Anything they say sounds like "the same thing with more people".
 
 **Ask afterwards**
