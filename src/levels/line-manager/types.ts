@@ -70,6 +70,9 @@ export interface Vacancy {
 }
 
 /** The level's own choices and work that change a project's progress. */
+/** The level's own causes of an engineer's stress, named in the recap. */
+export type StressCause = 'approvals' | 'nightPages' | 'work' | 'newWork' | 'rollBack' | 'coaching';
+
 export type LevelProgressCause = 'payDown' | 'rollBack' | 'approvals';
 /** What moves a project's progress in a week: the level's choices, the week's situations, a setback and the team's work. */
 export type ProgressCause = LevelProgressCause | 'situations' | 'setback' | 'work';
@@ -133,6 +136,8 @@ export interface LineState {
     people: Record<string, { motivation: number; stress: number; skill: number }>;
     projects: Record<string, number>;
     causes: Record<string, Partial<Record<LevelProgressCause, number>>>;
+    /** What the level's own choices and habits added to each engineer's stress this week, by cause. */
+    stress: Record<string, Partial<Record<StressCause, number>>>;
   };
   /** How the team's projects moved in the week that began at `week`, reported after the advance. */
   projectMoves: { week: number; moves: ProjectMove[] };

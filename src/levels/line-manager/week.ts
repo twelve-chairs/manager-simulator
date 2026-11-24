@@ -5,7 +5,7 @@ import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
 import { DELEGATE, HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
 import { EXPIRED, WORK_LABELS, arriveWork, consequence, intakeWaiting, tallyProgress, teamStretched } from './work';
-import type { LevelResult, LineState, Recap, WeekResult } from './types';
+import type { LevelResult, LineState, Recap, StressCause, WeekResult } from './types';
 
 /** Starts a week: work arrives, the period's goals are set if it is new, and the week's moments are made. */
 // @spec LINE-MOMENT-001, LINE-GOAL-001, LINE-HIRE-002, LINE-HABIT-004
@@ -21,9 +21,29 @@ export function beginWeek(level: LineState, sim: SimState): LineState {
     people: Object.fromEntries(teamEngineers(s, sim).map((id) => [id, { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress, skill: sim.people[id]!.skill }])),
     projects: Object.fromEntries(teamProjects(s, sim).map((id) => [id, sim.projects[id]!.progress])),
     causes: {},
+    stress: {},
   };
   addMoments(s, sim);
   return s;
+}
+
+/** How the recap names the level's causes of an engineer's stress. */
+const STRESS_CAUSE_WORDS: Record<StressCause, string> = {
+  approvals: 'signing approvals',
+  nightPages: 'night pages',
+  work: 'work you gave them',
+  newWork: 'new work',
+  rollBack: 'a rollback',
+  coaching: 'coaching',
+};
+
+/** "more stressed", with up to two of the week's own causes, largest first. */
+function moreStressed(causes: Partial<Record<StressCause, number>> | undefined): string {
+  const named = Object.entries(causes ?? {})
+    .sort(([a, x], [b, y]) => y - x || (a < b ? -1 : 1))
+    .slice(0, 2)
+    .map(([c]) => STRESS_CAUSE_WORDS[c as StressCause]);
+  return named.length ? `more stressed (${named.join(', ')})` : 'more stressed';
 }
 
 /** Makes the week's moments for the work, vacancies and pages already open, without new arrivals. */
@@ -233,7 +253,8 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress, skill: sim.people[id]!.skill };
     const changes: string[] = [];
     if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
-    if (band(p.stress) !== band(was.stress)) changes.push(band(p.stress) > band(was.stress) ? 'more stressed' : 'less stressed');
+    if (band(p.stress) > band(was.stress)) changes.push(moreStressed(s.weekStart.week === week ? s.weekStart.stress[id] : undefined));
+    else if (band(p.stress) < band(was.stress)) changes.push('less stressed');
     if (band(p.skill) > band(was.skill)) changes.push('grown in skill');
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });

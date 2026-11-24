@@ -384,6 +384,23 @@ describe('recap', () => {
   });
 
   // @spec LINE-RECAP-002
+  it('says what raised the stress of an engineer who became more stressed', () => {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const sim = patch(q.sim, (s) => engineers(q.sim).forEach((id) => (s.people[id]!.stress = 58)));
+    const { level: withWork, id } = withItem(q.level, { kind: 'designReview', subject: { kind: 'project', id: p }, difficulty: 95, lastWeek: sim.week + 3 });
+    // the week began with everyone busy, just below strained
+    const started = { ...withWork, weekStart: { ...withWork.weekStart, week: sim.week, people: Object.fromEntries(engineers(sim).map((e) => [e, { motivation: sim.people[e]!.motivation, stress: 58, skill: sim.people[e]!.skill }])), stress: {} } };
+    const begun = begin(started, sim);
+    const give = momentFor(begun, id).choices.find((c) => c.id.startsWith('give:'))!;
+    const who = give.id.slice('give:'.length);
+    const chosen = choose(begun, sim, momentFor(begun, id).id, give.id);
+    const ended = end(chosen.level, chosen.sim);
+    const entry = ended.recap.people.find((x) => x.personId === who)!;
+    expect(entry.changes).toContain('more stressed (work you gave them)');
+  });
+
+  // @spec LINE-RECAP-002
   it('reports an engineer whose skill grew a band this week', () => {
     const q = quietRun(1);
     const [a] = engineers(q.sim) as [string];

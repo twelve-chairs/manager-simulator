@@ -1,7 +1,7 @@
 import type { ChangeLogEntry, Effect, SimState } from '../../sim';
 import { band, playerEffect, personEffect, projectEffect, random, randomInt, rule, subjectValid, teamEngineers, teamProjects } from './core';
-import { LINE_TUNING, PAY_DOWN, ROLL_BACK, WORK_KINDS } from './tuning';
-import type { LevelProgressCause, LineState, MomentChoice, WorkItem, WorkKind } from './types';
+import { ACCEPT_INTAKE, DELEGATE, HABIT_CAUSE, LINE_TUNING, PAY_DOWN, ROLL_BACK, WORK_KINDS } from './tuning';
+import type { LevelProgressCause, LineState, MomentChoice, StressCause, WorkItem, WorkKind } from './types';
 
 const EXPIRED_RULE = 'line-manager.work-expired';
 const FELL_SHORT_RULE = 'line-manager.work-fell-short';
@@ -15,10 +15,32 @@ function progressCause(cause: ChangeLogEntry['cause']): LevelProgressCause | nul
   return null;
 }
 
-/** Adds what the level's own choices and work did to each project's progress to the week's count, for the recap. */
-// @spec LINE-RECAP-005
+/** The level's causes of an engineer's stress, by the action that caused it. */
+const STRESS_CAUSES: Record<string, StressCause> = {
+  [HABIT_CAUSE.approvals]: 'approvals',
+  [HABIT_CAUSE.nightPages]: 'nightPages',
+  [HABIT_CAUSE.growth]: 'coaching',
+  [DELEGATE]: 'work',
+  [ACCEPT_INTAKE]: 'newWork',
+  [ROLL_BACK]: 'rollBack',
+};
+
+/**
+ * Adds what the level's own choices and work did to each project's progress, and to each engineer's stress, to the
+ * week's count, for the recap.
+ */
+// @spec LINE-RECAP-002, LINE-RECAP-005
 export function tallyProgress(s: LineState, log: ChangeLogEntry[]): void {
   for (const e of log) {
+    if (e.target.kind === 'person' && e.field === 'stress' && e.cause.kind === 'action') {
+      const cause = STRESS_CAUSES[e.cause.actionId];
+      const rise = Number(e.after) - Number(e.before);
+      if (cause && rise > 0) {
+        const counts = (s.weekStart.stress[e.target.id] ??= {});
+        counts[cause] = (counts[cause] ?? 0) + rise;
+      }
+      continue;
+    }
     if (e.target.kind !== 'project' || e.field !== 'progress') continue;
     const cause = progressCause(e.cause);
     if (!cause) continue;
