@@ -236,9 +236,15 @@ function checkText(o: Obj, key: string, path: string, scope: Scope) {
 
 /** A history note is shown on the person's card as written, so a placeholder in it would appear literally. */
 // @spec SIT-CONTENT-027
+/** Whether text holds a `{…}` placeholder: a brace with a closing brace after it. A scan, not a regex, so it stays linear. */
+function hasPlaceholder(text: string): boolean {
+  const open = text.indexOf('{');
+  return open >= 0 && text.includes('}', open);
+}
+
 function historyNote(o: Obj, path: string) {
   string(o, 'historyNote', path);
-  if (typeof o.historyNote === 'string' && /\{[^}]*\}/.test(o.historyNote)) fail(at(path, 'historyNote'), 'must not contain a placeholder');
+  if (typeof o.historyNote === 'string' && hasPlaceholder(o.historyNote)) fail(at(path, 'historyNote'), 'must not contain a placeholder');
 }
 
 const TEAM_FIELDS = [...new Set([...DETAILED_TEAM_FIELDS, ...AGGREGATE_TEAM_FIELDS])];
@@ -369,7 +375,7 @@ function checkSituation(x: unknown): Situation {
   if (Object.hasOwn(o, 'waitDebrief')) {
     const lesson = o.waitDebrief;
     if (typeof lesson !== 'string' || lesson.trim() === '') fail('waitDebrief', 'must be a non-empty string');
-    else if (/\{[^}]*\}/.test(lesson)) fail('waitDebrief', 'must not contain a placeholder');
+    else if (hasPlaceholder(lesson)) fail('waitDebrief', 'must not contain a placeholder');
   }
 
   const roles: Record<string, RoleKind> = {};

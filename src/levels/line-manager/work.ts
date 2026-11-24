@@ -118,7 +118,11 @@ function trade(sim: SimState, item: WorkItem): MomentChoice[] {
 }
 
 /** The number in a work item's id, which picks its phrasing and customer so a replay reads the same. */
-export const itemNumber = (item: WorkItem): number => Number(/(\d+)$/.exec(item.id)?.[1] ?? 0);
+export function itemNumber(item: WorkItem): number {
+  let start = item.id.length;
+  while (start > 0 && item.id[start - 1]! >= '0' && item.id[start - 1]! <= '9') start--;
+  return Number(item.id.slice(start));
+}
 
 /** The choices a work moment offers: do it, a safe pair of hands, a stretch, or push back; take or decline for work intake. */
 // @spec LINE-WORK-002

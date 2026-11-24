@@ -47,7 +47,7 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   const client = fakeClient();
   const run = await playAi(page, client, { persona: 'new-manager', until: 'end', maxDecisions: 60 });
   const kinds = new Set(run.steps.map((s) => s.action.kind));
-  expect([...kinds].sort()).toEqual(['choose', 'fund', 'place']);
+  expect([...kinds].sort((a, b) => a.localeCompare(b))).toEqual(['choose', 'fund', 'place']);
   expect(run.steps.filter((s) => s.note), 'every fake reply was valid').toEqual([]);
   // the screen text reaches the playtester, and nothing of the game's state does
   expect(client.asked.some((m) => m.includes('Your senior managers'))).toBe(true);

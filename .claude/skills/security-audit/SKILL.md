@@ -1,7 +1,7 @@
 ---
 name: security-audit
-description: Comprehensive, repo-wide security and privacy audit of Manager Simulator, not just a diff. Checks secrets in the full git history, dependencies and supply chain, the no-network/no-tracking promise, untrusted input (save data, content files, URL parameters), DOM injection sinks, debug-only code, and the built and deployed output. Read-only; reports findings by severity and fixes nothing without asking. For reviewing only the pending diff, use /security-review instead.
-argument-hint: [source | deps | build | full]
+description: Comprehensive, repo-wide security and privacy audit of Manager Simulator, not just a diff. Checks secrets in the full git history, dependencies and supply chain, the no-network/no-tracking promise, untrusted input (save data, content files, URL parameters), DOM injection sinks, debug-only code, the built and deployed output, and SonarQube Cloud's open findings and ratings. Read-only; reports findings by severity and fixes nothing without asking. For reviewing only the pending diff, use /security-review instead.
+argument-hint: [source | deps | build | sonar | full]
 ---
 
 `/commit` checks each **diff** against `.claude/rules/security-and-privacy.md`. This skill
@@ -13,10 +13,10 @@ a dependency, save/load, content loading or any DOM rendering, and whenever the
 rules change.
 
 **Arguments.** `source` runs sections 1, 3–6. `deps` runs section 2. `build`
-runs section 7. `full` or nothing runs everything.
+runs section 7. `sonar` runs section 8. `full` or nothing runs everything.
 
 **This is an audit, not a fix.** Don't edit, commit or push anything while it
-runs. Report first (section 8). The user decides what to fix, and each fix goes
+runs. Report first (section 9). The user decides what to fix, and each fix goes
 through `/commit` like any other change. The standard is
 `.claude/rules/security-and-privacy.md`. Where it conflicts with a documented decision in
 `docs/high-level-design.md` or an LLD under `docs/intent/`, the design wins;
@@ -154,7 +154,41 @@ grep -rnE 'localhost|127\.0\.0\.1|DEBUG|cheat' dist
   `frame-ancestors`, HTTPS with HSTS. Missing CSP is **Medium**; the rest
   **Low**.
 
-## 8. Report
+## 8. SonarQube Cloud
+
+SonarQube Cloud analyses `main` as project `twelve-chairs_manager-simulator`;
+the README shows its quality gate, security and reliability badges. Read it
+through the `sonarqube` MCP tools (`mcp__sonarqube__*`); if they are not
+connected, record "not checked: SonarQube tools unavailable" and say how to
+connect them (`/sonar-integrate`).
+
+- **Ratings and gate.** `get_component_measures` for `security_rating`,
+  `reliability_rating`, `sqale_rating`, `security_hotspots_reviewed`,
+  `bugs`, `vulnerabilities` and `code_smells`, and
+  `get_project_quality_gate_status`. Ratings come back as numbers: 1 is A,
+  5 is E.
+- **Open issues.** `search_sonar_issues_in_projects` with
+  `issueStatuses: ['OPEN', 'CONFIRMED']`, once per software quality
+  (`SECURITY`, `RELIABILITY`, `MAINTAINABILITY`). Read the code at each
+  issue and `show_rule` for an unfamiliar rule before judging it.
+- **Security hotspots.** `search_security_hotspots` with
+  `status: 'TO_REVIEW'`. Each needs a verdict: safe (with the reason) or a
+  finding.
+
+Grade each as a finding of this audit, not by Sonar's own severity:
+
+- A vulnerability or an unreviewed hotspot that is real under
+  `.claude/rules/security-and-privacy.md` takes that rule's severity.
+- A security or reliability rating below A is at least **Low**, with the
+  issues that cause it listed, since it shows on the public README.
+- Reliability and maintainability issues with no security impact are
+  **Info**, grouped by rule, each with a recommended fix: change the code, or
+  mark it false positive or accepted in Sonar with the reason (only with the
+  user's approval, since that changes a shared record).
+- A finding the local checks already reported is listed once, with both
+  sources.
+
+## 9. Report
 
 Present the report in chat in this structure:
 
@@ -173,7 +207,7 @@ Present the report in chat in this structure:
 - **Fix:** <specific change>
 
 ## Checked and passing
-<every check from sections 0–7 with its result, including "not present yet">
+<every check from sections 0–8 with its result, including "not present yet">
 
 ## Not checked
 <anything skipped and why>

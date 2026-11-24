@@ -321,7 +321,7 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
     }
     case 'restructuring': {
       if (choiceId === 'promoteFromTeam') {
-        const source = s.teamIds.reduce((x, y) => (sim.teams[x]!.aggregate!.skill >= sim.teams[y]!.aggregate!.skill ? x : y));
+        const source = s.teamIds.slice(1).reduce((x, y) => (sim.teams[x]!.aggregate!.skill >= sim.teams[y]!.aggregate!.skill ? x : y), s.teamIds[0]!);
         const r = applyEffects(sim, [team(source, 'skill', -T.restructureSkill, 'senior.restructuring'), team(source, 'headcount', -1, 'senior.restructuring')]);
         if (!r.ok) throw new Error(r.error.message);
         next = addFourthTeam(s, r.state, generateManager(s, r.state, { skill: randomInt(s, 20, 39) }), null);

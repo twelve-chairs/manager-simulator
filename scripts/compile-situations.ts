@@ -15,7 +15,7 @@ class Unreadable extends Error {}
 
 /** Splits a situation file into its YAML front matter and Markdown body. */
 function split(text: string): { frontMatter: string; body: string } {
-  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const lines = text.replaceAll('\r\n', '\n').split('\n');
   if (lines[0] !== '---') throw new Unreadable('must start with a front-matter block between --- lines');
   const end = lines.indexOf('---', 1);
   if (end < 0) throw new Unreadable('front matter is not closed with a --- line');

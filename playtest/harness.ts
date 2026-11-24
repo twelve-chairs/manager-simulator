@@ -83,7 +83,7 @@ export interface PlaySummary {
 }
 
 /** Plays a run in the page, from wherever it is, checking every screen; see `playInPage`. */
-export async function play(page: Page, options: PlayOptions): Promise<PlaySummary> {
+export function play(page: Page, options: PlayOptions): Promise<PlaySummary> {
   const args: InPage = {
     strategy: options.strategy,
     seed: options.seed,
@@ -246,7 +246,7 @@ function playInPage(options: InPage): PlaySummary {
       const t = (el.innerText ?? '').trim();
       if (!t) continue;
       if (/[{}]|\b(undefined|null|NaN|Infinity|\[object)\b/.test(t)) flag(where, `broken text: ${t.slice(0, 120)}`);
-      if (/\b[a-z]+[A-Z][a-z]+\w*\b/.test(t)) flag(where, `code name in text: ${t.slice(0, 120)}`);
+      if (/\b[a-z]+[A-Z][a-z]/.test(t)) flag(where, `code name in text: ${t.slice(0, 120)}`);
       if (/ {2,}| [.,;:!?](?!\d)|\.\.(?!\.)/.test(t)) flag(where, `spacing: ${t.slice(0, 120)}`);
       if (/\b1 (weeks|interviews|engineers|projects|reviews|approvals|pages|times)\b/.test(t)) flag(where, `plural: ${t.slice(0, 120)}`);
       if (/\b(\w{2,}) \1\b/i.test(t)) flag(where, `repeated word: ${t.slice(0, 120)}`);

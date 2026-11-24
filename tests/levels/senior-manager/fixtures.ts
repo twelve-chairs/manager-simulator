@@ -1,6 +1,6 @@
 import { startRun, type LineState } from '../../../src/levels/line-manager';
 import { takeOver, type SeniorState } from '../../../src/levels/senior-manager';
-import type { SimState } from '../../../src/sim';
+import { compareCodeUnits, type SimState } from '../../../src/sim';
 
 /** A line manager run at its start, standing in for one just promoted; `change` adjusts its people before the handover. */
 export function promotedLine(seed = 1, change: (sim: SimState) => void = () => {}): { level: LineState; sim: SimState } {
@@ -15,7 +15,7 @@ export const engineersOf = (line: { level: LineState; sim: SimState }) =>
   Object.values(line.sim.people)
     .filter((p) => p.teamId === line.level.teamId && p.status === 'active' && p.role === 'engineer')
     .map((p) => p.id)
-    .sort();
+    .sort(compareCodeUnits);
 
 /** A senior manager level just taken over from a line run, its old team led by an outside hire unless told otherwise. */
 export function senior(seed = 1, choice = 'hire'): { level: SeniorState; sim: SimState } {
