@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { directorLevel, type DirectorState } from '../../src/levels/director';
+import { DIRECTOR_TUNING as T, directorLevel, type DirectorState } from '../../src/levels/director';
 import { lineManagerLevel } from '../../src/levels/line-manager';
 import { seniorManagerLevel } from '../../src/levels/senior-manager';
 import { newRun, type Dependencies, type Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
-import { DIRECTOR_HELP_TOPICS } from '../../src/ui/director';
+import { DIRECTOR_HELP_TOPICS, directorRenderer } from '../../src/ui/director';
 import { endWeeks, step, stubReview } from '../loop/fixtures';
 import { $, $$, CONTENT, click, makeApp, select, text } from './fixtures';
 
@@ -170,6 +170,17 @@ describe('the director’s recap, review and end', () => {
     expect(text(root, '[data-part=heading]')).toBe('How quarter 1 went');
     expect(text(root, '[data-part=recap-whole-week] summary')).toBe('The whole quarter');
     expect(text(root, '[data-action=close-recap]')).toBe('Start quarter 2');
+    // a split reported as heads moving, and a senior manager who quit, by name and what led to it
+    const r = director(6);
+    const changes = { seniorManagers: [], survey: null, heads: [], moved: [{ from: 'Platform', to: 'Search', count: 14, kind: 'split' as const }], bets: [], upward: [] };
+    const lead = Object.values(r.sim.people).find((p) => p.role === 'manager' && p.teamId !== null && (r.level as DirectorState).groupIds.includes(p.teamId))!;
+    r.sim.week += T.weeksPerQuarter;
+    Object.assign(r.sim.people[lead.id]!, { status: 'departed', departure: { week: r.sim.week - T.weeksPerQuarter, reason: 'quit' }, lowMotivationWeeks: 5, highStressWeeks: 0 });
+    const shown = directorRenderer.recap(r, { changes, routine: { habits: [], goals: [] } });
+    const box = document.createElement('div');
+    for (const c of [shown.changes].flat(3)) if (c instanceof Node) box.append(c);
+    expect(text(box, '[data-part=recap-moved] li')).toBe('Platform split: 14 moved to Search.');
+    expect(text(box, '[data-part=recap-left] li')).toMatch(new RegExp(`^${lead.name} quit, after 5 weeks of low motivation`));
   });
 
   // @spec UI-DIR-012, UI-DIR-013

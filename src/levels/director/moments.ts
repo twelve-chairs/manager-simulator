@@ -205,6 +205,7 @@ function merge(s: DirectorState, sim0: SimState, groupId: string, log: ChangeLog
   const cause = { kind: 'action', actionId: 'director.orgDesign' } as const;
   const into = s.groupIds.filter((g) => g !== groupId && sim0.teams[g]).sort((x, y) => sim0.teams[x]!.aggregate!.headcount - sim0.teams[y]!.aggregate!.headcount || (x < y ? -1 : 1))[0]!;
   let sim = sim0;
+  s.quarterStart?.moved.push({ from: groupId, fromName: sim0.teams[groupId]!.name, to: into, toName: sim0.teams[into]!.name, count: sim0.teams[groupId]!.aggregate!.headcount, kind: 'merge' });
   for (const l of PERFORMANCE_LEVELS) {
     const n = sim.teams[groupId]!.aggregate!.ratings[l];
     if (!n) continue;
@@ -255,6 +256,7 @@ function split(s: DirectorState, sim0: SimState, groupId: string, promote: boole
     sim = apply(sim, [value('team', groupId, 'skill', -T.newSenior.promoteSkill, 'director.orgDesign')], log);
   } else s.arriving[id] = sim.week;
   s.groupIds.push(id);
+  s.quarterStart?.moved.push({ from: groupId, fromName: sim.teams[groupId]!.name, to: id, toName: sim.teams[id]!.name, count: sim.teams[id]!.aggregate!.headcount, kind: 'split' });
   return { sim, groupId: id };
 }
 

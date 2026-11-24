@@ -85,6 +85,8 @@ export interface QuarterStart {
   headcount: Record<string, number>;
   trust: Record<string, number>;
   surveyQuarter: number;
+  /** Heads the player's own reorganizations moved between groups this quarter, by the groups' names when they moved. */
+  moved: { from: string; fromName: string; to: string; toName: string; count: number; kind: 'split' | 'merge' }[];
 }
 
 export interface DirectorState {

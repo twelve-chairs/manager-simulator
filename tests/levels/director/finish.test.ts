@@ -10,6 +10,7 @@ import {
   directorView,
   goalStatus,
   leaderOf,
+  quitLastQuarter,
   reviewDue,
   type DirectorRecap,
 } from '../../../src/levels/director';
@@ -98,6 +99,20 @@ describe('the recap', () => {
     // the survey reports in the quarter it is taken: the second, before the first review
     expect(recaps[1]!.changes.survey).not.toBeNull();
     expect(recaps[0]!.changes.survey).toBeNull();
+  });
+});
+
+describe('senior managers who quit', () => {
+  // @spec DIR-RECAP-003
+  it('reports each senior manager who quit in the quarter just played, with what led to it and the last thing between you', () => {
+    const { level, sim } = director(3);
+    const lead = leaderOf(sim, level.groupIds[0]!)!;
+    const end = sim.week + T.weeksPerQuarter;
+    const after = { ...structuredClone(sim), week: end };
+    Object.assign(after.people[lead]!, { status: 'departed', departure: { week: sim.week, reason: 'quit' }, lowMotivationWeeks: 6, highStressWeeks: 0, trust: 70 });
+    after.people[lead]!.history.push({ week: sim.week - 2, cause: { kind: 'rule', ruleId: 'x' }, note: 'Missed engineering' });
+    expect(quitLastQuarter(level, after)).toEqual([{ personId: lead, name: sim.people[lead]!.name, lowMotivationWeeks: 6, highStressWeeks: 0, lowTrust: false, lastMemory: 'Missed engineering' }]);
+    expect(quitLastQuarter(level, { ...after, week: end + T.weeksPerQuarter })).toEqual([]);
   });
 });
 

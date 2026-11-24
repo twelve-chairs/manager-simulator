@@ -12,6 +12,7 @@ export function snapshotQuarter(level: DirectorState, sim: SimState): QuarterSta
     headcount: Object.fromEntries(view.groups.map((g) => [g.id, g.headcount])),
     trust: Object.fromEntries(view.upward.map((u) => [u.id, u.trust])),
     surveyQuarter: level.survey.quarter,
+    moved: [],
   };
 }
 
@@ -20,6 +21,8 @@ export interface DirectorRecap {
     seniorManagers: { id: string; name: string; changes: string[]; notes: string[] }[];
     survey: { quarter: number; groups: { id: string; name: string; motivation: number; stress: number }[] } | null;
     heads: { groupId: string; name: string; change: number }[];
+    /** Heads a split or merge moved between groups, by name. */
+    moved: { from: string; to: string; count: number; kind: 'split' | 'merge' }[];
     bets: string[];
     upward: { id: string; name: string; change: string }[];
   };
@@ -40,10 +43,16 @@ export function quarterRecap(level: DirectorState, sim: SimState, start: Quarter
     return changes.length || notes.length ? [{ id: m.id, name: m.name, changes, notes }] : [];
   });
   const survey = level.survey.quarter !== start.surveyQuarter ? { quarter: level.survey.quarter, groups: view.groups.map((g) => ({ id: g.id, name: g.name, motivation: g.motivation, stress: g.stress })) } : null;
+  // Heads moved by a split or merge are reported as moved, not as leaving one group and joining another.
+  // @spec DIR-RECAP-002
+  const moves = start.moved ?? [];
+  const net = (g: string) => moves.reduce((n, m) => n + (m.to === g ? m.count : 0) - (m.from === g ? m.count : 0), 0);
   const heads = view.groups.flatMap((g) => {
     const was = start.headcount[g.id];
-    return was !== undefined && was !== g.headcount ? [{ groupId: g.id, name: g.name, change: g.headcount - was }] : [];
+    const change = was === undefined ? 0 : g.headcount - was - net(g.id);
+    return change !== 0 ? [{ groupId: g.id, name: g.name, change }] : [];
   });
+  const reorganized = moves.map((m) => ({ from: m.fromName, to: m.toName, count: m.count, kind: m.kind }));
   const bets = [
     ...level.betResults.filter((r) => r.week >= start.week).map((r) => `${sim.projects[r.projectId]?.name ?? 'A bet'} ${r.landed ? 'landed' : 'failed'}`),
     ...view.bets.filter((b) => b.schedule !== 'onSchedule').map((b) => `${b.name} is ${b.schedule === 'overdue' ? 'overdue' : 'behind'}`),
@@ -59,6 +68,6 @@ export function quarterRecap(level: DirectorState, sim: SimState, start: Quarter
     `Staff meetings: ${h.staffMeeting}.`,
     ...(level.visited ? [`Your listening tour visited ${sim.teams[level.visited.groupId]?.name ?? 'a group'}.`] : []),
   ];
-  return { changes: { seniorManagers, survey, heads, bets, upward }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
+  return { changes: { seniorManagers, survey, heads, moved: reorganized, bets, upward }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
 }
 

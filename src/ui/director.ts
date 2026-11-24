@@ -1,8 +1,9 @@
 import { draftObject } from './drafts';
-import type { DirectorRecap, DirectorView } from '../levels/director';
+import { quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
+import { quitLine } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The director's How to play topics. */
@@ -258,17 +259,21 @@ function chips(before: unknown, after: unknown): Chip[] {
 
 /** The director's part of the recap: what changed, or a quiet quarter, and the routine folded away. */
 // @spec UI-DIR-011
-function recap(_run: Run, value: unknown): { changes: Child; routine: Child } {
+function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const r = value as DirectorRecap;
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
   const c = r.changes;
-  const quiet = !(c.seniorManagers.length || c.survey || c.heads.length || c.bets.length || c.upward.length);
+  const moved = c.moved ?? [];
+  const quits = quitLastQuarter(run.level as DirectorState, run.sim);
+  const quiet = !(c.seniorManagers.length || c.survey || c.heads.length || moved.length || quits.length || c.bets.length || c.upward.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet quarter.') : null,
+      part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-senior-manager': q.personId }, quitLine(q)))),
       part('recap-senior-managers', 'Your senior managers', c.seniorManagers.map((m) => h('li', { 'data-senior-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
       part('recap-survey', c.survey ? `The survey, quarter ${c.survey.quarter}` : 'The survey', (c.survey?.groups ?? []).map((g) => h('li', { 'data-group': g.id }, `${g.name}: ${bandWord('motivation', g.motivation)} and ${bandWord('stress', g.stress)}.`))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, `${x.name}: ${x.change > 0 ? `${x.change} joined` : `${-x.change} left`}.`))),
+      part('recap-moved', 'Reorganized', moved.map((m) => h('li', {}, m.kind === 'split' ? `${m.from} split: ${m.count} moved to ${m.to}.` : `${m.from} merged into ${m.to}: ${m.count} moved.`))),
       part('recap-bets', 'Bets', c.bets.map((line) => h('li', {}, `${line}.`))),
       part('recap-upward', 'Above and beside you', c.upward.map((u) => h('li', { 'data-outsider': u.id }, `${u.name} ${u.change}.`))),
     ],

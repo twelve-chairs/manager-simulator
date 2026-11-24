@@ -97,6 +97,8 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 ## Recap
 
 - [x] **DIR-RECAP-001**: When a quarter ends, the director level shall return a recap of what changed (each senior manager whose band changed or who gained a memory note other than from a habit, a new survey's results, heads who left or joined, bets that landed, failed or slipped, and changes in the executive's and peers' trust) and of the routine (what each habit did, and each goal's progress).
+- [x] **DIR-RECAP-002**: When a quarter ends, the director level shall report, apart from heads who left or joined, each group split or merged that quarter: where the heads went and how many, and shall not count those heads as having left or joined.
+- [x] **DIR-RECAP-003**: When asked after an advance which senior managers quit in the quarter just played, the director level shall report each senior manager of its groups who quit that quarter, with the weeks their motivation had been below the low line and their stress above the high line, whether their trust band was guarded or below, and the note of their most recent remembered history entry, if any.
 
 ## Reviews and the end of the level
 

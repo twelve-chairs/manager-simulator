@@ -1,4 +1,4 @@
-import { LINE_TUNING } from '../line-manager';
+import { LINE_TUNING, quitsIn, type Quit } from '../line-manager';
 import type { SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { goalStatus } from './goals';
@@ -47,6 +47,12 @@ export function afterAdvanceDirector(level: DirectorState, sim: SimState): { lev
 }
 
 const REGRETTED: (keyof RatingCounts)[] = ['meets', 'exceeds', 'outstanding'];
+
+/** The senior managers of the player's groups who quit in the quarter just played, with what led to it and their last memory. */
+// @spec DIR-RECAP-003
+export function quitLastQuarter(level: DirectorState, sim: SimState): Quit[] {
+  return quitsIn(sim, sim.week - WEEKS, (p) => p.role === 'manager' && p.teamId !== null && level.groupIds.includes(p.teamId), (h) => h.filter((e) => e.note));
+}
 
 /** Records each group's rating counts as they are now, so later losses can be counted. */
 export function remember(level: DirectorState, sim: SimState) {

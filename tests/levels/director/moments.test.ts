@@ -122,6 +122,11 @@ describe('a quarter’s moments', () => {
     expect(leaderOf(promoted.sim, added)).not.toBeNull();
     const projects = (sim2: SimState, g: string) => Object.values(sim2.projects).filter((p) => p.teamId === g && p.status === 'active').length;
     expect(projects(promoted.sim, big) + projects(promoted.sim, added)).toBe(projects(sim, big));
+    // the quarter's recap reports the split as heads moving, not leaving (DIR-RECAP-002)
+    const ended = ok(endQuarter(promoted.level, promoted.sim));
+    const name = (g: string) => promoted.sim.teams[g]!.name;
+    expect(ended.recap.changes.moved).toEqual([{ from: name(big), to: name(added), count: right.headcount, kind: 'split' }]);
+    expect(ended.recap.changes.heads.some((h) => h.groupId === big && h.change <= -right.headcount)).toBe(false);
     const hired = ok(chooseDirector(level, sim, org.id, 'splitHire'));
     const hiredGroup = hired.level.groupIds.find((g) => !level.groupIds.includes(g))!;
     expect(leaderOf(hired.sim, hiredGroup)).toBeNull();
