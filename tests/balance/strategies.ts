@@ -8,7 +8,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'feedback-gap': 'direct',
   'improvement-plan': 'real-plan',
   'quarterly-evaluation': 'count-the-load',
-  'incident-postmortem': 'blameless',
+  'incident-postmortem': 'fix-the-cause',
   'review-friction': 'separately',
   'promotion-case': 'write-it',
   'scope-creep': 'trade',

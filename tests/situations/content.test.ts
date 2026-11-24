@@ -528,6 +528,23 @@ describe('written situations', () => {
     expect(unloaded).not.toContain('own-the-load');
   });
 
+  // @spec SIT-COND-008, SIT-COND-013, SIT-COND-017
+  it('holds a morning-after only after someone on the team handled a night page that week', () => {
+    const postmortem = written('incident-postmortem');
+    const rule = { kind: 'rule' as const, ruleId: 'test' };
+    const after = (week: number, note?: string) =>
+      patch(fresh(), (s) => {
+        s.week = 20;
+        s.projects.p1!.risk = 60;
+        if (note) s.people.e1!.history.push({ week, cause: rule, note });
+      });
+    const shown = (sim: ReturnType<typeof fresh>) => select(engine(), sim, [postmortem]).presented[0]?.bindings.engineer;
+    expect(shown(after(19, 'Handled a night page alone'))).toBe('e1');
+    expect(shown(after(19, 'Handled a night page with you'))).toBe('e1');
+    expect(shown(after(10, 'Handled a night page alone')), 'an old page').toBeUndefined();
+    expect(shown(after(19)), 'no page').toBeUndefined();
+  });
+
   // @spec SIT-COND-008, SIT-COND-017
   it('brings back a promised clean-up 10 to 26 weeks on, unless one was led since', () => {
     const promise = written('clean-up-promise');
