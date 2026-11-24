@@ -69,7 +69,7 @@ test('warns that an honest evaluation of someone on a plan lets them go', async 
   await attachSummary(testInfo, `let-go-warning-${seed}`, summary);
   const choices = await page.locator('[data-scene] [data-choice]').allTextContents();
   expect(choices.some((c) => c.endsWith(', and let them go'))).toBe(true);
-  expect(choices.some((c) => /^Rate .+ on what they delivered$/.test(c))).toBe(false);
+  expect(choices.some((c) => /^Rate .+ on their project work$/.test(c))).toBe(false);
 });
 
 // @spec REVIEW-OUT-004, LINE-END-008, LOOP-REV-004, UI-END-001

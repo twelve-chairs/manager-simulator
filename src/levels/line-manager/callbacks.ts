@@ -13,7 +13,7 @@ export const CALLBACKS: Readonly<Record<string, string>> = {
   'Faced an angry customer alone': '{name} hasn\'t forgotten facing that angry customer on their own. You can hear it in how they say "sure".',
   'Was asked to explain the outage alone': '{name} has been careful around you since the postmortem where they stood up alone.',
   'Walked the team through their outage': '"That postmortem was easier than I expected," says {name}. "Thanks for keeping it about the system."',
-  'Rated down to fit the curve': '{name} still hasn\'t mentioned being rated down to fit the curve. You can tell they haven\'t forgotten.',
+  'Lost the top rating in calibration': '{name} still hasn\'t mentioned calibration. You can tell they haven\'t forgotten.',
   'You argued for them in calibration': '"I heard you stood up for me in calibration," says {name}.',
   'You wrote their promotion case': '"Whatever happens with the promotion, thanks for writing it up," says {name}.',
   'Their promotion case was put off': '"Any news on my promotion case?" asks {name}, not quite lightly.',

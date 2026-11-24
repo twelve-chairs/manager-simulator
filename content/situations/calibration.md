@@ -9,94 +9,70 @@ when:
   atMost: 1
 waitDebrief: "A manager who skips calibration lets the room decide. People who aren't argued for are rated by whoever was there."
 roles:
+  # Two engineers who both earned a top rating, competing for the one the curve leaves your team.
   - name: engineer
     kind: person
     where:
       all:
         - { value: engineer.team, is: { value: player.team } }
         - { value: engineer.correspondingRating, atLeast: exceeds }
+  - name: other
+    kind: person
+    where:
+      all:
+        - { value: other.team, is: { value: player.team } }
+        - { value: other.correspondingRating, atLeast: exceeds }
 choices:
-  - id: accept-curve
-    label: "Let the room's rating stand"
+  - id: back-engineer
+    label: "Put {engineer} forward for it"
     outcomes:
-      - id: accepted
+      - id: backed
         effects:
-          - type: value
-            target: engineer
-            field: motivation
-            amount: -8
-          - type: value
-            target: engineer
-            field: trust
-            amount: -6
-            historyNote: Rated down to fit the curve
-          - type: value
-            target: player
-            field: reputation
-            amount: 1
-        aftermath: "The meeting ends early, and the other managers like you for it. {engineer} will hear about it in their review."
-        debrief: "Accepting the curve quietly is the easy meeting and the hard conversation afterwards. People find out who argued for them."
-  - id: evidence
-    label: "Argue for {engineer}'s rating"
+          - { type: value, target: engineer, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
+          - { type: value, target: engineer, field: trust, amount: 3, historyNote: You put them forward in calibration }
+          - { type: value, target: other, field: motivation, amount: -6 }
+          - { type: value, target: other, field: trust, amount: -4, historyNote: Lost the top rating in calibration }
+          - { type: value, target: player, field: stress, amount: 2 }
+        aftermath: "The room takes your pick. {engineer} gets the top rating; {other} gets a solid one, and will work out why."
+        debrief: "When the curve leaves one slot, choosing is the job. Whoever you don't choose deserves to hear it from you, with the reason."
+  - id: back-other
+    label: "Put {other} forward for it"
     outcomes:
-      - id: heard
+      - id: backed
+        effects:
+          - { type: value, target: other, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
+          - { type: value, target: other, field: trust, amount: 3, historyNote: You put them forward in calibration }
+          - { type: value, target: engineer, field: motivation, amount: -6 }
+          - { type: value, target: engineer, field: trust, amount: -4, historyNote: Lost the top rating in calibration }
+          - { type: value, target: player, field: stress, amount: 2 }
+        aftermath: "The room takes your pick. {other} gets the top rating; {engineer} gets a solid one, and will work out why."
+        debrief: "When the curve leaves one slot, choosing is the job. Whoever you don't choose deserves to hear it from you, with the reason."
+  - id: both
+    label: "Argue that both earned it"
+    outcomes:
+      - id: both-held
         when:
           value: player.reputation
-          atLeast: 40
+          atLeast: 60
         effects:
-          - type: value
-            target: engineer
-            field: motivation
-            amount: 6
-            wantTags:
-              serves: [recognition]
-          - type: value
-            target: engineer
-            field: trust
-            amount: 5
-            historyNote: You argued for them in calibration
-          - type: value
-            target: player
-            field: reputation
-            amount: 2
-          - type: value
-            target: player
-            field: stress
-            amount: 3
-        aftermath: "The room pushes back, then reads the examples. {engineer}'s rating holds."
-        debrief: "Advocating with evidence is the job. Specific work beats adjectives in a calibration room."
-      - id: outweighed
+          - { type: value, target: engineer, field: motivation, amount: 4, wantTags: { serves: [recognition] } }
+          - { type: value, target: engineer, field: trust, amount: 4, historyNote: You argued for them in calibration }
+          - { type: value, target: other, field: motivation, amount: 4, wantTags: { serves: [recognition] } }
+          - { type: value, target: other, field: trust, amount: 4, historyNote: You argued for them in calibration }
+          - { type: value, target: player, field: reputation, amount: -4 }
+          - { type: value, target: player, field: stress, amount: 4 }
+        aftermath: "It takes the whole afternoon and most of your standing in the room, but both ratings hold. Another manager's engineer takes the drop instead."
+        debrief: "Winning both spends goodwill you will want back next quarter. The curve doesn't grow; someone else's person paid for it."
+      - id: both-lost
         effects:
-          - type: value
-            target: engineer
-            field: trust
-            amount: 4
-            historyNote: You argued for them in calibration
-          - type: value
-            target: player
-            field: reputation
-            amount: 1
-          - type: value
-            target: player
-            field: stress
-            amount: 3
-        aftermath: "The room isn't convinced this time, but the examples are on the record."
-        debrief: "Evidence doesn't always win the first time, but it is remembered, and so is who brought it."
-  - id: trade
-    label: "Offer to give up a rating elsewhere on your team to keep {engineer}'s"
-    outcomes:
-      - id: traded
-        effects:
-          - type: value
-            target: engineer
-            field: trust
-            amount: 2
-          - type: value
-            target: player
-            field: reputation
-            amount: -3
-        aftermath: "The deal is done. Someone else on the team will hear a worse number than they earned."
-        debrief: "Trading ratings treats them as currency. It keeps one person's rating by making another's dishonest."
+          - { type: value, target: engineer, field: motivation, amount: -3 }
+          - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
+          - { type: value, target: other, field: motivation, amount: -3 }
+          - { type: value, target: other, field: trust, amount: 3, historyNote: You argued for them in calibration }
+          - { type: value, target: player, field: reputation, amount: -2 }
+          - { type: value, target: player, field: stress, amount: 4 }
+        aftermath: "The room hears you out, then gives neither the top rating. {engineer} and {other} both know you tried."
+        debrief: "Arguing for everyone can leave you with no one. Without the standing to win both, the room settles it, and both lose."
 ---
 
-Calibration is this week. The other managers think {engineer}'s quarter was solid, not exceptional. You think it was better than that, but arguing it means an evening pulling examples together and a long meeting.
+Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose.

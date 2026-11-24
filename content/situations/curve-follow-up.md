@@ -12,8 +12,7 @@ roles:
       all:
         - { value: engineer.team, is: { value: player.team } }
         - history: engineer
-          situation: calibration
-          choice: accept-curve
+          note: Lost the top rating in calibration
           withinWeeks: 26
           atLeast: 1
 choices:

@@ -432,9 +432,9 @@ describe('rating someone on an improvement plan', () => {
       });
     const onPlan = offered(weak(['partial', 'below']));
     expect(onPlan.some((l) => l.endsWith(', and let them go'))).toBe(true);
-    expect(onPlan).not.toContain('Rate X on what they delivered');
+    expect(onPlan).not.toContain('Rate X on their project work');
     const notYet = offered(weak(['partial']));
-    expect(notYet).toContain('Rate X on what they delivered');
+    expect(notYet).toContain('Rate X on their project work');
     expect(notYet.some((l) => l.includes('let them go'))).toBe(false);
   });
 });
@@ -485,7 +485,7 @@ describe('written situations', () => {
     const after = (situationId: string, choiceId: string): Memory => ({ cause: { kind: 'situation', situationId, choiceId } });
     const page = (note: string, times: number): Memory => ({ cause: { kind: 'action', actionId: 'line-manager.on-call' }, note, times });
     const followUps: [string, Memory][] = [
-      ['curve-follow-up', after('calibration', 'accept-curve')],
+      ['curve-follow-up', { ...after('calibration', 'back-other'), note: 'Lost the top rating in calibration' }],
       ['promotion-recruiter', after('promotion-case', 'hold-off')],
       ['leave-asked-again', after('leave-in-crunch', 'wait-until-after')],
       ['outage-hidden', after('incident-postmortem', 'blame')],
