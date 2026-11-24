@@ -125,6 +125,10 @@ describe('the director’s scenes', () => {
     const offers = $$(root, '[data-offer]');
     expect(offers.length).toBeGreaterThanOrEqual(2);
     expect(text(offers[0]!, '[data-field=stakes]')).toMatch(/lands|fails/);
+    // what a group can carry: its stress as last seen and its projects, and what speeds or slows a bet
+    expect(text(root, '[data-part=bet-capacity]')).toMatch(/strained group carries a bet slowly/);
+    const option = (($$(root, '[data-offer] select')[0] as unknown as HTMLSelectElement).options[1]!.textContent ?? '');
+    expect(option).toMatch(/^.+: (calm|steady|busy|strained|overwhelmed), \d+ projects?$/);
     const pickers = $$(root, '[data-offer] select');
     const group = (pickers[0] as unknown as HTMLSelectElement).options[1]!.value;
     (pickers[0] as unknown as HTMLSelectElement).value = group;

@@ -185,6 +185,7 @@ function bets(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
   return h(
     'div',
     { 'data-detail': 'bets', class: 'bets' },
+    h('p', { 'data-part': 'bet-capacity', class: 'help' }, 'A strained group carries a bet slowly; a peer who trusts you speeds the work that touches their organization.'),
     (m.offers ?? []).map((o) =>
       h('div', { 'data-offer': o.id, class: 'offer' },
         h('strong', { 'data-field': 'name' }, o.name),
@@ -199,7 +200,7 @@ function bets(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
               else delete picks[o.id];
               ctx.drafts.set(key, { picks: JSON.stringify(picks) });
             },
-          }, h('option', { value: '' }, 'Not funded'), v.groups.map((g) => h('option', { value: g.id }, g.name)))))),
+          }, h('option', { value: '' }, 'Not funded'), v.groups.map((g) => h('option', { value: g.id }, `${g.name}: ${bandWord('stress', g.stress)}, ${plural(g.projects.length, 'project', 'projects')}`)))))),
     h('button', { 'data-action': 'fund-bets', class: 'primary', onClick: () => ctx.send({ kind: 'answer', momentId: m.id, choiceId: `fund:${JSON.stringify(picks)}` }, `moment:${m.id}`) }, 'Fund these bets'),
   );
 }
