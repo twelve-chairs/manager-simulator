@@ -26,6 +26,11 @@ export const CALLBACKS: Readonly<Record<string, string>> = {
   'Got specific feedback on their work': '"That feedback was useful," says {name}. "Specific. Thanks."',
   'You asked how they were finding things': '"Thanks for asking how I was doing, the other week," says {name}. "Nobody had."',
   'Talked about what they want from the job': '{name} brings up your talk about what would make the job worth staying for. They\'re waiting to see what changes.',
+  'You signed off their hotel as an exception': '"Finance never even asked about that hotel," says {name}. "Thanks for writing it up."',
+  'You explained the expense policy': '{name} mentions they booked early this time, inside the policy. "Lesson learned."',
+  "Took over a contractor's work": '{name} is still the one everyone asks about the contractor\'s old code. They don\'t complain about it, much.',
+  'Went to the team event the team picked': '"People are still talking about that team event," says {name}. "Good call letting us choose."',
+  'Gave up a Friday evening for a team dinner': '{name} mentions the Friday dinner. Politely. They had other plans that night.',
   'Given one more quarter': '{name} knows this quarter is their last chance. It shows in how carefully they answer.',
 };
 
