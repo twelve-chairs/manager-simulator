@@ -590,6 +590,15 @@ describe('line manager panels', () => {
     expect(note).toContain(word('stress', who.stress));
   });
 
+  // @spec UI-QUIT-001
+  it('says in the recap who quit in the week, and what led to it', () => {
+    const r = answerAndEnd(playing());
+    const quit = Object.values(r.sim.people).find((p) => p.departure?.reason === 'quit' && p.departure.week === r.sim.week - 1);
+    expect(quit, 'seed 5 has a quit in its first week').toBeDefined();
+    const { root } = makeApp({ run: r });
+    expect(text(root, '[data-part=recap-changes] [data-part=recap-left]')).toContain(`${quit!.name} quit, for reasons of their own.`);
+  });
+
   // @spec UI-LINE-008
   it('adds the level’s part to the recap: what changed at once, habits and goals in the whole week', () => {
     const r = answerAndEnd(playing());
@@ -606,6 +615,8 @@ describe('line manager panels', () => {
     // A week where nothing changed says so, in place of the empty parts.
     const quiet = structuredClone(r);
     Object.assign(quiet.lastWeek!.recap as object, { people: [], evaluations: [], habitChanges: [], expired: [], held: [], assigned: [] });
+    // and nobody quit in it: a quit happens in the simulation's advance, so it is read from the people, not the recap
+    for (const p of Object.values(quiet.sim.people)) if (p.departure) p.departure.week = -1;
     expect(text(makeApp({ run: quiet }).root, '[data-part=recap-changes] [data-part=recap-quiet]')).toBe('A quiet week.');
     if (recap.people.length) expect(root.querySelector('[data-part=recap-quiet]')).toBeNull();
     // a project the player's manager assigned to an idle team

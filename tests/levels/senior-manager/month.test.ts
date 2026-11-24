@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SENIOR_TUNING, afterAdvanceSenior, endMonth, setSeniorHabit, shippedLastMonth, type SeniorState } from '../../../src/levels/senior-manager';
+import { SENIOR_TUNING, afterAdvanceSenior, endMonth, quitLastMonth, setSeniorHabit, shippedLastMonth, type SeniorState } from '../../../src/levels/senior-manager';
 import { remember } from '../../../src/levels/senior-manager/review';
 import type { SimState } from '../../../src/sim';
 import { senior } from './fixtures';
@@ -249,6 +249,24 @@ describe('burnout', () => {
     }
     expect(out).toEqual([false, false, false, true]);
     expect(afterAdvanceSenior({ ...l, burnoutMonths: 2 }, edit(sim, (s) => (s.player.stress = 40))).level.burnoutMonths).toBe(0);
+  });
+});
+
+describe('managers who quit', () => {
+  // @spec SENIOR-RECAP-003
+  it('reports each manager who quit in the month just played, with what led to it and the last thing between you', () => {
+    const { level, sim } = senior(1);
+    const [m, other] = managers(level, sim);
+    const end = sim.week + 4;
+    const after = edit(sim, (s) => {
+      s.week = end;
+      Object.assign(s.people[m!]!, { status: 'departed', departure: { week: end - 4, reason: 'quit' }, lowMotivationWeeks: 0, highStressWeeks: 8, trust: 70 });
+      s.people[m!]!.history.push({ week: end - 6, cause: { kind: 'rule', ruleId: 'x' }, note: 'Agreed to give managing another year' });
+      Object.assign(s.people[other!]!, { status: 'departed', departure: { week: end - 8, reason: 'quit' } });
+    });
+    expect(quitLastMonth(level, after)).toEqual([
+      { personId: m, name: sim.people[m!]!.name, lowMotivationWeeks: 0, highStressWeeks: 8, lowTrust: false, lastMemory: 'Agreed to give managing another year' },
+    ]);
   });
 });
 

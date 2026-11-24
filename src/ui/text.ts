@@ -25,3 +25,16 @@ export function emphasis(text: string): Node[] {
 
 /** How a project shipped against its deadline: "on time", "1 week late", "3 weeks late". */
 export const lateness = (weeks: number): string => (weeks <= 0 ? 'on time' : `${weeks} ${weeks === 1 ? 'week' : 'weeks'} late`);
+
+/** A line for someone who quit: what led to it, clause by clause, and the last thing between you. */
+// @spec UI-QUIT-001
+export function quitLine(q: { name: string; lowMotivationWeeks: number; highStressWeeks: number; lowTrust: boolean; lastMemory?: string }): string {
+  const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;
+  const spells = [
+    ...(q.lowMotivationWeeks > 0 ? [`${weeks(q.lowMotivationWeeks)} of low motivation`] : []),
+    ...(q.highStressWeeks > 0 ? [q.lowMotivationWeeks > 0 ? `${q.highStressWeeks} of high stress` : `${weeks(q.highStressWeeks)} of high stress`] : []),
+  ];
+  const clauses = [...(spells.length ? [`after ${spells.join(' and ')}`] : []), ...(q.lowTrust ? ['trusting you little'] : [])];
+  const why = clauses.length ? `${q.name} quit, ${clauses.join(', ')}.` : `${q.name} quit, for reasons of their own.`;
+  return q.lastMemory ? `${why} The last thing between you: ${q.lastMemory}.` : why;
+}

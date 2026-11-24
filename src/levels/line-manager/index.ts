@@ -8,7 +8,7 @@ export { setHabit } from './habits';
 export { chooseMoment } from './moments';
 export { beginWeek, endWeek, openMoments } from './week';
 export { RATING_WORDS } from './core';
-export { afterAdvance, assess, scorecard, shippedLastWeek } from './review';
+export { afterAdvance, assess, quitLastWeek, quitsIn, scorecard, shippedLastWeek, type Quit } from './review';
 export { band, view } from './view';
 export { lineManagerLevel } from './contract';
 export { WORK_LABELS } from './work';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
+import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, quitLastWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
 import { behindScheduleProjects, correspondingRating, overdueProjects, type SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
@@ -541,6 +541,25 @@ describe('final evaluations', () => {
 });
 
 describe('shipped projects', () => {
+  // @spec LINE-RECAP-004
+  it('reports who quit in the week just played, with what led to it and the last thing between you', () => {
+    const { level, sim } = run(1);
+    const [a, b, c] = engineers(sim);
+    const after = patch(sim, (s) => {
+      s.week = 10;
+      Object.assign(s.people[a!]!, { status: 'departed', departure: { week: 9, reason: 'quit' }, lowMotivationWeeks: 6, highStressWeeks: 3, trust: 10 });
+      s.people[a!]!.history.push({ week: 7, cause: { kind: 'action', actionId: 'line-manager.delegate' }, note: 'Took on a design review' });
+      s.people[a!]!.history.push({ week: 8, cause: { kind: 'action', actionId: 'line-manager.habit.one-on-ones' }, note: 'Had a 1:1' });
+      Object.assign(s.people[b!]!, { status: 'departed', departure: { week: 9, reason: 'fired' } });
+      Object.assign(s.people[c!]!, { status: 'departed', departure: { week: 5, reason: 'quit' } });
+    });
+    expect(quitLastWeek(level, after)).toEqual([
+      { personId: a, name: after.people[a!]!.name, lowMotivationWeeks: 6, highStressWeeks: 3, lowTrust: true, lastMemory: 'Took on a design review' },
+    ]);
+    const calm = patch(after, (s) => Object.assign(s.people[a!]!, { lowMotivationWeeks: 0, highStressWeeks: 0, trust: 60, history: [] }));
+    expect(quitLastWeek(level, calm)).toEqual([{ personId: a, name: after.people[a!]!.name, lowMotivationWeeks: 0, highStressWeeks: 0, lowTrust: false }]);
+  });
+
   // @spec LINE-RECAP-003
   it('reports the projects completed in the week just played, and how late', () => {
     const { level, sim } = run(1);

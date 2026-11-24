@@ -1,5 +1,5 @@
 import { compareCodeUnits } from '../../sim';
-import { RATINGS, behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
+import { RATINGS, behindScheduleProjects, overdueProjects, type HistoryEntry, type Person, type SimState } from '../../sim';
 import { band, reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
 import { goalStatus } from './goals';
@@ -19,6 +19,35 @@ export function afterAdvance(level: LineState, sim: SimState): { level: LineStat
   reconcileVacancies(s, sim);
   s.burnoutWeeks = sim.player.stress >= LINE_TUNING.burnoutThreshold ? s.burnoutWeeks + 1 : 0;
   return { level: s, burnedOut: s.burnoutWeeks >= LINE_TUNING.burnoutWeeks };
+}
+
+/** Someone who quit, with what the departure rule weighs, in terms the player could read on their card, and the last thing between you. */
+export interface Quit {
+  personId: string;
+  name: string;
+  lowMotivationWeeks: number;
+  highStressWeeks: number;
+  lowTrust: boolean;
+  lastMemory?: string;
+}
+
+/** The people who quit in the turn that began at `played`, among those `mine` picks; `memory` is what each remembers, oldest first. */
+export function quitsIn(sim: SimState, played: number, mine: (p: Person) => boolean, memory: (history: HistoryEntry[]) => HistoryEntry[]): Quit[] {
+  return Object.values(sim.people)
+    .filter((p) => p.departure?.reason === 'quit' && p.departure.week === played && mine(p))
+    .sort((a, b) => compareCodeUnits(a.id, b.id))
+    .map((p) => {
+      const last = memory(p.history).at(-1)?.note;
+      return { personId: p.id, name: p.name, lowMotivationWeeks: p.lowMotivationWeeks, highStressWeeks: p.highStressWeeks, lowTrust: band(p.trust) <= 1, ...(last && { lastMemory: last }) };
+    });
+}
+
+const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
+
+/** The team's engineers who quit in the week just played, with what led to it and their last memory that is not a habit's routine. */
+// @spec LINE-RECAP-004
+export function quitLastWeek(level: LineState, sim: SimState): Quit[] {
+  return quitsIn(sim, sim.week - LEVEL.weeksPerStep, (p) => p.teamId === level.teamId, (h) => h.filter((e) => e.note && !(e.cause.kind === 'action' && habitCauses.has(e.cause.actionId))));
 }
 
 /** The team's projects completed in the week just played, and how many weeks after their deadlines. */

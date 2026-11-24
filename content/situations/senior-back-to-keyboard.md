@@ -26,7 +26,7 @@ choices:
         when: { value: manager.trust, atLeast: 60 }
         effects:
           - { type: value, target: manager, field: motivation, amount: 6, historyNote: Agreed to give managing another year }
-        aftermath: "{manager} agrees to try another year, mostly for you."
+        aftermath: "{manager} agrees to try another year, mostly for you. On the way out: \"Ask me again in a month.\""
         debrief: Trust can buy a reluctant manager another year, but it doesn't make them want the job.
       - id: stays-unhappy
         effects:

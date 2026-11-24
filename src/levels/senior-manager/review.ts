@@ -1,4 +1,4 @@
-import { LINE_TUNING, band } from '../line-manager';
+import { LINE_TUNING, band, quitsIn, type Quit } from '../line-manager';
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { managerOf } from './core';
@@ -51,6 +51,12 @@ export function remember(level: SeniorState, sim: SimState) {
     level.knownHeadcount[t] = a.headcount;
     level.knownRatings[t] = { ...a.ratings };
   }
+}
+
+/** The managers of the player's teams who quit in the month just played, with what led to it and their last memory. */
+// @spec SENIOR-RECAP-003
+export function quitLastMonth(level: SeniorState, sim: SimState): Quit[] {
+  return quitsIn(sim, sim.week - WEEKS, (p) => p.role === 'manager' && p.teamId !== null && level.teamIds.includes(p.teamId), (h) => h.filter((e) => e.note));
 }
 
 /** The player's teams' projects completed in the month just played, with their team and how many weeks after their deadlines. */
