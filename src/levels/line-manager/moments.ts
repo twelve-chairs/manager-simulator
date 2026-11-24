@@ -113,18 +113,22 @@ export function addMoments(s: LineState, sim: SimState) {
     if (room <= 0) break;
     make({ kind: 'interview', ref: vacancy.id, day: 2, time: 'afternoon', choices: interviewChoices(s, sim) });
   }
-  // @spec LINE-WORK-013
-  // A design review someone can handle unstrained, on a project with no debt worth paying down, is the team's, with no moment.
-  s.routineReviews = Object.fromEntries(Object.entries(s.routineReviews).filter(([id, who]) => s.items.some((i) => i.id === id) && isEngineer(s, sim, who)));
-  for (const item of open(['designReview']).filter((i) => !Object.hasOwn(s.routineReviews, i.id))) {
-    const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-    if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) continue;
+  // @spec LINE-WORK-013, LINE-WORK-015
+  // Work someone can handle unstrained is the team's, with no moment: a customer request, or a design review on a project
+  // with no debt worth paying down.
+  s.routineWork = Object.fromEntries(Object.entries(s.routineWork).filter(([id, who]) => s.items.some((i) => i.id === id) && isEngineer(s, sim, who)));
+  for (const item of open(['designReview', 'customerRequest']).filter((i) => !Object.hasOwn(s.routineWork, i.id))) {
+    const margin = item.kind === 'customerRequest' ? 1 : 0;
+    if (item.kind === 'designReview') {
+      const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+      if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) continue;
+    }
     const able = teamEngineers(s, sim)
-      .filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty) && band(sim.people[id]!.stress) < STRAINED)
+      .filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty) + margin && band(sim.people[id]!.stress) < STRAINED)
       .sort((a, b) => sim.people[a]!.stress - sim.people[b]!.stress || (a < b ? -1 : 1));
-    if (able[0]) s.routineReviews[item.id] = able[0];
+    if (able[0]) s.routineWork[item.id] = able[0];
   }
-  for (const id of Object.keys(s.routineReviews)) covered.add(id);
+  for (const id of Object.keys(s.routineWork)) covered.add(id);
   // Closest to expiring first; the sort is stable, so equal deadlines keep their arrival order.
   const work = open(MOMENT_KINDS).sort((a, b) => a.lastWeek - b.lastWeek).slice(0, Math.max(0, room));
   work.forEach((item, i) => {

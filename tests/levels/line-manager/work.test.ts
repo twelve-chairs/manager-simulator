@@ -189,7 +189,9 @@ describe('work moments', () => {
 
   // @spec LINE-INBOX-007
   it('raises an engineer’s stress once for each item given to them', () => {
-    const q = quietRun(1);
+    const quiet = quietRun(1);
+    // everyone strained, so neither item is the team's routine work (LINE-WORK-013, LINE-WORK-015)
+    const q = { ...quiet, sim: patch(quiet.sim, (s) => engineers(quiet.sim).forEach((id) => (s.people[id]!.stress = 65))) };
     const a = withItem(q.level, { kind: 'designReview', subject: project(q.sim), difficulty: 20, lastWeek: 3 });
     const b = withItem(a.level, { kind: 'customerRequest', subject: project(q.sim), difficulty: 20, lastWeek: 3 });
     let level = begin(b.level, q.sim);
@@ -300,8 +302,8 @@ describe('on-call moments', () => {
   });
 });
 
-/** A design review on the first project, with the project's tech debt and each engineer's skill and stress set. */
-function review(debt: number, difficulty: number, people: Record<number, { skill: number; stress: number }>) {
+/** A design review (or another kind) on the first project, with the project's tech debt and each engineer's skill and stress set. */
+function review(debt: number, difficulty: number, people: Record<number, { skill: number; stress: number }>, kind: 'designReview' | 'customerRequest' = 'designReview') {
   const q = quietRun(1);
   const ids = engineers(q.sim);
   const sim = patch(q.sim, (s) => {
@@ -309,7 +311,7 @@ function review(debt: number, difficulty: number, people: Record<number, { skill
     for (const id of ids) Object.assign(s.people[id]!, { skill: 10, stress: 10 });
     for (const [i, p] of Object.entries(people)) Object.assign(s.people[ids[Number(i)]!]!, p);
   });
-  const made = withItem({ ...q.level, items: [] }, { kind: 'designReview', subject: project(sim), size: WORK_KINDS.designReview.size, difficulty, lastWeek: sim.week + 2, id: 'r1' });
+  const made = withItem({ ...q.level, items: [] }, { kind, subject: project(sim), size: WORK_KINDS[kind].size, difficulty, lastWeek: sim.week + 2, id: 'r1' });
   return { level: begin(made.level, sim), sim, ids };
 }
 const hasMoment = (level: LineState, ref: string) => level.moments.some((m) => m.ref === ref && m.status === 'open');
@@ -319,14 +321,14 @@ describe('routine design reviews', () => {
   it('hands a review someone can handle unstrained, on a project with no worse than moderate debt, to the least stressed of them, with no moment', () => {
     const r = review(10, 50, { 0: { skill: 70, stress: 30 }, 1: { skill: 55, stress: 20 }, 2: { skill: 30, stress: 0 } });
     expect(hasMoment(r.level, 'r1')).toBe(false);
-    expect(r.level.routineReviews).toEqual({ r1: r.ids[1] });
+    expect(r.level.routineWork).toEqual({ r1: r.ids[1] });
     // a debt worth paying down, a review beyond everyone, or only strained engineers who could take it: a moment
     expect(hasMoment(review(30, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1'), 'moderate debt is still routine').toBe(false);
     expect(hasMoment(review(45, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
     expect(hasMoment(review(10, 90, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
     const strained = review(10, 50, { 0: { skill: 70, stress: 65 } });
     expect(hasMoment(strained.level, 'r1')).toBe(true);
-    expect(strained.level.routineReviews).toEqual({});
+    expect(strained.level.routineWork).toEqual({});
   });
 
   // @spec LINE-WORK-014
@@ -339,10 +341,36 @@ describe('routine design reviews', () => {
     expect(done.sim.people[who]!.history.filter((h) => h.week === r.sim.week).map((h) => h.note)).toContain('Took on a design review');
     expect(done.sim.projects[project(r.sim).id]!.techDebt).toBe(10);
     expect(done.recap.habits).toContain(`${r.sim.people[who]!.name} took 1 design review.`);
-    expect(done.level.routineReviews).toEqual({});
+    expect(done.level.routineWork).toEqual({});
     // someone who left before the week's end leaves it open
     const gone = patch(r.sim, (s) => Object.assign(s.people[who]!, { status: 'departed', departure: { week: s.week, reason: 'quit' } }));
     expect(end(r.level, gone).level.items.some((i) => i.id === 'r1')).toBe(true);
+  });
+});
+
+describe('routine customer requests', () => {
+  // @spec LINE-WORK-001, LINE-WORK-015
+  it('hands a request clearly within an unstrained engineer’s skill to the least stressed of them, with no moment, whatever the debt', () => {
+    const r = review(90, 50, { 0: { skill: 70, stress: 30 }, 1: { skill: 65, stress: 20 }, 2: { skill: 55, stress: 0 } }, 'customerRequest');
+    expect(hasMoment(r.level, 'r1')).toBe(false);
+    expect(r.level.routineWork).toEqual({ r1: r.ids[1] });
+    // beyond everyone, or only strained engineers who could take it: a moment, where a smaller change is the trade
+    expect(hasMoment(review(10, 90, { 0: { skill: 70, stress: 30 } }, 'customerRequest').level, 'r1')).toBe(true);
+    // only within reach, not clearly: still a moment, so the player decides who stretches for it
+    expect(hasMoment(review(10, 50, { 0: { skill: 55, stress: 30 } }, 'customerRequest').level, 'r1')).toBe(true);
+    expect(hasMoment(review(10, 50, { 0: { skill: 70, stress: 65 } }, 'customerRequest').level, 'r1')).toBe(true);
+  });
+
+  // @spec LINE-WORK-014
+  it('has the engineer take it at the week’s end, as if given it, and says so in the recap', () => {
+    const r = review(10, 50, { 0: { skill: 70, stress: 30 } }, 'customerRequest');
+    const who = r.ids[0]!;
+    const done = end(r.level, r.sim);
+    expect(done.level.items.some((i) => i.id === 'r1')).toBe(false);
+    expect(done.sim.people[who]!.stress).toBe(30 + LINE_TUNING.work.delegateStress);
+    expect(done.sim.people[who]!.history.filter((h) => h.week === r.sim.week).map((h) => h.note)).toContain('Took on a customer request');
+    expect(done.sim.player.reputation).toBe(r.sim.player.reputation);
+    expect(done.recap.habits).toContain(`${r.sim.people[who]!.name} took 1 customer request.`);
   });
 });
 
@@ -434,8 +462,8 @@ describe('callbacks', () => {
   });
 });
 
-/** A quiet run with one item of the kind open on the first project, whose tech debt is `debt`. */
-function oneOf(kind: 'designReview' | 'customerRequest', debt: number, id = 'w7', difficulty = 50) {
+/** A quiet run with one item of the kind open on the first project, whose tech debt is `debt`; a customer request is beyond everyone, so it is a moment. */
+function oneOf(kind: 'designReview' | 'customerRequest', debt: number, id = 'w7', difficulty = kind === 'customerRequest' ? 95 : 50) {
   const q = quietRun(1);
   const sim = patch(q.sim, (s) => (s.projects[project(s).id]!.techDebt = debt));
   const made = withItem(q.level, { kind, subject: project(sim), size: WORK_KINDS[kind].size, difficulty, lastWeek: sim.week + 2, id });

@@ -100,8 +100,8 @@ export interface LineState {
   calledBack: string[];
   /** This week's night pages the engineer on call handles on their own: item id to that engineer. */
   routinePages: Record<string, string>;
-  /** This week's design reviews the team takes with no moment: item id to the engineer taking it. */
-  routineReviews: Record<string, string>;
+  /** This week's design reviews and customer requests the team takes with no moment: item id to the engineer taking it. */
+  routineWork: Record<string, string>;
   /** Project id to the week of its last check-in moment. */
   checkIns: Record<string, number>;
   /** Consecutive weeks the player's stress has been at or above the burnout threshold. */

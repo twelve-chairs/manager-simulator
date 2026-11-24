@@ -27,7 +27,7 @@ describe('a week’s moments', () => {
   // @spec LINE-MOMENT-001
   it('brings back work pushed back or left unanswered in earlier weeks', () => {
     let { level, sim } = quietRun(1);
-    level = withItem(level, { kind: 'customerRequest', subject: project(sim), lastWeek: sim.week + 3, id: 'later' }).level;
+    level = withItem(level, { kind: 'customerRequest', subject: project(sim), difficulty: 95, lastWeek: sim.week + 3, id: 'later' }).level;
     level = begin(level, sim);
     level = choose(level, sim, momentFor(level, 'later').id, 'pushBack').level;
     const next = patch(sim, (s) => (s.week += 1));

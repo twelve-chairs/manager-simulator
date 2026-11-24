@@ -359,7 +359,7 @@ describe('recap', () => {
     const p = { kind: 'project' as const, id: projects(q.sim)[0]! };
     let level: LineState = { ...q.level, items: [
       { id: 'answered', kind: 'designReview' as const, subject: p, size: 5, difficulty: 50, arrivedWeek: 0, lastWeek: 3 },
-      { id: 'left', kind: 'customerRequest' as const, subject: p, size: 4, difficulty: 50, arrivedWeek: 0, lastWeek: 0 },
+      { id: 'left', kind: 'customerRequest' as const, subject: p, size: 4, difficulty: 95, arrivedWeek: 0, lastWeek: 0 },
     ] };
     level = begin(level, q.sim);
     const answered = choose(level, q.sim, momentFor(level, 'answered').id, 'self');

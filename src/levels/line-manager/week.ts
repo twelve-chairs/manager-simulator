@@ -4,7 +4,7 @@ import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
 import { DELEGATE, HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
-import { EXPIRED, arriveWork, consequence, intakeWaiting, tallyProgress, teamStretched } from './work';
+import { EXPIRED, WORK_LABELS, arriveWork, consequence, intakeWaiting, tallyProgress, teamStretched } from './work';
 import type { LevelResult, LineState, Recap, WeekResult } from './types';
 
 /** Starts a week: work arrives, the period's goals are set if it is new, and the week's moments are made. */
@@ -113,17 +113,20 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   s.routinePages = {};
 
   // @spec LINE-WORK-014
-  // Design reviews the team took, as if the player had given each to its engineer; one whose engineer left stays open.
-  const reviewed = new Map<string, number>();
-  for (const item of s.items.filter((i) => i.kind === 'designReview' && Object.hasOwn(s.routineReviews, i.id))) {
-    const id = s.routineReviews[item.id]!;
-    if (!isEngineer(s, sim, id)) continue;
-    signed.add(item.id);
-    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: 'Took on a design review' }));
-    reviewed.set(id, (reviewed.get(id) ?? 0) + 1);
+  // Work the team took, as if the player had given each item to its engineer; one whose engineer left stays open.
+  for (const kind of ['designReview', 'customerRequest'] as const) {
+    const label = WORK_LABELS[kind];
+    const took = new Map<string, number>();
+    for (const item of s.items.filter((i) => i.kind === kind && Object.hasOwn(s.routineWork, i.id))) {
+      const id = s.routineWork[item.id]!;
+      if (!isEngineer(s, sim, id)) continue;
+      signed.add(item.id);
+      effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${label}` }));
+      took.set(id, (took.get(id) ?? 0) + 1);
+    }
+    for (const [id, n] of took) recap.habits.push(`${nameOf(sim, id)} took ${n} ${label}${n === 1 ? '' : 's'}.`);
   }
-  for (const [id, n] of reviewed) recap.habits.push(`${nameOf(sim, id)} took ${n} design review${n === 1 ? '' : 's'}.`);
-  s.routineReviews = {};
+  s.routineWork = {};
 
   // Night pages with no moment this week (you take pages, they arrived while you did, or nobody could be on call) are yours.
   const covered = new Set([...s.moments.filter((m) => m.week === week).map((m) => m.ref), ...signed]);

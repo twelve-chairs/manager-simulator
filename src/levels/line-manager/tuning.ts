@@ -38,7 +38,7 @@ export const LINE_TUNING = {
 
   habits: {
     /** Player stress per night page taken personally, per unit of the page's size. */
-    pageStressPerSize: 1,
+    pageStressPerSize: 2,
     oneOnOneTrust: 4,
     oneOnOneMotivation: 1,
     // A normal week's routine (1:1s, ceremonies, signing approvals) costs little; effort beyond it is what wears the player down.
