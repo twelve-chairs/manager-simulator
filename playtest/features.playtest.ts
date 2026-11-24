@@ -12,7 +12,8 @@ const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 test('warns before burnout, and a player who eases off at the first warning gets back from the edge', async ({ page }, testInfo) => {
   const problems = watch(page);
   const escaped: number[] = [];
-  for (const seed of [1, 2, 3, 4, 5]) {
+  // Seeds whose heavy start reaches the warning within 30 weeks; on seed 2 the team takes enough of the work that it never does.
+  for (const seed of [1, 3, 4, 5, 6]) {
     await startSeeded(page, seed);
     const summary = await play(page, { strategy: 'heavyThenEase', seed, maxWeeks: 30 });
     await attachSummary(testInfo, `heavy-then-ease-${seed}`, summary);

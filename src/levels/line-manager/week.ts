@@ -3,7 +3,7 @@ import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, name
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
-import { HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
+import { DELEGATE, HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
 import { EXPIRED, arriveWork, consequence, tallyProgress } from './work';
 import type { LevelResult, LineState, Recap, WeekResult } from './types';
 
@@ -46,7 +46,7 @@ function counted(notes: string[]): string[] {
 }
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
-// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014, LINE-HABIT-017
+// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014, LINE-HABIT-017, LINE-WORK-014
 // @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-END-013, LINE-INBOX-002, LINE-INBOX-013
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
@@ -107,6 +107,19 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   }
   for (const [id, n] of handled) recap.habits.push(`${nameOf(sim, id)} handled ${n} night page${n === 1 ? '' : 's'} on their own.`);
   s.routinePages = {};
+
+  // @spec LINE-WORK-014
+  // Design reviews the team took, as if the player had given each to its engineer; one whose engineer left stays open.
+  const reviewed = new Map<string, number>();
+  for (const item of s.items.filter((i) => i.kind === 'designReview' && Object.hasOwn(s.routineReviews, i.id))) {
+    const id = s.routineReviews[item.id]!;
+    if (!isEngineer(s, sim, id)) continue;
+    signed.add(item.id);
+    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: 'Took on a design review' }));
+    reviewed.set(id, (reviewed.get(id) ?? 0) + 1);
+  }
+  for (const [id, n] of reviewed) recap.habits.push(`${nameOf(sim, id)} took ${n} design review${n === 1 ? '' : 's'}.`);
+  s.routineReviews = {};
 
   // Night pages with no moment this week (you take pages, they arrived while you did, or nobody could be on call) are yours.
   const covered = new Set([...s.moments.filter((m) => m.week === week).map((m) => m.ref), ...signed]);

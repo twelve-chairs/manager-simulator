@@ -115,9 +115,11 @@ describe('work moments', () => {
   // @spec LINE-WORK-001, LINE-WORK-002
   it('offers doing it yourself, a safe pair of hands, a stretch, and pushing back', () => {
     const { level, sim, id } = oneReview(50, (s) => {
-      const [a, b, c] = Object.keys(s.people).sort();
-      Object.assign(s.people[a!]!, { skill: 80, stress: 40 });
-      Object.assign(s.people[b!]!, { skill: 80, stress: 20 });
+      const [a, b, c, ...rest] = Object.keys(s.people).sort();
+      for (const id of rest) Object.assign(s.people[id]!, { skill: 10, stress: 50 });
+      // Both who could take it are strained, so it is a moment rather than the team's (LINE-WORK-013).
+      Object.assign(s.people[a!]!, { skill: 80, stress: 70 });
+      Object.assign(s.people[b!]!, { skill: 80, stress: 65 });
       Object.assign(s.people[c!]!, { skill: 20, stress: 10 });
       s.projects[project(s).id]!.techDebt = 0;
     });
@@ -268,6 +270,51 @@ describe('on-call moments', () => {
   });
 });
 
+/** A design review on the first project, with the project's tech debt and each engineer's skill and stress set. */
+function review(debt: number, difficulty: number, people: Record<number, { skill: number; stress: number }>) {
+  const q = quietRun(1);
+  const ids = engineers(q.sim);
+  const sim = patch(q.sim, (s) => {
+    s.projects[project(s).id]!.techDebt = debt;
+    for (const id of ids) Object.assign(s.people[id]!, { skill: 10, stress: 10 });
+    for (const [i, p] of Object.entries(people)) Object.assign(s.people[ids[Number(i)]!]!, p);
+  });
+  const made = withItem({ ...q.level, items: [] }, { kind: 'designReview', subject: project(sim), size: WORK_KINDS.designReview.size, difficulty, lastWeek: sim.week + 2, id: 'r1' });
+  return { level: begin(made.level, sim), sim, ids };
+}
+const hasMoment = (level: LineState, ref: string) => level.moments.some((m) => m.ref === ref && m.status === 'open');
+
+describe('routine design reviews', () => {
+  // @spec LINE-WORK-001, LINE-WORK-013
+  it('hands a review someone can handle unstrained, on a low-debt project, to the least stressed of them, with no moment', () => {
+    const r = review(10, 50, { 0: { skill: 70, stress: 30 }, 1: { skill: 55, stress: 20 }, 2: { skill: 30, stress: 0 } });
+    expect(hasMoment(r.level, 'r1')).toBe(false);
+    expect(r.level.routineReviews).toEqual({ r1: r.ids[1] });
+    // a debt worth paying down, a review beyond everyone, or only strained engineers who could take it: a moment
+    expect(hasMoment(review(30, 50, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
+    expect(hasMoment(review(10, 90, { 0: { skill: 70, stress: 30 } }).level, 'r1')).toBe(true);
+    const strained = review(10, 50, { 0: { skill: 70, stress: 65 } });
+    expect(hasMoment(strained.level, 'r1')).toBe(true);
+    expect(strained.level.routineReviews).toEqual({});
+  });
+
+  // @spec LINE-WORK-014
+  it('has the engineer take it at the week’s end, as if given it, and says so in the recap', () => {
+    const r = review(10, 50, { 0: { skill: 70, stress: 30 } });
+    const who = r.ids[0]!;
+    const done = end(r.level, r.sim);
+    expect(done.level.items.some((i) => i.id === 'r1')).toBe(false);
+    expect(done.sim.people[who]!.stress).toBe(30 + LINE_TUNING.work.delegateStress);
+    expect(done.sim.people[who]!.history.filter((h) => h.week === r.sim.week).map((h) => h.note)).toContain('Took on a design review');
+    expect(done.sim.projects[project(r.sim).id]!.techDebt).toBe(10);
+    expect(done.recap.habits).toContain(`${r.sim.people[who]!.name} took 1 design review.`);
+    expect(done.level.routineReviews).toEqual({});
+    // someone who left before the week's end leaves it open
+    const gone = patch(r.sim, (s) => Object.assign(s.people[who]!, { status: 'departed', departure: { week: s.week, reason: 'quit' } }));
+    expect(end(r.level, gone).level.items.some((i) => i.id === 'r1')).toBe(true);
+  });
+});
+
 describe('answering moments', () => {
   // @spec LINE-MOMENT-003
   it('refuses a closed moment or a choice it does not offer', () => {
@@ -357,10 +404,10 @@ describe('callbacks', () => {
 });
 
 /** A quiet run with one item of the kind open on the first project, whose tech debt is `debt`. */
-function oneOf(kind: 'designReview' | 'customerRequest', debt: number, id = 'w7') {
+function oneOf(kind: 'designReview' | 'customerRequest', debt: number, id = 'w7', difficulty = 50) {
   const q = quietRun(1);
   const sim = patch(q.sim, (s) => (s.projects[project(s).id]!.techDebt = debt));
-  const made = withItem(q.level, { kind, subject: project(sim), size: WORK_KINDS[kind].size, difficulty: 50, lastWeek: sim.week + 2, id });
+  const made = withItem(q.level, { kind, subject: project(sim), size: WORK_KINDS[kind].size, difficulty, lastWeek: sim.week + 2, id });
   return { level: begin(made.level, sim), sim, id: made.id };
 }
 const edge = (b: number) => LINE_TUNING.bandEdges[b - 1]!;
@@ -370,7 +417,8 @@ describe('trades in routine work', () => {
   // @spec LINE-WORK-002, LINE-WORK-008
   it('offers fixing the debt a design review touches once the project’s tech debt reaches the band, before pushing back', () => {
     const P = LINE_TUNING.payDown;
-    const below = oneOf('designReview', edge(P.band) - 1);
+    // Beyond everyone, so a moment though the debt is low (LINE-WORK-013).
+    const below = oneOf('designReview', edge(P.band) - 1, 'w7', 95);
     expect(momentFor(below.level, below.id).choices.map((c) => c.id)).not.toContain('payDown');
     const at = oneOf('designReview', edge(P.band));
     const ids = momentFor(at.level, at.id).choices.map((c) => c.id);
