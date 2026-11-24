@@ -197,18 +197,26 @@ describe('routine approvals', () => {
   });
 
   // @spec LINE-HABIT-014
-  it('has a named engineer sign what they can, serving autonomy, and leaves the rest to expire', () => {
+  it('has a named engineer sign what their skill band reaches, serving autonomy, and brings the rest to you', () => {
     let { level, sim } = quietRun(1);
     const [a] = engineers(sim) as [string];
-    const s = patch(sim, (st) => (st.people[a]!.want = 'autonomy'));
+    // Capable (40-59): a 55 is within their band though above their number; a 90 is beyond them.
+    const s = patch(sim, (st) => Object.assign(st.people[a]!, { want: 'autonomy', skill: 50 }));
     const p = { kind: 'project' as const, id: projects(sim)[0]! };
     level = habit(level, s, 'approvals', a);
-    level = withItem(level, { kind: 'approval', subject: p, difficulty: 30, lastWeek: 0, id: 'easy' }).level;
-    level = withItem(level, { kind: 'approval', subject: p, difficulty: 90, lastWeek: 0, id: 'hard' }).level;
+    level = withItem(level, { kind: 'approval', subject: p, difficulty: 55, lastWeek: 0, id: 'within' }).level;
+    // Four, since a quarter point each is summed for the week before it applies.
+    for (const id of ['b1', 'b2', 'b3', 'b4']) level = withItem(level, { kind: 'approval', subject: p, difficulty: 90, lastWeek: 0, id }).level;
     const ended = end(begin(level, s), s);
+    const alone = end(begin(withItem(habit(quietRun(1).level, s, 'approvals', a), { kind: 'approval', subject: p, difficulty: 55, lastWeek: 0, id: 'within' }).level, s), s);
     expect(ended.sim.people[a]!.stress).toBeGreaterThan(s.people[a]!.stress);
     expect(ended.sim.people[a]!.wantServedWeek).toBe(s.week);
-    expect(ended.recap.expired.map((e) => e.itemId)).toEqual(['hard']);
+    expect(ended.recap.expired).toEqual([]);
+    expect(ended.level.items).toEqual([]);
+    expect(ended.sim.player.stress).toBeGreaterThan(alone.sim.player.stress);
+    const name = s.people[a]!.name;
+    expect(ended.recap.habits).toContain(`${name} signed 1 routine approval. 4 were beyond them, so you signed them.`);
+    expect(alone.recap.habits).toContain(`${name} signed 1 routine approval.`);
   });
 
   // @spec LINE-HABIT-014

@@ -79,20 +79,24 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const signer = s.habits.approvals === 'me' ? undefined : s.habits.approvals;
   // A signer never approves their own expenses; those come to the player with everything else when no one is named.
   const own = (i: (typeof routine)[number]) => i.subject.kind === 'person' && i.subject.id === signer;
+  const theirs = signer ? routine.filter((i) => !own(i)) : [];
+  // What the signer's skill band reaches, as their card shows it; what is beyond them comes to the player.
+  const able = signer ? theirs.filter((i) => band(sim.people[signer]!.skill) >= band(i.difficulty)) : [];
+  const beyond = theirs.filter((i) => !able.includes(i));
   const mine = signer ? routine.filter(own) : routine;
-  if (mine.length) {
-    for (const item of mine) signed.add(item.id);
-    effects.push(playerEffect('stress', mine.length * t.approvalStress, approvals));
-    recap.habits.push(`You signed ${mine.length} routine approval${mine.length === 1 ? '' : 's'}.`);
+  if (mine.length) recap.habits.push(`You signed ${mine.length} routine approval${mine.length === 1 ? '' : 's'}.`);
+  if (mine.length + beyond.length) {
+    for (const item of [...mine, ...beyond]) signed.add(item.id);
+    effects.push(playerEffect('stress', (mine.length + beyond.length) * t.approvalStress, approvals));
   }
   if (signer) {
-    const theirs = routine.filter((i) => !own(i));
-    const able = theirs.filter((i) => i.difficulty <= sim.people[signer]!.skill);
     for (const item of able) {
       effects.push(personEffect(signer, 'stress', t.signerStress, approvals, { serves: ['autonomy'] }));
       signed.add(item.id);
     }
-    if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${able.length} of ${theirs.length} routine approvals.`);
+    const n = beyond.length;
+    const rest = n ? ` ${n} ${n === 1 ? 'was beyond them, so you signed it' : 'were beyond them, so you signed them'}.` : '';
+    if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${able.length} routine approval${able.length === 1 ? '' : 's'}.${rest}`);
   }
 
   // @spec LINE-HABIT-017

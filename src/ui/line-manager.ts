@@ -18,7 +18,7 @@ const HABITS: Record<HabitId, { label: string; what: string; options: Record<str
     what: 'How often you sit down with each engineer. They build trust and tell you what people want.',
     options: { fortnightly: 'Every other week', weekly: 'Every week', whenNeeded: 'Only when needed' },
   },
-  approvals: { label: 'Routine approvals', what: 'Who signs off releases, access and expenses.', options: { me: 'You' } },
+  approvals: { label: 'Routine approvals', what: 'Who signs off releases, access and expenses. Those beyond them come to you.', options: { me: 'You' } },
   ceremonies: {
     label: 'Ceremonies',
     what: 'Stand-ups, planning and retros: steadiness for the team, time for you.',
