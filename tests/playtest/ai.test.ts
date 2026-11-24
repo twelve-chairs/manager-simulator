@@ -11,6 +11,7 @@ import {
   hasCredentials,
   interviewDue,
   interviewMessage,
+  withHeading,
   keepNotebook,
   renderReport,
   runOptions,
@@ -78,6 +79,9 @@ describe('the AI playtester', () => {
     const bets = decisionMessage(moment({ funding: { offers: [{ id: 'bo1', label: 'Atlas' }], groups: [{ id: 'g1', label: 'Payments' }] } }), '', '');
     expect(bets).toMatch(/Bets on offer:\n- `bo1`: Atlas/);
     expect(bets).toContain('(empty: you have just started)');
+    const promotion = decisionMessage(moment({ title: 'You have been promoted', text: 'You have been promoted\n\nWho leads Platform now?' }), '', '');
+    expect(promotion.match(/You have been promoted/g)).toHaveLength(1);
+    expect(withHeading({ title: 'You have been promoted', text: 'You have been promoted\n\nWho leads?' })).toBe('You have been promoted\n\nWho leads?');
     expect(systemPrompt('sceptic')).toMatch(/sceptical player/);
   });
 

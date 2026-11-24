@@ -52,6 +52,14 @@ describe('the handover', () => {
   });
 
   // @spec SENIOR-HAND-004
+  it('names every project at the handover unlike any other', () => {
+    for (let seed = 1; seed <= 60; seed++) {
+      const names = Object.values(senior(seed).sim.projects).map((p) => p.name);
+      expect(new Set(names).size, `seed ${seed}: ${names.join(', ')}`).toBe(names.length);
+    }
+  });
+
+  // @spec SENIOR-HAND-004
   it('folds the old team into an aggregate under its manager, keeping its projects, and adds two more teams', () => {
     const line = promotedLine(5);
     const projects = Object.values(line.sim.projects).filter((p) => p.teamId === line.level.teamId).map((p) => p.id);

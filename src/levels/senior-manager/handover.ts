@@ -132,16 +132,20 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     );
     if (!added.ok) throw new Error(`handover: ${added.error}`);
     sim = added.state;
-    const projects: NewProject[] = Array.from({ length: randomInt(level, 1, 2) }, () => ({
-      id: nextId(level, 'project', 'pr', sim.projects),
-      name: unusedName(level, NAMES.projects, Object.values(sim.projects).map((p) => p.name)),
-      teamId: id,
-      scope: randomInt(level, 80, 140),
-      risk: randomInt(level, 10, 70),
-      techDebt: randomInt(level, 10, 50),
-      deadlineWeek: sim.week + randomInt(level, 20, 32),
-    }));
-    for (const project of projects) sim = apply(sim, [{ type: 'startProject', project, cause: HANDOVER }]);
+    // Each project starts before the next is named, so a team's two projects never share a name.
+    const count = randomInt(level, 1, 2);
+    for (let j = 0; j < count; j++) {
+      const project: NewProject = {
+        id: nextId(level, 'project', 'pr', sim.projects),
+        name: unusedName(level, NAMES.projects, Object.values(sim.projects).map((p) => p.name)),
+        teamId: id,
+        scope: randomInt(level, 80, 140),
+        risk: randomInt(level, 10, 70),
+        techDebt: randomInt(level, 10, 50),
+        deadlineWeek: sim.week + randomInt(level, 20, 32),
+      };
+      sim = apply(sim, [{ type: 'startProject', project, cause: HANDOVER }]);
+    }
     level.teamIds.push(id);
     managers.push(manager.id);
   }

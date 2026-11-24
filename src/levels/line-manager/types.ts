@@ -124,13 +124,13 @@ export interface LineState {
   /** Habit fall-backs made when the week began, for that week's recap. */
   habitNotes: string[];
   /**
-   * Each engineer's motivation and stress and each project's progress when the week began, so the recap can say who
+   * Each engineer's motivation, stress and skill and each project's progress when the week began, so the recap can say who
    * changed and how projects moved, and what the level's own choices have cost or added to each project since; week -1
    * before any week has begun.
    */
   weekStart: {
     week: number;
-    people: Record<string, { motivation: number; stress: number }>;
+    people: Record<string, { motivation: number; stress: number; skill: number }>;
     projects: Record<string, number>;
     causes: Record<string, Partial<Record<LevelProgressCause, number>>>;
   };

@@ -18,7 +18,7 @@ export function beginWeek(level: LineState, sim: SimState): LineState {
   setGoals(s, sim);
   s.weekStart = {
     week: sim.week,
-    people: Object.fromEntries(teamEngineers(s, sim).map((id) => [id, { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress }])),
+    people: Object.fromEntries(teamEngineers(s, sim).map((id) => [id, { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress, skill: sim.people[id]!.skill }])),
     projects: Object.fromEntries(teamProjects(s, sim).map((id) => [id, sim.projects[id]!.progress])),
     causes: {},
   };
@@ -215,10 +215,11 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const fromEvaluation = (h: HistoryEntry) => h.cause.kind === 'rule' && h.cause.ruleId === EVALUATION;
   for (const id of teamEngineers(s, after)) {
     const p = after.people[id]!;
-    const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress };
+    const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress, skill: sim.people[id]!.skill };
     const changes: string[] = [];
     if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
     if (band(p.stress) !== band(was.stress)) changes.push(band(p.stress) > band(was.stress) ? 'more stressed' : 'less stressed');
+    if (band(p.skill) > band(was.skill)) changes.push('grown in skill');
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }

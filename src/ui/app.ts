@@ -167,7 +167,7 @@ const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | '
 };
 /** Where the player stands toward promotion, as the review screen and the header say it. */
 function towardPromotionLine(p: TowardPromotion): string | null {
-  return p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+  return p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews, then takes two in a row rated exceeds or better.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
 }
 
 const PLAN_NEXT = {
@@ -539,7 +539,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             ? h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.")
             : null,
         // @spec UI-WEEK-017: the rule toward the player's own promotion stays in view between reviews
-        ((line) => (line ? h('p', { class: 'promotion', 'data-field': 'promotion' }, line) : null))(run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review.'),
+        ((line) => (line ? h('p', { class: 'promotion', 'data-field': 'promotion' }, line) : null))(run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review, then takes two reviews in a row rated exceeds or better.'),
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
       h(

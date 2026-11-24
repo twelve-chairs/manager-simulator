@@ -136,13 +136,16 @@ export function addReading(read: string, reading: string): string {
   return read ? `${read}\n\n---\n\n${reading}` : reading;
 }
 
+/** A screen's title and text with the heading once: a screen whose text opens with its own heading keeps just the text. */
+export const withHeading = (s: { title: string; text: string }): string => (s.text.startsWith(s.title) ? s.text : `${s.title}\n${s.text}`);
+
 /** The user message for one decision: the notebook, what was last read, and the screen. */
 // @spec PLAY-AI-002
 export function decisionMessage(screen: Screen, notebook: string, lastRead: string): string {
   const lines = [
     `Your notebook:\n${notebook || '(empty: you have just started)'}`,
     ...(lastRead ? [`What you read since your last decision (reactions, recaps and reviews, in order):\n${lastRead}`] : []),
-    `The screen now (${screen.turn}): ${screen.title}\n${screen.text}`,
+    `The screen now (${screen.turn}):\n${withHeading(screen)}`,
     `Choices (ids in backticks):\n${screen.choices.map((c) => `- \`${c.id}\`: ${c.label}`).join('\n') || '(none)'}`,
     screen.canWait ? 'You may also let this wait.' : 'This cannot be let wait.',
   ];
@@ -190,7 +193,7 @@ export function interviewMessage(questions: { heading: string; questions: string
   const asked = questions.filter((q) => promotions.length > 0 || q.heading !== 'Promotion changes the job');
   return [
     'The facilitator asks you some questions about your session. Answer each heading in your own words, as the player you are, from your notebook and what you thought as you played. Be specific and honest, including about what bored or confused you.',
-    ...(promotions.length > 0 ? [`You were promoted during the session. What the game showed you then:\n${promotions.map((p) => `${p.title}\n${p.text}`).join('\n\n---\n\n')}`] : []),
+    ...(promotions.length > 0 ? [`You were promoted during the session. What the game showed you then:\n${promotions.map(withHeading).join('\n\n---\n\n')}`] : []),
     `Your notebook:\n${notebook}`,
     `What you thought as you played, in order:\n${thinkAloud.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
     `Questions:\n${asked.map((q) => `### ${q.heading}\n${q.questions.map((x) => `- ${x}`).join('\n')}`).join('\n\n')}`,

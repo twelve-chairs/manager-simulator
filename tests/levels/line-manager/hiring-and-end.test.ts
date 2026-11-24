@@ -384,6 +384,17 @@ describe('recap', () => {
   });
 
   // @spec LINE-RECAP-002
+  it('reports an engineer whose skill grew a band this week', () => {
+    const q = quietRun(1);
+    const [a] = engineers(q.sim) as [string];
+    // the growth focus coaches them each week, which raises skill past the band edge
+    const level = { ...q.level, habits: { ...q.level.habits, growth: a } };
+    const s = patch(q.sim, (st) => (st.people[a]!.skill = 59.99));
+    const entry = end(level, s).recap.people.find((x) => x.personId === a);
+    expect(entry?.changes).toContain('grown in skill');
+  });
+
+  // @spec LINE-RECAP-002
   it('lists a note recorded more than once that week once, with how many times', () => {
     const q = quietRun(1);
     const p = projects(q.sim)[0]!;
