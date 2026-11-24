@@ -16,14 +16,7 @@ choices:
     outcomes:
       - id: answered
         effects: []
-        aftermath: "\"Keep the projects on track and don't lose anyone. The goals I've set you for the quarter are at the top of your screen.\""
-        debrief: "Your review reads delivery, retention, team health and the quarter's goals. Your habits and what you do in each moment are how you move them."
-  - id: got-it
-    label: Say you've got it from here
-    outcomes:
-      - id: noted
-        effects: []
-        aftermath: "\"Good. My door's open.\""
+        aftermath: "\"Keep the projects on track and don't lose anyone. The goals I've set you for the quarter are at the top of your screen. My door's open.\""
         debrief: "Your review reads delivery, retention, team health and the quarter's goals. Your habits and what you do in each moment are how you move them."
 ---
 
