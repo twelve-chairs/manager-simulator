@@ -83,7 +83,7 @@ Plain TypeScript and the DOM: no framework and no runtime dependencies.
 
 - **A deterministic simulation** of people, teams, projects and your standing. A run is fully reproducible from its seed and your choices, which is also how saves work.
 - **Authored situations** written as Markdown files, compiled to data at build time and validated against a schema. Their outcomes are chosen by the state of the team, never by dice.
-- **A version on every deploy**, shown on the start screen as `v<major>.<minor>.<commit count> (<commit>)`, so a report can be traced to the exact build.
+- **A version on every deploy**, shown on the start screen as `v<major>.<minor>.<commits since the last major or minor> (<commit>)`, so a report can be traced to the exact build.
 - **[Linked-intent development](AGENTS.md):** every change flows from the design docs, through requirements and tests, to code. Start with the [high-level design](docs/high-level-design.md).
 
 ## Development
