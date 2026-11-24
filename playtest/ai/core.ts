@@ -139,7 +139,7 @@ export function addReading(read: string, reading: string): string {
 export function decisionMessage(screen: Screen, notebook: string, lastRead: string): string {
   const lines = [
     `Your notebook:\n${notebook || '(empty: you have just started)'}`,
-    ...(lastRead ? [`What you read since your last decision (recaps and reviews, in order):\n${lastRead}`] : []),
+    ...(lastRead ? [`What you read since your last decision (reactions, recaps and reviews, in order):\n${lastRead}`] : []),
     `The screen now (${screen.turn}): ${screen.title}\n${screen.text}`,
     `Choices (ids in backticks):\n${screen.choices.map((c) => `- \`${c.id}\`: ${c.label}`).join('\n') || '(none)'}`,
     screen.canWait ? 'You may also let this wait.' : 'This cannot be let wait.',

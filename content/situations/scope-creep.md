@@ -59,7 +59,7 @@ choices:
             target: player
             field: reputation
             amount: 2
-        aftermath: "They pick something to drop. Everyone gets most of what they wanted."
+        aftermath: "They pick something smaller to drop, so {project} still grows a little. Everyone gets most of what they wanted."
         debrief: "Making the trade explicit keeps scope honest and keeps stakeholders on your side."
   - id: decline
     label: Decline

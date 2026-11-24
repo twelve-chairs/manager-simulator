@@ -5,7 +5,7 @@ import type { Action, Screen } from './core';
 export interface PageState {
   screen: string;
   scene: string;
-  /** For a recap or a review: its text, which the playtester reads before its next decision. */
+  /** For a reaction, a recap or a review: its text, which the playtester reads before its next decision. */
   reading: string;
   decision: Screen | null;
   /** The header's turn word and number, such as "Week 3" or "Quarter 2". */
@@ -24,7 +24,10 @@ export function readPage(page: Page): Promise<PageState> {
     const scene = sceneEl?.dataset.scene ?? '';
     const turn = words(q('.week-number')).split(' · ')[0] ?? '';
     const headline = words(q('[data-part=heading]'));
-    const reading = scene === 'recap' || screen === 'review' ? words(q('[data-screen]')) : '';
+    // What the player reads between decisions: a recap or a review whole, and a reaction's scene, where people answer
+    // and bring up what happened before, without the panels around it or its Continue button.
+    const reactionText = () => [...(sceneEl?.children ?? [])].filter((c) => c.tagName !== 'BUTTON').map((c) => words(c as HTMLElement)).filter(Boolean).join('\n');
+    const reading = scene === 'recap' || screen === 'review' ? words(q('[data-screen]')) : scene === 'reaction' ? `After your choice:\n${reactionText()}` : '';
     // The habits a player can set: each control once, with its options.
     const seen = new Set<string>();
     const habits = qa('select[data-habit]').flatMap((s) => {
