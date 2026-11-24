@@ -37,7 +37,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'senior-back-to-keyboard': 'help-move-back',
   'senior-one-promotion-slot': 'on-evidence',
   'senior-skip-level-surprise': 'raise-with-manager',
-  'senior-reorg-rumour': 'tell-what-you-know',
+  'senior-reorg-rumour': 'ask-to-share',
   'senior-protected-low-performer': 'plan-with-dates',
   'senior-running-hot': 'help-hand-off',
   'senior-internal-poach': 'agree-timeline',
