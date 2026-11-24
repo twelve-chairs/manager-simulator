@@ -137,7 +137,7 @@ describe('night pages', () => {
     expect(seniors.moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[3]]);
   });
 
-  // @spec LINE-HABIT-011, LINE-HABIT-013
+  // @spec LINE-HABIT-011, LINE-HABIT-017
   it('lets the engineer on call handle a page their skill reaches, with no moment, as if left to them', () => {
     const q = quietRun(1);
     const [first] = engineers(q.sim);

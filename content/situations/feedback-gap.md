@@ -14,6 +14,11 @@ roles:
           below: meets
         - value: engineer.plan
           is: none
+        # Once a year per engineer: the same conversation again, as if the first never happened, reads as the game forgetting.
+        - history: engineer
+          situation: feedback-gap
+          withinWeeks: 52
+          is: 0
 choices:
   - id: direct
     label: "Give {engineer} specific feedback on what isn't landing"

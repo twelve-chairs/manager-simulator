@@ -48,7 +48,7 @@ choices:
         aftermath: "The room takes your pick. {other} gets the top rating; {engineer} gets a solid one, and will work out why."
         debrief: "When the curve leaves one slot, choosing is the job. Whoever you don't choose deserves to hear it from you, with the reason."
   - id: both
-    label: "Argue that both earned it"
+    label: "Argue that both earned it, at a cost to your standing in the room"
     outcomes:
       - id: both-held
         when:
@@ -75,4 +75,4 @@ choices:
         debrief: "Arguing for everyone can leave you with no one. Without the standing to win both, the room settles it, and both lose."
 ---
 
-Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose.
+Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose. Arguing for both spends your standing with the other managers: with a good reputation you might win both, and without one the room gives it to neither.

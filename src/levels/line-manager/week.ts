@@ -46,7 +46,7 @@ function counted(notes: string[]): string[] {
 }
 
 /** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
-// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014
+// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014, LINE-HABIT-017
 // @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-END-013, LINE-INBOX-002, LINE-INBOX-013
 export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
   const s = structuredClone(level);
@@ -95,7 +95,7 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${able.length} of ${theirs.length} routine approvals.`);
   }
 
-  // @spec LINE-HABIT-013
+  // @spec LINE-HABIT-017
   // Night pages the engineer on call could handle are theirs, as if the player had left the page to them.
   const handled = new Map<string, number>();
   for (const item of s.items.filter((i) => i.kind === 'onCall' && Object.hasOwn(s.routinePages, i.id))) {
