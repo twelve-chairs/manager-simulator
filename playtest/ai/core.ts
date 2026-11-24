@@ -206,6 +206,8 @@ export interface Step {
   turn: string;
   title: string;
   screen: string;
+  /** The reactions, recaps and reviews read since the last decision, as the playtester was sent them. */
+  read?: string;
   reply: Reply | null;
   action: Action;
   /** The better choice, where the game's better-choice table knows the screen. */

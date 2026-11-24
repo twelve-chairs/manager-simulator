@@ -69,10 +69,11 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
         stopped = 'limit';
         break;
       }
-      const d = await decide(client, system, screen, notebook, lastRead);
+      const read = lastRead;
+      const d = await decide(client, system, screen, notebook, read);
       lastRead = '';
       notebook = d.notebook;
-      steps.push({ n: steps.length + 1, turn: screen.turn, title: screen.title, screen: screen.text, reply: d.reply, action: d.action, ...(better[screen.title] && { better: better[screen.title] }), ...(d.note && { note: d.note }) });
+      steps.push({ n: steps.length + 1, turn: screen.turn, title: screen.title, screen: screen.text, ...(read && { read }), reply: d.reply, action: d.action, ...(better[screen.title] && { better: better[screen.title] }), ...(d.note && { note: d.note }) });
       await act(page, screen, d.action, d.habits);
     }
   } catch (e) {

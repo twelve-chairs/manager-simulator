@@ -55,6 +55,8 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   expect(client.asked.some((m) => m.includes('How to play'))).toBe(true);
   // A reaction is read before the next decision: the scene's text, not the panels around it.
   expect(client.asked.some((m) => /reactions, recaps and reviews, in order\):\n[\s\S]*After your choice:\n\S/.test(m))).toBe(true);
+  // and the transcript keeps what was read with the decision it came before, so a report's claims can be checked
+  expect(run.steps.some((s) => s.read?.includes('After your choice:'))).toBe(true);
   expect(client.asked.some((m) => /"seed"|rngState|leniency/.test(m))).toBe(false);
   expect(run.interviews.length).toBeGreaterThan(0);
   // the interview after the promotion follows the director's first quarters, and is told of the promotion
