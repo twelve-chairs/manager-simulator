@@ -27,8 +27,10 @@ export const LINE_TUNING = {
   overloadedWeeks: 6,
   /** Idle weeks in a review period beyond which no projects counts against the player: more than half of 13. */
   idleQuarterWeeks: 6,
-  /** Weeks after work intake is declined or expires before more is offered. */
+  /** Weeks after work intake is declined or expires before more is offered or assigned. */
   intakeWaitWeeks: 3,
+  /** The stress band from which an engineer is strained: calm, steady, busy, strained, overwhelmed. */
+  strainedBand: 3,
   /** Consecutive idle weeks after which the player's manager assigns the team a project. */
   assignAfterIdleWeeks: 4,
   /** Extra player stress recovered in a quiet week, one with no choice that raised the player's stress. */
@@ -61,6 +63,8 @@ export const LINE_TUNING = {
     delegateStress: 6,
     stretchSkill: 1,
     declineIntakeReputation: -2,
+    /** Stress each engineer takes on when the player takes on new work while someone is strained. */
+    intakeTeamStress: 4,
     interviewStress: 3,
     interviewerStress: 2,
     interviewerMotivation: 1,

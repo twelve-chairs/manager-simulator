@@ -4,7 +4,7 @@ import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
 import { DELEGATE, HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
-import { EXPIRED, arriveWork, consequence, tallyProgress } from './work';
+import { EXPIRED, arriveWork, consequence, intakeWaiting, tallyProgress, teamStretched } from './work';
 import type { LevelResult, LineState, Recap, WeekResult } from './types';
 
 /** Starts a week: work arrives, the period's goals are set if it is new, and the week's moments are made. */
@@ -194,6 +194,18 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     log.push(...started.log);
     recap.assigned.push({ projectId: project.id, name: project.name });
     s.idleStreak = 0;
+  }
+
+  // The week counts as idle above; then, with room on the team and nothing offered or recently declined, the
+  // player's manager assigns new work itself, one project a week.
+  // @spec LINE-INBOX-014
+  if (recap.assigned.length === 0 && teamProjects(s, after).length < 2 && !teamStretched(s, after) && !intakeWaiting(s, week) && !s.items.some((i) => i.kind === 'workIntake')) {
+    const project = generateProject(s, projectNames(after), s.teamId, week, calmRisk(s));
+    const started = applyEffects(after, [{ type: 'startProject', project, cause: rule(ASSIGNED) }]);
+    if (!started.ok) return { ok: false, error: `the simulation rejected the assigned project: ${started.error.message}` };
+    after = started.state;
+    log.push(...started.log);
+    recap.assigned.push({ projectId: project.id, name: project.name });
   }
 
   // Weeks the team ends overwhelmed, counted afresh each review period.

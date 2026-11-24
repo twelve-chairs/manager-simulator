@@ -40,17 +40,42 @@ describe('arrivals', () => {
   });
 
   // @spec LINE-INBOX-002
-  it('brings work intake while the team has fewer than two active projects', () => {
+  it('brings work intake while the team has fewer than two active projects and someone on it is strained', () => {
     const { level, sim } = run(1);
-    const one = patch(sim, (s) => (s.projects[projects(sim)[0]!]!.status = 'completed'));
-    expect(beginWeek({ ...level, items: [] }, one).items.filter((i) => i.kind === 'workIntake')).toHaveLength(1);
-    expect(beginWeek({ ...level, items: [] }, sim).items.filter((i) => i.kind === 'workIntake')).toHaveLength(0);
+    const one = patch(sim, (s) => {
+      s.projects[projects(sim)[0]!]!.status = 'completed';
+      for (const id of engineers(sim)) s.people[id]!.stress = 10;
+      s.people[engineers(sim)[0]!]!.stress = 70;
+    });
+    const intake = (state: SimState) => beginWeek({ ...level, items: [] }, state).items.filter((i) => i.kind === 'workIntake');
+    expect(intake(one)).toHaveLength(1);
+    // with room on the team, the player's manager assigns the work instead (LINE-INBOX-014)
+    expect(intake(patch(one, (s) => (s.people[engineers(sim)[0]!]!.stress = 10)))).toHaveLength(0);
+    expect(intake(patch(sim, (s) => (s.people[engineers(sim)[0]!]!.stress = 70)))).toHaveLength(0);
+  });
+
+  // @spec LINE-INBOX-014
+  it('has the player’s manager assign new work at the week’s end while the team has room', () => {
+    const q = quietRun(1);
+    const calm = (s: SimState) => { for (const id of engineers(q.sim)) s.people[id]!.stress = 10; };
+    const one = patch(q.sim, (s) => { s.projects[projects(q.sim)[0]!]!.status = 'completed'; calm(s); });
+    const ended = end(q.level, one);
+    const added = projects(ended.sim).filter((p) => !projects(one).includes(p));
+    expect(added).toHaveLength(1);
+    expect(ended.recap.assigned).toEqual([{ projectId: added[0], name: ended.sim.projects[added[0]!]!.name }]);
+    expect(new Set(Object.values(ended.sim.projects).map((p) => p.name)).size).toBe(Object.keys(ended.sim.projects).length);
+    // not with someone strained, an offer open, or soon after a no
+    expect(end(q.level, patch(one, (s) => (s.people[engineers(q.sim)[0]!]!.stress = 70))).recap.assigned).toEqual([]);
+    expect(end(withItem(q.level, { kind: 'workIntake', subject: { kind: 'team', id: teamOf(one) }, lastWeek: one.week + 2 }).level, one).recap.assigned).toEqual([]);
+    expect(end({ ...q.level, intakeDeclinedWeek: one.week - 1 }, one).recap.assigned).toEqual([]);
+    // two active projects are enough
+    expect(end(q.level, patch(q.sim, calm)).recap.assigned).toEqual([]);
   });
 
   // @spec LINE-INBOX-002
   it('waits three weeks after work intake is declined or let expire before offering more', () => {
     const q = quietRun(1);
-    const one = patch(q.sim, (s) => { s.week = 4; s.projects[projects(q.sim)[0]!]!.status = 'completed'; });
+    const one = patch(q.sim, (s) => { s.week = 4; s.projects[projects(q.sim)[0]!]!.status = 'completed'; s.people[engineers(q.sim)[0]!]!.stress = 70; });
     const { level, id } = withItem(q.level, { kind: 'workIntake', subject: { kind: 'team', id: teamOf(one) }, size: 2, lastWeek: 4 });
     const l = begin(level, one);
     const intake = (lv: typeof l, week: number) => beginWeek({ ...lv, items: [] }, patch(one, (s) => (s.week = week))).items.filter((i) => i.kind === 'workIntake');
@@ -66,7 +91,8 @@ describe('arrivals', () => {
   // @spec LINE-INBOX-013
   it('has the player’s manager assign a project after four weeks in a row with none', () => {
     const q = quietRun(1);
-    const idle = patch(q.sim, (s) => Object.values(s.projects).forEach((p) => (p.status = 'completed')));
+    // someone strained, so the player's manager waits for the player rather than assigning work at once (LINE-INBOX-014)
+    const idle = patch(q.sim, (s) => { Object.values(s.projects).forEach((p) => (p.status = 'completed')); s.people[engineers(q.sim)[0]!]!.stress = 95; });
     let level = q.level;
     let sim = idle;
     for (let week = 1; week <= 3; week++) {
@@ -200,6 +226,10 @@ describe('work moments', () => {
     expect(added).toHaveLength(1);
     expect(NAMES.projects).toContain(taken.sim.projects[added[0]!]!.name);
     expect(taken.sim.player.stress).toBeGreaterThan(q.sim.player.stress);
+    for (const e of engineers(q.sim)) {
+      expect(taken.sim.people[e]!.stress).toBeGreaterThan(q.sim.people[e]!.stress);
+      expect(taken.sim.people[e]!.history.map((h) => h.note)).toContain('Took on new work while stretched');
+    }
     const declined = choose(l, q.sim, momentFor(l, id).id, 'decline');
     const expired = end(l, q.sim);
     expect(declined.sim.player.reputation).toBeLessThan(q.sim.player.reputation);

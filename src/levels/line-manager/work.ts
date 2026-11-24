@@ -54,14 +54,23 @@ function addItem(level: LineState, sim: SimState, kind: WorkKind, subject: WorkI
   });
 }
 
+/** Whether anyone on the team is strained or more stressed, so new work is a real ask rather than routine. */
+export const teamStretched = (s: LineState, sim: SimState) =>
+  band(sim.player.stress) >= LINE_TUNING.strainedBand || teamEngineers(s, sim).some((id) => band(sim.people[id]!.stress) >= LINE_TUNING.strainedBand);
+
+/** Whether work intake was declined or let expire recently enough that no more is offered or assigned yet. */
+export const intakeWaiting = (s: LineState, week: number) => s.intakeDeclinedWeek !== null && week - s.intakeDeclinedWeek <= LINE_TUNING.intakeWaitWeeks;
+
 /** Drops items whose subject is gone, then adds the week's arrivals. Mutates `s`. */
 // @spec LINE-INBOX-001, LINE-INBOX-002, LINE-INBOX-003, LINE-INBOX-010
 export function arriveWork(s: LineState, sim: SimState) {
   s.items = s.items.filter((d) => subjectValid(s, sim, d));
   const projects = teamProjects(s, sim);
-  // After a no, the next offer waits, so declining is not met with the same scene every week.
-  const waiting = s.intakeDeclinedWeek !== null && sim.week - s.intakeDeclinedWeek <= LINE_TUNING.intakeWaitWeeks;
-  if (projects.length < 2 && !waiting && !s.items.some((d) => d.kind === 'workIntake')) addItem(s, sim, 'workIntake', { kind: 'team', id: s.teamId });
+  // New work is the player's call only while someone is strained; with room, the player's manager assigns it at the
+  // week's end (LINE-INBOX-014). After a no, the next offer waits, so declining is not met with the same scene every week.
+  if (projects.length < 2 && teamStretched(s, sim) && !intakeWaiting(s, sim.week) && !s.items.some((d) => d.kind === 'workIntake')) {
+    addItem(s, sim, 'workIntake', { kind: 'team', id: s.teamId });
+  }
 
   const rate = LINE_TUNING.arrivals;
   for (const id of projects) {

@@ -145,7 +145,8 @@ function soundChoice(seen: Seen, m: Moment): string {
     const asked = offered(seen, m, 'ask:')[0];
     return asked ? `ask:${asked.id}` : 'skip';
   }
-  if (isIntake(m)) return view.projects.length < 2 && rested ? 'take' : 'decline';
+  // New work is offered only while someone is strained: protecting the team is worth a little reputation.
+  if (isIntake(m)) return 'decline';
   // Debt the design review's text calls elevated or worse is worth slowing down for; the text is what the player reads.
   if (has(m, 'payDown') && /tech debt is (elevated|high|severe)/.test(m.text)) return 'payDown';
   const givable = offered(seen, m, 'give:');

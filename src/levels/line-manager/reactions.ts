@@ -75,7 +75,7 @@ const PLAIN = {
   rollBack: 'The change behind the outage on {thing} comes out, and everything is back up within the hour. The work it carried will have to be done again.',
   payDown: 'The team takes the time to fix the code the design builds on. {thing} slips a few days, and the next change there will be easier.',
   smaller: 'You offer the customer part of what they asked for, sooner. They take it, a little grudgingly.',
-  take: 'You take on the new work. The team gets a new project, and you get a fuller week.',
+  take: 'You take on the new work. The team gets a new project on top of what’s already stretching it, and you get a fuller week.',
   decline: 'You decline the new work. The person asking is disappointed, but understands.',
   interview: 'You interview the candidate yourself. An hour well spent, and an hour gone.',
   skip: 'You skip this week’s interview. The role stays open a little longer.',

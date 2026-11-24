@@ -54,8 +54,7 @@ function interviewChoices(level: LineState, sim: SimState): MomentChoice[] {
 /** Ratings that count toward an improvement plan. */
 export const LOW: readonly Rating[] = ['below', 'partial'];
 
-/** The stress band from which an engineer is strained: calm, steady, busy, strained, overwhelmed. */
-const STRAINED = 3;
+const STRAINED = LINE_TUNING.strainedBand;
 
 /** Keeping someone for another quarter: no rating, and a note that says so. */
 export const oneMoreQuarter = (id: string): Effect => personEffect(id, 'motivation', 0, action(FINAL_EVALUATION), { note: 'Given one more quarter' });
@@ -263,6 +262,8 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
     } else if (choiceId === 'take') {
       const started = generateProject(s, projectNames(sim), s.teamId, sim.week, calmRisk(s));
       effects.push({ type: 'startProject', project: started, cause: action(ACCEPT_INTAKE) }, playerEffect('stress', item.size, action(ACCEPT_INTAKE)));
+      // Offered only while someone is strained, so the whole team feels it.
+      for (const id of teamEngineers(s, sim)) effects.push(personEffect(id, 'stress', LINE_TUNING.work.intakeTeamStress, action(ACCEPT_INTAKE), { note: 'Took on new work while stretched' }));
       text = `${reaction('take', thing)} It’s called ${started.name}.`;
       resolve(s, item);
     } else if (choiceId === 'decline') {

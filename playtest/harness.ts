@@ -382,7 +382,8 @@ function playInPage(options: InPage): PlaySummary {
         })
         .sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
     if (title === 'Interview') return rested ? has('self') : (offered('ask:')[0]?.el ?? has('skip'));
-    if (has('take')) return qa('[data-project]').length < 2 && rested ? has('take') : has('decline');
+    // New work is offered only while someone is strained: protecting the team is worth a little reputation.
+    if (has('take')) return has('decline');
     // Debt the design review's text calls elevated or worse is worth slowing down for.
     if (has('payDown') && /tech debt is (elevated|high|severe)/.test(text('[data-scene] [data-part=text]'))) return has('payDown');
     const givable = offered('give:');
