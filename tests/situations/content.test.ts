@@ -432,9 +432,9 @@ describe('rating someone on an improvement plan', () => {
       });
     const onPlan = offered(weak(['partial', 'below']));
     expect(onPlan.some((l) => l.endsWith(', and let them go'))).toBe(true);
-    expect(onPlan).not.toContain('Rate X on what they actually delivered');
+    expect(onPlan).not.toContain('Rate X on what they delivered');
     const notYet = offered(weak(['partial']));
-    expect(notYet).toContain('Rate X on what they actually delivered');
+    expect(notYet).toContain('Rate X on what they delivered');
     expect(notYet.some((l) => l.includes('let them go'))).toBe(false);
   });
 });

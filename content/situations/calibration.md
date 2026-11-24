@@ -16,8 +16,28 @@ roles:
         - { value: engineer.team, is: { value: player.team } }
         - { value: engineer.correspondingRating, atLeast: exceeds }
 choices:
+  - id: accept-curve
+    label: "Let the room's rating stand"
+    outcomes:
+      - id: accepted
+        effects:
+          - type: value
+            target: engineer
+            field: motivation
+            amount: -8
+          - type: value
+            target: engineer
+            field: trust
+            amount: -6
+            historyNote: Rated down to fit the curve
+          - type: value
+            target: player
+            field: reputation
+            amount: 1
+        aftermath: "The meeting ends early, and the other managers like you for it. {engineer} will hear about it in their review."
+        debrief: "Accepting the curve quietly is the easy meeting and the hard conversation afterwards. People find out who argued for them."
   - id: evidence
-    label: "Make the case for {engineer} with evidence"
+    label: "Argue for {engineer}'s rating"
     outcomes:
       - id: heard
         when:
@@ -39,6 +59,10 @@ choices:
             target: player
             field: reputation
             amount: 2
+          - type: value
+            target: player
+            field: stress
+            amount: 3
         aftermath: "The room pushes back, then reads the examples. {engineer}'s rating holds."
         debrief: "Advocating with evidence is the job. Specific work beats adjectives in a calibration room."
       - id: outweighed
@@ -52,26 +76,14 @@ choices:
             target: player
             field: reputation
             amount: 1
+          - type: value
+            target: player
+            field: stress
+            amount: 3
         aftermath: "The room isn't convinced this time, but the examples are on the record."
         debrief: "Evidence doesn't always win the first time, but it is remembered, and so is who brought it."
-  - id: accept-curve
-    label: Accept the curve
-    outcomes:
-      - id: accepted
-        effects:
-          - type: value
-            target: engineer
-            field: motivation
-            amount: -8
-          - type: value
-            target: engineer
-            field: trust
-            amount: -6
-            historyNote: Rated down to fit the curve
-        aftermath: "The meeting ends early. {engineer} will hear about it in their review."
-        debrief: "Accepting the curve quietly is the easy meeting and the hard conversation afterwards. People find out who argued for them."
   - id: trade
-    label: "Trade: give up another engineer's rating to keep {engineer}'s"
+    label: "Offer to give up a rating elsewhere on your team to keep {engineer}'s"
     outcomes:
       - id: traded
         effects:
@@ -87,4 +99,4 @@ choices:
         debrief: "Trading ratings treats them as currency. It keeps one person's rating by making another's dishonest."
 ---
 
-Calibration is this week. The other managers think {engineer}'s quarter was solid, not exceptional.
+Calibration is this week. The other managers think {engineer}'s quarter was solid, not exceptional. You think it was better than that, but arguing it means an evening pulling examples together and a long meeting.

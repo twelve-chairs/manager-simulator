@@ -26,7 +26,7 @@ roles:
 choices:
   # On an improvement plan, a low rating is the third in a row and ends their job: the label says so.
   - id: honest-let-go
-    label: "Rate {engineer} on what they actually delivered, and let them go"
+    label: "Rate {engineer} on what they delivered, and let them go"
     availableIf:
       all:
         - value: engineer.plan
@@ -43,6 +43,10 @@ choices:
             target: engineer
             rating: partial
             historyNote: Rated partially meets on what they delivered
+          - type: value
+            target: player
+            field: stress
+            amount: 3
         aftermath: "You rate {engineer} partially meets. It's their third low rating in a row, and they're let go."
         debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
       - id: below
@@ -51,21 +55,40 @@ choices:
             target: engineer
             rating: below
             historyNote: Rated below expectations on what they delivered
+          - type: value
+            target: player
+            field: stress
+            amount: 4
         aftermath: "You rate {engineer} below expectations. It's their third low rating in a row, and they're let go."
         debrief: "Ending an improvement plan that hasn't worked is fair to the team as well as to the person, as long as the plan gave them a real chance."
   - id: keep-the-peace
-    label: "Rate {engineer} meets, to keep the peace"
+    label: "Rate {engineer} meets, and keep it short"
     outcomes:
+      - id: spared
+        when:
+          value: engineer.correspondingRating
+          in: [below, partial]
+        effects:
+          - type: rate
+            target: engineer
+            rating: meets
+            historyNote: Rated meets regardless of results
+          - type: value
+            target: engineer
+            field: motivation
+            amount: 2
+        aftermath: "It takes five minutes, and {engineer} leaves relieved. Nobody learns anything."
+        debrief: "Rating everyone the same feels kind, but it tells strong people their work didn't count and hides problems until they are bigger."
       - id: flattened
         effects:
           - type: rate
             target: engineer
             rating: meets
             historyNote: Rated meets regardless of results
-        aftermath: "Nobody complains. Nobody learns anything either."
+        aftermath: "It takes five minutes. {engineer} says thanks, a little flatly."
         debrief: "Rating everyone the same feels kind, but it tells strong people their work didn't count and hides problems until they are bigger."
   - id: honest
-    label: "Rate {engineer} on what they actually delivered"
+    label: "Rate {engineer} on what they delivered"
     availableIf:
       not:
         all:
@@ -128,6 +151,10 @@ choices:
             target: engineer
             rating: partial
             historyNote: Rated partially meets on what they delivered
+          - type: value
+            target: player
+            field: stress
+            amount: 3
         aftermath: "You rate {engineer} partially meets, and walk through what would change it."
         debrief: "A low rating with clear reasons and a path forward is fairer than a kind one that hides the problem."
       - id: below
@@ -136,8 +163,12 @@ choices:
             target: engineer
             rating: below
             historyNote: Rated below expectations on what they delivered
+          - type: value
+            target: player
+            field: stress
+            amount: 4
         aftermath: "You rate {engineer} below expectations. It's a hard conversation."
         debrief: "A low rating with clear reasons and a path forward is fairer than a kind one that hides the problem."
 ---
 
-Evaluations are due before the review. {engineer}'s is next on your list.
+Evaluations are due before the review. {engineer}'s is next on your list, and it won't be a five-minute conversation.
