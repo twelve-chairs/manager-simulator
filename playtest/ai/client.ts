@@ -10,7 +10,7 @@ export interface Usage {
 }
 
 /**
- * The AI playtester's client: Claude Opus 5.5 with adaptive thinking, a structured reply validated against a Zod
+ * The AI playtester's client: the model each request names (Opus 5.5, or Sonnet 5.5 for decisions) with adaptive thinking, a structured reply validated against a Zod
  * schema, the system prompt cached across the run, and refusal fallbacks. A refused or unparseable reply is null.
  * Credentials come from the environment (an API key, a token or a signed-in profile), as the SDK resolves them.
  */
@@ -20,10 +20,10 @@ export function anthropicClient(): AiClient & { usage: Usage } {
   const usage: Usage = { requests: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } };
   return {
     usage,
-    async ask<T>(system: string, user: string, schema: z.ZodType<T>, effort: 'medium' | 'high'): Promise<T | null> {
+    async ask<T>(system: string, user: string, schema: z.ZodType<T>, effort: 'medium' | 'high', model: string): Promise<T | null> {
       usage.requests += 1;
       const response = await client.beta.messages.parse({
-        model: AI_TUNING.model,
+        model,
         max_tokens: 16000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',

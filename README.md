@@ -98,7 +98,7 @@ npm run preview     # serve the built game
 npm test            # run the unit tests once
 npm run test:e2e    # build the game and play it in Chromium (first run: npm run playwright:install)
 npm run playtest    # scripted players play whole runs, checking every screen and scoring the success metrics; PLAYTEST_URL=<site> to play a deployed copy
-npm run playtest:ai # Claude plays as a newcomer and answers the human script; needs Anthropic credentials and costs money (AI_PERSONA, AI_SEED, AI_UNTIL, AI_MAX_DECISIONS)
+npm run playtest:ai # Claude plays as a newcomer and answers the human script; needs Anthropic credentials and costs money (AI_PERSONA, AI_SEED, AI_UNTIL, AI_MAX_DECISIONS; AI_MODEL=sonnet plays the decisions on Sonnet 5.5 for several times less)
 npm run test:watch  # run the tests on every change
 npm run typecheck   # check types
 npm run lint        # lint with oxlint, including type-aware rules

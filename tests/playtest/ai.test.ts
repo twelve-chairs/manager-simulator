@@ -43,12 +43,15 @@ const reply = (over: Partial<Reply> = {}, action: Partial<Reply['action']> = {})
   ...over,
 });
 /** A client that answers from a list, recording what it was sent. */
-function fake(answers: (Reply | null)[]): AiClient & { sent: string[] } {
+function fake(answers: (Reply | null)[]): AiClient & { sent: string[]; models: string[] } {
   const sent: string[] = [];
+  const models: string[] = [];
   return {
     sent,
-    async ask<T>(_system: string, user: string, _schema: z.ZodType<T>) {
+    models,
+    async ask<T>(_system: string, user: string, _schema: z.ZodType<T>, _effort: 'medium' | 'high', model: string) {
       sent.push(user);
+      models.push(model);
       return (answers.shift() ?? null) as T | null;
     },
   };
@@ -105,7 +108,8 @@ describe('the AI playtester', () => {
   // @spec PLAY-AI-003, PLAY-AI-004, PLAY-AI-009
   it('sends an invalid reply back once with the reason, then lets the moment wait, and treats a refused reply as invalid', async () => {
     const good = fake([reply({}, { choiceId: 'shout' }), reply()]);
-    const r = await decide(good, 'sys', moment(), 'old', '');
+    const r = await decide(good, 'sys', moment(), 'old', '', AI_TUNING.models.sonnet);
+    expect(good.models).toEqual([AI_TUNING.models.sonnet, AI_TUNING.models.sonnet]);
     expect(r.action).toEqual({ kind: 'choose', choiceId: 'ask' });
     expect(r.notebook).toBe('Quiet engineers may be flight risks.');
     expect(good.sent[1]).toMatch(/could not be acted on: There is no choice "shout"/);
@@ -172,8 +176,8 @@ describe('the AI playtester', () => {
 
   // @spec PLAY-AI-008
   it('plays one persona to the first promotion by default, and takes options for the rest', () => {
-    expect(runOptions({})).toEqual({ persona: 'new-manager', seed: 101, until: 'promotion', maxDecisions: AI_TUNING.maxDecisions.promotion });
-    expect(runOptions({ AI_PERSONA: 'sceptic', AI_SEED: '7', AI_UNTIL: 'director', AI_MAX_DECISIONS: '50' })).toEqual({ persona: 'sceptic', seed: 7, until: 'director', maxDecisions: 50 });
-    for (const bad of [{ AI_PERSONA: 'robot' }, { AI_UNTIL: 'forever' }, { AI_SEED: '-1' }, { AI_MAX_DECISIONS: '0' }]) expect(() => runOptions(bad)).toThrow();
+    expect(runOptions({})).toEqual({ persona: 'new-manager', seed: 101, until: 'promotion', maxDecisions: AI_TUNING.maxDecisions.promotion, decisionModel: AI_TUNING.models.opus });
+    expect(runOptions({ AI_PERSONA: 'sceptic', AI_SEED: '7', AI_UNTIL: 'director', AI_MAX_DECISIONS: '50', AI_MODEL: 'sonnet' })).toEqual({ persona: 'sceptic', seed: 7, until: 'director', maxDecisions: 50, decisionModel: AI_TUNING.models.sonnet });
+    for (const bad of [{ AI_PERSONA: 'robot' }, { AI_UNTIL: 'forever' }, { AI_SEED: '-1' }, { AI_MAX_DECISIONS: '0' }, { AI_MODEL: 'gpt' }]) expect(() => runOptions(bad)).toThrow();
   });
 });

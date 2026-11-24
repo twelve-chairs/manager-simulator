@@ -18,7 +18,7 @@ export interface AiRun {
  * end, after the interview following the promotion `until` asks for, or at the decision limit.
  */
 // @spec PLAY-AI-002, PLAY-AI-004, PLAY-AI-005, PLAY-AI-006, PLAY-AI-008, PLAY-AI-010
-export async function playAi(page: Page, client: AiClient, options: { persona: Persona; until: 'promotion' | 'director' | 'end'; maxDecisions: number }): Promise<AiRun> {
+export async function playAi(page: Page, client: AiClient, options: { persona: Persona; until: 'promotion' | 'director' | 'end'; maxDecisions: number; decisionModel?: string }): Promise<AiRun> {
   const system = systemPrompt(options.persona);
   const questions = scriptQuestions(readFileSync(new URL('../HUMAN.md', import.meta.url), 'utf8'));
   const better = betterByTitle();
@@ -30,7 +30,7 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
   const interviews: AiRun['interviews'] = [];
   const interview = async (when: string) => {
     const thoughts = steps.flatMap((s) => (s.reply ? [`${s.turn}, ${s.title}: ${s.reply.thinkAloud}`] : []));
-    const answers = await client.ask(system, interviewMessage(questions, promotions, notebook, thoughts), InterviewSchema, 'high');
+    const answers = await client.ask(system, interviewMessage(questions, promotions, notebook, thoughts), InterviewSchema, 'high', AI_TUNING.model);
     interviews.push({ when, interview: answers ?? { answers: [{ heading: '(no answer)', answer: 'The interview reply could not be read.' }] } });
   };
   const ORDINAL = ['first', 'second', 'third'];
@@ -70,7 +70,7 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
         break;
       }
       const read = lastRead;
-      const d = await decide(client, system, screen, notebook, read);
+      const d = await decide(client, system, screen, notebook, read, options.decisionModel ?? AI_TUNING.model);
       lastRead = '';
       notebook = d.notebook;
       steps.push({ n: steps.length + 1, turn: screen.turn, title: screen.title, screen: screen.text, ...(read && { read }), reply: d.reply, action: d.action, ...(better[screen.title] && { better: better[screen.title] }), ...(d.note && { note: d.note }) });

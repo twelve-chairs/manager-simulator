@@ -10,7 +10,7 @@ import { playAi } from './run';
 /**
  * The AI playtester (docs/intent/playtest, The AI Playtester): Claude plays the real page as a newcomer, decision by
  * decision, and answers the human script's questions. Run with `npm run playtest:ai`; options come from AI_PERSONA,
- * AI_SEED, AI_UNTIL (promotion, director or end) and AI_MAX_DECISIONS.
+ * AI_SEED, AI_UNTIL (promotion, director or end), AI_MAX_DECISIONS and AI_MODEL (opus or sonnet, for the decisions).
  */
 // @spec PLAY-AI-001, PLAY-AI-007, PLAY-AI-008, PLAY-AI-010
 test('an AI playtester plays the game as a newcomer and answers the human script', async ({ page }) => {
@@ -24,7 +24,7 @@ test('an AI playtester plays the game as a newcomer and answers the human script
 
   const run = await playAi(page, client, options);
 
-  const info = { version, persona: options.persona, seed: options.seed, model: AI_TUNING.model, reached: run.reached, requests: client.usage.requests, tokens: client.usage.tokens };
+  const info = { version, persona: options.persona, seed: options.seed, model: options.decisionModel === AI_TUNING.model ? AI_TUNING.model : `${options.decisionModel} for decisions, ${AI_TUNING.model} for the interview`, reached: run.reached, requests: client.usage.requests, tokens: client.usage.tokens };
   const dir = join(process.cwd(), 'playtest-results', 'ai');
   mkdirSync(dir, { recursive: true });
   const name = `${new Date().toISOString().replace(/[:.]/g, '-')}-${options.persona}-${options.seed}`;

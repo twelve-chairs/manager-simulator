@@ -33,7 +33,10 @@ export const PERSONAS = {
 export type Persona = keyof typeof PERSONAS;
 
 export const AI_TUNING = {
+  /** The interview's model, and the decisions' unless a run asks for Sonnet. */
   model: 'claude-opus-5-5',
+  /** The models a run's decisions can be played with (AI_MODEL). */
+  models: { opus: 'claude-opus-5-5', sonnet: 'claude-sonnet-5-5' },
   /** Retries, with the SDK's backoff, of a request that fails on the network or a server error. */
   requestRetries: 6,
   /** The notebook's longest length, in words; a longer reply is cut to it. */
@@ -269,7 +272,7 @@ export const NO_CREDENTIALS =
 
 /** The run's options, from the environment, checked. */
 // @spec PLAY-AI-008
-export function runOptions(env: Record<string, string | undefined>): { persona: Persona; seed: number; until: 'promotion' | 'director' | 'end'; maxDecisions: number } {
+export function runOptions(env: Record<string, string | undefined>): { persona: Persona; seed: number; until: 'promotion' | 'director' | 'end'; maxDecisions: number; decisionModel: string } {
   const persona = (env.AI_PERSONA ?? 'new-manager') as Persona;
   if (!Object.hasOwn(PERSONAS, persona)) throw new Error(`AI_PERSONA must be one of ${Object.keys(PERSONAS).join(', ')}`);
   const until = (env.AI_UNTIL ?? 'promotion') as 'promotion' | 'director' | 'end';
@@ -278,12 +281,14 @@ export function runOptions(env: Record<string, string | undefined>): { persona: 
   if (!Number.isInteger(seed) || seed < 0) throw new Error('AI_SEED must be a whole number');
   const maxDecisions = env.AI_MAX_DECISIONS ? Number(env.AI_MAX_DECISIONS) : AI_TUNING.maxDecisions[until];
   if (!Number.isInteger(maxDecisions) || maxDecisions < 1) throw new Error('AI_MAX_DECISIONS must be a whole number of at least 1');
-  return { persona, seed, until, maxDecisions };
+  const model = env.AI_MODEL ?? 'opus';
+  if (!Object.hasOwn(AI_TUNING.models, model)) throw new Error(`AI_MODEL must be one of ${Object.keys(AI_TUNING.models).join(', ')}`);
+  return { persona, seed, until, maxDecisions, decisionModel: AI_TUNING.models[model as keyof typeof AI_TUNING.models] };
 }
 
 /** What the playtester asks Claude with: one request, a structured reply, or null when refused or unparseable. */
 export interface AiClient {
-  ask<T>(system: string, user: string, schema: z.ZodType<T>, effort: 'medium' | 'high'): Promise<T | null>;
+  ask<T>(system: string, user: string, schema: z.ZodType<T>, effort: 'medium' | 'high', model: string): Promise<T | null>;
 }
 
 /**
@@ -291,10 +296,10 @@ export interface AiClient {
  * lets the moment wait (or takes its first choice, where it cannot wait) if the second reply is invalid too.
  */
 // @spec PLAY-AI-003, PLAY-AI-004, PLAY-AI-009
-export async function decide(client: AiClient, system: string, screen: Screen, notebook: string, lastRead: string): Promise<{ reply: Reply | null; action: Action; habits: { habit: string; value: string }[]; notebook: string; note?: string }> {
+export async function decide(client: AiClient, system: string, screen: Screen, notebook: string, lastRead: string, model: string = AI_TUNING.model): Promise<{ reply: Reply | null; action: Action; habits: { habit: string; value: string }[]; notebook: string; note?: string }> {
   let message = decisionMessage(screen, notebook, lastRead);
   for (let attempt = 0; attempt < 2; attempt++) {
-    const reply = await client.ask(system, message, ReplySchema, 'medium');
+    const reply = await client.ask(system, message, ReplySchema, 'medium', model);
     if (!reply) {
       message = `${decisionMessage(screen, notebook, lastRead)}\n\nYour last reply could not be read. Reply again in the required form.`;
       continue;

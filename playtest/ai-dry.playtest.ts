@@ -71,10 +71,10 @@ test('the AI playtester keeps what it played when a request fails, and holds no 
   const working = fakeClient();
   let calls = 0;
   const failing: AiClient = {
-    async ask(system, user, schema, effort) {
+    async ask(system, user, schema, effort, model) {
       calls += 1;
       if (calls > 3) throw new Error('400 Your credit balance is too low\nmore detail');
-      return working.ask(system, user, schema, effort);
+      return working.ask(system, user, schema, effort, model);
     },
   };
   const run = await playAi(page, failing, { persona: 'new-manager', until: 'end', maxDecisions: 60 });
