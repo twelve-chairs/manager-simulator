@@ -58,6 +58,22 @@ describe('new work assigned', () => {
 
 describe('a month’s moments', () => {
   // @spec SENIOR-MOMENT-002
+  // @spec SENIOR-HABIT-008
+  it('names what a skip-level surfaced: a project behind, strain, people looking, low motivation, or shifting priorities', () => {
+    const { level, sim } = calm(4);
+    const t = level.teamIds[1]!;
+    const told = (change: (s: SimState) => void) => {
+      const state = edit(sim, change);
+      return beginMonth({ ...level, surfaced: [{ teamId: t, week: state.week - 4 }] }, state).moments.find((m) => m.kind === 'surfaced')!.text;
+    };
+    const p = Object.values(sim.projects).find((x) => x.teamId === t && x.status === 'active')!;
+    expect(told((s) => Object.assign(s.projects[p.id]!, { progress: 0, startWeek: s.week - 30, deadlineWeek: s.week + 1 }))).toContain(`${p.name} has been slipping`);
+    expect(told((s) => (s.teams[t]!.aggregate!.stress = 70))).toMatch(/wearing everyone down/);
+    expect(told((s) => (s.teams[t]!.aggregate!.attritionRisk = 50))).toMatch(/started looking around/);
+    expect(told((s) => (s.teams[t]!.aggregate!.motivation = 15))).toMatch(/why the work matters/);
+    expect(told(() => {})).toMatch(/priorities keep changing/);
+  });
+
   it('sets each moment in a week, day and time of the month, in order through the month', () => {
     const { level, sim } = calm(1);
     const [a, b, c] = level.teamIds;

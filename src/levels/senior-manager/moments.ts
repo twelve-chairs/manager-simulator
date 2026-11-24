@@ -67,6 +67,18 @@ const activeProjects = (sim: SimState, teamId: string) =>
     .filter((p) => p.teamId === teamId && p.status === 'active')
     .sort((a, b) => b.risk - a.risk || (a.id < b.id ? -1 : 1));
 
+/** What a team's engineers raise at a skip-level, from the team as it really is: the most pressing of its troubles. */
+// @spec SENIOR-HABIT-008
+function surfacedIssue(sim: SimState, teamId: string, behind: ReadonlySet<string>): string {
+  const slipping = activeProjects(sim, teamId).find((p) => behind.has(p.id));
+  if (slipping) return `${slipping.name} has been slipping for weeks, and nobody upstream seems to know`;
+  const a = sim.teams[teamId]!.aggregate!;
+  if (band(a.stress) >= T.strainedBand) return 'on-call and late nights are wearing everyone down';
+  if (band(a.attritionRisk) >= 2) return 'a couple of people have started looking around';
+  if (band(a.motivation) <= 1) return 'nobody can say any more why the work matters';
+  return "the team's priorities keep changing with no explanation";
+}
+
 /** Begins a month: makes its moments from the group's state, up to the cap, in order, and sets them through the month. */
 // @spec SENIOR-MOMENT-001, SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-PLAN-002, SENIOR-CAL-001
 export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
@@ -96,7 +108,7 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   // Problems skip-level listening surfaced last month.
   const surfaced = new Set(s.surfaced.map((x) => x.teamId));
   for (const t of surfaced) {
-    drafts.push({ kind: 'surfaced', teamId: t, title: `What ${name(sim, t)} told you`, text: `At last month's skip-level, ${name(sim, t)}'s engineers raised something ${managerName(s, sim, t)} hasn't mentioned to you.`, choices: CHOICES.surfaced });
+    drafts.push({ kind: 'surfaced', teamId: t, title: `What ${name(sim, t)} told you`, text: `At last month's skip-level, ${name(sim, t)}'s engineers told you ${surfacedIssue(sim, t, behind)}. ${managerName(s, sim, t)} hasn't mentioned it to you.`, choices: CHOICES.surfaced });
   }
   // Escalations from teams under strain, at risk of losing people, or with a project behind.
   for (const t of s.teamIds) {
@@ -300,7 +312,8 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       } else if (choiceId === 'evidence') {
         if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
         if (!lenient) apply();
-        reaction = lenient ? `${who} comes back with less than they thought they had. It doesn't go ahead.` : `${who} brings the evidence, and it holds up. You sign it.`;
+        const evidence = moment.detail === 'promote' ? 'a half-year rated exceeds, and a design the team still builds on' : "two low ratings in a row, and a plan that was followed but didn't take";
+        reaction = lenient ? `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` : `${who} brings the evidence: ${evidence}. It holds up, and you sign it.`;
       } else {
         if (m) effects.push(person(m, 'trust', -T.refuseTrust, 'senior.approval'));
         reaction = `${who} takes the no back to their team.`;
