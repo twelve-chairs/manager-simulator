@@ -3,7 +3,7 @@ id: review-friction
 title: Friction in code review
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 13
+cooldownWeeks: 26
 waitDebrief: "Conflict in code review rarely settles itself. Left alone, it hardens into how two people work, and the team learns to route around it."
 roles:
   - name: a
@@ -55,26 +55,28 @@ choices:
   - id: separately
     label: Talk to each of them separately first
     outcomes:
+      - id: dragged-out
+        when:
+          all:
+            - value: a.trust
+              atLeast: 50
+            - value: b.trust
+              atLeast: 50
+        effects:
+          - { type: value, target: a, field: trust, amount: 1 }
+          - { type: value, target: b, field: trust, amount: 1 }
+          - { type: value, target: player, field: stress, amount: 3 }
+        aftermath: "Both of them say much the same thing to you, a day apart. The threads stay sharp for another week while you go between them."
+        debrief: "When both already trust you, two separate conversations drag out what one joint one would settle, and cost you the time of both."
       - id: heard
         effects:
-          - type: value
-            target: a
-            field: trust
-            amount: 3
-          - type: value
-            target: b
-            field: trust
-            amount: 3
-          - type: value
-            target: a
-            field: stress
-            amount: -2
-          - type: value
-            target: b
-            field: stress
-            amount: -2
+          - { type: value, target: a, field: trust, amount: 3 }
+          - { type: value, target: b, field: trust, amount: 3 }
+          - { type: value, target: a, field: stress, amount: -2 }
+          - { type: value, target: b, field: stress, amount: -2 }
+          - { type: value, target: player, field: stress, amount: 3 }
         aftermath: "Each of them feels heard. The comments get a little kinder."
-        debrief: "Hearing each side alone is slower, but it builds the trust a joint conversation needs."
+        debrief: "Hearing each side alone is slower and takes your time, but it builds the trust a joint conversation needs."
   - id: ignore
     label: Let them sort it out
     outcomes:
@@ -100,4 +102,4 @@ choices:
         debrief: "Conflict left alone rarely resolves itself; it spreads to the rest of the team."
 ---
 
-{a} and {b} have been going back and forth in code review for a week. The comments are getting personal.
+{a} and {b} have been going back and forth in code review for a week. The comments are getting personal. A joint conversation settles it fast if both trust you to be fair; if not, it goes badly, and hearing each alone takes longer.
