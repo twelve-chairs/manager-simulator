@@ -510,6 +510,25 @@ describe('written situations', () => {
     }
   });
 
+  // @spec SIT-COND-008, SIT-COND-017
+  it('brings back a promised clean-up 10 to 26 weeks on, unless one was led since', () => {
+    const promise = written('clean-up-promise');
+    const memory = (week: number, note: string) => ({ week, cause: { kind: 'situation' as const, situationId: 'tech-debt-ask', choiceId: 'later' }, note });
+    const at = (week: number, notes: { week: number; note: string }[]) =>
+      patch(fresh(), (s) => {
+        s.week = week;
+        s.projects.p1!.techDebt = 50;
+        for (const n of notes) s.people.e1!.history.push(memory(n.week, n.note));
+      });
+    const promised = { week: 5, note: 'Was promised a clean-up after the deadline' };
+    const shown = (sim: ReturnType<typeof fresh>) => select(engine(), sim, [promise]).presented[0]?.bindings.engineer;
+    expect(shown(at(20, [promised]))).toBe('e1');
+    expect(shown(at(12, [promised])), 'too soon').toBeUndefined();
+    expect(shown(at(35, [promised])), 'forgotten').toBeUndefined();
+    expect(shown(at(20, [promised, { week: 15, note: 'Led a clean-up of the code' }])), 'kept').toBeUndefined();
+    expect(shown(at(20, [])), 'never promised').toBeUndefined();
+  });
+
   // @spec SIT-COND-008, SIT-SEL-002
   it('offers the over-limit expense once, and a precedent only after it was approved quietly', () => {
     const expense = written('expense-outside-policy');

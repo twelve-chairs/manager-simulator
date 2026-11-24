@@ -31,6 +31,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'outage-hidden': 'safe',
   'customer-again': 'back-them',
   'two-urgent-asks': 'agree-order',
+  'clean-up-promise': 'keep-it',
   'customer-escalation': 'join-call',
   'status-update': 'amber',
   // the senior manager

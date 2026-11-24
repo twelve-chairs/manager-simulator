@@ -23,6 +23,7 @@ choices:
             target: engineer
             field: motivation
             amount: -4
+            historyNote: Was promised a clean-up after the deadline
             wantTags:
               against: [autonomy]
           - type: value
@@ -48,6 +49,7 @@ choices:
             target: engineer
             field: motivation
             amount: 4
+            historyNote: Led a clean-up of the code
             wantTags:
               serves: [autonomy]
         aftermath: "{engineer} leads the clean-up, and {project} slips a few days. The build gets faster."
