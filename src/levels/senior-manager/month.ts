@@ -1,6 +1,6 @@
-import { band } from '../line-manager';
+import { NAMES, band } from '../line-manager';
 import { applyEffects, attritionRiskOf, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
-import { leadOf, managerOf, nextId, rule } from './core';
+import { leadOf, managerOf, nextId, randomInt, rule, unusedName } from './core';
 import { periodEndsThisMonth, periodSnapshot, remember } from './review';
 import { acceptRemaining, deliveredRatings, meanStep } from './calibration';
 import { setGoals } from './goals';
@@ -11,14 +11,15 @@ import type { Oversight, SeniorHabits, SeniorState } from './types';
 
 const T = SENIOR_TUNING;
 const OVERSIGHT: readonly Oversight[] = ['handsOff', 'coaching', 'close'];
-const OPTIONS = { oneOnOnes: ['weekly', 'fortnightly', 'monthly'], backfill: ['fast', 'holdTheBar'], skipLevel: ['none', 'monthly'] } as const;
+const OPTIONS = { oneOnOnes: ['weekly', 'fortnightly', 'monthly'], backfill: ['fast', 'holdTheBar'], skipLevel: ['none', 'monthly'], newWork: ['ask', 'assign'] } as const;
 const ONE_ON_ONES_A_MONTH = { weekly: 4, fortnightly: 2, monthly: 1 } as const;
 
 export type SeniorHabitCommand =
   | { habit: 'oversight'; managerId: string; value: Oversight }
   | { habit: 'oneOnOnes'; value: SeniorHabits['oneOnOnes'] }
   | { habit: 'backfill'; value: SeniorHabits['backfill'] }
-  | { habit: 'skipLevel'; value: SeniorHabits['skipLevel'] };
+  | { habit: 'skipLevel'; value: SeniorHabits['skipLevel'] }
+  | { habit: 'newWork'; value: SeniorHabits['newWork'] };
 
 type Result<T> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -35,7 +36,7 @@ export function setSeniorHabit(level: SeniorState, sim: SimState, command: unkno
     s.habits.oversight[c.managerId] = c.value as Oversight;
     return { ok: true, level: s };
   }
-  if (c.habit === 'oneOnOnes' || c.habit === 'backfill' || c.habit === 'skipLevel') {
+  if (c.habit === 'oneOnOnes' || c.habit === 'backfill' || c.habit === 'skipLevel' || c.habit === 'newWork') {
     if (!(OPTIONS[c.habit] as readonly unknown[]).includes(c.value)) return { ok: false, error: `unknown option ${String(c.value)} for ${c.habit}` };
     (s.habits as unknown as Record<string, unknown>)[c.habit] = c.value;
     return { ok: true, level: s };
@@ -203,8 +204,21 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     }
     sim = apply(sim, ratings, log);
   }
+  // Under the habit, new work for idle teams with room, unless the player had it as a moment this month.
+  // @spec SENIOR-MOMENT-013
+  const assigned: { teamId: string; name: string; project: string }[] = [];
+  if (s.habits.newWork === 'assign' && !s.moments.some((x) => x.kind === 'newWork')) {
+    for (const t of s.teamIds) {
+      const idle = !Object.values(sim.projects).some((p) => p.teamId === t && p.status === 'active');
+      if (!idle || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand) continue;
+      const project = { id: nextId(s, 'project', 'pr', sim.projects), name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: randomInt(s, 10, 40), deadlineWeek: sim.week + randomInt(s, 20, 32) };
+      sim = apply(sim, [{ type: 'startProject', project, cause: rule('senior.assigned') }], log);
+      assigned.push({ teamId: t, name: sim.teams[t]!.name, project: project.name });
+    }
+  }
   remember(s, sim);
   const recap = monthRecap(s, sim, start);
+  recap.changes.assigned = assigned;
   s.monthStart = null;
   return { ok: true, level: s, sim, log, recap };
 }

@@ -7,6 +7,8 @@ export interface SeniorHabits {
   oneOnOnes: 'weekly' | 'fortnightly' | 'monthly';
   backfill: 'fast' | 'holdTheBar';
   skipLevel: 'none' | 'monthly';
+  /** New work for an idle team: the player decides each time, or the player's manager gives it to a team with room. */
+  newWork: 'ask' | 'assign';
 }
 
 /** A head a team has lost and not yet replaced. */

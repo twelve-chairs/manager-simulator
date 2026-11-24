@@ -92,7 +92,7 @@ describe('the senior manager’s week screen', () => {
     const { root, app } = makeApp({ run, deps: both() });
     const m = seniorView(level(run), run.sim).managers[0]!.id;
     const habits = $(root, '[data-panel=habits]');
-    expect($$(habits, '[data-habit]').map((s) => s.dataset.habit)).toEqual([...level(run).teamIds.map((t) => `oversight:${(run.sim.teams[t]!.leader as { id: string }).id}`), 'oneOnOnes', 'backfill', 'skipLevel']);
+    expect($$(habits, '[data-habit]').map((s) => s.dataset.habit)).toEqual([...level(run).teamIds.map((t) => `oversight:${(run.sim.teams[t]!.leader as { id: string }).id}`), 'oneOnOnes', 'backfill', 'skipLevel', 'newWork']);
     select(root, '[data-panel=habits] [data-habit=oneOnOnes]', 'weekly');
     select(root, `[data-panel=habits] [data-habit="oversight:${m}"]`, 'close');
     const state = app.state();
@@ -185,7 +185,7 @@ describe('the senior manager renderer', () => {
     for (const c of [part.routine].flat(3)) if (c instanceof Node) routine.append(c);
     expect(routine.querySelector('[data-part=recap-habits] li')).not.toBeNull();
     expect($$(routine, '[data-part=recap-goals] li').length).toBe(level(run).goals.length);
-    const quiet = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [] }, routine: { habits: [], goals: [] } });
+    const quiet = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [] }, routine: { habits: [], goals: [] } });
     const q = document.createElement('div');
     for (const c of [quiet.changes].flat(3)) if (c instanceof Node) q.append(c);
     expect(text(q, '[data-part=recap-quiet]')).toBe('A quiet month.');
@@ -194,11 +194,17 @@ describe('the senior manager renderer', () => {
     const p = Object.values(shipped.sim.projects).find((x) => level(shipped).teamIds.includes(x.teamId) && x.status === 'active')!;
     Object.assign(p, { status: 'completed', deadlineWeek: shipped.sim.week - 4 });
     level(shipped).completions[p.id] = shipped.sim.week - 4;
-    const withShipped = seniorManagerRenderer.recap(shipped, { changes: { managers: [], teams: [], heads: [], slipped: [] }, routine: { habits: [], goals: [] } });
+    const withShipped = seniorManagerRenderer.recap(shipped, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [] }, routine: { habits: [], goals: [] } });
     const s = document.createElement('div');
     for (const c of [withShipped.changes].flat(3)) if (c instanceof Node) s.append(c);
     expect(text(s, '[data-part=recap-shipped] li')).toBe(`${p.name} shipped on time (${shipped.sim.teams[p.teamId]!.name}).`);
     expect(s.querySelector('[data-part=recap-quiet]')).toBeNull();
+    // new work the player's manager gave a team with room
+    const withWork = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [{ teamId: 't9', name: 'Search', project: 'Ledger sync' }] }, routine: { habits: [], goals: [] } });
+    const w = document.createElement('div');
+    for (const c of [withWork.changes].flat(3)) if (c instanceof Node) w.append(c);
+    expect(text(w, '[data-part=recap-assigned] li')).toBe('Your manager gave Ledger sync to Search.');
+    expect(w.querySelector('[data-part=recap-quiet]')).toBeNull();
     // and the shell titles the disclosure for a month
     const later = endWeeks(run, 1, both('continue'));
     const { root } = makeApp({ run: later, deps: both('continue') });

@@ -20,6 +20,8 @@ function calm(seed = 1) {
   return { level, sim: quiet };
 }
 const kinds = (level: SeniorState) => level.moments.map((m) => m.kind);
+/** The level with new work given to teams with room. */
+const assigning = (level: SeniorState): SeniorState => ({ ...level, habits: { ...level.habits, newWork: 'assign' } });
 const find = (level: SeniorState, kind: SeniorMoment['kind']) => level.moments.find((m) => m.kind === kind)!;
 function answer(level: SeniorState, sim: SimState, moment: SeniorMoment, choice: string) {
   const r = chooseSenior(level, sim, moment.id, choice);
@@ -27,6 +29,32 @@ function answer(level: SeniorState, sim: SimState, moment: SeniorMoment, choice:
   return r;
 }
 const TIMES = { morning: 0, afternoon: 1, night: 2 } as const;
+
+describe('new work assigned', () => {
+  // @spec SENIOR-MOMENT-013
+  it('has the player\u2019s manager give new work to an idle team with room at the month\u2019s end, under the habit, and says so', () => {
+    const { level: asking, sim } = calm(6);
+    const level = assigning(asking);
+    const t = level.teamIds[2]!;
+    const idle = edit(sim, (s) => {
+      for (const p of Object.values(s.projects)) if (p.teamId === t) p.status = 'cancelled';
+    });
+    const ended = endMonth(beginMonth(level, idle), idle);
+    if (!ended.ok) throw new Error(ended.error);
+    const added = Object.values(ended.sim.projects).filter((p) => p.teamId === t && p.status === 'active');
+    expect(added).toHaveLength(1);
+    expect((ended.recap as { changes: { assigned: unknown[] } }).changes.assigned).toEqual([{ teamId: t, name: idle.teams[t]!.name, project: added[0]!.name }]);
+    // not while the team is strained: then it was the player's call this month
+    const strained = edit(idle, (s) => (s.teams[t]!.aggregate!.stress = 70));
+    const busy = endMonth(beginMonth(level, strained), strained);
+    if (!busy.ok) throw new Error(busy.error);
+    expect(Object.values(busy.sim.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(0);
+    // and not under the default habit, where it is a moment
+    const asked = endMonth(beginMonth(asking, idle), idle);
+    if (!asked.ok) throw new Error(asked.error);
+    expect(Object.values(asked.sim.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(0);
+  });
+});
 
 describe('a month’s moments', () => {
   // @spec SENIOR-MOMENT-002
@@ -148,12 +176,19 @@ describe('a month’s moments', () => {
   });
 
   // @spec SENIOR-MOMENT-007
-  it('offers new work when a team has no project: give it to that team, decline, or spread it across all', () => {
+  it('offers new work when a strained team has no project: give it to that team, decline, or spread it across all', () => {
     const { level, sim } = calm(6);
     const t = level.teamIds[2]!;
     const idle = edit(sim, (s) => {
       for (const p of Object.values(s.projects)) if (p.teamId === t) p.status = 'cancelled';
+      s.teams[t]!.aggregate!.stress = 70;
     });
+    // with room, it is still the player's call by default; under the habit of giving work to teams with room, the
+    // player's manager gives it at the month's end instead (SENIOR-MOMENT-013)
+    const roomy = edit(idle, (s) => (s.teams[t]!.aggregate!.stress = 30));
+    expect(kinds(beginMonth(level, roomy))).toContain('newWork');
+    expect(kinds(beginMonth(assigning(level), roomy))).not.toContain('newWork');
+    expect(kinds(beginMonth(assigning(level), idle))).toContain('newWork');
     const l = beginMonth(level, idle);
     const w = find(l, 'newWork');
     expect(w).toMatchObject({ teamId: t });

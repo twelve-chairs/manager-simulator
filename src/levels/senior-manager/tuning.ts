@@ -4,6 +4,8 @@ export const SENIOR_TUNING = {
   weeksPerMonth: 4,
   /** Months between reviews. */
   reviewEveryMonths: 6,
+  /** The stress band from which a team is strained: calm, steady, busy, strained, overwhelmed. */
+  strainedBand: 3,
   /** Stress an outside hire adds to the team while it adjusts. */
   hireStress: 10,
   /** Trust at or above which an engineer who wants growth starts as a developing manager. */

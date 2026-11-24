@@ -143,7 +143,9 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
     drafts.push({ kind: 'approval', teamId: t, detail, title: `${managerName(s, sim, t)} asks for an approval`, text: `${managerName(s, sim, t)} wants to ${what}, and needs your sign-off.`, choices: CHOICES.approval });
   }
   // New work, while a team has none.
-  const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0);
+  // Under the habit of giving work to teams with room, only a strained team makes it the player's call; one with room is
+  // given it at the month's end (SENIOR-MOMENT-013).
+  const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0 && (s.habits.newWork === 'ask' || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand));
   if (idle) drafts.push({ kind: 'newWork', teamId: idle, title: 'New work for the group', text: `Your manager has a new project for the group. ${name(sim, idle)} has nothing on.`, choices: CHOICES.newWork });
   // The fourth team, once the group has run a year.
   if (!s.restructured && s.teamIds.length === 3 && monthOf(s, sim) >= T.restructureMonth) {

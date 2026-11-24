@@ -123,7 +123,7 @@ describe('the organization', () => {
     const { level, sim } = senior(9);
     const managers = level.teamIds.map((t) => (sim.teams[t]!.leader as { id: string }).id);
     expect(level.habits).toEqual({ ...DEFAULT_SENIOR_HABITS, oversight: Object.fromEntries(managers.map((m) => [m, 'coaching'])) });
-    expect(DEFAULT_SENIOR_HABITS).toMatchObject({ oneOnOnes: 'fortnightly', backfill: 'holdTheBar', skipLevel: 'none' });
+    expect(DEFAULT_SENIOR_HABITS).toMatchObject({ oneOnOnes: 'fortnightly', backfill: 'holdTheBar', skipLevel: 'none', newWork: 'ask' });
   });
 });
 

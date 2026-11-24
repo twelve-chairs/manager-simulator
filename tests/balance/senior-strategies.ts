@@ -76,8 +76,8 @@ export const seniorContrarian: SeniorStrategy = {
 const soundChoice = (_seen: SeniorSeen, m: SeniorMoment) =>
   m.source === 'situation' ? better(m) : m.kind === 'calibration' ? settleOnEvidence(m) : prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
 
-export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, choose: soundChoice };
+export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null, { newWork: 'assign' }), choose: soundChoice };
 
-export const seniorSoundSkip: SeniorStrategy = { name: 'sound-skip', naive: false, habits: (seen) => habits(seen, null, { skipLevel: 'monthly' }), choose: soundChoice };
+export const seniorSoundSkip: SeniorStrategy = { name: 'sound-skip', naive: false, habits: (seen) => habits(seen, null, { skipLevel: 'monthly', newWork: 'assign' }), choose: soundChoice };
 
 export const SENIOR_STRATEGIES: SeniorStrategy[] = [seniorIdle, seniorHero, seniorDelegator, seniorContrarian, seniorSound, seniorSoundSkip];

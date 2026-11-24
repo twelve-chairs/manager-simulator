@@ -26,6 +26,7 @@ const PANEL_HELP = {
 const HABITS = {
   oneOnOnes: { label: '1:1s with your managers', options: { weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly' }, what: '1:1s build trust and reveal what each manager wants. More of them cost more of your energy.' },
   backfill: { label: 'When someone leaves', options: { fast: 'Backfill fast', holdTheBar: 'Hold the bar' }, what: 'Fast fills a gap in a month with a weaker hire; holding the bar takes two months and keeps the team strong.' },
+  newWork: { label: 'New work for an idle team', options: { ask: 'Decide each time', assign: 'Give it to a team with room' }, what: 'Giving it to a team with room saves you the decision; you still decide when the idle team is strained.' },
   skipLevel: { label: 'Skip-level listening', options: { none: 'None', monthly: 'Monthly' }, what: 'Each month you listen to one team directly: you see how it really is, and hear what its manager hasn’t said.' },
 } as const;
 const OVERSIGHT = { handsOff: 'Hands-off', coaching: 'Coaching', close: 'Close' } as const;
@@ -54,7 +55,7 @@ function habitControls(ctx: ScreenContext, withHelp: boolean): Child {
   return [
     ...v.managers.map((m) => control(`oversight:${m.id}`, `Oversight of ${m.name}`, v.habits.oversight[m.id] ?? 'coaching', OVERSIGHT, { habit: 'oversight', managerId: m.id },
       'Hands-off is cheap and lets a strong manager grow; close shows you the truth and catches problems, at a cost to your energy and their trust.')),
-    ...(['oneOnOnes', 'backfill', 'skipLevel'] as const).map((id) => control(id, HABITS[id].label, v.habits[id], HABITS[id].options, { habit: id }, HABITS[id].what)),
+    ...(['oneOnOnes', 'backfill', 'skipLevel', 'newWork'] as const).map((id) => control(id, HABITS[id].label, v.habits[id], HABITS[id].options, { habit: id }, HABITS[id].what)),
   ];
 }
 
@@ -214,7 +215,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const shipped = shippedLastMonth(run.level as SeniorState, run.sim);
   const quits = quitLastMonth(run.level as SeniorState, run.sim);
   const lost = headsLostLastMonth(run.level as SeniorState, run.sim);
-  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || shipped.length || quits.length || lost.length);
+  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || c.assigned.length || shipped.length || quits.length || lost.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet month.') : null,
@@ -224,6 +225,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
       part('recap-teams', 'Your teams', c.teams.map((t) => h('li', { 'data-team': t.id }, `${t.name}: ${t.changes.join(' and ')}.`))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, `${x.name}: ${x.change > 0 ? `${x.change} joined` : `${-x.change} left`}.`))),
       part('recap-slipped', 'What slipped', c.slipped.map((line) => h('li', {}, `${line}.`))),
+      part('recap-assigned', 'New work', c.assigned.map((x) => h('li', { 'data-team': x.teamId }, `Your manager gave ${x.project} to ${x.name}.`))),
     ],
     routine: [part('recap-habits', 'Your habits', r.routine.habits.map((line) => h('li', {}, line))), part('recap-goals', 'Goals', r.routine.goals.map((g) => h('li', {}, `${g.text}: ${g.progress}`)))],
   };
