@@ -3,7 +3,7 @@ id: leave-in-crunch
 title: Two weeks off, mid-crunch
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 13
+cooldownWeeks: 26
 waitDebrief: "Leave requests don't wait well. Someone who hears nothing either cancels quietly or goes anyway, and either way the plan didn't account for it."
 roles:
   - name: engineer

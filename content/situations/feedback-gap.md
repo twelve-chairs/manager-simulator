@@ -3,7 +3,7 @@ id: feedback-gap
 title: Work that isn't landing
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 13
+cooldownWeeks: 26
 waitDebrief: "Feedback held back doesn't go away. It turns up later as a surprise in someone's evaluation, when it's too late to act on."
 roles:
   - name: engineer
