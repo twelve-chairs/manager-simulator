@@ -268,6 +268,8 @@ describe('loading and validation', () => {
     const roleWhere = (where: unknown) => sit({ roles: [{ name: 'engineer', kind: 'person', where } as never] });
     expect(rejectionOf(sit({ weight: 0 }))).toMatch(/weight/);
     expect(rejectionOf(sit({ cooldownWeeks: -1 }))).toMatch(/cooldownWeeks/);
+    expect(rejectionOf(sit({ personCooldownWeeks: -1 }))).toMatch(/personCooldownWeeks/);
+    expect(loadContent([sit({ personCooldownWeeks: 0 })]).errors).toEqual([]);
     expect(rejectionOf(roleWhere({ value: 'engineer.motivation', below: 'high' }))).toMatch(/motivation/);
     expect(rejectionOf(roleWhere({ value: 'engineer.want', is: 'money' }))).toMatch(/want/);
     expect(rejectionOf(roleWhere({ value: 'engineer.want', below: 'growth' }))).toMatch(/below/);

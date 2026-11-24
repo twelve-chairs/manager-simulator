@@ -77,6 +77,7 @@ A build step compiles every situation file into one JSON content bundle that the
 | `priority` | `urgent` or `normal` (see *Selecting Situations*) |
 | `weight` | Relative chance of selection among situations of the same priority; default 1 |
 | `cooldownWeeks` | Weeks after it is presented before it can be presented again; default 0 |
+| `personCooldownWeeks` | Weeks after it is presented about a person (bound to one of its person roles) before it can be about them again; default 26, and 0 lets it come back to them whenever its `cooldownWeeks` allows |
 | `once` | When true, presented at most once per run |
 | `waitDebrief` | Optional: what letting the situation wait teaches, shown at the review when the player let it wait; one plain line with no placeholders, since no outcome bound the roles |
 | `when` | Optional condition on the state as a whole (no roles) |
@@ -137,7 +138,7 @@ Each turn, the turn loop asks the engine for situations for the active career le
 1. Closes any situation still open from an earlier selection as **ignored**, keeping a debrief record with status `ignored`: not responding is itself something a debrief can name.
 2. Takes the situations tagged with that level, skipping any marked `once` that has been presented, and any presented within its `cooldownWeeks`.
 3. Drops those whose `when` does not hold.
-4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates (for a team role with a `form`, only teams of that form) in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
+4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates, leaving out, for a person role, anyone the situation was presented about within its `personCooldownWeeks`, (for a team role with a `form`, only teams of that form) in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
 5. Selects up to the limit: `urgent` situations first, then `normal` ones, each group drawn at random by `weight`, so that when there are more urgent situations than the limit, the limit still holds. No person is bound into two situations in the same turn; a situation that would reuse someone already bound is re-bound without them, or dropped.
 6. Places each selected situation in the week: on its `day` and at its `time` when the situation sets them, and otherwise on a day drawn by the engine's generator, in the morning or afternoon (a night is only ever authored, since it means someone was woken).
 7. Records each selected situation as presented in the current game week and as **open** until it is resolved.
@@ -162,7 +163,7 @@ If the core rejects the batch, the content is wrong (validation should have caug
 
 ## Engine State
 
-The engine keeps its own serializable state beside the simulation's: its generator state, for each situation id the weeks it was presented, the open presentations, and the list of debrief records. It holds no copy of simulation data. Records for situation ids no longer in the content (an old save loaded with newer content) are kept and ignored. Like the core, every engine operation returns a new state and leaves its input unchanged, so a run is reproducible from its seed and choices.
+The engine keeps its own serializable state beside the simulation's: its generator state, for each situation id the weeks it was presented and the people it was about, the open presentations, and the list of debrief records. It holds no copy of simulation data. Records for situation ids no longer in the content (an old save loaded with newer content) are kept and ignored. Like the core, every engine operation returns a new state and leaves its input unchanged, so a run is reproducible from its seed and choices.
 
 ## Validation
 
@@ -215,6 +216,7 @@ The content compiler (`scripts/`) is a build-time tool: it reads `content/situat
 | Checking personalities | A personality catalogue, one shared list that career levels draw traits from and the validator reads | Accept any string; each level validating its own traits | Mirrors the action catalogue: a misspelt trait would silently make an outcome unreachable, and one shared list keeps the engine independent of any particular level. |
 | Place in the week | An optional authored `day` and `time`; otherwise a weekday drawn by the engine's generator, in the morning or afternoon | Always drawn; always authored; the turn loop placing situations | Some situations only make sense at a time (a Friday 1:1, a 2 a.m. page) and most fit any day. Drawing the rest from the engine's generator keeps placement reproducible and leaves the simulation's rolls untouched. Night is authored only, because a random night scene reads as arbitrary. |
 | Comparing entities | An `id` property on people, teams and projects, compared with other id-valued paths | Literal ids in content; a bare role name as a path | Ids are generated per run, so a literal id in content means nothing; an ordinary property keeps the path grammar uniform. |
+| A situation coming back to the same person | Not within `personCooldownWeeks`, 26 by default, which a situation can lower | Only the situation's own cooldown; a guard in each situation's role conditions | The same scene with the same person a few months on reads as the game forgetting the first time, since nothing in it acknowledges what happened. A guard written into each situation is easy to forget, and most repeatable situations about a person had none. A situation that is meant to recur with the same people, such as a quarterly calibration, sets it to 0. |
 | One person per situation per turn | No person bound into two situations in a turn | Allow overlap | Two situations about the same person in one turn read as contradictory and can invalidate each other's bindings. |
 | Situation effects | All core effects except hire and start project | All core effects | New people and projects need generated identities and are deliberate player actions at the line manager level. |
 | Unanswered and repeated resolutions | Presentations stay open until resolved; resolving one that is not open is an error; the next selection closes open ones as ignored | Refuse to select while any presentation is open | Makes double-applying a situation impossible without making the engine police the turn loop, and turns ignoring a situation into something debriefs can mention. |

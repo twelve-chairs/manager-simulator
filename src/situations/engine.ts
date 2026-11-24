@@ -44,14 +44,21 @@ const ctxFor = (sim: SimState, engine: EngineState, situation: Situation, bindin
   ...(timing.weeksToReview !== undefined && { weeksToReview: timing.weeksToReview }),
 });
 
+/** Weeks before a situation can be about the same person again, when it sets no `personCooldownWeeks`. */
+export const PERSON_COOLDOWN_WEEKS = 26;
+
 /**
  * Binds roles in order, trying each role's candidates in shuffled order and backtracking when a later role cannot bind.
  * Returns undefined when no complete binding exists.
  */
-// @spec SIT-SEL-004, SIT-SEL-005, SIT-SEL-014
+// @spec SIT-SEL-004, SIT-SEL-005, SIT-SEL-014, SIT-SEL-016
 function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeople: Set<string>, timing: Timing): Record<string, string> | undefined {
   const bindings: Record<string, string> = {};
   const used = new Set<string>();
+  // @spec SIT-SEL-016
+  // Not back to the same person within its person cooldown: the same scene a few months on reads as the game forgetting.
+  const gap = situation.personCooldownWeeks ?? PERSON_COOLDOWN_WEEKS;
+  const recentlyAbout = new Set(s.presentations.filter((p) => p.situationId === situation.id && sim.week - p.week < gap).flatMap((p) => p.people ?? []));
   const step = (i: number): boolean => {
     const role = situation.roles[i];
     if (!role) return true;
@@ -59,7 +66,7 @@ function bind(s: EngineState, sim: SimState, situation: Situation, excludedPeopl
     const candidates = candidatesOf(sim, role.kind).filter(
       (id) =>
         !used.has(key(id)) &&
-        !(role.kind === 'person' && excludedPeople.has(id)) &&
+        !(role.kind === 'person' && (excludedPeople.has(id) || recentlyAbout.has(id))) &&
         !(role.kind === 'team' && role.form && sim.teams[id]!.form !== role.form),
     );
     for (const id of shuffled(s, candidates)) {
@@ -122,7 +129,8 @@ export function selectSituations(
       if (!bindings) continue;
 
       // Record the presentation before offering choices, so conditions inside it count it as presented.
-      s.presentations.push({ situationId: situation.id, week: sim.week });
+      const people = situation.roles.filter((r) => r.kind === 'person').map((r) => bindings[r.name]!);
+      s.presentations.push({ situationId: situation.id, week: sim.week, ...(people.length && { people }) });
       const ctx = ctxFor(sim, s, situation, bindings, timing);
       const kinds = kindsOf(situation);
       const choices = situation.choices

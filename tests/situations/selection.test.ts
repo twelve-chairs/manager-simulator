@@ -35,6 +35,22 @@ describe('eligibility', () => {
     expect(ids(third)).toEqual(['cool']);
   });
 
+  // @spec SIT-SEL-016
+  it('does not bring a situation back to the same person within its person cooldown, 26 weeks by default', () => {
+    const at = (week: number) => patch(fresh(), (s) => (s.week = week));
+    const s = about('s', ONLY_E1);
+    const first = select(engine(), at(0), [s]);
+    expect(first.presented.map((p) => p.bindings.engineer)).toEqual(['e1']);
+    expect(select(first.engine, at(25), [s]).presented).toEqual([]);
+    expect(ids(select(first.engine, at(26), [s]))).toEqual(['s']);
+    const short = about('s', ONLY_E1, { personCooldownWeeks: 4 });
+    const once = select(engine(), at(0), [short]);
+    expect(select(once.engine, at(3), [short]).presented).toEqual([]);
+    expect(ids(select(once.engine, at(4), [short]))).toEqual(['s']);
+    const any = about('s', ONLY_E1, { personCooldownWeeks: 0 });
+    expect(ids(select(select(engine(), at(0), [any]).engine, at(1), [any]))).toEqual(['s']);
+  });
+
   // @spec SIT-SEL-003
   it('skips a situation whose when does not hold', () => {
     const s = plain('s', { when: c({ value: 'player.reputation', above: 60 }) });

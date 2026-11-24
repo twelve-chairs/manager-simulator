@@ -64,6 +64,8 @@ export interface Situation {
   priority: 'urgent' | 'normal';
   weight?: number;
   cooldownWeeks?: number;
+  /** Weeks before it can be about the same person again; 26 when unset, and 0 for no limit beyond `cooldownWeeks`. */
+  personCooldownWeeks?: number;
   once?: boolean;
   when?: Condition;
   /** The day of the week it falls on, when authored. */
@@ -110,7 +112,8 @@ export interface EngineState {
   /** Count of presentations made in the run; the next presentation id derives from it. */
   presentationCount: number;
   /** Every presentation, oldest first. */
-  presentations: { situationId: string; week: number }[];
+  /** Every presentation, oldest first, with the people bound to its person roles. */
+  presentations: { situationId: string; week: number; people?: string[] }[];
   open: OpenPresentation[];
   debriefs: DebriefRecord[];
 }

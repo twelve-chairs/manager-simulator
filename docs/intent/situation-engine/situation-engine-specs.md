@@ -15,7 +15,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-CONTENT-009**: The situation engine shall treat a situation as invalid if an effect is malformed, is a hire or start-project effect, or names a role whose kind does not fit the effect's field.
 - [x] **SIT-CONTENT-010**: The situation engine shall treat a situation as invalid if it has no choices, a choice has no outcomes, a choice's last outcome has a `when`, or any earlier outcome lacks one.
 - [x] **SIT-CONTENT-011**: When a content bundle is not valid JSON or not a list of situations, the situation engine shall return no situations and an error, without throwing.
-- [x] **SIT-CONTENT-013**: The situation engine shall treat a situation as invalid if its `weight` is not above 0, its `cooldownWeeks` is negative, a comparison's literal does not match the property's type, `in` is given something other than a list, `ratings.<level>` names an unknown level, or a `history` condition names anything but a person role.
+- [x] **SIT-CONTENT-013**: The situation engine shall treat a situation as invalid if its `weight` is not above 0, its `cooldownWeeks` or `personCooldownWeeks` is negative, a comparison's literal does not match the property's type, `in` is given something other than a list, `ratings.<level>` names an unknown level, or a `history` condition names anything but a person role.
 - [x] **SIT-CONTENT-014**: The situation engine shall treat a situation as invalid if an effect rates the player.
 - [x] **SIT-CONTENT-016**: The situation engine shall treat a situation as invalid if it compares an id-valued property (`id`, `team`, `ledTeam`, `leader`) with a literal rather than a path.
 - [x] **SIT-CONTENT-017**: The situation engine shall treat a situation as invalid if a role that is not a team role has a `form`, or a team role's `form` is not `detailed` or `aggregate`.
@@ -60,6 +60,7 @@ Design: [situation-engine-design.md](situation-engine-design.md)
 - [x] **SIT-SEL-002**: When situations are selected, the situation engine shall skip a situation marked `once` that has been presented, and a situation presented fewer than `cooldownWeeks` weeks ago.
 - [x] **SIT-SEL-003**: When situations are selected, the situation engine shall skip a situation whose `when` does not hold.
 - [x] **SIT-SEL-004**: When binding a situation's roles, the situation engine shall bind them in order, each to an active person, existing team or active project of the role's kind for which its `where` holds, trying candidates in an order shuffled by the engine's generator, and never binding the same entity to two roles of one situation.
+- [x] **SIT-SEL-016**: When binding a person role, the situation engine shall leave out anyone the situation was presented about, in any of its person roles, fewer than its `personCooldownWeeks` weeks ago (26 when it sets none).
 - [x] **SIT-SEL-014**: When binding a team role that has a `form`, the situation engine shall consider only teams of that form.
 - [x] **SIT-SEL-005**: When a role has no candidate that lets every later role bind, the situation engine shall backtrack to the previous role's next candidate, and skip the situation when no complete binding exists.
 - [x] **SIT-SEL-013**: When binding leaves a situation with no choice whose `availableIf` holds, the situation engine shall skip it.

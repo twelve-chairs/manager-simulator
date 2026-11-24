@@ -4,6 +4,8 @@ title: Calibration
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+# Quarterly, with the team's strongest engineers: the same people can be argued over again next quarter.
+personCooldownWeeks: 0
 when:
   value: review.weeksAway
   atMost: 1
