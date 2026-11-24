@@ -34,6 +34,8 @@ export type Persona = keyof typeof PERSONAS;
 
 export const AI_TUNING = {
   model: 'claude-opus-5-5',
+  /** Retries, with the SDK's backoff, of a request that fails on the network or a server error. */
+  requestRetries: 6,
   /** The notebook's longest length, in words; a longer reply is cut to it. */
   notebookWords: 300,
   /** Decisions before a run stops, by how far it goes. */

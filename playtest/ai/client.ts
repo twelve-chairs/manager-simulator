@@ -16,7 +16,7 @@ export interface Usage {
  */
 // @spec PLAY-AI-009
 export function anthropicClient(): AiClient & { usage: Usage } {
-  const client = new Anthropic();
+  const client = new Anthropic({ maxRetries: AI_TUNING.requestRetries });
   const usage: Usage = { requests: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } };
   return {
     usage,
