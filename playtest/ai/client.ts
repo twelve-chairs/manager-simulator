@@ -22,16 +22,24 @@ export function anthropicClient(): AiClient & { usage: Usage } {
     usage,
     async ask<T>(system: string, user: string, schema: z.ZodType<T>, effort: 'medium' | 'high', model: string): Promise<T | null> {
       usage.requests += 1;
-      const response = await client.beta.messages.parse({
-        model,
-        max_tokens: 16000,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        thinking: { type: 'adaptive' },
-        output_config: { effort, format: betaZodOutputFormat(schema) },
-        system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: user }],
-      });
+      let response;
+      try {
+        response = await client.beta.messages.parse({
+          model,
+          max_tokens: 16000,
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
+          thinking: { type: 'adaptive' },
+          output_config: { effort, format: betaZodOutputFormat(schema) },
+          system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+          messages: [{ role: 'user', content: user }],
+        });
+      } catch (error) {
+        // A reply the SDK cannot parse as the schema is an invalid reply, sent back once like any other; an error from
+        // the API itself (credits, a failed connection after its retries) still ends the run.
+        if (error instanceof Anthropic.APIError) throw error;
+        return null;
+      }
       const u = response.usage;
       usage.tokens.input += u.input_tokens;
       usage.tokens.output += u.output_tokens;
