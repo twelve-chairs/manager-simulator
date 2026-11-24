@@ -158,7 +158,7 @@ Each level has its own How to play topics and panel help lines; the senior manag
 
 The senior manager level keeps the shell (header, scene, recap, review, ended) and brings its own renderer.
 
-**The handover.** After the review that promotes a line manager is acknowledged, the screen says so ("You've been promoted to senior manager") and asks the one question the player answers as they leave their team: who leads it now. Each of the team's engineers is a choice, showing their name, skill in words, how much they trust the player in words (*wary*, *guarded*, *neutral*, *trusting*, *loyal*, the bands of trust) and their want if a 1:1 revealed it; the last choice is an outside hire, "a capable manager you don't know yet". Choosing sends the hand over command, and the first month begins.
+**The handover.** After the review that promotes a line manager is acknowledged, the screen says so ("You've been promoted to senior manager") and asks the one question the player answers as they leave their team: who leads it now. Each of the team's engineers is a choice, showing their name, skill in words, how much they trust the player in words (*wary*, *guarded*, *neutral*, *trusting*, *loyal*, the bands of trust) and their want if a 1:1 revealed it; the last choice is an outside hire, "a capable manager you don't know yet". A line under the question says what each kind of choice costs ("Someone from the team leaves it an engineer short, and starts out learning the job unless they trust you and want to grow. An outside hire keeps every engineer, but a stranger in charge unsettles the team at first."), so the outside hire is not a blind pick. Choosing sends the hand over command, and the first month begins.
 
 **The first month** opens, like the first week, on a scene before anything arrives: the senior manager's habits with a line on what each does, and How to play, closed by **Start month 1**.
 
@@ -196,7 +196,7 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 
 The director level keeps the shell (header, scene, recap, review, ended) and brings its own renderer, as the senior manager does.
 
-**The handover.** After the review that promotes a senior manager is acknowledged, the screen says so ("You've been promoted to director") and asks who leads the player's group now. Each of their managers is a choice, showing their name, management skill in words, how much they trust the player in words and their want if known; the last choice is an outside hire, "a capable senior manager you don't know yet". Choosing sends the hand over command, and the first quarter begins.
+**The handover.** After the review that promotes a senior manager is acknowledged, the screen says so ("You've been promoted to director") and asks who leads the player's group now. Each of their managers is a choice, showing their name, management skill in words, how much they trust the player in words and their want if known; the last choice is an outside hire, "a capable senior manager you don't know yet". A line under the question says what each costs ("One of your managers brings the trust they've built with you. An outside hire is capable, but a stranger in charge unsettles the group at first."). Choosing sends the hand over command, and the first quarter begins.
 
 **The first quarter** opens on a scene before anything arrives: the director's habits with a line on what each does, and How to play, closed by **Start quarter 1**.
 

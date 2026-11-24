@@ -323,7 +323,11 @@ export const directorRenderer: LevelRenderer = {
   help: DIRECTOR_HELP_TOPICS,
   firstTurn: { where: 'Before the quarter', heading: 'How you run your organization', intro: 'Your groups now run through their senior managers, and your executive and peers are watching. Decide where your time goes, how you meet your senior managers and whether you listen inside the groups, before the quarter begins.' },
   // @spec UI-DIR-015
-  handover: { question: () => 'Who leads your group now?', hire: 'An outside hire: a capable senior manager you don’t know yet' },
+  handover: {
+    question: () => 'Who leads your group now?',
+    hire: 'An outside hire: a capable senior manager you don’t know yet',
+    trade: 'One of your managers brings the trust they’ve built with you. An outside hire is capable, but a stranger in charge unsettles the group at first.',
+  },
   stayed: {
     outcome: 'This was your last review as a director. Three years in, the promotion never came.',
     ending: 'You stayed a director. Three years went by without the promotion.',

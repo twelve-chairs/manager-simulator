@@ -119,7 +119,7 @@ export interface LevelRenderer {
   /** The level's turn: a week, a month or a quarter. */
   turn: Turn;
   /** For a level reached by promotion: the handover's question and how it describes the outside hire. */
-  handover?: { question: (team: string) => string; hire: string };
+  handover?: { question: (team: string) => string; hire: string; trade: string };
   /** The level's How to play topics. */
   help: readonly { id: string; title: string; text: string }[];
   /** The scene before the level's first turn: where it is set, its heading and its line. */
@@ -169,6 +169,10 @@ const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | '
 function towardPromotionLine(p: TowardPromotion): string | null {
   return p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews, then takes two in a row rated exceeds or better.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
 }
+
+/** What each kind of handover choice costs the team the player leaves as a line manager. */
+const HANDOVER_TRADE =
+  'Someone from the team leaves it an engineer short, and starts out learning the job unless they trust you and want to grow. An outside hire keeps every engineer, but a stranger in charge unsettles the team at first.';
 
 const PLAN_NEXT = {
   coaching: 'One more review rated partial or below puts you on an improvement plan.',
@@ -816,6 +820,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       { 'data-screen': 'handover', class: 'handover' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, `You've been promoted to ${name}`),
       h('p', { 'data-part': 'question' }, words ? words.question(team?.name ?? 'your team') : `Who leads ${team?.name ?? 'your team'} now?`),
+      h('p', { 'data-part': 'trade' }, words?.trade ?? HANDOVER_TRADE),
       h(
         'div',
         { class: 'choices' },

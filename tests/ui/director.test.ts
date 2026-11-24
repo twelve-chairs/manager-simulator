@@ -40,6 +40,7 @@ describe('the director’s handover', () => {
     const first = run.handoverChoices![0]!;
     expect(text($(root, `[data-handover="${first.id}"]`), '[data-field=skill]')).toBe(BAND_WORDS.skill[Math.min(4, Math.floor(first.skill! / 20))]);
     expect(text(root, '[data-handover=hire]')).toMatch(/capable senior manager you don.t know yet/i);
+    expect(text(root, '[data-part=trade]')).toMatch(/trust they.ve built.*unsettles the group/i);
   });
 });
 

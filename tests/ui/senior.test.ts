@@ -33,6 +33,7 @@ describe('the handover screen', () => {
       expect(button.querySelector('[data-field=want]')?.textContent ?? 'unknown').toMatch(/^(unknown|growth|recognition|stability|autonomy)$/);
     }
     expect(text(root, '[data-handover=hire]')).toMatch(/capable manager you don.t know yet/i);
+    expect(text(root, '[data-part=trade]')).toMatch(/an engineer short.*outside hire keeps every engineer.*unsettles the team/i);
   });
 
   // @spec UI-HAND-002
