@@ -79,7 +79,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Peers
 
-- [x] **DIR-PEER-001**: When a peer's trust allows an ask, the director level shall be able to produce a peer's ask, offering to agree, negotiate a trade, or refuse; agreeing shall raise one group's stress and the peer's trust by tuned amounts, negotiating shall raise the peer's trust by a tuned amount if their trust is at least a tuned level and lower it otherwise, and refusing shall lower it by a tuned amount.
+- [x] **DIR-PEER-001**: When a peer's trust allows an ask, and no peer has asked in the quarter before, the director level shall be able to produce a peer's ask, offering to agree, negotiate a trade, or refuse; agreeing shall raise one group's stress and the peer's trust by tuned amounts, negotiating shall raise the peer's trust by a tuned amount if their trust is at least a tuned level and lower it otherwise, and refusing shall lower it by a tuned amount.
 - [x] **DIR-PEER-002**: When a quarter ends with a peer's trust in the player below a tuned level, the director level shall lower the executive's trust by a tuned amount and add a note to the peer's and the executive's memories, at most once a review period per peer.
 
 ## Senior managers' plans

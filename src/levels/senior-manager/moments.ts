@@ -178,7 +178,7 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
       text: `Your manager has a new project for the group. ${team} has nothing on.`,
       choices: [
         { id: 'give', label: `Give it to ${team}` },
-        { id: 'giveAlways', label: `Give it to ${team}, and hand new work to a team with room from now on` },
+        { id: 'giveAlways', label: `Give it to ${team}, and from now on let your manager give new work straight to a team with room (you still decide when that team is strained)` },
         ...CHOICES.newWork.filter((c) => c.id !== 'give'),
       ],
     });

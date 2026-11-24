@@ -73,19 +73,19 @@ describe('arrivals', () => {
   });
 
   // @spec LINE-INBOX-002
-  it('waits three weeks after work intake is declined or let expire before offering more', () => {
+  it('waits eight weeks after work intake is declined or let expire before offering more', () => {
     const q = quietRun(1);
     const one = patch(q.sim, (s) => { s.week = 4; s.projects[projects(q.sim)[0]!]!.status = 'completed'; s.people[engineers(q.sim)[0]!]!.stress = 70; });
     const { level, id } = withItem(q.level, { kind: 'workIntake', subject: { kind: 'team', id: teamOf(one) }, size: 2, lastWeek: 4 });
     const l = begin(level, one);
     const intake = (lv: typeof l, week: number) => beginWeek({ ...lv, items: [] }, patch(one, (s) => (s.week = week))).items.filter((i) => i.kind === 'workIntake');
     const declined = choose(l, one, momentFor(l, id).id, 'decline').level;
-    for (const week of [5, 6, 7]) expect(intake(declined, week)).toHaveLength(0);
-    expect(intake(declined, 8)).toHaveLength(1);
+    for (const week of [5, 8, 12]) expect(intake(declined, week)).toHaveLength(0);
+    expect(intake(declined, 13)).toHaveLength(1);
     // letting it expire counts the same
     const expired = end(l, one).level;
-    expect(intake(expired, 7)).toHaveLength(0);
-    expect(intake(expired, 8)).toHaveLength(1);
+    expect(intake(expired, 12)).toHaveLength(0);
+    expect(intake(expired, 13)).toHaveLength(1);
   });
 
   // @spec LINE-INBOX-013

@@ -332,6 +332,9 @@ describe('peers', () => {
     const { level, sim, m } = asked();
     const peer = m.personId!;
     expect(m.choices.map((c) => c.id)).toEqual(['agree', 'negotiate', 'refuse']);
+    // not again the next quarter
+    const next = beginQuarter({ ...level, moments: [] }, { ...structuredClone(sim), week: sim.week + T.weeksPerQuarter });
+    expect(next.moments.some((x) => x.kind === 'peerAsk')).toBe(false);
     const agreed = ok(chooseDirector(level, sim, m.id, 'agree')).sim;
     expect(trust(agreed, peer)).toBe(Math.min(100, trust(sim, peer) + T.peer.agreeTrust));
     expect(agreed.teams[m.groupId!]!.aggregate!.stress).toBe(Math.min(100, sim.teams[m.groupId!]!.aggregate!.stress + T.peer.askStress));

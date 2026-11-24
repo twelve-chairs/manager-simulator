@@ -146,6 +146,8 @@ export interface DirectorState {
   quarterStart: QuarterStart | null;
   /** Senior managers who joined after the handover, and those the player let go, for the career summary. */
   joined: string[];
+  /** The week a peer last asked for something, so asks come at most every other quarter. */
+  lastPeerAsk?: number;
   letGo: string[];
   counters: { person: number; team: number; project: number; moment: number; goal: number; bet: number };
 }

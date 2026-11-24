@@ -7,7 +7,7 @@ import { BETTER_CHOICES } from './strategies';
 import type { SeniorMoment } from './senior';
 
 const CONTENT = realContent();
-const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 20) }, (_, i) => i + 1);
+const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 40) }, (_, i) => i + 1);
 const T = SENIOR_BALANCE_TUNING;
 
 let summaries: Summary[] | undefined;

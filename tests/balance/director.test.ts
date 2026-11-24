@@ -5,7 +5,7 @@ import { DIRECTOR_BALANCE_TUNING, playDirectorRun, type DirectorSeen, type Direc
 import { DIRECTOR_STRATEGIES, directorContrarian, directorHero, directorIdle, directorSound } from './director-strategies';
 
 const CONTENT = realContent();
-const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 20) }, (_, i) => i + 1);
+const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 40) }, (_, i) => i + 1);
 const T = DIRECTOR_BALANCE_TUNING;
 
 let summaries: Summary[] | undefined;

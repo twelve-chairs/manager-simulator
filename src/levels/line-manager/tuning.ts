@@ -28,7 +28,7 @@ export const LINE_TUNING = {
   /** Idle weeks in a review period beyond which no projects counts against the player: more than half of 13. */
   idleQuarterWeeks: 6,
   /** Weeks after work intake is declined or expires before more is offered or assigned. */
-  intakeWaitWeeks: 3,
+  intakeWaitWeeks: 8,
   /** The stress band from which an engineer is strained: calm, steady, busy, strained, overwhelmed. */
   strainedBand: 3,
   /** Consecutive idle weeks after which the player's manager assigns the team a project. */

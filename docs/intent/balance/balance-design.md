@@ -56,7 +56,7 @@ The checks, with thresholds from the harness's tuning:
 3. No naive strategy's promotion share exceeds the maximum naive promotion share.
 4. Sound practice's burnout share is at most the maximum sound burnout share.
 
-The test suite runs 20 seeds per strategy and must stay within about 15 seconds; a report command runs more seeds and prints the table for tuning.
+The test suite runs 40 seeds per strategy and must stay within about 25 seconds; a report command runs more seeds and prints the table for tuning. Forty seeds keeps one unlucky seed from moving a share by more than a few points, so a strategy whose true share sits near a threshold does not pass or fail by chance.
 
 ## The Senior Manager
 
@@ -78,7 +78,7 @@ The measures are the line manager's, over six review slots; regretted attrition 
 
 5. Sound practice's managed-out share is at most the maximum sound managed-out share.
 
-The test suite runs 20 seeds per senior strategy within the same budget; the report command prints the senior table beside the line manager's.
+The test suite runs 40 seeds per senior strategy within the same budget; the report command prints the senior table beside the line manager's.
 
 ## The Director
 
@@ -98,7 +98,7 @@ A sixth strategy, **sound practice with a listening tour**, plays as sound pract
 
 The measures are the line manager's, over six review slots; regretted attrition counts heads rated meets or above lost from the organization's groups. The checks are the senior manager's five, against thresholds in the director's own harness tuning.
 
-The test suite runs 20 seeds per director strategy within the same budget; the report command prints the director table beside the other two.
+The test suite runs 40 seeds per director strategy within the same budget; the report command prints the director table beside the other two.
 
 ## Decisions & Alternatives
 
@@ -108,7 +108,7 @@ The test suite runs 20 seeds per director strategy within the same budget; the r
 | What strategies see | The player's view and commands only | Reading the simulation state | A strategy that peeks at hidden values proves nothing about what a player can learn. |
 | Measuring habits | A variant of sound practice with other habits, reported but not checked | No habit variant; a check that the habits change the result | Without a variant nothing shows whether habits matter at all. A check would need a threshold no measurement supports yet; reporting first lets tuning decide whether one is worth adding. |
 | How a strategy plays a week | Habit changes at the start of the week, then one decision per moment as it becomes current | One list of commands for the whole week | The turn loop plays moments in order, and a later moment can depend on an earlier choice; deciding each as it comes is what the player does. |
-| When balance is checked | In the test suite with 20 seeds per strategy, plus a report command with more | Only in the report command | Every commit is checked, so content or tuning changes cannot quietly break balance. |
+| When balance is checked | In the test suite with 40 seeds per strategy, plus a report command with more | Only in the report command | Every commit is checked, so content or tuning changes cannot quietly break balance. |
 | Context-blind choices | First or last offered choice | A hand-labelled "agreeable" choice per situation | Choice order carries no meaning, so first and last are honest stand-ins for a fixed habit, with no extra labelling. |
 | Keeping choice order meaningless | Authors vary where the better choice sits, and a check fails if more than half of situations put it first, or more than half put it last | The situation engine shuffling choices with its seeded generator when it presents them | Shuffling makes position unlearnable but can put choices in an order that reads badly (an "ignore it" before the options it ignores); an authored order with a spread check keeps the reading order in the writer's hands. |
 | Where a senior run starts | A line manager run from the seed, handed over at once to an outside hire, the same for every strategy | Play each strategy's own line manager run to a promotion first; let each strategy choose the handover | Most line manager runs are not promoted, so playing up to one would measure few senior runs and mix the two levels' balance; a shared handover keeps the senior measures about how each strategy plays the senior level. |

@@ -104,7 +104,9 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
     if (band(a.stress) >= 3 || band(a.attritionRisk) >= 3 || behind) optional.push({ kind: 'trouble', groupId: g, personId: lead, title: `${groupName(sim, g)} is in trouble`, text: `${name(sim, lead)} comes to you: ${groupName(sim, g)} is ${behind ? 'falling behind' : 'stretched thin'}.`, choices: CHOICES.trouble });
   }
   const peers = s.peerIds.filter((id) => sim.people[id]?.status === 'active');
-  if (peers.length) {
+  // A peer asks at most every other quarter, so the ask stays a moment rather than a fixture.
+  const askedLately = s.lastPeerAsk !== undefined && sim.week - s.lastPeerAsk <= T.weeksPerQuarter;
+  if (peers.length && !askedLately) {
     const peer = pick(s, peers);
     const g = [...s.groupIds].filter((x) => sim.teams[x]).sort((x, y) => sim.teams[x]!.aggregate!.stress - sim.teams[y]!.aggregate!.stress)[0];
     if (g) optional.push({ kind: 'peerAsk', personId: peer, groupId: g, title: `${name(sim, peer)} needs something`, text: `${name(sim, peer)} needs ${groupName(sim, g)} to move a dependency up its list.`, choices: CHOICES.peerAsk });
@@ -123,6 +125,8 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
   };
   const room = Math.max(0, T.momentCap - first.length - 1);
   const rest = optional.slice(0, room);
+  // Only an ask the player is shown counts toward the next one's wait.
+  if (rest.some((d) => d.kind === 'peerAsk')) s.lastPeerAsk = sim.week;
   s.moments = [];
   // Final evaluations, new senior managers and headcount fill the quarter's first week; the rest spread through it.
   first.forEach((d, i) => s.moments.push({ ...d, id: `dm${++s.counters.moment}`, week: Math.floor(i / 5), day: i % 5, time: 'morning', status: 'open' }));

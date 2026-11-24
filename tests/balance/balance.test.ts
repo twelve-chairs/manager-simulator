@@ -5,7 +5,7 @@ import { BALANCE_TUNING, DEPS, playRun, realContent, runScore, summarize, table,
 import { BETTER_CHOICES, STRATEGIES, idle, sound, soundHabits } from './strategies';
 
 const CONTENT = realContent();
-const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 20) }, (_, i) => i + 1);
+const SEEDS = Array.from({ length: Number(process.env.BALANCE_SEEDS ?? 40) }, (_, i) => i + 1);
 
 let summaries: Summary[] | undefined;
 /** Every strategy over every seed, played once and shared by the checks. */

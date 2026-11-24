@@ -50,7 +50,8 @@ export const DIRECTOR_TUNING = {
   /** The quarterly review: trust telling it straight earns, reputation per thing in trouble, reputation leading with wins earns, what being found out costs, and what promising more earns. */
   review: { straightTrust: 4, troubleReputation: 2, winsReputation: 4, caughtTrust: 10, caughtReputation: 8, promiseReputation: 3 },
   /** Peers: the stress agreeing costs a group, trust agreeing earns, trust at which negotiating works and what it moves, trust refusing costs, and the trust below which a peer goes to the executive and what that costs. */
-  peer: { askStress: 6, agreeTrust: 8, negotiateAt: 50, negotiateTrust: 5, refuseTrust: 8, escalateBelow: 30, escalateTrust: 6 },
+  // A peer asks at most every other quarter, so each ask moves trust enough to matter on its own.
+  peer: { askStress: 6, agreeTrust: 14, negotiateAt: 50, negotiateTrust: 10, refuseTrust: 14, escalateBelow: 30, escalateTrust: 6 },
   /** A group in trouble: what coaching fixes and grows, and what deciding fixes and costs. */
   trouble: { coachFix: 8, coachGrowth: 3, decideFix: 15, decideEnergy: 6, decideTrust: 5 },
   /** Org design: group sizes above which a split is offered and below which a merge is. */
