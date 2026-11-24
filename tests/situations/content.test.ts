@@ -511,6 +511,24 @@ describe('written situations', () => {
   });
 
   // @spec SIT-COND-008, SIT-COND-017
+  it('offers to write an improvement plan around the load the player put on someone, only when they carried it', () => {
+    const plan = written('improvement-plan');
+    const rule = { kind: 'rule' as const, ruleId: 'test' };
+    const on = (notes: string[]) =>
+      patch(fresh(), (s) => {
+        s.week = 30;
+        for (const week of [13, 26]) s.people.e1!.history.push({ week, cause: rule, rating: 'partial' });
+        for (const note of notes) s.people.e1!.history.push({ week: 25, cause: rule, note });
+      });
+    const offered = (sim: ReturnType<typeof fresh>) => select(engine(), sim, [plan]).presented.find((p) => p.bindings.engineer === 'e1')?.choices.map((c) => c.id);
+    expect(offered(on(['Handled a night page alone', 'Handled a night page alone']))).toContain('own-the-load');
+    expect(offered(on(['Took on new work while stretched']))).toContain('own-the-load');
+    const unloaded = offered(on([]));
+    expect(unloaded).toBeDefined();
+    expect(unloaded).not.toContain('own-the-load');
+  });
+
+  // @spec SIT-COND-008, SIT-COND-017
   it('brings back a promised clean-up 10 to 26 weeks on, unless one was led since', () => {
     const promise = written('clean-up-promise');
     const memory = (week: number, note: string) => ({ week, cause: { kind: 'situation' as const, situationId: 'tech-debt-ask', choiceId: 'later' }, note });
