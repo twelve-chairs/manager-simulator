@@ -18,6 +18,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'conference-talk': 'cover',
   'leave-in-crunch': 'approve-replan',
   calibration: 'back-engineer',
+  'calibration-no-slot': 'accept',
   'contractor-leaving': 'pair',
   'remote-out-of-loop': 'write-first',
   'team-event': 'team-choice',

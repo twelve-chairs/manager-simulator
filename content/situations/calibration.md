@@ -6,9 +6,11 @@ priority: normal
 cooldownWeeks: 13
 # Quarterly, with the team's strongest engineers: the same people can be argued over again next quarter.
 personCooldownWeeks: 0
+# Alternates with calibration-no-slot: one top slot to argue over, then the next quarter none.
 when:
-  value: review.weeksAway
-  atMost: 1
+  all:
+    - { value: review.weeksAway, atMost: 1 }
+    - { presented: calibration, withinWeeks: 20, atMost: 0 }
 waitDebrief: "A manager who skips calibration lets the room decide. People who aren't argued for are rated by whoever was there."
 roles:
   # Two engineers who both earned a top rating, competing for the one the curve leaves your team.
