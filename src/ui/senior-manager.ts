@@ -14,7 +14,7 @@ export const SENIOR_HELP_TOPICS = [
   { id: 'told', title: "What you're told", text: "Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth." },
   { id: 'calibration', title: 'Calibration', text: 'Before each review your managers propose their teams’ ratings. Compare them with what each team delivered, and move heads up or down.' },
   { id: 'energy', title: 'Energy', text: 'Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out.' },
-  { id: 'reviews', title: 'Reviews', text: 'Every six months your manager reviews delivery, retention, your teams’ health, how your managers grew, calibration and the period’s goals. From your third review on, two reviews in a row rated exceeds or better earn a promotion. After three years without one, the run ends.' },
+  { id: 'reviews', title: 'Reviews', text: 'Every six months your own manager reviews you: delivery, retention, your teams’ health, how your managers grew, calibration and the period’s goals. From your third review on, two of your reviews in a row rated exceeds or better get you promoted to director. After three years without one, the run ends.' },
 ] as const;
 
 const PANEL_HELP = {

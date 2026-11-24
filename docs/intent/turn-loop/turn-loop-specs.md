@@ -40,6 +40,7 @@ Design: [turn-loop-design.md](turn-loop-design.md)
 - [x] **LOOP-REV-002**: When a review with the outcome `managedOut` is acknowledged, the turn loop shall end the run with the ending `managedOut`.
 - [x] **LOOP-REV-004**: When a review with the outcome `stayed` is acknowledged, the turn loop shall end the run with the ending `stayed`.
 - [x] **LOOP-REV-003**: When a review with the outcome `promote` is acknowledged at the highest career level the turn loop is given, the turn loop shall end the run with the ending `completed`.
+- [x] **LOOP-REV-006**: When a review is acknowledged, the turn loop shall keep the review's standing toward promotion on the run, and when a hand over command applies, it shall clear it.
 - [x] **LOOP-REV-005**: When a review with the outcome `promote` is acknowledged below the highest career level the turn loop is given, the turn loop shall put the run in the handover phase with the next level's handover choices.
 
 ## Handover

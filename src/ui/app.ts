@@ -165,6 +165,11 @@ const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | '
   twoInARow: 'Promotion takes two reviews in a row rated exceeds or better.',
   outOfTime: "There aren't enough reviews left at this level for a promotion.",
 };
+/** Where the player stands toward promotion, as the review screen and the header say it. */
+function towardPromotionLine(p: TowardPromotion): string | null {
+  return p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+}
+
 const PLAN_NEXT = {
   coaching: 'One more review rated partial or below puts you on an improvement plan.',
   pip: "One more review rated partial or below and you'll be managed out.",
@@ -174,7 +179,7 @@ const PLAN_NEXT = {
 // @spec UI-REVIEW-002
 function standingLines(s: Standing): Child[] {
   const p = s.promotion;
-  const toward = p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+  const toward = towardPromotionLine(p);
   return [
     s.marginUp ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step better would have made it ${s.marginUp}.`) : null,
     s.marginDown ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step worse would have made it ${s.marginDown}.`) : null,
@@ -533,6 +538,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           : status.edge && status.energy === 0
             ? h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.")
             : null,
+        // @spec UI-WEEK-017: the rule toward the player's own promotion stays in view between reviews
+        ((line) => (line ? h('p', { class: 'promotion', 'data-field': 'promotion' }, line) : null))(run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review.'),
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
       h(

@@ -101,6 +101,8 @@ export interface Run {
   lastWeek: { recap: unknown; moments: WeekMoment[] } | null;
   /** A conducted review waiting to be acknowledged: everything the review returned but the simulation state. */
   review: Omit<ReviewResult, 'sim'> | null;
+  /** What the active level's last acknowledged review said the next reviews can do toward promotion; null before its first. */
+  towardPromotion: ReviewResult['standing']['promotion'] | null;
   ending: 'burnout' | 'managedOut' | 'stayed' | 'completed' | null;
   commands: Command[];
 }

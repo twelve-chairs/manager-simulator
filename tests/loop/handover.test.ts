@@ -46,6 +46,9 @@ describe('promotion below the top level', () => {
     expect(run).toMatchObject({ phase: 'week', levelId: 'senior-manager', levelStartWeek: before.sim.week, handoverChoices: null });
     expect(run.week.length).toBeGreaterThan(0);
     expect(run.commands.at(-1)).toEqual({ kind: 'handover', choice: 'hire' });
+    // @spec LOOP-REV-006: a new level's promotion starts over
+    expect(before.towardPromotion).not.toBeNull();
+    expect(run.towardPromotion).toBeNull();
     // replaying the commands, handover included, gives the same run
     expect(replay(3, SENIOR_CONTENT, both(), run.commands)).toEqual(run);
   });

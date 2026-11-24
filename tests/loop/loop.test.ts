@@ -397,6 +397,16 @@ describe('reviews', () => {
     expect(run.week.length).toBeGreaterThan(0);
   });
 
+  // @spec LOOP-REV-006
+  it('keeps the acknowledged review’s standing toward promotion on the run', () => {
+    const first = start();
+    expect(first.towardPromotion).toBeNull();
+    const reviewed = endWeeks(first, 13);
+    const run = step(reviewed, { kind: 'acknowledge' });
+    expect(run.towardPromotion).toEqual(reviewed.review!.standing.promotion);
+    expect(replay(1, CONTENT, deps(), run.commands)).toEqual(run);
+  });
+
   // @spec LOOP-REV-002
   it('ends the run when the player is managed out', () => {
     const d = deps(stubReview('managedOut').review);

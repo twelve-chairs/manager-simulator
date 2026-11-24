@@ -260,6 +260,18 @@ describe('the header close to the edge', () => {
 });
 
 describe('the header while the recap shows', () => {
+  // @spec UI-WEEK-017
+  it('shows in the header where the player stands toward their own promotion', () => {
+    const r = waitUntil(playing(), 'level');
+    const promotion = (toward: Run['towardPromotion']) => makeApp({ run: { ...r, towardPromotion: toward } }).root.querySelector<HTMLElement>('header.status [data-field=promotion]')?.textContent ?? null;
+    expect(promotion(null)).toBe('Promotion opens at your third review.');
+    expect(promotion({ kind: 'notOpenYet', reviews: 2 })).toBe('Promotion opens in 2 reviews.');
+    expect(promotion({ kind: 'oneMore' })).toBe("One more review rated exceeds or better and you'll be promoted.");
+    expect(promotion({ kind: 'twoInARow' })).toBe('Promotion takes two reviews in a row rated exceeds or better.');
+    expect(promotion({ kind: 'outOfTime' })).toBe("There aren't enough reviews left at this level for a promotion.");
+    expect(promotion({ kind: 'ended' })).toBeNull();
+  });
+
   // @spec UI-WEEK-001, UI-WEEK-011
   it('shows the week the recap is about, then the new week once it is closed', () => {
     const r = answerAndEnd(playing());

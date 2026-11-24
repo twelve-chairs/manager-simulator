@@ -67,6 +67,7 @@ export function newRun(seed: number, content: Situation[], deps: Dependencies): 
     presented: [],
     lastWeek: null,
     review: null,
+    towardPromotion: null,
     ending: null,
     commands: [],
   };
@@ -119,9 +120,10 @@ function quarterDebriefs(run: Run): DebriefRecord[] {
 }
 
 /** Applies a review's outcome. */
-// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003, LOOP-REV-004, LOOP-REV-005
+// @spec LOOP-REV-001, LOOP-REV-002, LOOP-REV-003, LOOP-REV-004, LOOP-REV-005, LOOP-REV-006
 function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies): Outcome {
   const outcome = run.review!.outcome;
+  run.towardPromotion = run.review!.standing.promotion;
   run.review = null;
   if (outcome === 'managedOut' || outcome === 'stayed') {
     run.phase = 'ended';
@@ -142,7 +144,7 @@ function acknowledge(run: Run, level: AnyLevel, content: Situation[], deps: Depe
 }
 
 /** Hands the run to the next level: it takes the run over with the player's choice and begins its first turn. */
-// @spec LOOP-HAND-001, LOOP-HAND-002, LOOP-HAND-004
+// @spec LOOP-HAND-001, LOOP-HAND-002, LOOP-HAND-004, LOOP-REV-006
 function handOver(run: Run, level: AnyLevel, content: Situation[], deps: Dependencies, choice: unknown): Outcome {
   const next = deps.levels[deps.levels.indexOf(level) + 1];
   if (!next?.takeOver) return { ok: false, error: 'there is no level to hand the run over to' };
@@ -155,6 +157,8 @@ function handOver(run: Run, level: AnyLevel, content: Situation[], deps: Depende
   run.sim = taken.sim;
   run.level = taken.level;
   run.handoverChoices = null;
+  // A new level's promotion starts over.
+  run.towardPromotion = null;
   beginWeek(run, next, content);
   return { ok: true };
 }
