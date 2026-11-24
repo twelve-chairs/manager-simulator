@@ -244,13 +244,21 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
   const subject = ({ kind, id }: { kind: string; id: string }) =>
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
-  const quiet = !(r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length || quits.length || lostGround.length);
+  const quiet = !(r.recalled || r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length || quits.length || lostGround.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet week.') : null,
       part('recap-shipped', 'Shipped', shipped.map((p) => h('li', {}, `${p.name} shipped ${lateness(p.weeksLate)}.`))),
       part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-person': q.personId }, quitLine(q)))),
-      part('recap-people', 'Your people', r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))),
+      r.people.length || r.recalled
+        ? h(
+            'div',
+            { 'data-part': 'recap-people' },
+            h('h3', {}, 'Your people'),
+            r.people.length ? h('ul', {}, r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))) : null,
+            r.recalled ? h('p', { 'data-recalled': r.recalled.personId, class: 'recalled' }, r.recalled.text) : null,
+          )
+        : h('div', { 'data-part': 'recap-people' }),
       part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
       part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
       part('recap-lost-ground', 'Projects that lost ground', lostGround.map((m) => h('li', { 'data-project': m.projectId }, moveLine(m)))),

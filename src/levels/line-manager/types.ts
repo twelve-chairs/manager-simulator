@@ -159,6 +159,8 @@ export interface Recap {
   assigned: { projectId: string; name: string }[];
   /** Engineers whose final evaluation waits for the player. */
   held: { personId: string; name: string }[];
+  /** A memory an engineer brought up this week, unprompted; absent when none. */
+  recalled?: { personId: string; text: string };
 }
 
 export type LevelResult<T> = ({ ok: true } & T) | { ok: false; error: string };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, movedLastWeek, quitLastWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
+import { CALLBACKS, LINE_TUNING, NAMES, afterAdvance, assess, beginWeek, movedLastWeek, quitLastWeek, scorecard, shippedLastWeek, view, type Goal, type LineState } from '../../../src/levels/line-manager';
 import { verdictOf } from '../../../src/review';
 import { behindScheduleProjects, correspondingRating, overdueProjects, type SimState } from '../../../src/sim';
 import { begin, choose, end, engineers, momentFor, nextWeek, patch, projects, quietRun, run, seeds, withItem } from './fixtures';
@@ -398,6 +398,26 @@ describe('recap', () => {
     const ended = end(chosen.level, chosen.sim);
     const entry = ended.recap.people.find((x) => x.personId === who)!;
     expect(entry.changes).toContain('more stressed (work you gave them)');
+  });
+
+  // @spec LINE-RECAP-006
+  it('recalls one memory from an earlier week in the recap, once', () => {
+    const q = quietRun(1);
+    const [a, b] = engineers(q.sim) as [string, string];
+    const rule = { kind: 'rule' as const, ruleId: 'test' };
+    const sim = patch(q.sim, (s) => {
+      s.week = 10;
+      s.people[a]!.history.push({ week: 7, cause: rule, note: 'You signed off their hotel as an exception' });
+      s.people[b]!.history.push({ week: 8, cause: rule, note: 'Went to the team event the team picked' });
+      s.people[b]!.history.push({ week: 10, cause: rule, note: 'You backed their conference talk' });
+    });
+    const first = end(q.level, sim);
+    // the most recent from before this week: b's team event, not this week's talk
+    expect(first.recap.recalled).toEqual({ personId: b, text: CALLBACKS['Went to the team event the team picked']!.replaceAll('{name}', sim.people[b]!.name) });
+    const second = end(first.level, patch(sim, (s) => (s.week = 11)));
+    expect(second.recap.recalled?.personId, 'the next one, not the same again').not.toBe(undefined);
+    expect(second.recap.recalled?.text).not.toBe(first.recap.recalled!.text);
+    expect(end(q.level, q.sim).recap.recalled ?? null).toBeNull();
   });
 
   // @spec LINE-RECAP-002

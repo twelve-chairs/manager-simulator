@@ -1,5 +1,6 @@
 import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type Effect, type HistoryEntry, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
+import { recallInRecap } from './callbacks';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
 import { LOW, addMoments, oneMoreQuarter } from './moments';
@@ -259,5 +260,7 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }
+  const recalled = recallInRecap(s, after, teamEngineers(s, after));
+  if (recalled) recap.recalled = recalled;
   return { ok: true, level: s, sim: after, log, recap };
 }

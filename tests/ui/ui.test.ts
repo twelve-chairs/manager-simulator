@@ -631,6 +631,10 @@ describe('line manager panels', () => {
     for (const p of Object.values(quiet.sim.people)) if (p.departure) p.departure.week = -1;
     expect(text(makeApp({ run: quiet }).root, '[data-part=recap-changes] [data-part=recap-quiet]')).toBe('A quiet week.');
     if (recap.people.length) expect(root.querySelector('[data-part=recap-quiet]')).toBeNull();
+    // a memory someone brought up, under Your people
+    const recalled = structuredClone(r);
+    (recalled.lastWeek!.recap as { recalled?: { personId: string; text: string } }).recalled = { personId: 'e1', text: '"People are still talking about that team event," says Wen.' };
+    expect(text(makeApp({ run: recalled }).root, '[data-part=recap-people] [data-recalled]')).toBe('"People are still talking about that team event," says Wen.');
     // a project the player's manager assigned to an idle team
     const assigned = structuredClone(r);
     (assigned.lastWeek!.recap as { assigned: { projectId: string; name: string }[] }).assigned = [{ projectId: 'p9', name: 'Ledger sync' }];

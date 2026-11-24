@@ -61,3 +61,24 @@ export function callBack(level: LineState, sim: SimState, personId: string, onNi
   }
   return null;
 }
+
+/**
+ * The one memory a recap brings up: across the team, the most recent entry from before this week and within the
+ * callback window whose note the table holds and nothing has called back (ties broken by engineer id); recorded in the
+ * level as called back.
+ */
+// @spec LINE-RECAP-006
+export function recallInRecap(level: LineState, sim: SimState, engineers: readonly string[]): { personId: string; text: string } | null {
+  const since = sim.week - LINE_TUNING.callbackWeeks;
+  let best: { personId: string; week: number; note: string } | null = null;
+  for (const personId of [...engineers].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))) {
+    for (const entry of sim.people[personId]?.history ?? []) {
+      if (entry.week < since || entry.week >= sim.week || !entry.note || !Object.hasOwn(CALLBACKS, entry.note)) continue;
+      if (level.calledBack.includes(keyOf(personId, entry.week, entry.note))) continue;
+      if (!best || entry.week > best.week) best = { personId, week: entry.week, note: entry.note };
+    }
+  }
+  if (!best) return null;
+  level.calledBack.push(keyOf(best.personId, best.week, best.note));
+  return { personId: best.personId, text: CALLBACKS[best.note]!.replaceAll('{name}', sim.people[best.personId]!.name) };
+}
