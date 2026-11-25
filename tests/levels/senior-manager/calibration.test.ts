@@ -148,6 +148,8 @@ describe('calibration', () => {
 
   // @spec SENIOR-CAL-007
   it('lets an exception stand on a high reputation, and has the room trim on a low one, at a cost to reputation either way', () => {
+    // the threshold is where the good band begins, so the scene can say it in words
+    expect(T.curveExceptionReputation).toBe(60);
     for (const [reputation, stands] of [[T.curveExceptionReputation, true], [T.curveExceptionReputation - 1, false]] as const) {
       const { level, sim, moment } = calibrationAt('strong', 7);
       const settled = ok(chooseSenior(level, edit(sim, (s) => (s.player.reputation = reputation)), moment.id, 'acceptAll'));

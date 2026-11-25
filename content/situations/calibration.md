@@ -83,4 +83,4 @@ choices:
         debrief: "Arguing for everyone can leave you with no one. Without the standing to win both, the room settles it, and both lose."
 ---
 
-Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose. Arguing for both spends your standing with the other managers: with a good reputation you might win both, and without one the room gives it to neither.
+Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose. Arguing for both spends your standing with the other managers: with a good or excellent reputation the room will hold both, and below that it gives the top rating to neither.

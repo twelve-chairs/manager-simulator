@@ -76,7 +76,7 @@ export function curveOf(level: SeniorState, sim: SimState): number {
 
 /** The choices once calibration is settled over the curve. */
 export const CURVE_CHOICES = [
-  { id: 'argue', label: 'Argue for an exception: it spends your reputation, and holds only with a high one' },
+  { id: 'argue', label: 'Argue for an exception: it spends your reputation, and holds only with a good or excellent reputation' },
   { id: 'trim', label: 'Let the room trim to the curve' },
 ];
 

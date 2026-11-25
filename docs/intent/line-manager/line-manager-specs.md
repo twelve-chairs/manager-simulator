@@ -151,6 +151,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-EVAL-006**: Where a line manager situation offers to rate an engineer on what they delivered, and that rating would be a low one while the engineer is on an improvement plan, the choice offered shall be labelled as letting them go ("…, and let them go"), and the unlabelled rating shall not be offered.
 - [x] **LINE-EVAL-007**: Where a line manager situation rates an engineer and records a note, the note shall name the rating given ("Rated partially meets on what they delivered").
 - [x] **LINE-EVAL-008**: Where a line manager calibration situation (`calibration`, `calibration-no-slot`) settles that an engineer does not get the top rating, the choice shall rate them at once at the rating its text announces (*meets* for the one who loses the top rating, *partially meets* for the one traded down), with a note naming the rating; where it settles that an engineer keeps the top rating, it shall record no rating for them, leaving the end of the period to rate them on what they delivered.
+- [x] **LINE-EVAL-009**: Where a line manager calibration situation offers to argue, the reputation at or above which arguing holds shall be the lower edge of a reputation band, and the situation's text shall name that band and the band above it, if any, in the bands' words ("a good or excellent reputation").
 
 ## Turn loop contract
 

@@ -490,6 +490,24 @@ describe('calibration results', () => {
   });
 });
 
+describe('calibration odds', () => {
+  // @spec LINE-EVAL-009
+  it('names, in reputation band words, the standing at which arguing in calibration holds', () => {
+    const words = ['poor', 'mixed', 'fair', 'good', 'excellent'];
+    const edges = [20, 40, 60, 80];
+    for (const id of ['calibration', 'calibration-no-slot']) {
+      const sit = realContent().find((x) => x.id === id)!;
+      const thresholds = sit.choices.flatMap((c) => c.outcomes.flatMap((o) => (o.when && 'value' in o.when && o.when.value === 'player.reputation' ? [(o.when as { atLeast: number }).atLeast] : [])));
+      expect(thresholds, `${id} argues on reputation`).toHaveLength(1);
+      const at = thresholds[0]!;
+      expect(edges, `${id}: ${at} is a band's lower edge`).toContain(at);
+      const band = edges.filter((e) => at >= e).length;
+      const named = words.slice(band).join(' or ');
+      expect(sit.text, id).toContain(`${named} reputation`);
+    }
+  });
+});
+
 describe('written situations', () => {
   const written = (id: string) => {
     const path = join(import.meta.dirname, `../../content/situations/${id}.md`);

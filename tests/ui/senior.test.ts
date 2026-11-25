@@ -161,7 +161,7 @@ describe('calibration over the curve', () => {
     if (scene(root) === 'opening') click(root, '[data-action=start-week]');
     expect(text(root, '[data-part=over-curve]')).toContain('9 top ratings');
     expect(text(root, '[data-part=over-curve]')).toContain('6');
-    expect(text(root, '[data-choice=argue]')).toMatch(/reputation/i);
+    expect(text(root, '[data-choice=argue]')).toMatch(/good or excellent reputation/i);
     expect(root.querySelector('[data-choice=trim]')).not.toBeNull();
     // the settled teams are not offered for moving again
     expect(root.querySelector('[data-action=settle]')).toBeNull();

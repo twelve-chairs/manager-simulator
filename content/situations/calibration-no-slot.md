@@ -46,7 +46,7 @@ choices:
       - id: exception
         when:
           value: player.reputation
-          atLeast: 70
+          atLeast: 80
         effects:
           - { type: value, target: engineer, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
           - { type: value, target: engineer, field: trust, amount: 4, historyNote: You argued for them in calibration }
@@ -77,4 +77,4 @@ choices:
         debrief: "Trading one person's rating for another's makes the curve someone you manage. People notice who paid."
 ---
 
-Calibration is this week, and the curve is tighter than last quarter: there's no top rating left for your team. {engineer} had a quarter that earns one, and will be rated solid unless something gives. You could argue for an exception, which only a strong reputation carries, or make room by rating {other} lower.
+Calibration is this week, and the curve is tighter than last quarter: there's no top rating left for your team. {engineer} had a quarter that earns one, and will be rated solid unless something gives. You could argue for an exception, which the room grants only to a manager with an excellent reputation, or make room by rating {other} lower.

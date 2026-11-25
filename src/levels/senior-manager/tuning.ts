@@ -87,6 +87,7 @@ export const SENIOR_TUNING = {
   calUnfairMotivation: 6,
   /** The group's curve: the share of its heads that may hold a top rating, the reputation an exception needs to hold, and what arguing for one costs. */
   curveShare: 0.35,
+  /** Where the good reputation band begins, so the scene can name it. */
   curveExceptionReputation: 60,
   curveExceptionCost: 4,
   /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, and the share of heads a rating either side. */
