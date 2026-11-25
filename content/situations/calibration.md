@@ -57,9 +57,14 @@ choices:
     label: "Argue that both earned it, at a cost to your standing in the room"
     outcomes:
       - id: both-held
+        # Good holds; excellent after an argument at the last calibration, which the room remembers.
         when:
-          value: player.reputation
-          atLeast: 60
+          any:
+            - { value: player.reputation, atLeast: 80 }
+            - all:
+                - { value: player.reputation, atLeast: 60 }
+                - { presented: calibration, choice: both, withinWeeks: 20, is: 0 }
+                - { presented: calibration-no-slot, choice: argue, withinWeeks: 20, is: 0 }
         effects:
           - { type: value, target: engineer, field: motivation, amount: 4, wantTags: { serves: [recognition] } }
           - { type: value, target: engineer, field: trust, amount: 4, historyNote: You argued for them in calibration }
@@ -83,4 +88,4 @@ choices:
         debrief: "Arguing for everyone can leave you with no one. Without the standing to win both, the room settles it, and both lose."
 ---
 
-Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose. Arguing for both spends your standing with the other managers: with a good or excellent reputation the room will hold both, and below that it gives the top rating to neither.
+Calibration is this week. The curve leaves room for one more top rating from your team, and both {engineer} and {other} had a quarter that earns it. Whoever doesn't get it will be rated solid, and will know someone chose. Arguing for both spends your standing with the other managers: with a good or excellent reputation the room will hold both, and below that it gives the top rating to neither. If you argued at the last calibration, the room remembers, and only an excellent reputation will do.

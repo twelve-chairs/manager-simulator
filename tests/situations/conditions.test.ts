@@ -339,6 +339,20 @@ describe('history and presented', () => {
     expect(holds(later, c({ presented: 's1', is: 1 }), {}, eng)).toBe(true);
   });
 
+  // @spec SIT-COND-018
+  it('counts only the presentations resolved with a named choice, within a window', () => {
+    const sim = patch(fresh(), (s) => (s.week = 10));
+    const eng = { ...engine(), debriefs: [
+      { week: 4, situationId: 's1', bindings: {}, status: 'resolved' as const, choiceId: 'argue' },
+      { week: 8, situationId: 's1', bindings: {}, status: 'resolved' as const, choiceId: 'accept' },
+      { week: 9, situationId: 's1', bindings: {}, status: 'ignored' as const },
+    ] };
+    expect(holds(sim, c({ presented: 's1', choice: 'argue', is: 1 }), {}, eng)).toBe(true);
+    expect(holds(sim, c({ presented: 's1', choice: 'argue', withinWeeks: 5, is: 0 }), {}, eng)).toBe(true);
+    expect(holds(sim, c({ presented: 's1', choice: 'accept', withinWeeks: 5, is: 1 }), {}, eng)).toBe(true);
+    expect(holds(sim, c({ presented: 's2', choice: 'argue', is: 0 }), {}, eng)).toBe(true);
+  });
+
   // @spec SIT-COND-009
   it('includes the current presentation inside its own choices', () => {
     const s = plain('s1');

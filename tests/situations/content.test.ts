@@ -509,14 +509,42 @@ describe('calibration odds', () => {
     const edges = [20, 40, 60, 80];
     for (const id of ['calibration', 'calibration-no-slot']) {
       const sit = realContent().find((x) => x.id === id)!;
-      const thresholds = sit.choices.flatMap((c) => c.outcomes.flatMap((o) => (o.when && 'value' in o.when && o.when.value === 'player.reputation' ? [(o.when as { atLeast: number }).atLeast] : [])));
-      expect(thresholds, `${id} argues on reputation`).toHaveLength(1);
-      const at = thresholds[0]!;
+      // The reputation thresholds anywhere in an outcome's condition; the lowest is the bar with no argument behind it.
+      const found = (c: unknown): number[] =>
+        Array.isArray(c) ? c.flatMap(found) : c && typeof c === 'object' ? ((c as { value?: string }).value === 'player.reputation' ? [(c as { atLeast: number }).atLeast] : Object.values(c).flatMap(found)) : [];
+      const thresholds = sit.choices.flatMap((c) => c.outcomes.flatMap((o) => found(o.when)));
+      expect(thresholds.length, `${id} argues on reputation`).toBeGreaterThan(0);
+      const at = Math.min(...thresholds);
       expect(edges, `${id}: ${at} is a band's lower edge`).toContain(at);
       const band = edges.filter((e) => at >= e).length;
       const named = words.slice(band).join(' or ');
       expect(sit.text, id).toContain(`${named} reputation`);
     }
+  });
+});
+
+describe('the room remembers', () => {
+  // @spec LINE-EVAL-010
+  it('asks a band more of a player who argued at the last calibration, and says so', () => {
+    const content = realContent();
+    const { sim } = startRun(1);
+    const at = (reputation: number) => patch(sim, (s) => Object.assign(s, { week: 40 }, { player: { ...s.player, reputation } }));
+    const argued = (situationId: string, choiceId: string, week: number) => ({ ...createEngine(1), debriefs: [{ week, situationId, bindings: {}, status: 'resolved' as const, choiceId }] });
+    const wins = (id: string, choice: string, outcome: string, reputation: number, engine = createEngine(1)) => {
+      const o = content.find((x) => x.id === id)!.choices.find((c) => c.id === choice)!.outcomes.find((x) => x.id === outcome)!;
+      return evaluateCondition(o.when!, { sim: at(reputation), engine, bindings: {}, kinds: {} });
+    };
+    // Arguing for both: good holds, unless the player argued at the last calibration, when it takes excellent.
+    expect(wins('calibration', 'both', 'both-held', 65)).toBe(true);
+    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration-no-slot', 'argue', 27))).toBe(false);
+    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration', 'both', 27))).toBe(false);
+    expect(wins('calibration', 'both', 'both-held', 85, argued('calibration', 'both', 27))).toBe(true);
+    // Long enough ago, the room has moved on.
+    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration', 'both', 10))).toBe(true);
+    // An exception beyond the curve: excellent holds, and nothing does after an argument.
+    expect(wins('calibration-no-slot', 'argue', 'exception', 85)).toBe(true);
+    expect(wins('calibration-no-slot', 'argue', 'exception', 95, argued('calibration', 'both', 27))).toBe(false);
+    for (const id of ['calibration', 'calibration-no-slot']) expect(content.find((x) => x.id === id)!.text, id).toMatch(/argued at the last calibration/);
   });
 });
 

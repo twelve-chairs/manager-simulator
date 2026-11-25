@@ -210,8 +210,9 @@ function checkCondition(x: unknown, scope: Scope, where: string, depth = 0): voi
     return;
   }
   if (Object.hasOwn(o, 'presented')) {
-    checkCountOperand(o, 'presented', ['presented', 'withinWeeks'], where);
+    checkCountOperand(o, 'presented', ['presented', 'choice', 'withinWeeks'], where);
     string(o, 'presented', where);
+    if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
     checkWindow(o, where);
     return;
   }

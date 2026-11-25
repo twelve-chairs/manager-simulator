@@ -147,9 +147,12 @@ export function evaluateCondition(condition: Condition, ctx: EvalContext): boole
   }
 
   if (has(c, 'presented')) {
-    const n = ctx.engine.presentations.filter(
-      (p) => p.situationId === c.presented && inWindow(ctx, p.week, c.withinWeeks as number | undefined),
-    ).length;
+    // @spec SIT-COND-018
+    // With a choice named: what the player chose there, for a choice no person carries the memory of.
+    const n =
+      typeof c.choice === 'string'
+        ? ctx.engine.debriefs.filter((d) => d.situationId === c.presented && d.status === 'resolved' && d.choiceId === c.choice && inWindow(ctx, d.week, c.withinWeeks as number | undefined)).length
+        : ctx.engine.presentations.filter((p) => p.situationId === c.presented && inWindow(ctx, p.week, c.withinWeeks as number | undefined)).length;
     return compareCount(n, c, ctx);
   }
 

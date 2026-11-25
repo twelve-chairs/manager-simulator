@@ -16,7 +16,7 @@ export type Condition =
   | Comparison
   | ({ count: { kind: RoleKind; where?: Condition } } & Partial<Record<Operator, Operand>>)
   | ({ history: string; situation?: string; choice?: string; action?: string; note?: string; rating?: Rating[]; withinWeeks?: number } & Partial<Record<Operator, Operand>>)
-  | ({ presented: string; withinWeeks?: number } & Partial<Record<Operator, Operand>>);
+  | ({ presented: string; choice?: string; withinWeeks?: number } & Partial<Record<Operator, Operand>>);
 
 export interface SituationRole {
   name: string;
