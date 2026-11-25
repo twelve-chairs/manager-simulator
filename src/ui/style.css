@@ -100,6 +100,10 @@ details summary { cursor: pointer; font-weight: 600; }
 details.whole-week { margin-top: 0.9rem; border-top: 1px solid var(--line); padding-top: 0.6rem; }
 details.whole-week summary { color: var(--accent-ink); }
 .recap .quiet { color: var(--muted); margin: 0; }
+/* The look ahead, set apart from what happened. */
+.recap .watch { margin-top: 0.9rem; border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 0.7rem; }
+.recap .watch h3 { color: var(--accent-ink); margin: 0 0 0.2rem; }
+.recap .watch p { margin: 0; }
 
 /* Shared */
 table { border-collapse: collapse; width: 100%; }

@@ -57,6 +57,8 @@ export const LINE_TUNING = {
 
   /** How many weeks back a memory can be brought up in a reaction. */
   callbackWeeks: 8,
+  /** How far ahead the recap's watch line looks for a deadline, and how many weeks back it reads a cause or a project's pace. */
+  watchWeeks: 4,
   work: {
     /** Player stress per unit of size for work done yourself. */
     selfStressPerSize: 1.4,

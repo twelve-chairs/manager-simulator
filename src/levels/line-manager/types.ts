@@ -141,8 +141,36 @@ export interface LineState {
   };
   /** How the team's projects moved in the week that began at `week`, reported after the advance. */
   projectMoves: { week: number; moves: ProjectMove[] };
+  /** The last `watchWeeks` played weeks as they began: the level's own stress causes that week and each project's progress. */
+  recentWeeks: { week: number; stress: Record<string, Partial<Record<StressCause, number>>>; projects: Record<string, number> }[];
+  /** The watch line for the week that began at `week`, reported after the advance; none when nothing was close. */
+  watch: { week: number; line?: Watch };
+  /** The watch lines reported lately, by kind and subject, so the same one is not repeated week after week. */
+  watched: { week: number; kind: WatchKind; subject: string }[];
   /** Counters for generated ids. */
   counters: { item: number; vacancy: number; person: number; project: number; moment: number; goal: number };
+}
+
+/** The kinds of watch line, most pressing first. */
+export const WATCH_KINDS = ['edge', 'over', 'nearing', 'project'] as const;
+export type WatchKind = (typeof WATCH_KINDS)[number];
+
+/** Why an engineer is over or nearing a line, when the level can name it. */
+export type WatchCause = { kind: 'stress'; stress: StressCause } | { kind: 'want'; want: Want; weeks: number } | { kind: 'unknownWant' };
+
+/** The recap's look ahead: the one thing most likely to go wrong next. */
+export interface Watch {
+  kind: WatchKind;
+  /** `player`, an engineer's id or a project's id. */
+  subject: string;
+  /** For an engineer: the departure line they are over or nearing. */
+  line?: 'stress' | 'motivation';
+  /** Weeks over the line, or at the edge. */
+  weeks?: number;
+  /** For the player: weeks at the edge left before burnout. */
+  weeksLeft?: number;
+  cause?: WatchCause;
+  text: string;
 }
 
 /** What the level reports at the end of a week. */

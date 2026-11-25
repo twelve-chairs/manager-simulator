@@ -13,3 +13,4 @@ export { band, view } from './view';
 export { lineManagerLevel } from './contract';
 export { WORK_LABELS } from './work';
 export { CALLBACKS } from './callbacks';
+export { watchLastWeek } from './watch';

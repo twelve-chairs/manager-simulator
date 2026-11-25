@@ -712,6 +712,33 @@ describe('line manager panels', () => {
     expect($(root, '[data-part=recap-whole-week]').querySelector('[data-part=recap-projects]')).not.toBeNull();
     expect($(root, '[data-part=recap-changes]').querySelector('[data-part=recap-lost-ground]')).not.toBeNull();
   });
+
+  // @spec UI-LINE-013
+  it('ends what changed with the watch line, under Watch, after "A quiet week." when the week was otherwise quiet', () => {
+    const r = answerAndEnd(playing());
+    const line = 'Wen looks worn through: 2 weeks over the line, mostly from night pages.';
+    (r.level as { watch: unknown }).watch = { week: r.sim.week - 1, line: { kind: 'over', subject: 'e1', line: 'stress', weeks: 2, text: line } };
+    const changes = $(makeApp({ run: r }).root, '[data-part=recap-changes]');
+    const watch = $(changes, '[data-part=recap-watch]');
+    expect(text(watch, '[data-part=recap-watch-label]')).toBe('Watch');
+    expect(text(watch, '[data-part=recap-watch-text]')).toBe(line);
+    expect(changes.lastElementChild).toBe(watch);
+    // a quiet week can still be heading somewhere
+    const quiet = structuredClone(r);
+    Object.assign(quiet.lastWeek!.recap as object, { people: [], evaluations: [], habitChanges: [], expired: [], held: [], assigned: [] });
+    for (const p of Object.values(quiet.sim.people)) if (p.departure) p.departure.week = -1;
+    (quiet.level as { projectMoves: unknown }).projectMoves = { week: -1, moves: [] };
+    const quietChanges = $(makeApp({ run: quiet }).root, '[data-part=recap-changes]');
+    expect(text(quietChanges, '[data-part=recap-quiet]')).toBe('A quiet week.');
+    expect(quietChanges.lastElementChild).toBe($(quietChanges, '[data-part=recap-watch]'));
+    // none from an earlier week, and none reported
+    const stale = structuredClone(r);
+    (stale.level as { watch: unknown }).watch = { week: r.sim.week - 2, line: { kind: 'over', subject: 'e1', text: line } };
+    expect(makeApp({ run: stale }).root.querySelector('[data-part=recap-watch]')).toBeNull();
+    const none = structuredClone(r);
+    (none.level as { watch: unknown }).watch = { week: r.sim.week - 1 };
+    expect(makeApp({ run: none }).root.querySelector('[data-part=recap-watch]')).toBeNull();
+  });
 });
 
 describe('band words', () => {

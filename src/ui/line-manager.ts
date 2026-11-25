@@ -1,4 +1,4 @@
-import { RATING_WORDS, WORK_LABELS, band, movedLastWeek, quitLastWeek, shippedLastWeek, type Habits, type HabitId, type LineState, type Recap, type View } from '../levels/line-manager';
+import { RATING_WORDS, WORK_LABELS, band, movedLastWeek, quitLastWeek, shippedLastWeek, watchLastWeek, type Habits, type HabitId, type LineState, type Recap, type View } from '../levels/line-manager';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
@@ -236,7 +236,7 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
 }
 
 /** The line manager's part of the recap: what changed (people, evaluations, what slipped...) and the routine (habits, goals). */
-// @spec UI-LINE-008, UI-LINE-011, UI-QUIT-001
+// @spec UI-LINE-008, UI-LINE-011, UI-LINE-013, UI-QUIT-001
 function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child } {
   const r = recapValue as Recap;
   const shipped = shippedLastWeek(run.level as LineState, run.sim);
@@ -245,6 +245,8 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
   const moves = movedLastWeek(run.level as LineState, run.sim);
   const lostGround = moves.filter((m) => m.end < m.start || m.causes.some((c) => c.cause === 'setback'));
   const moved = moves.filter((m) => !lostGround.includes(m));
+  // The one look ahead, last, so it is what the player reads before the next week.
+  const watch = watchLastWeek(run.level as LineState, run.sim);
   const subject = ({ kind, id }: { kind: string; id: string }) =>
     kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
@@ -269,6 +271,9 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
       part('recap-slipped', 'What slipped', r.expired.map((e) => h('li', {}, `A ${WORK_LABELS[e.kind]} for ${subject(e.subject)}`))),
       part('recap-held', 'Waiting for you', r.held.map((p) => h('li', { 'data-person': p.personId }, `${p.name}'s final evaluation waits for you on Monday.`))),
       part('recap-assigned', 'New work', r.assigned.map((p) => h('li', {}, `Your manager assigned ${p.name} to the team.`))),
+      watch
+        ? h('div', { 'data-part': 'recap-watch', class: 'watch' }, h('h3', { 'data-part': 'recap-watch-label' }, 'Watch'), h('p', { 'data-part': 'recap-watch-text' }, watch.text))
+        : null,
     ],
     routine: [
       part('recap-habits', 'Your habits', r.habits.map((line) => h('li', {}, line))),

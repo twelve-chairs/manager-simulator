@@ -3,6 +3,7 @@ import { RATINGS, behindScheduleProjects, overdueProjects, type ChangeLogEntry, 
 import { band, reconcileVacancies, teamEngineers, teamProjects } from './core';
 import { LEVEL } from './start';
 import { goalStatus } from './goals';
+import { watchAfterAdvance } from './watch';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import type { Assessment, Measure } from '../../review';
 import type { LevelProgressCause, LineState, ProgressCause, ProjectMove, Scorecard } from './types';
@@ -45,7 +46,7 @@ export function movedLastWeek(level: LineState, sim: SimState): ProjectMove[] {
 }
 
 /** Records completions and how projects moved, keeps vacancies in step and tracks burnout, after the simulation advances. */
-// @spec LINE-END-005, LINE-END-006, LINE-HIRE-002, LINE-RECAP-005
+// @spec LINE-END-005, LINE-END-006, LINE-HIRE-002, LINE-RECAP-005, LINE-RECAP-007
 export function afterAdvance(level: LineState, sim: SimState, log: ChangeLogEntry[] = []): { level: LineState; burnedOut: boolean } {
   const s = structuredClone(level);
   const playedWeek = sim.week - LEVEL.weeksPerStep;
@@ -56,7 +57,9 @@ export function afterAdvance(level: LineState, sim: SimState, log: ChangeLogEntr
   }
   reconcileVacancies(s, sim);
   s.burnoutWeeks = sim.player.stress >= LINE_TUNING.burnoutThreshold ? s.burnoutWeeks + 1 : 0;
-  return { level: s, burnedOut: s.burnoutWeeks >= LINE_TUNING.burnoutWeeks };
+  const burnedOut = s.burnoutWeeks >= LINE_TUNING.burnoutWeeks;
+  watchAfterAdvance(s, sim, burnedOut);
+  return { level: s, burnedOut };
 }
 
 /** Someone who quit, with what the departure rule weighs, in terms the player could read on their card, and the last thing between you. */

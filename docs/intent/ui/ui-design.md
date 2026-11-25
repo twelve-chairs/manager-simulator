@@ -114,6 +114,8 @@ What changed, shown at once:
 
 When none of these has anything to show, the recap says "A quiet week." in their place.
 
+The line manager's part ends with its **watch line**, when the level reports one: the one thing most likely to go wrong next, under the label "Watch", set apart from the lines above it so that it reads as a look ahead rather than one more thing that happened. It comes after "A quiet week." when the week was otherwise quiet, since a quiet week can still be heading somewhere.
+
 Below them, a disclosure, **The whole week**, closed until the player opens it, holds:
 
 - **The week**: each moment in order, its day and time, its title, and what happened (the reaction or aftermath line, "You let it wait", or "It passed"). The player read each reaction as it came;

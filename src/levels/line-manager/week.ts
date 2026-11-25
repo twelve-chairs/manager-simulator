@@ -29,7 +29,7 @@ export function beginWeek(level: LineState, sim: SimState): LineState {
 }
 
 /** How the recap names the level's causes of an engineer's stress. */
-const STRESS_CAUSE_WORDS: Record<StressCause, string> = {
+export const STRESS_CAUSE_WORDS: Record<StressCause, string> = {
   approvals: 'signing approvals',
   nightPages: 'night pages',
   work: 'work you gave them',

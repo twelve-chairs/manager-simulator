@@ -31,7 +31,7 @@ Tuesday, a design review lands on your desk. You could do it yourself, but you'r
 
 Wednesday night, the pager goes off and Ada is on call. Back her up, take over, or trust her with it?
 
-Friday, the recap tells you who's more stressed, who learned something, and what slipped while you were busy. Next week, they remember.
+Friday, the recap tells you who's more stressed, who learned something, and what slipped while you were busy, and when something is about to go wrong, what to watch next week. Next week, they remember.
 
 ## What makes it different
 
