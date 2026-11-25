@@ -21,6 +21,8 @@ roles:
         - any:
             - { history: engineer, note: Handled a night page alone, withinWeeks: 2, atLeast: 1 }
             - { history: engineer, note: Handled a night page with you, withinWeeks: 2, atLeast: 1 }
+            - { history: engineer, note: Handled a night page with a backup, withinWeeks: 2, atLeast: 1 }
+            - { history: engineer, note: Backed up a night page, withinWeeks: 2, atLeast: 1 }
             - { history: engineer, action: line-manager.on-call, withinWeeks: 2, atLeast: 1 }
 choices:
   - id: move-on

@@ -490,6 +490,18 @@ describe('calibration results', () => {
   });
 });
 
+describe('night work with a backup', () => {
+  // @spec LINE-HABIT-019
+  it('counts nights with a backup wherever a situation counts nights alone or with you, unless it is about who was on call with them', () => {
+    const counting = realContent().filter((s) => s.levels.includes('line-manager') && !['pages-alone', 'pages-together'].includes(s.id) && /Handled a night page (alone|with you)/.test(JSON.stringify(s)));
+    expect(counting.length).toBeGreaterThan(0);
+    for (const s of counting) {
+      const json = JSON.stringify(s);
+      expect({ id: s.id, withBackup: json.includes('Handled a night page with a backup'), backedUp: json.includes('Backed up a night page') }).toEqual({ id: s.id, withBackup: true, backedUp: true });
+    }
+  });
+});
+
 describe('calibration odds', () => {
   // @spec LINE-EVAL-009
   it('names, in reputation band words, the standing at which arguing in calibration holds', () => {

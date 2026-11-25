@@ -26,6 +26,8 @@ roles:
         - any:
             - { history: engineer, note: Handled a night page alone, withinWeeks: 13, atLeast: 2 }
             - { history: engineer, note: Handled a night page with you, withinWeeks: 13, atLeast: 2 }
+            - { history: engineer, note: Handled a night page with a backup, withinWeeks: 13, atLeast: 2 }
+            - { history: engineer, note: Backed up a night page, withinWeeks: 13, atLeast: 2 }
             - { history: engineer, action: line-manager.delegate, withinWeeks: 13, atLeast: 3 }
 choices:
   # On an improvement plan, a low rating is the third in a row and ends their job: the label says so.

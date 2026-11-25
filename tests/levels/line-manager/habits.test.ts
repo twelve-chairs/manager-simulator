@@ -201,6 +201,26 @@ describe('night pages', () => {
     expect(ended.recap.expired).toEqual([]);
     expect(ended.recap.habits).toContain(`${now(onCall!).name} and ${now(backup!).name} handled 1 night page together.`);
   });
+
+  // @spec LINE-HABIT-017
+  it('under a backup, remembers a page the engineer on call handled themselves as handled with a backup, not alone', () => {
+    const q = quietRun(1);
+    const people = engineers(q.sim);
+    const [onCall, , , backup] = people;
+    const sim = patch(q.sim, (s) => people.forEach((id, i) => (s.people[id]!.skill = i === 0 ? 70 : i === 3 ? 80 : 30)));
+    const level = habit(q.level, sim, 'nightPages', 'backup');
+    const paged = withItem(level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 65, lastWeek: sim.week }).level;
+    const ended = end(begin(paged, sim), sim);
+    const quiet = end(begin(level, sim), sim);
+    const who = ended.sim.people[onCall!]!;
+    expect(who.stress - quiet.sim.people[onCall!]!.stress).toBe(LINE_TUNING.work.delegateStress);
+    const notes = who.history.filter((h) => h.week === sim.week).map((h) => h.note);
+    expect(notes).toContain('Handled a night page with a backup');
+    expect(notes).not.toContain('Handled a night page alone');
+    // the backup was not woken
+    expect(ended.sim.people[backup!]!.stress).toBe(quiet.sim.people[backup!]!.stress);
+    expect(ended.recap.habits).toContain(`${who.name} handled 1 night page, with ${ended.sim.people[backup!]!.name} as backup.`);
+  });
 });
 
 describe('1:1s', () => {

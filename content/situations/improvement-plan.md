@@ -62,6 +62,8 @@ choices:
     availableIf:
       any:
         - { history: engineer, note: Handled a night page alone, withinWeeks: 13, atLeast: 2 }
+        - { history: engineer, note: Handled a night page with a backup, withinWeeks: 13, atLeast: 2 }
+        - { history: engineer, note: Backed up a night page, withinWeeks: 13, atLeast: 2 }
         - { history: engineer, note: Took on new work while stretched, withinWeeks: 13, atLeast: 1 }
         - { history: engineer, action: line-manager.delegate, withinWeeks: 13, atLeast: 3 }
     outcomes:

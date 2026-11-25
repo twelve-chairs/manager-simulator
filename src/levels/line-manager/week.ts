@@ -3,7 +3,7 @@ import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, name
 import { recallInRecap } from './callbacks';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
-import { LOW, addMoments, oneMoreQuarter } from './moments';
+import { LOW, addMoments, backupEngineer, oneMoreQuarter } from './moments';
 import { DELEGATE, HABIT_CAUSE, LINE_TUNING, ROUTINE_KINDS } from './tuning';
 import { EXPIRED, WORK_LABELS, arriveWork, consequence, intakeWaiting, tallyProgress, teamStretched } from './work';
 import type { LevelResult, LineState, Recap, StressCause, WeekResult } from './types';
@@ -138,10 +138,17 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
       together.set(pair, (together.get(pair) ?? 0) + 1);
       continue;
     }
-    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page alone' }));
+    // @spec LINE-HABIT-017
+    // With a backup behind them, the engineer on call is not on their own, even on a page they handle themselves.
+    const behind = backupEngineer(s, sim, id);
+    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: behind ? 'Handled a night page with a backup' : 'Handled a night page alone' }));
     handled.set(id, (handled.get(id) ?? 0) + 1);
   }
-  for (const [id, n] of handled) recap.habits.push(`${nameOf(sim, id)} handled ${n} night page${n === 1 ? '' : 's'} on their own.`);
+  for (const [id, n] of handled) {
+    const behind = backupEngineer(s, sim, id);
+    const pages = `${n} night page${n === 1 ? '' : 's'}`;
+    recap.habits.push(behind ? `${nameOf(sim, id)} handled ${pages}, with ${nameOf(sim, behind)} as backup.` : `${nameOf(sim, id)} handled ${pages} on their own.`);
+  }
   for (const [pair, n] of together) {
     const [id, backup] = pair.split(' ');
     recap.habits.push(`${nameOf(sim, id!)} and ${nameOf(sim, backup!)} handled ${n} night page${n === 1 ? '' : 's'} together.`);
