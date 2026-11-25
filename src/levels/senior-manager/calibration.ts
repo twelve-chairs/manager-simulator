@@ -64,13 +64,126 @@ function reRates(sim: SimState, teamId: string, target: RatingCounts): Effect[] 
   return effects;
 }
 
-/** Records how far the settled ratings strayed from what the teams delivered, once every team is calibrated. */
+const TOP: Rating[] = ['exceeds', 'outstanding'];
+const topOf = (c: RatingCounts) => TOP.reduce((n, r) => n + c[r], 0);
+
+/** The most top ratings the group may hold: its curve's share of the heads across its teams, rounded down. */
+// @spec SENIOR-CAL-001
+export function curveOf(level: SeniorState, sim: SimState): number {
+  const heads = level.teamIds.reduce((n, id) => n + (sim.teams[id]?.aggregate?.headcount ?? 0), 0);
+  return Math.floor(T.curveShare * heads);
+}
+
+/** The choices once calibration is settled over the curve. */
+export const CURVE_CHOICES = [
+  { id: 'argue', label: 'Argue for an exception: it spends your reputation, and holds only with a high one' },
+  { id: 'trim', label: 'Let the room trim to the curve' },
+];
+
+/**
+ * The order the room trims in, applied to `entries`' counts as `pick` reads them: one top-rated head at a time to meets,
+ * an exceeds before an outstanding, from the team furthest above what it delivered, then the one with the most top
+ * ratings, ties broken by team id. Returns the rating steps it took.
+ */
+function trimTo(entries: { teamId: string; delivered: RatingCounts; counts: RatingCounts }[], room: number): number {
+  let steps = 0;
+  while (entries.reduce((n, e) => n + topOf(e.counts), 0) > room) {
+    const e = entries
+      .filter((x) => topOf(x.counts) > 0)
+      .sort((a, b) => meanStep(b.counts) - meanStep(b.delivered) - (meanStep(a.counts) - meanStep(a.delivered)) || topOf(b.counts) - topOf(a.counts) || (a.teamId < b.teamId ? -1 : 1))[0]!;
+    const from: Rating = e.counts.exceeds > 0 ? 'exceeds' : 'outstanding';
+    e.counts[from] -= 1;
+    e.counts.meets += 1;
+    steps += RATINGS.indexOf(from) - RATINGS.indexOf('meets');
+  }
+  return steps;
+}
+
+/**
+ * Records how far the settled ratings strayed from what the teams delivered, in rating steps per head of the group,
+ * leaving out steps down no more than trimming the delivered ratings to the curve would take.
+ */
+// @spec SENIOR-END-003
+function record(level: SeniorState, moment: SeniorMoment, week: number) {
+  const entries = moment.calibration!;
+  let over = 0;
+  let under = 0;
+  let heads = 0;
+  for (const e of entries) {
+    const n = RATINGS.reduce((k, r) => k + e.final![r], 0);
+    // In whole rating steps, so a settlement on the evidence scores exactly.
+    const d = RATINGS.reduce((k, r, i) => k + i * (e.final![r] - e.delivered[r]), 0);
+    if (d > 0) over += d;
+    else under -= d;
+    heads += n;
+  }
+  const forced = trimTo(entries.map((e) => ({ teamId: e.teamId, delivered: e.delivered, counts: { ...e.delivered } })), moment.curve ?? Infinity);
+  level.calibrations.push({ week, gap: heads ? (over + Math.max(0, under - forced)) / heads : 0 });
+}
+
+/** Once every team is calibrated: answered within the curve, or held open over it for the room. */
+// @spec SENIOR-CAL-006
 function finish(level: SeniorState, moment: SeniorMoment, week: number) {
   const entries = moment.calibration!;
   if (entries.some((e) => !e.final)) return;
+  const held = entries.reduce((n, e) => n + topOf(e.final!), 0);
+  if (moment.curve !== undefined && held > moment.curve) {
+    moment.overCurve = { held, room: moment.curve };
+    moment.choices = CURVE_CHOICES;
+    return;
+  }
   moment.status = 'answered';
-  const gap = entries.reduce((sum, e) => sum + Math.abs(meanStep(e.final!) - meanStep(e.delivered)), 0) / Math.max(1, entries.length);
-  level.calibrations.push({ week, gap });
+  record(level, moment, week);
+}
+
+/** What the reaction adds when calibration is settled over the curve: how far over, and the question that remains. */
+export function overCurveLine(level: SeniorState, momentId: string): string {
+  const over = level.moments.find((m) => m.id === momentId)?.overCurve;
+  return over ? ` But the group now holds ${over.held} top ratings, and the curve allows ${over.room}.` : '';
+}
+
+/** Arguing for an exception, or letting the room trim, once calibration is settled over the curve. */
+// @spec SENIOR-CAL-007, SENIOR-CAL-008
+export function settleCurve(level: SeniorState, sim: SimState, momentId: string, choice: 'argue' | 'trim'): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
+  const found = level.moments.find((m) => m.id === momentId);
+  if (!found || found.kind !== 'calibration' || found.status !== 'open' || !found.overCurve) return { ok: false, error: `moment ${momentId} is not calibration over the curve` };
+  const s = structuredClone(level);
+  const moment = s.moments.find((m) => m.id === momentId)!;
+  const cause = { kind: 'action' as const, actionId: 'senior.calibration' };
+  const effects: Effect[] = [];
+  let reaction: string;
+  let trim = choice === 'trim';
+  if (choice === 'argue') {
+    effects.push({ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -T.curveExceptionCost, cause });
+    trim = sim.player.reputation < T.curveExceptionReputation;
+  }
+  const lost: string[] = [];
+  if (trim) {
+    const entries = moment.calibration!.map((e) => ({ teamId: e.teamId, delivered: e.delivered, counts: { ...e.final! }, was: e }));
+    trimTo(entries, moment.curve!);
+    for (const e of entries) {
+      const cut = topOf(e.was.final!) - topOf(e.counts);
+      if (cut === 0) continue;
+      const before = Math.round(Math.abs(meanStep(e.was.final!) - meanStep(e.delivered)) * T.calUnfairMotivation);
+      const after = Math.round(Math.abs(meanStep(e.counts) - meanStep(e.delivered)) * T.calUnfairMotivation);
+      effects.push(...reRates(sim, e.teamId, e.counts));
+      if (after !== before) effects.push({ type: 'value', target: { kind: 'team', id: e.teamId }, field: 'motivation', amount: before - after, cause });
+      const m = e.was.managerId;
+      if (m && sim.people[m]?.status === 'active') effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'trust', amount: -cut * T.calTrustPerHead, cause });
+      e.was.final = e.counts;
+      lost.push(`${sim.teams[e.teamId]!.name} loses ${cut === 1 ? 'a top rating' : `${cut} top ratings`}`);
+    }
+    reaction = `${choice === 'argue' ? 'The room hears you out and holds the curve. ' : ''}The room trims to the curve: ${lost.join(', ')}.`;
+  } else {
+    reaction = 'It costs you in the room, but the exception holds: every top rating stands.';
+  }
+  const r = applyEffects(sim, effects);
+  if (!r.ok) return { ok: false, error: r.error.message };
+  moment.status = 'answered';
+  delete moment.overCurve;
+  record(s, moment, sim.week);
+  remember(s, r.state);
+  return { ok: true, level: s, sim: r.state, log: r.log, reaction };
 }
 
 export type CalibrationMove = { from: Rating; to: Rating; count: number };

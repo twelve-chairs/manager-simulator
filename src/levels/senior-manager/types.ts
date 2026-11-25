@@ -90,6 +90,10 @@ export interface SeniorMoment {
   managerId?: string;
   /** For calibration: each team's proposal. */
   calibration?: CalibrationEntry[];
+  /** For calibration: the most top ratings the group may hold. */
+  curve?: number;
+  /** For calibration settled over the curve: the top ratings the group holds, and the curve's room. */
+  overCurve?: { held: number; room: number };
   choices: { id: string; label: string }[];
 }
 

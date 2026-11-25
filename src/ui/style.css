@@ -153,3 +153,6 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(
 .version { color: var(--muted); font-size: 0.78rem; margin: 0 0 0.2rem; }
 .recalled { font-style: italic; margin: 6px 0 0; }
 @media (prefers-reduced-motion: reduce) { .choice { transition: none; } .choice:hover { transform: none; } }
+
+/* The curve's count turns to the warning colour while the moves stand over it. */
+[data-part=curve].over strong { color: var(--bad); }

@@ -32,6 +32,7 @@ choices:
     outcomes:
       - id: backed
         effects:
+          - { type: rate, target: other, rating: meets, historyNote: "Rated meets in calibration, without the top rating" }
           - { type: value, target: engineer, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
           - { type: value, target: engineer, field: trust, amount: 3, historyNote: You put them forward in calibration }
           - { type: value, target: other, field: motivation, amount: -6 }
@@ -44,6 +45,7 @@ choices:
     outcomes:
       - id: backed
         effects:
+          - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, without the top rating" }
           - { type: value, target: other, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
           - { type: value, target: other, field: trust, amount: 3, historyNote: You put them forward in calibration }
           - { type: value, target: engineer, field: motivation, amount: -6 }
@@ -69,6 +71,8 @@ choices:
         debrief: "Winning both spends goodwill you will want back next quarter. The curve doesn't grow; someone else's person paid for it."
       - id: both-lost
         effects:
+          - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, after you argued for both" }
+          - { type: rate, target: other, rating: meets, historyNote: "Rated meets in calibration, after you argued for both" }
           - { type: value, target: engineer, field: motivation, amount: -3 }
           - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
           - { type: value, target: other, field: motivation, amount: -3 }

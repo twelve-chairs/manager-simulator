@@ -13,7 +13,7 @@ export const SENIOR_HELP_TOPICS = [
   { id: 'how-to-play', title: 'How to play', text: 'Each month is a handful of moments. Your managers run the teams; you run your managers. Pick what you do, or let it wait. A recap ends the month.' },
   { id: 'managers', title: 'Managers', text: 'Your managers act for you. Coach them and they grow; step in and you fix it yourself, at a cost, and they learn nothing.' },
   { id: 'told', title: "What you're told", text: "Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth." },
-  { id: 'calibration', title: 'Calibration', text: 'Before each review your managers propose their teams’ ratings. Compare them with what each team delivered, and move heads up or down.' },
+  { id: 'calibration', title: 'Calibration', text: 'Before each review your managers propose their teams’ ratings. Compare them with what each team delivered, and move heads up or down. The group shares a curve with fewer top ratings than a strong group earns: decide whose people give one up, or argue for an exception with your reputation.' },
   { id: 'energy', title: 'Energy', text: 'Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out.' },
   { id: 'reviews', title: 'Reviews', text: 'Every six months your own manager reviews you: delivery, retention, your teams’ health, how your managers grew, calibration and the period’s goals. From your third review on, two of your reviews in a row rated exceeds or better get you promoted to director. After three years without one, the run ends.' },
 ] as const;
@@ -113,10 +113,14 @@ function panels(ctx: ScreenContext): Child {
   ];
 }
 
-/** Calibration: each team's proposal, with the player's moves so far, beside what it delivered. */
-// @spec UI-SENIOR-005
+/** Calibration: each team's proposal, with the player's moves so far, beside what it delivered, and the group's curve. */
+// @spec UI-SENIOR-005, UI-SENIOR-011
 function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]): Child {
   const v = viewOf(ctx);
+  // Settled over the curve: what is left is the room's question, asked by the moment's own choices.
+  if (moment.overCurve) {
+    return h('p', { 'data-part': 'over-curve' }, `Your teams hold ${moment.overCurve.held} top ratings between them, and the curve allows ${moment.overCurve.room}. Argue for an exception, or let the room trim to the curve.`);
+  }
   const key = `calibration:${moment.id}`;
   const moves = draftObject<{ from: Rating; to: Rating; count: number }[]>(ctx.drafts.get(key)?.moves);
   const save = () => {
@@ -124,13 +128,32 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
     ctx.refresh();
   };
   const names = new Map(v.teams.map((t) => [t.id, t.name]));
+  const shownOf = (entry: (typeof moment.calibration & {})[number]) => {
+    const shown = { ...entry.proposed };
+    for (const m of moves[entry.teamId] ?? []) {
+      shown[m.from] -= m.count;
+      shown[m.to] += m.count;
+    }
+    return shown;
+  };
+  const held = moment.calibration!.reduce((n, entry) => {
+    const shown = shownOf(entry);
+    return n + shown.exceeds + shown.outstanding;
+  }, 0);
   return [
+    moment.curve !== undefined
+      ? h(
+          'p',
+          { 'data-part': 'curve', class: held > moment.curve ? 'over' : undefined },
+          'Top ratings: ',
+          h('strong', { 'data-curve-held': '' }, String(held)),
+          ' as the moves stand, of ',
+          h('strong', { 'data-curve-room': '' }, String(moment.curve)),
+          ' the curve allows.',
+        )
+      : null,
     moment.calibration!.map((entry) => {
-      const shown = { ...entry.proposed };
-      for (const m of moves[entry.teamId] ?? []) {
-        shown[m.from] -= m.count;
-        shown[m.to] += m.count;
-      }
+      const shown = shownOf(entry);
       const move = (from: Rating, to: Rating) => () => {
         (moves[entry.teamId] ??= []).push({ from, to, count: 1 });
         save();

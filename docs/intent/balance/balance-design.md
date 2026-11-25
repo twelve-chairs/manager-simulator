@@ -68,11 +68,11 @@ A strategy sees what the player sees (the senior manager's view: managers, teams
 
 | Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring | Situations |
 |---|---|---|---|---|---|---|---|
-| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand) | Lets them wait | Lets them wait |
-| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal | Hires from outside; gives one more period | Picks the first offered choice |
-| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal | Hires from outside; gives one more period | Picks the first offered choice |
-| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal | Hires from outside; lets a manager go | Picks the last offered choice |
-| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered | Promotes from the team; lets a manager on a failed plan go | Picks the situation's better choice from the better-choice table |
+| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand, and the room trims to the curve) | Lets them wait | Lets them wait |
+| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal; over the curve, argues for an exception | Hires from outside; gives one more period | Picks the first offered choice |
+| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal; over the curve, lets the room trim | Hires from outside; gives one more period | Picks the first offered choice |
+| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal; over the curve, argues for an exception | Hires from outside; lets a manager go | Picks the last offered choice |
+| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered; over the curve, lets the room trim | Promotes from the team; lets a manager on a failed plan go | Picks the situation's better choice from the better-choice table |
 
 A sixth strategy, **sound practice with skip-levels**, plays as sound practice with monthly skip-level listening. Like sound practice with other habits at the line manager, it is reported and checked against nothing.
 

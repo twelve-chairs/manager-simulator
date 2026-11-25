@@ -168,7 +168,7 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 
 **The habits panel** has the four senior habits: oversight per manager (hands-off, coaching, close), 1:1s with managers, backfill and skip-level listening.
 
-**Calibration** is a scene of its own: for each team, its manager's proposal and what the team delivered, as counts at each rating side by side, and for each rating a control to move a head down or up a rating. **Accept every proposal** sends the calibration as proposed; **Settle calibration** sends every team's moves at once. Letting it wait lets the proposals stand.
+**Calibration** is a scene of its own: for each team, its manager's proposal and what the team delivered, as counts at each rating side by side, and for each rating a control to move a head down or up a rating. **Accept every proposal** sends the calibration as proposed; **Settle calibration** sends every team's moves at once. Above the teams, the group's **curve** shows the most top ratings it may hold beside how many the teams would hold as the moves stand, updated with each move, so the player sees where they are over before settling. When the settled ratings are still over the curve, the scene asks the last question: argue for an exception, which spends reputation and holds only with a high one, or let the room trim. Letting it wait lets the proposals stand, and the room trims what is over.
 
 **Other moments** read as the line manager's do: where and when, the title and text, a button per choice. A choice that depends on a manager shows that manager's skill in words beside it, as a work moment shows an engineer's.
 
@@ -185,7 +185,7 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 | How to play | Each month is a handful of moments. Your managers run the teams; you run your managers. Pick what you do, or let it wait. A recap ends the month. |
 | Managers | Your managers act for you. Coach them and they grow; step in and you fix it yourself, at a cost, and they learn nothing. |
 | What you're told | Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth. |
-| Calibration | Before each review your managers propose their teams' ratings. Compare them with what each team delivered, and move heads up or down. |
+| Calibration | Before each review your managers propose their teams' ratings. Compare them with what each team delivered, and move heads up or down. The group shares a curve with fewer top ratings than a strong group earns: decide whose people give one up, or argue for an exception with your reputation. |
 | Energy | Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out. |
 | Reviews | Every six months your own manager reviews you: delivery, retention, your teams' health, how your managers grew, calibration and the period's goals. From your third review on, two of your reviews in a row rated exceeds or better get you promoted to director. After three years without one, the run ends. |
 

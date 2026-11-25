@@ -43,6 +43,8 @@ export interface MomentView {
   /** The managers whose skill the choices depend on. */
   managerIds: string[];
   calibration?: CalibrationEntry[];
+  curve?: number;
+  overCurve?: { held: number; room: number };
 }
 
 export interface SeniorView {
@@ -125,6 +127,8 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
     choices: m.choices,
     managerIds: m.kind === 'calibration' ? m.calibration!.flatMap((c) => c.managerId ?? []) : m.kind === 'restructuring' ? [] : [...leads(m.teamId), ...leads(m.otherTeamId)],
     ...(m.calibration && { calibration: m.calibration }),
+    ...(m.curve !== undefined && { curve: m.curve }),
+    ...(m.overCurve && { overCurve: m.overCurve }),
   }));
   const named = (ids: string[]) => ids.map((id) => sim.people[id]?.name ?? id);
   return {

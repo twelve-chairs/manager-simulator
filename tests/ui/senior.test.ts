@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { lineManagerLevel } from '../../src/levels/line-manager';
-import { beginMonth, endMonth, seniorManagerLevel, seniorView, type SeniorState } from '../../src/levels/senior-manager';
+import { CURVE_CHOICES, beginMonth, endMonth, seniorManagerLevel, seniorView, type SeniorState } from '../../src/levels/senior-manager';
 import { newRun, type Dependencies, type Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { SENIOR_HELP_TOPICS, seniorManagerRenderer } from '../../src/ui/senior-manager';
@@ -123,6 +123,12 @@ describe('the senior manager’s week screen', () => {
       expect(text(first, `[data-delivered=${r}]`)).toBe(String(entry.delivered[r]));
     }
     expect(root.querySelector('[data-choice=acceptAll]')).not.toBeNull();
+    // the group's curve, beside the top ratings the teams would hold as the moves stand
+    const moment = level(run).moments.find((m) => m.kind === 'calibration')!;
+    const topOf = (c: { exceeds: number; outstanding: number }) => c.exceeds + c.outstanding;
+    const proposedTop = moment.calibration!.reduce((n, c) => n + topOf(c.proposed), 0);
+    expect(text(root, '[data-part=curve] [data-curve-room]')).toBe(String(moment.curve));
+    expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop));
     const top = (['outstanding', 'exceeds', 'meets', 'partial'] as const).find((r) => entry.proposed[r] > 0)!;
     const lower = { outstanding: 'exceeds', exceeds: 'meets', meets: 'partial', partial: 'below' }[top];
     // no move is offered out of an empty rating
@@ -130,10 +136,35 @@ describe('the senior manager’s week screen', () => {
     click(root, `[data-move="${teams[0]}:${top}:${lower}"]`);
     // the move redraws the page, so the team's table is found again
     expect(text(root, `[data-calibration="${teams[0]}"] [data-proposed=${lower}]`)).toBe(String(entry.proposed[lower as 'meets'] + 1));
+    // a head moved out of the top ratings shows in the curve at once
+    expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop - (top === 'exceeds' ? 1 : 0)));
     click(root, '[data-action=settle]');
     const state = app.state();
     if (state.screen !== 'run') throw new Error('expected a run');
     expect(state.run.sim.teams[teams[0]!]!.aggregate!.ratings[lower as 'meets']).toBe(entry.proposed[lower as 'meets'] + 1);
+  });
+});
+
+describe('calibration over the curve', () => {
+  // @spec UI-SENIOR-011
+  it('says how far over the curve the settled ratings are, and offers to argue or let the room trim', () => {
+    let run = senior(7);
+    run = endWeeks(run, 5, both('continue'));
+    const calibrationId = level(run).moments.find((m) => m.kind === 'calibration')!.id;
+    while (run.week.find((m) => m.status === 'open')?.id !== calibrationId) run = step(run, { kind: 'wait' }, both('continue'));
+    const over = structuredClone(run);
+    const m = (over.level as SeniorState).moments.find((x) => x.id === calibrationId)!;
+    m.overCurve = { held: 9, room: 6 };
+    m.choices = CURVE_CHOICES;
+    const { root } = makeApp({ run: over, deps: both('continue') });
+    if (scene(root) === 'recap') click(root, '[data-action=close-recap]');
+    if (scene(root) === 'opening') click(root, '[data-action=start-week]');
+    expect(text(root, '[data-part=over-curve]')).toContain('9 top ratings');
+    expect(text(root, '[data-part=over-curve]')).toContain('6');
+    expect(text(root, '[data-choice=argue]')).toMatch(/reputation/i);
+    expect(root.querySelector('[data-choice=trim]')).not.toBeNull();
+    // the settled teams are not offered for moving again
+    expect(root.querySelector('[data-action=settle]')).toBeNull();
   });
 });
 

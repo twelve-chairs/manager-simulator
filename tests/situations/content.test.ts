@@ -459,6 +459,37 @@ describe('notes from ratings', () => {
   });
 });
 
+describe('calibration results', () => {
+  // @spec LINE-EVAL-008
+  it('rates whoever calibration leaves without the top rating at once, as its text says, and leaves the rest to the period’s end', () => {
+    const content = realContent();
+    /** For each outcome: the rating each role is given there, or none. */
+    const expected: Record<string, Record<string, string>> = {
+      'calibration/back-engineer/backed': { other: 'meets' },
+      'calibration/back-other/backed': { engineer: 'meets' },
+      'calibration/both/both-held': {},
+      'calibration/both/both-lost': { engineer: 'meets', other: 'meets' },
+      'calibration-no-slot/accept/marked-down': { engineer: 'meets' },
+      'calibration-no-slot/argue/exception': {},
+      'calibration-no-slot/argue/no-exception': { engineer: 'meets' },
+      'calibration-no-slot/trade/traded': { other: 'partial' },
+    };
+    const found: Record<string, Record<string, string>> = {};
+    for (const id of ['calibration', 'calibration-no-slot']) {
+      const sit = content.find((x) => x.id === id)!;
+      for (const c of sit.choices) {
+        for (const o of c.outcomes) {
+          found[`${id}/${c.id}/${o.id}`] = Object.fromEntries(o.effects.filter((e) => e.type === 'rate').map((e) => [(e as { target: string }).target, (e as { rating: string }).rating]));
+        }
+      }
+    }
+    expect(found).toEqual(expected);
+    // Someone traded down to partially meets is never on an improvement plan, where it could end their job unannounced.
+    const other = content.find((x) => x.id === 'calibration-no-slot')!.roles.find((r) => r.name === 'other')!;
+    expect(JSON.stringify(other.where)).toContain('{"value":"other.plan","is":"none"}');
+  });
+});
+
 describe('written situations', () => {
   const written = (id: string) => {
     const path = join(import.meta.dirname, `../../content/situations/${id}.md`);

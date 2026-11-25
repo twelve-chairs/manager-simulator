@@ -85,6 +85,10 @@ export const SENIOR_TUNING = {
   calAcceptMotivation: 3,
   calTrustPerHead: 2,
   calUnfairMotivation: 6,
+  /** The group's curve: the share of its heads that may hold a top rating, the reputation an exception needs to hold, and what arguing for one costs. */
+  curveShare: 0.35,
+  curveExceptionReputation: 60,
+  curveExceptionCost: 4,
   /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, and the share of heads a rating either side. */
   deliveryThresholds: [20, 35, 55, 72] as const,
   deliverySpread: 0.2,

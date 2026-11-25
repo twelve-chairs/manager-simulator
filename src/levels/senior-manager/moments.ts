@@ -1,7 +1,7 @@
 import { NAMES, band } from '../line-manager';
 import { addTeam, applyEffects, behindScheduleProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { generateManager, leadOf, nextId, randomInt, rule, unusedName } from './core';
-import { acceptRemaining, calibrationEntries } from './calibration';
+import { acceptRemaining, calibrationEntries, curveOf, overCurveLine, settleCurve } from './calibration';
 import { snapshotMonth } from './recap';
 import { monthOf, periodEndsThisMonth, remember } from './review';
 import { SENIOR_TUNING } from './tuning';
@@ -113,7 +113,7 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   }
   // Calibration, in the last month before a review.
   if (periodEndsThisMonth(s, sim)) {
-    drafts.push({ kind: 'calibration', title: 'Calibration', text: 'Your managers bring their proposed ratings for the period. Set each team’s beside what it delivered.', calibration: calibrationEntries(s, sim), choices: CHOICES.calibration });
+    drafts.push({ kind: 'calibration', title: 'Calibration', text: 'Your managers bring their proposed ratings for the period. Set each team’s beside what it delivered.', calibration: calibrationEntries(s, sim), curve: curveOf(s, sim), choices: CHOICES.calibration });
   }
 
   // Problems skip-level listening surfaced last month.
@@ -249,10 +249,11 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
 
   switch (moment.kind) {
     case 'calibration': {
+      if (choiceId === 'argue' || choiceId === 'trim') return settleCurve(level, sim, momentId, choiceId);
       const r = acceptRemaining(level, sim, momentId);
       if (!r.ok) return r;
       const done = structuredClone(r.level);
-      return { ok: true, level: done, sim: r.sim, log: r.log, reaction: 'You accept every proposal. Your managers are pleased; the ratings say what they say.' };
+      return { ok: true, level: done, sim: r.sim, log: r.log, reaction: `You accept every proposal. Your managers are pleased; the ratings say what they say.${overCurveLine(done, momentId)}` };
     }
     case 'finalEvaluation': {
       const id = moment.managerId!;

@@ -38,6 +38,9 @@ function movesTo(proposed: Counts, target: Counts): { from: Rating; to: Rating; 
   return moves;
 }
 
+/** Whether the moment is calibration settled over the curve, asking only to argue or let the room trim. */
+const overCurve = (m: SeniorMoment) => m.kind === 'calibration' && m.choices.some((c) => c.id === 'trim');
+
 /** Settles calibration on the evidence: every team's heads at what it delivered. */
 const settleOnEvidence = (m: SeniorMoment) => `settle:${JSON.stringify(Object.fromEntries(m.calibration!.map((c) => [c.teamId, movesTo(c.proposed, c.delivered)])))}`;
 
@@ -55,26 +58,26 @@ export const seniorHero: SeniorStrategy = {
   name: 'hero',
   naive: true,
   habits: (seen) => habits(seen, 'close'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'hire', 'oneMorePeriod', 'decline']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'argue', 'hire', 'oneMorePeriod', 'decline']),
 };
 
 export const seniorDelegator: SeniorStrategy = {
   name: 'delegator',
   naive: true,
   habits: (seen) => habits(seen, 'handsOff'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'hire', 'oneMorePeriod']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'trim', 'hire', 'oneMorePeriod']),
 };
 
 export const seniorContrarian: SeniorStrategy = {
   name: 'contrarian',
   naive: true,
-  choose: (_seen, m) => (m.source === 'situation' ? last(m) : m.kind === 'calibration' ? markDown(m) : prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo'])),
+  choose: (_seen, m) => (m.source === 'situation' ? last(m) : overCurve(m) ? 'argue' : m.kind === 'calibration' ? markDown(m) : prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo'])),
 };
 
 /** Sound practice at the senior manager: the rules in the balance design. */
 // @spec BAL-SENIOR-008
 const soundChoice = (_seen: SeniorSeen, m: SeniorMoment) =>
-  m.source === 'situation' ? better(m) : m.kind === 'calibration' ? settleOnEvidence(m) : prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
+  m.source === 'situation' ? better(m) : overCurve(m) ? 'trim' : m.kind === 'calibration' ? settleOnEvidence(m) : prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
 
 export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null, { newWork: 'assign' }), choose: soundChoice };
 

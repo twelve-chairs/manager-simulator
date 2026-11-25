@@ -2,7 +2,7 @@ import { NAMES, band } from '../line-manager';
 import { applyEffects, attritionRiskOf, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { leadOf, managerOf, nextId, randomInt, rule, unusedName } from './core';
 import { periodEndsThisMonth, periodSnapshot, remember } from './review';
-import { acceptRemaining, deliveredRatings, meanStep } from './calibration';
+import { acceptRemaining, deliveredRatings, meanStep, settleCurve } from './calibration';
 import { setGoals } from './goals';
 import { monthRecap, snapshotMonth } from './recap';
 import { RATINGS, planOf } from '../../sim';
@@ -86,7 +86,8 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     s.periodStart = periodSnapshot(s, sim);
     setGoals(s, sim);
   }
-  // Calibration left unanswered: every manager's proposal stands.
+  // Calibration left unanswered: every manager's proposal stands, and the room trims to the curve.
+  // @spec SENIOR-CAL-005
   const calibration = s.moments.find((x) => x.kind === 'calibration' && x.status === 'open');
   if (calibration) {
     const r = acceptRemaining(s, sim, calibration.id);
@@ -94,6 +95,14 @@ export function endMonth(level: SeniorState, sim0: SimState): Result<{ level: Se
     s = r.level;
     sim = r.sim;
     log.push(...r.log);
+    // and the room trims what goes over the curve
+    if (s.moments.find((x) => x.id === calibration.id)?.overCurve) {
+      const t = settleCurve(s, sim, calibration.id, 'trim');
+      if (!t.ok) return t;
+      s = t.level;
+      sim = t.sim;
+      log.push(...t.log);
+    }
   }
   // A final evaluation left unanswered gives the manager one more period.
   for (const x of s.moments) if (x.kind === 'finalEvaluation' && x.status === 'open') s.heldEvaluations = s.heldEvaluations.filter((id) => id !== x.managerId);

@@ -26,12 +26,15 @@ roles:
       all:
         - { value: other.team, is: { value: player.team } }
         - { value: other.correspondingRating, is: meets }
+        # Not on an improvement plan, where a trade's partial rating could be the low one that ends their job.
+        - { value: other.plan, is: none }
 choices:
   - id: accept
     label: "Accept the curve, and tell {engineer} why yourself"
     outcomes:
       - id: marked-down
         effects:
+          - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, without the top rating" }
           - { type: value, target: engineer, field: motivation, amount: -5 }
           - { type: value, target: engineer, field: trust, amount: 2, historyNote: Lost the top rating in calibration }
           - { type: value, target: player, field: stress, amount: 2 }
@@ -53,6 +56,7 @@ choices:
         debrief: "An exception to the curve takes a reputation the room already trusts, and spends some of it."
       - id: no-exception
         effects:
+          - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, after you argued for an exception" }
           - { type: value, target: engineer, field: motivation, amount: -3 }
           - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
           - { type: value, target: player, field: reputation, amount: -2 }
@@ -64,6 +68,7 @@ choices:
     outcomes:
       - id: traded
         effects:
+          - { type: rate, target: other, rating: partial, historyNote: "Rated partially meets in calibration, traded down to make room for someone else" }
           - { type: value, target: engineer, field: motivation, amount: 4, wantTags: { serves: [recognition] } }
           - { type: value, target: other, field: motivation, amount: -8 }
           - { type: value, target: other, field: trust, amount: -6, historyNote: Was rated down to make room for a colleague }

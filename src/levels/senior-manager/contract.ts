@@ -2,7 +2,7 @@ import type { LineState } from '../line-manager';
 import type { CareerLevel } from '../../loop/types';
 import type { SimState } from '../../sim';
 import { RATINGS } from '../../sim';
-import { acceptRemaining, calibrateTeam, type CalibrationMove } from './calibration';
+import { acceptRemaining, calibrateTeam, overCurveLine, type CalibrationMove } from './calibration';
 import { handoverChoices, takeOver } from './handover';
 import { setSeniorHabit, endMonth } from './month';
 import { beginMonth, chooseSenior } from './moments';
@@ -60,7 +60,8 @@ function settle(level: SeniorState, sim: SimState, momentId: string, json: strin
   }
   const rest = acceptRemaining(l, s, momentId);
   if (!rest.ok) return rest;
-  return { ok: true, level: rest.level, sim: rest.sim, log: [...log, ...rest.log], reaction: 'Calibration is done. Each manager takes the ratings back to their team.' };
+  const over = overCurveLine(rest.level, momentId);
+  return { ok: true, level: rest.level, sim: rest.sim, log: [...log, ...rest.log], reaction: over ? `Each team is settled.${over}` : 'Calibration is done. Each manager takes the ratings back to their team.' };
 }
 
 /** The senior manager level as the turn loop sees it. */
