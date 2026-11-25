@@ -139,6 +139,8 @@ describe('loading and validation', () => {
     expect(rejectionOf(noTitle)).toMatch(/title/);
     expect(rejectionOf({ ...sit(), levels: 'line-manager' })).toMatch(/levels/);
     expect(rejectionOf({ ...sit(), mood: 'grim' })).toMatch(/mood/);
+    expect(rejectionOf({ ...sit(), quietWeek: 'yes' })).toMatch(/quietWeek/);
+    expect(loadContent([{ ...sit(), quietWeek: true }]).errors).toEqual([]);
     expect(rejectionOf(JSON.parse(`{"__proto__": {"polluted": true}, ${JSON.stringify(sit()).slice(1)}`))).toMatch(/__proto__/);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     expect(rejectionOf({ ...sit(), roles: [{ name: 'engineer', kind: 'person', constructor: 'x' }] })).toMatch(/constructor/);

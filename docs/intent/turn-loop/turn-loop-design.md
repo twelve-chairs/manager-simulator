@@ -62,7 +62,7 @@ A moment let wait is not an error. The level closes its own unanswered moments a
 A run begins with week 0 in the week phase. **Beginning a week**:
 
 1. The level begins the week and supplies its moments, each with an id, a day and a time.
-2. The situation engine selects situations for the level, up to its limit, each with a day and a time.
+2. The situation engine selects situations for the level, up to its limit, each with a day and a time. The loop tells it how many moments the level has open this week, so a situation written for a week with nothing else in it comes only then.
 3. The loop orders them into the week's sequence: by day, then by time (morning, afternoon, night). Within one day and time, urgent situations come first, then the level's moments, in the order the level gave them, and then the other situations; situations keep the order the engine selected them in. An urgent situation is one its author marked as needing the player before anything else, such as the first morning's onboarding, so it leads its slot rather than queuing behind routine work.
 
 **End week** then does, in order:

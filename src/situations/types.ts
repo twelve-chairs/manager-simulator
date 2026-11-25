@@ -67,6 +67,8 @@ export interface Situation {
   /** Weeks before it can be about the same person again; 26 when unset, and 0 for no limit beyond `cooldownWeeks`. */
   personCooldownWeeks?: number;
   once?: boolean;
+  /** When true, presented only in a turn that would otherwise have no moment at all. */
+  quietWeek?: boolean;
   when?: Condition;
   /** The day of the week it falls on, when authored. */
   day?: Day;

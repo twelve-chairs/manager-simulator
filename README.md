@@ -47,7 +47,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 **Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
-- a week of short scenes: design reviews, customer requests, night pages, interviews, project check-ins, and authored story situations;
+- a week of short scenes: design reviews, customer requests, night pages, interviews, project check-ins, and authored story situations, including ones about growth and recognition that fill a well-run team's quieter weeks;
 - five standing habits, quarterly goals from your manager and a review every 13 weeks;
 - a guided first three weeks, and How to play on hand throughout.
 

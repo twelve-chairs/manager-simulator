@@ -102,7 +102,7 @@ function isEligible(s: EngineState, sim: SimState, situation: Situation, level: 
 
 /** Selects up to `limit` situations for the career level, closing any still open from an earlier selection as ignored. */
 // @spec SIT-COND-014
-// @spec SIT-SEL-001, SIT-SEL-002, SIT-SEL-003, SIT-SEL-006, SIT-SEL-007, SIT-SEL-008, SIT-SEL-009, SIT-SEL-010, SIT-SEL-012, SIT-SEL-013, SIT-SEL-015
+// @spec SIT-SEL-001, SIT-SEL-002, SIT-SEL-003, SIT-SEL-006, SIT-SEL-007, SIT-SEL-008, SIT-SEL-009, SIT-SEL-010, SIT-SEL-012, SIT-SEL-013, SIT-SEL-015, SIT-SEL-017
 // @spec SIT-STATE-002, SIT-STATE-003, SIT-STATE-005
 export function selectSituations(
   engine: EngineState,
@@ -111,6 +111,7 @@ export function selectSituations(
   level: string,
   limit: number,
   timing: Timing = {},
+  levelMoments = 0,
 ): { engine: EngineState; presented: Presentation[] } {
   const s = structuredClone(engine);
   for (const o of s.open) s.debriefs.push({ week: o.week, situationId: o.situationId, bindings: o.bindings, status: 'ignored' });
@@ -121,9 +122,14 @@ export function selectSituations(
 
   const eligible = situations.filter((x) => isEligible(s, sim, x, level, timing));
   const boundPeople = new Set<string>();
-  for (const priority of ['urgent', 'normal'] as const) {
-    const pool = eligible.filter((x) => x.priority === priority);
-    while (pool.length > 0 && presented.length < limit) {
+  // A quiet-week situation is for a turn that would otherwise be empty, and one is enough to make it a turn.
+  const draws = [
+    ...(['urgent', 'normal'] as const).map((priority) => ({ pool: eligible.filter((x) => x.priority === priority && !x.quietWeek), upTo: limit, onlyIfEmpty: false })),
+    { pool: eligible.filter((x) => x.quietWeek), upTo: 1, onlyIfEmpty: true },
+  ];
+  for (const { pool, upTo, onlyIfEmpty } of draws) {
+    if (onlyIfEmpty && (presented.length > 0 || levelMoments > 0)) continue;
+    while (pool.length > 0 && presented.length < upTo) {
       const [situation] = pool.splice(pickWeighted(s, pool), 1) as [Situation];
       const bindings = bind(s, sim, situation, boundPeople, timing);
       if (!bindings) continue;

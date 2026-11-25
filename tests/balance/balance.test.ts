@@ -68,6 +68,23 @@ describe('playing runs', () => {
     expect(result.weeks).toBeGreaterThan(1);
   });
 
+  // @spec BAL-MEASURE-004
+  it('counts the line manager weeks with no moment at all', () => {
+    const weeks: { week: number; moments: number }[] = [];
+    const counter: Strategy = {
+      name: 'counter',
+      naive: true,
+      habits: (s) => (weeks.push({ week: s.week, moments: 0 }), []),
+      choose: (_s, m) => (weeks.at(-1)!.moments++, m.choices[0]!.id),
+    };
+    const result = playRun(counter, 4, CONTENT);
+    expect(result.lineWeeks).toBe(weeks.length);
+    expect(result.quietWeeks).toBe(weeks.filter((w) => w.moments === 0).length);
+    expect(result.quietWeeks).toBeGreaterThan(0);
+    const share = summarize(counter, [result, { ...result, lineWeeks: 10, quietWeeks: 10 }]).quietWeekShare!;
+    expect(share).toBeCloseTo((result.quietWeeks! + 10) / (result.lineWeeks! + 10));
+  });
+
   // @spec BAL-PLAY-004
   it('fails with the strategy, seed and week when a command is refused', () => {
     const broken: Strategy = { name: 'broken', naive: true, choose: () => 'not-a-choice' };
@@ -160,5 +177,10 @@ describe('balance', { timeout: Math.max(120_000, SEEDS.length * STRATEGIES.lengt
   // @spec BAL-CHECK-004
   it('does not burn out sound practice often', () => {
     expect(of('sound').burnout).toBeLessThanOrEqual(BALANCE_TUNING.maxSoundBurnoutShare);
+  });
+
+  // @spec BAL-CHECK-005
+  it('keeps a well-run team’s weeks from going quiet', () => {
+    expect(of('sound').quietWeekShare!).toBeLessThanOrEqual(BALANCE_TUNING.maxSoundQuietWeekShare);
   });
 });

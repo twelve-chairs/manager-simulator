@@ -19,6 +19,8 @@ export const BALANCE_TUNING = {
   // content reshuffles the situation draws rather than on how the game plays.
   maxNaivePromotionShare: 0.2,
   maxSoundBurnoutShare: 0.1,
+  // A week is a short run of moments; a well-run team should change what the player faces, not empty the week.
+  maxSoundQuietWeekShare: 0.25,
 } as const;
 
 export const DEPS: Dependencies = { levels: [lineManagerLevel], review: conductReview };
@@ -74,13 +76,18 @@ export interface RunResult {
   ending: 'promoted' | 'burnout' | 'managedOut' | null;
   ratings: Rating[];
   regrettedQuits: number;
+  /** Line manager weeks played, and how many of them had no moment at all; absent for runs at other levels. */
+  lineWeeks?: number;
+  quietWeeks?: number;
 }
 
 /** Plays one seeded run with a strategy, through the real turn loop, content, level and review. */
-// @spec BAL-PLAY-001, BAL-PLAY-002, BAL-PLAY-003, BAL-PLAY-004, BAL-PLAY-005, BAL-MEASURE-001
+// @spec BAL-PLAY-001, BAL-PLAY-002, BAL-PLAY-003, BAL-PLAY-004, BAL-PLAY-005, BAL-MEASURE-001, BAL-MEASURE-004
 export function playRun(strategy: Strategy, seed: number, content: Situation[], deps: Dependencies = DEPS): RunResult {
   let run: Run = newRun(seed, content, deps);
   const reviews: Seen['reviews'] = [];
+  let lineWeeks = 0;
+  let quietWeeks = 0;
   const step = (command: Command) => {
     const result = apply(run, command, content, deps);
     if (!result.ok) throw new Error(`${strategy.name}, seed ${seed}, week ${run.sim.week}: ${command.kind} refused: ${result.error}`);
@@ -97,6 +104,10 @@ export function playRun(strategy: Strategy, seed: number, content: Situation[], 
     // A copy, so a strategy cannot reach the run through what it is shown.
     const see = (): Seen => structuredClone({ week: run.sim.week, view: level.view(run.level, run.sim) as View, reviews });
     for (const command of strategy.habits?.(see()) ?? []) step(command);
+    if (run.levelId === lineManagerLevel.params.id) {
+      lineWeeks += 1;
+      if (run.week.length === 0) quietWeeks += 1;
+    }
     for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
       const seen = see();
       const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
@@ -109,7 +120,7 @@ export function playRun(strategy: Strategy, seed: number, content: Situation[], 
     (p) => p.status === 'departed' && p.departure?.reason === 'quit' && p.performance !== 'unrated' && RATINGS.indexOf(p.performance) >= meets,
   ).length;
   const ending = run.ending === 'completed' ? 'promoted' : run.ending === 'burnout' ? 'burnout' : run.ending === 'managedOut' ? 'managedOut' : null;
-  return { strategy: strategy.name, seed, weeks: run.sim.week, ending, ratings: reviews.map((r) => r.rating), regrettedQuits };
+  return { strategy: strategy.name, seed, weeks: run.sim.week, ending, ratings: reviews.map((r) => r.rating), regrettedQuits, lineWeeks, quietWeeks };
 }
 
 /** The current moment as the scene shows it: the level's view of its own moments, or the presented situation. */
@@ -150,9 +161,11 @@ export interface Summary {
   burnout: number;
   managedOut: number;
   regrettedQuits: number;
+  /** Of the line manager weeks played, the share with no moment; null when no run played one. */
+  quietWeekShare: number | null;
 }
 
-// @spec BAL-MEASURE-002
+// @spec BAL-MEASURE-002, BAL-MEASURE-004
 export function summarize(strategy: Strategy, results: RunResult[]): Summary {
   const share = (ending: RunResult['ending']) => results.filter((r) => r.ending === ending).length / results.length;
   const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -165,14 +178,20 @@ export function summarize(strategy: Strategy, results: RunResult[]): Summary {
     burnout: share('burnout'),
     managedOut: share('managedOut'),
     regrettedQuits: mean(results.map((r) => r.regrettedQuits)),
+    quietWeekShare: quietShare(results),
   };
+}
+
+function quietShare(results: RunResult[]): number | null {
+  const weeks = results.reduce((n, r) => n + (r.lineWeeks ?? 0), 0);
+  return weeks > 0 ? results.reduce((n, r) => n + (r.quietWeeks ?? 0), 0) / weeks : null;
 }
 
 export const table = (rows: Summary[]) =>
   [
-    'strategy        score  promoted  burnout  managedOut  regrettedQuits',
+    'strategy        score  promoted  burnout  managedOut  regrettedQuits  quietWeeks',
     ...rows.map((s) =>
-      [s.strategy.padEnd(15), s.score.toFixed(2).padStart(5), pct(s.promoted).padStart(9), pct(s.burnout).padStart(8), pct(s.managedOut).padStart(11), s.regrettedQuits.toFixed(2).padStart(15)].join(' '),
+      [s.strategy.padEnd(15), s.score.toFixed(2).padStart(5), pct(s.promoted).padStart(9), pct(s.burnout).padStart(8), pct(s.managedOut).padStart(11), s.regrettedQuits.toFixed(2).padStart(15), (s.quietWeekShare === null ? '-' : pct(s.quietWeekShare)).padStart(11)].join(' '),
     ),
   ].join('\n');
 

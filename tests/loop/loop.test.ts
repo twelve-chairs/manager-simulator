@@ -230,6 +230,22 @@ describe('a week', () => {
     expect(next.week.map((m) => m.id).sort()).toEqual(ids.sort());
   });
 
+  // @spec LOOP-WEEK-005
+  it('tells the situation engine how many moments the level has open, so a quiet-week situation comes only to an empty week', () => {
+    const content: Situation[] = [plain('quiet', { quietWeek: true })];
+    const withMoments = (moments: { id: string; open: boolean }[]): AnyLevel => ({
+      ...L,
+      moments: () => moments.map((m) => ({ ...m, day: 0, time: 'morning' as const })),
+    });
+    const empty = newRun(1, content, { ...deps(), levels: [withMoments([])] });
+    expect(empty.presented.map((p) => p.situationId)).toEqual(['quiet']);
+    const busy = newRun(1, content, { ...deps(), levels: [withMoments([{ id: 'lm', open: true }])] });
+    expect(busy.presented).toEqual([]);
+    // Only open moments count: a level whose one moment is already closed leaves the week empty.
+    const closed = newRun(1, content, { ...deps(), levels: [withMoments([{ id: 'lm', open: false }])] });
+    expect(closed.presented.map((p) => p.situationId)).toEqual(['quiet']);
+  });
+
   // @spec LOOP-WEEK-008
   it('orders the week by day and time, the level’s moments first within a slot', () => {
     const fixed: AnyLevel = {

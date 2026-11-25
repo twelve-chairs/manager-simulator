@@ -79,6 +79,7 @@ A build step compiles every situation file into one JSON content bundle that the
 | `cooldownWeeks` | Weeks after it is presented before it can be presented again; default 0 |
 | `personCooldownWeeks` | Weeks after it is presented about a person (bound to one of its person roles) before it can be about them again; default 26, and 0 lets it come back to them whenever its `cooldownWeeks` allows |
 | `once` | When true, presented at most once per run |
+| `quietWeek` | When true, presented only in a turn that would otherwise have no moment at all: no level moment and no other situation (see *Selecting Situations*) |
 | `waitDebrief` | Optional: what letting the situation wait teaches, shown at the review when the player let it wait; one plain line with no placeholders, since no outcome bound the roles |
 | `when` | Optional condition on the state as a whole (no roles) |
 | `day` | Optional day of the week it falls on: `monday` to `friday` |
@@ -139,9 +140,10 @@ Each turn, the turn loop asks the engine for situations for the active career le
 2. Takes the situations tagged with that level, skipping any marked `once` that has been presented, and any presented within its `cooldownWeeks`.
 3. Drops those whose `when` does not hold.
 4. Tries to bind each remaining situation's roles. For each role in order, it considers the matching candidates, leaving out, for a person role, anyone the situation was presented about within its `personCooldownWeeks`, (for a team role with a `form`, only teams of that form) in an order shuffled by the engine's generator and takes the first that lets every later role bind (backtracking when a later role finds no match). A situation whose roles cannot all be bound, or that would offer no choice once bound, is dropped.
-5. Selects up to the limit: `urgent` situations first, then `normal` ones, each group drawn at random by `weight`, so that when there are more urgent situations than the limit, the limit still holds. No person is bound into two situations in the same turn; a situation that would reuse someone already bound is re-bound without them, or dropped.
-6. Places each selected situation in the week: on its `day` and at its `time` when the situation sets them, and otherwise on a day drawn by the engine's generator, in the morning or afternoon (a night is only ever authored, since it means someone was woken).
-7. Records each selected situation as presented in the current game week and as **open** until it is resolved.
+5. Selects up to the limit: `urgent` situations first, then `normal` ones, each group drawn at random by `weight`, so that when there are more urgent situations than the limit, the limit still holds. No person is bound into two situations in the same turn; a situation that would reuse someone already bound is re-bound without them, or dropped. Situations marked `quietWeek` take no part in this draw.
+6. When the draw selected nothing and the turn loop reports that the level has no moment this turn, selects one situation marked `quietWeek`, drawn at random by `weight`, if any can be bound. A turn with nothing in it is the one a quiet-week situation is for, and one is enough to make it a turn.
+7. Places each selected situation in the week: on its `day` and at its `time` when the situation sets them, and otherwise on a day drawn by the engine's generator, in the morning or afternoon (a night is only ever authored, since it means someone was woken).
+8. Records each selected situation as presented in the current game week and as **open** until it is resolved.
 
 The engine's randomness comes from its own seeded generator, held in the engine's state, not from the simulation's. Adding, removing or editing situation content then changes which situations appear but never the simulation's own random rolls (who quits, which projects suffer setbacks).
 
@@ -191,7 +193,7 @@ The compiler parses YAML with its safe schema, with no custom types and no alias
 |---|---|---|
 | `loadContent` | content bundle (parsed JSON) | valid situations and a list of errors for invalid ones |
 | `createEngine` | seed | engine state |
-| `selectSituations` | engine state, simulation state, situations, career level id, limit, optionally the weeks until the next review | new engine state, presented situations |
+| `selectSituations` | engine state, simulation state, situations, career level id, limit, optionally the weeks until the next review and the number of the level's moments this turn (none when not given) | new engine state, presented situations |
 | `resolveChoice` | engine state, simulation state, situations, presentation id, choice id, optionally the weeks until the next review | `resolved`: new engine state, new simulation state, change log, aftermath line, debrief record; `expired`: new engine state, the unchanged simulation state, debrief record; or `error`: a message |
 | `debriefsSince` | engine state, game week | debrief records from that week on |
 
@@ -208,6 +210,7 @@ The content compiler (`scripts/`) is a build-time tool: it reads `content/situat
 | Outcomes | First outcome whose condition holds, with a final unconditional fallback; no random rolls | Outcomes with probabilities; one fixed effect list per choice | The same choice working or failing by context is the skill the game teaches. Random outcomes blur the lesson; fixed outcomes ignore context. |
 | Debriefs | A short aftermath line at once, plus a debrief record for the performance review | Only immediate feedback; only end-of-period debriefs | The immediate line keeps choices responsive; the review-time debrief is where delayed consequences (a resignation months later) are linked back to choices. |
 | Situations per turn | Up to a level-set limit; urgent first, then weighted random; cooldowns and once-per-run | Every eligible situation fires | A cap keeps turns playable and lets levels set pace; cooldowns stop the same situation repeating. |
+| Scenes for turns that would be empty | A `quietWeek` flag: such a situation is drawn only when the turn would otherwise have no moment, one per turn | A priority below `normal`, drawn after the normal ones; more content with shorter cooldowns | A lower priority still lands in turns that already have moments whenever the limit has room, spending its cooldown where it adds nothing. More content with shorter cooldowns makes scenes repeat. A turn with nothing in it needs exactly one scene, and the flag says so. |
 | Placeholders in history notes | Rejected at validation | Substituted when the effect applies, like the body | A note is the person's own short account of what happened, and stays on their card long after the situation; a name baked in at the time would read oddly once that project is gone or renamed, and notes that never mention one read the same everywhere. Rejecting it at build time catches the mistake before a playtest does. |
 | Engine randomness | Its own seeded generator in engine state | Draw from the simulation's generator | Content changes would otherwise change simulation outcomes for the same seed, making balance tests and bug reports unreproducible. |
 | Form-specific team effects | A `form` on team roles, required for effects only aggregate teams accept | A `where` condition on `team.form`; let the core reject the batch at resolution | The validator can check a declared form statically, so content that could never resolve fails the build; a `where` condition is too open-ended to check, and a runtime rejection leaves the player with a choice that always errors. |

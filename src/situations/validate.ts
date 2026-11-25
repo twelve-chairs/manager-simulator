@@ -354,7 +354,7 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
 // ---- situations ----
 
 const SITUATION_FIELDS = ['id', 'title', 'levels', 'priority', 'roles', 'choices', 'text'] as const;
-const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'personCooldownWeeks', 'once', 'when', 'day', 'time', 'waitDebrief'] as const;
+const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'personCooldownWeeks', 'once', 'quietWeek', 'when', 'day', 'time', 'waitDebrief'] as const;
 
 function checkSituation(x: unknown): Situation {
   const o = object(x, '', 'a situation', SITUATION_FIELDS, OPTIONAL_SITUATION_FIELDS);
@@ -367,6 +367,7 @@ function checkSituation(x: unknown): Situation {
   if (Object.hasOwn(o, 'cooldownWeeks') && finite(o, 'cooldownWeeks', '') < 0) fail('cooldownWeeks', 'must not be negative');
   if (Object.hasOwn(o, 'personCooldownWeeks') && finite(o, 'personCooldownWeeks', '') < 0) fail('personCooldownWeeks', 'must not be negative');
   if (Object.hasOwn(o, 'once') && typeof o.once !== 'boolean') fail('once', 'must be true or false');
+  if (Object.hasOwn(o, 'quietWeek') && typeof o.quietWeek !== 'boolean') fail('quietWeek', 'must be true or false');
   if (Object.hasOwn(o, 'when')) checkCondition(o.when, { roles: {} }, 'when');
   if (Object.hasOwn(o, 'day')) oneOf(o.day, DAYS, 'day', 'a weekday');
   if (Object.hasOwn(o, 'time')) oneOf(o.time, TIMES, 'time', 'a time of day');

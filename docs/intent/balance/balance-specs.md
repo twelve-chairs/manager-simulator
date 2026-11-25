@@ -21,6 +21,7 @@ Design: [balance-design.md](balance-design.md)
 - [x] **BAL-MEASURE-001**: When a run ends or reaches 78 weeks, the balance harness shall record, reading the run itself rather than the player's view, the run's review ratings, whether it ended promoted, burned out or managed out, and how many engineers rated meets or above quit.
 - [x] **BAL-MEASURE-002**: When the balance harness compares strategies, it shall report for each the average review score, scoring every run over its six review slots (ratings counted `below` 0 to `outstanding` 4, a slot missed after burning out or being managed out counted 0, and a slot missed after a promotion counted as the last rating), the promotion, burnout and managed-out shares, and the average regretted quits over its runs.
 - [x] **BAL-MEASURE-003**: When the balance harness compares strategies, it shall report sound practice with other habits (1:1s every week and light ceremonies) beside the others, and shall include it in no check.
+- [x] **BAL-MEASURE-004**: When the balance harness compares strategies, it shall report for each the quiet-week share: of the line manager weeks its runs played, the share in which, after the strategy's habit changes, the week had no moment, neither a level moment nor a situation.
 
 ## Checks
 
@@ -28,6 +29,7 @@ Design: [balance-design.md](balance-design.md)
 - [x] **BAL-CHECK-002**: The balance harness shall fail unless sound practice's promotion share is at least the minimum its tuning sets.
 - [x] **BAL-CHECK-003**: The balance harness shall fail if any naive strategy's promotion share exceeds the maximum its tuning sets.
 - [x] **BAL-CHECK-004**: The balance harness shall fail if sound practice's burnout share exceeds the maximum its tuning sets.
+- [x] **BAL-CHECK-005**: The balance harness shall fail if sound practice's quiet-week share exceeds the maximum its tuning sets.
 
 ## The senior manager
 

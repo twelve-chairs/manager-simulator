@@ -85,6 +85,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-005**: When the line manager level describes an on-call moment, its text shall say that a change from the escalation's project has taken production down and name the engineer on call.
 - [x] **LINE-MOMENT-006**: When the line manager level describes a design review, its text shall be one of the kind's phrasings picked by the item's number, name the project and its tech debt band, and say that the debt rises if nobody reviews the design before it expires.
 - [x] **LINE-MOMENT-007**: When the line manager level describes a customer request, its text shall be one of the kind's phrasings picked by the item's number, name the project and a customer from the level's list of fictional companies picked by the item's number, and say that the player's reputation slips if nobody answers before it expires.
+- [x] **LINE-MOMENT-008**: The line manager's situation content shall include, apart from onboarding, at least five situations of normal priority, marked `quietWeek`, whose conditions can all hold together for a team in which no engineer is strained or above, the team's stress is below strained, and no project is overdue, behind schedule or at high risk, and cannot hold for the same team once every engineer is strained and a project is behind schedule.
 
 ## Project check-ins
 

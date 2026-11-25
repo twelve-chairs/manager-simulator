@@ -27,7 +27,8 @@ const TIME_ORDER = { morning: 0, afternoon: 1, night: 2 } as const;
 // @spec LOOP-WEEK-005, LOOP-WEEK-008, LOOP-WEEK-010
 function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
   run.level = level.beginWeek(run.level, run.sim);
-  const { engine, presented } = selectSituations(run.engine, run.sim, content, level.params.id, level.params.situationLimit, timingOf(run, level));
+  const levelMoments = level.moments(run.level, run.sim).filter((m) => m.open);
+  const { engine, presented } = selectSituations(run.engine, run.sim, content, level.params.id, level.params.situationLimit, timingOf(run, level), levelMoments.length);
   run.engine = engine;
   run.presented = presented;
   // A situation's day of the week is spread over a longer turn: day d becomes day d × the weeks per step (LOOP-WEEK-010).
@@ -35,7 +36,7 @@ function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
   const urgent = (p: (typeof presented)[number]) => content.find((x) => x.id === p.situationId)?.priority === 'urgent';
   const moments: WeekMoment[] = [
     ...presented.filter(urgent).map(situation),
-    ...level.moments(run.level, run.sim).filter((m) => m.open).map((m): WeekMoment => ({ source: 'level', id: m.id, day: m.day, time: m.time, title: m.title ?? '', status: 'open' })),
+    ...levelMoments.map((m): WeekMoment => ({ source: 'level', id: m.id, day: m.day, time: m.time, title: m.title ?? '', status: 'open' })),
     ...presented.filter((p) => !urgent(p)).map(situation),
   ];
   // The sort is stable, so within a slot urgent situations lead, then the level's moments, then the other situations, each in its own order.

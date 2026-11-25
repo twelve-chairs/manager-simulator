@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { debriefsSince, type Condition, type Situation } from '../../src/situations';
+import { debriefsSince, selectSituations, type Condition, type Situation } from '../../src/situations';
 import { aggregateTeam } from '../../src/sim';
 import { seeds } from '../sim/fixtures';
 import { ONLY_E1, OTHER_TEAM, engine, fresh, holds, patch, plain, resolve, select, sit } from './fixtures';
@@ -175,6 +175,43 @@ describe('drawing', () => {
     const heavy = picks.filter((id) => id === 'heavy').length;
     expect(heavy).toBeGreaterThan(240);
     expect(heavy).toBeLessThan(300);
+  });
+
+  // @spec SIT-SEL-006
+  it('leaves quiet-week situations out of the draw', () => {
+    const situations = [plain('quiet', { quietWeek: true, weight: 50 }), plain('n')];
+    for (const seed of seeds(20)) expect(ids(select(engine(seed), fresh(), situations, 2))).toEqual(['n']);
+    const quietOnly = [plain('q1', { quietWeek: true }), plain('q2', { quietWeek: true })];
+    for (const seed of seeds(20)) expect(selectSituations(engine(seed), fresh(), [...quietOnly, plain('u', { priority: 'urgent' })], 'line-manager', 2, {}, 0).presented.map((p) => p.situationId)).toEqual(['u']);
+  });
+
+  // @spec SIT-SEL-017
+  it('fills a turn with no other moment with one quiet-week situation', () => {
+    const quiet = [plain('q1', { quietWeek: true }), plain('q2', { quietWeek: true }), plain('q3', { quietWeek: true })];
+    for (const seed of seeds(20)) {
+      // Nothing else this turn: exactly one, whether the level's count is 0 or not given.
+      expect(selectSituations(engine(seed), fresh(), quiet, 'line-manager', 2, {}, 0).presented).toHaveLength(1);
+      expect(selectSituations(engine(seed), fresh(), quiet, 'line-manager', 2).presented).toHaveLength(1);
+      // The level has a moment this turn: none.
+      expect(selectSituations(engine(seed), fresh(), quiet, 'line-manager', 2, {}, 1).presented).toEqual([]);
+      // A limit of 0 still means none.
+      expect(selectSituations(engine(seed), fresh(), quiet, 'line-manager', 0, {}, 0).presented).toEqual([]);
+    }
+    // Drawn in proportion to weight.
+    const weighted = [plain('light', { quietWeek: true, weight: 1 }), plain('heavy', { quietWeek: true, weight: 9 })];
+    const heavy = seeds(300).filter((seed) => selectSituations(engine(seed), fresh(), weighted, 'line-manager', 1, {}, 0).presented[0]!.situationId === 'heavy').length;
+    expect(heavy).toBeGreaterThan(240);
+    // Only eligible ones that can be bound: a `when` that fails, or a role nobody fits, leaves the turn empty.
+    const blocked = [
+      plain('no-when', { quietWeek: true, when: { value: 'player.stress', above: 1000 } }),
+      sit({ id: 'no-role', quietWeek: true, roles: [{ name: 'engineer', kind: 'person', where: { value: 'engineer.skill', above: 1000 } }] }),
+    ];
+    expect(selectSituations(engine(), fresh(), blocked, 'line-manager', 2, {}, 0).presented).toEqual([]);
+    // Cooldowns still apply: presented once, it is not drawn again within its cooldown.
+    const once = plain('cool', { quietWeek: true, cooldownWeeks: 13 });
+    const first = selectSituations(engine(), fresh(), [once], 'line-manager', 1, {}, 0);
+    expect(first.presented).toHaveLength(1);
+    expect(selectSituations(first.engine, fresh(), [once], 'line-manager', 1, {}, 0).presented).toEqual([]);
   });
 
   // @spec SIT-SEL-007
