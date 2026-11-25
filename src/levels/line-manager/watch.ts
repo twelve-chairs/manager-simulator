@@ -18,6 +18,9 @@ const WANT_WORDS: Record<Want, string> = {
 
 const weeksWord = (n: number) => (n === 1 ? '1 week' : `${n} weeks`);
 
+/** The habits behind the level's own stress causes, as the habits panel names them. */
+const HABIT_OF: Partial<Record<StressCause, string>> = { nightPages: 'night pages', approvals: 'routine approvals', coaching: 'growth focus' };
+
 /** The largest of the level's own causes of an engineer's stress over the recent weeks, if any. */
 function stressCause(level: LineState, id: string): WatchCause | undefined {
   const totals: Partial<Record<StressCause, number>> = {};
@@ -111,7 +114,7 @@ function heldBack(level: LineState, played: number, w: Omit<Watch, 'text'>): boo
 }
 
 /** The watch line in words: who, what is close, and the lever where the level knows it. */
-function textOf(sim: SimState, w: Omit<Watch, 'text'>): string {
+function textOf(level: LineState, sim: SimState, w: Omit<Watch, 'text'>): string {
   if (w.kind === 'edge') {
     return w.weeksLeft === 1
       ? `You're running on fumes: ${weeksWord(w.weeks!)} at the edge. One more week like this and you burn out.`
@@ -125,6 +128,11 @@ function textOf(sim: SimState, w: Omit<Watch, 'text'>): string {
   }
   const name = sim.people[w.subject]!.name;
   const cause = w.cause;
+  // A habit repeats every week until it is changed: name it, and how often it has landed on them lately.
+  const habit = cause?.kind === 'stress' ? HABIT_OF[cause.stress] : undefined;
+  const habitLine = habit
+    ? ` The ${habit} habit has added to their load in ${level.recentWeeks.filter((x) => (x.stress[w.subject]?.[(cause as { stress: StressCause }).stress] ?? 0) > 0).length} of the last ${LINE_TUNING.watchWeeks} weeks.`
+    : '';
   const because =
     cause?.kind === 'stress'
       ? `, mostly from ${STRESS_CAUSE_WORDS[cause.stress]}`
@@ -135,10 +143,10 @@ function textOf(sim: SimState, w: Omit<Watch, 'text'>): string {
           : '';
   if (w.kind === 'over') {
     return w.line === 'stress'
-      ? `${name} looks worn through: ${weeksWord(w.weeks!)} over the line${because}. Every week like this makes leaving likelier.`
+      ? `${name} looks worn through: ${weeksWord(w.weeks!)} over the line${because}.${habitLine} Every week like this makes leaving likelier.`
       : `${name} has gone flat: ${weeksWord(w.weeks!)} of low motivation${because}. Every week like this makes leaving likelier.`;
   }
-  return w.line === 'stress' ? `${name} is getting stretched thin${because}.` : `${name} seems to be losing interest${because}.`;
+  return w.line === 'stress' ? `${name} is getting stretched thin${because}.${habitLine}` : `${name} seems to be losing interest${because}.`;
 }
 
 /**
@@ -155,7 +163,7 @@ export function watchAfterAdvance(level: LineState, sim: SimState, burnedOut: bo
   level.recentWeeks = level.recentWeeks.filter((w) => w.week > played - LINE_TUNING.watchWeeks);
   level.watched = level.watched.filter((w) => w.week > played - REPEAT_WEEKS);
   const pick = burnedOut ? undefined : candidates(level, sim).find((w) => !heldBack(level, played, w));
-  level.watch = pick ? { week: played, line: { ...pick, text: textOf(sim, pick) } } : { week: played };
+  level.watch = pick ? { week: played, line: { ...pick, text: textOf(level, sim, pick) } } : { week: played };
   if (pick) level.watched.push({ week: played, kind: pick.kind, subject: pick.subject });
 }
 

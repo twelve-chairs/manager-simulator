@@ -166,6 +166,24 @@ describe('what the watch line says about an engineer', () => {
   });
 
   // @spec LINE-RECAP-008
+  it('names the habit behind a habit’s stress, and in how many recent weeks it added to their load', () => {
+    const { level, sim } = calm();
+    const [a] = engineers(sim);
+    let r = played(level, sim, () => {}, { [a!]: { nightPages: 6 } });
+    r = played(r.level, r.sim, () => {}, { [a!]: { work: 2 } });
+    r = played(r.level, r.sim, () => {}, { [a!]: { nightPages: 6 } });
+    const w = played(r.level, r.sim, (s) => over(s, a!, 1), { [a!]: { nightPages: 6 } }).watch!;
+    expect(w.cause).toEqual({ kind: 'stress', stress: 'nightPages' });
+    expect(w.text).toContain(`The night pages habit has added to their load in 3 of the last ${LINE_TUNING.watchWeeks} weeks.`);
+    // Approvals and coaching are habits too; work the player gave them is not.
+    expect(played(level, sim, (s) => over(s, a!, 1), { [a!]: { approvals: 3 } }).watch!.text).toContain('The routine approvals habit has added to their load in 1 of the last');
+    expect(played(level, sim, (s) => over(s, a!, 1), { [a!]: { coaching: 3 } }).watch!.text).toContain('The growth focus habit has added to their load in 1 of the last');
+    const work = played(level, sim, (s) => over(s, a!, 1), { [a!]: { work: 3 } }).watch!.text;
+    expect(work).toContain('mostly from work you gave them');
+    expect(work).not.toContain('habit');
+  });
+
+  // @spec LINE-RECAP-008
   it('names, for motivation, a learned want gone unserved, or that the player does not know what they want', () => {
     const { level, sim } = calm();
     const [a] = engineers(sim);
