@@ -558,3 +558,59 @@ describe('trades in routine work', () => {
     expect(new Set(texts).size).toBeGreaterThan(1);
   });
 });
+
+describe('design reviews piling up', () => {
+  /** A team where everyone who could take a routine design review is strained, with `n` such reviews open. */
+  function piling(n: number) {
+    const q = quietRun(1);
+    const p = projects(q.sim)[0]!;
+    const sim = patch(q.sim, (s) => {
+      for (const id of engineers(s)) Object.assign(s.people[id]!, { stress: 70, skill: 70 });
+      s.projects[p]!.techDebt = 20;
+      s.player.stress = 10;
+    });
+    let level = q.level;
+    for (let i = 0; i < n; i++) level = withItem(level, { kind: 'designReview', subject: { kind: 'project', id: p }, size: 5, difficulty: 50, lastWeek: sim.week + 2 }).level;
+    return { level: begin(level, sim), sim };
+  }
+  const reviews = (l: LineState) => l.moments.filter((m) => m.kind === 'work');
+
+  // @spec LINE-WORK-017
+  it('gathers the routine reviews nobody unstrained can take into one moment, with three choices for all of them', () => {
+    const { level, sim } = piling(3);
+    const ms = reviews(level);
+    expect(ms).toHaveLength(1);
+    expect(ms[0]!.refs).toHaveLength(3);
+    expect(ms[0]!.choices.map((c) => c.id)).toEqual(['self', 'spread', 'pushBack']);
+    const shown = view(level, sim).moments.find((m) => m.id === ms[0]!.id)!;
+    expect(shown.title).toBe('Design reviews piling up');
+    expect(shown.text).toMatch(/3 design reviews/);
+    // One such review is a moment of its own, as before.
+    const one = piling(1);
+    expect(reviews(one.level)).toHaveLength(1);
+    expect(reviews(one.level)[0]!.refs).toBeUndefined();
+  });
+
+  // @spec LINE-WORK-017
+  it('applies a choice to each review as its own moment would', () => {
+    const single = piling(1);
+    const oneSelf = choose(single.level, single.sim, reviews(single.level)[0]!.id, 'self');
+    const perReview = oneSelf.sim.player.stress - single.sim.player.stress;
+    const { level, sim } = piling(3);
+    const id = reviews(level)[0]!.id;
+    // all yourself: three times the cost of one
+    const self = choose(level, sim, id, 'self');
+    expect(self.sim.player.stress - sim.player.stress).toBe(3 * perReview);
+    expect(self.level.items.filter((i) => i.kind === 'designReview')).toEqual([]);
+    expect(self.level.moments.find((m) => m.id === id)!.status).toBe('answered');
+    // handed out: each to whoever can take it, as giving it to them would
+    const spread = choose(level, sim, id, 'spread');
+    const notes = engineers(sim).flatMap((e) => spread.sim.people[e]!.history.filter((h) => h.week === sim.week && h.note === 'Took on a design review'));
+    expect(notes).toHaveLength(3);
+    expect(spread.sim.player.stress).toBe(sim.player.stress);
+    // pushed back: all left open to expire
+    const pushed = choose(level, sim, id, 'pushBack');
+    expect(pushed.level.items.filter((i) => i.kind === 'designReview')).toHaveLength(3);
+    expect(pushed.level.moments.find((m) => m.id === id)!.status).toBe('answered');
+  });
+});

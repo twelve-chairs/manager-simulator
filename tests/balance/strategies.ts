@@ -122,6 +122,8 @@ export const delegator: Strategy = {
     if (m.source === 'situation' || m.kind === 'checkIn' || m.kind === 'finalEvaluation') return first(m);
     if (m.kind === 'onCall') return 'leave';
     if (isIntake(m)) return 'take';
+    // Design reviews piling up: handed out, as every other piece of work.
+    if (has(m, 'spread')) return 'spread';
     const prefix = m.kind === 'interview' ? 'ask:' : 'give:';
     const to = offered(seen, m, prefix)[0];
     return to ? `${prefix}${to.id}` : 'wait';

@@ -39,6 +39,8 @@ export interface LevelMoment {
   kind: 'work' | 'interview' | 'checkIn' | 'onCall' | 'finalEvaluation';
   /** The work item, vacancy or project the moment is about. */
   ref: string;
+  /** For design reviews piling up: every review the moment is about, `ref` being the first. */
+  refs?: string[];
   /** The engineer on call, for an on-call moment. */
   personId?: string;
   week: number;

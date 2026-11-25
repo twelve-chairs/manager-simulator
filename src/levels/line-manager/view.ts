@@ -58,6 +58,17 @@ export function describeMoment(level: LineState, sim: SimState, m: LevelMoment):
     const name = p?.name ?? m.ref;
     return { title: `Check-in: ${name}`, text: `Monday's project check-in. ${name} ${checkInReason(sim, m.ref)}. What do you do about it?` };
   }
+  // @spec LINE-WORK-017
+  if (m.refs) {
+    const items = m.refs.map((id) => level.items.find((i) => i.id === id)).filter((i): i is WorkItem => i !== undefined);
+    const names = [...new Set(items.map((i) => (i.subject.kind === 'project' ? (sim.projects[i.subject.id]?.name ?? '') : nameOf(sim, i.subject.id))))];
+    const on = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+    return {
+      title: 'Design reviews piling up',
+      text: `${m.refs.length} design reviews are waiting, on ${on}, and everyone who could take them is strained. Whoever takes them, the week gets heavier.`,
+      difficulty: Math.max(0, ...items.map((i) => band(i.difficulty))),
+    };
+  }
   const item = level.items.find((i) => i.id === m.ref);
   const about = item ? (item.subject.kind === 'project' ? (sim.projects[item.subject.id]?.name ?? '') : nameOf(sim, item.subject.id)) : '';
   const difficulty = item ? { difficulty: band(item.difficulty) } : {};

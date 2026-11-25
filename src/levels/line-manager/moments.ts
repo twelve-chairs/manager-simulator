@@ -65,6 +65,44 @@ export const LOW: readonly Rating[] = ['below', 'partial'];
 
 const STRAINED = LINE_TUNING.strainedBand;
 
+/** Design reviews piling up: each choice applies to every review in turn. */
+const PILING_CHOICES: MomentChoice[] = [
+  { id: 'self', label: 'Do them all yourself' },
+  { id: 'spread', label: 'Hand each to whoever can handle it, stretched as they are' },
+  { id: 'pushBack', label: 'Push them all back' },
+];
+
+/** Design reviews piling up: the same choice in each review's own moment, in turn. */
+// @spec LINE-WORK-017
+function choosePiling(level: LineState, sim: SimState, momentId: string, choiceId: string): LevelResult<ChoiceResult> {
+  const batch = level.moments.find((m) => m.id === momentId)!;
+  let l = structuredClone(level);
+  let s = sim;
+  const log: ChoiceResult['log'] = [];
+  const said: string[] = [];
+  for (const ref of batch.refs!) {
+    const item = l.items.find((i) => i.id === ref);
+    if (!item) continue;
+    const choices = workChoices(l, s, item);
+    // The first give: offered is the least stressed engineer whose skill reaches the review.
+    const safe = choices.find((c) => c.id.startsWith('give:') && band(s.people[c.id.slice('give:'.length)]!.skill) >= band(item.difficulty));
+    const choice = choiceId === 'spread' ? (safe?.id ?? 'pushBack') : choiceId;
+    const one: LevelMoment = { id: `${momentId}:${ref}`, kind: 'work', ref, week: batch.week, day: batch.day, time: batch.time, choices, status: 'open' };
+    l.moments.push(one);
+    const r = chooseMoment(l, s, one.id, choice);
+    if (!r.ok) return r;
+    l = r.level;
+    s = r.sim;
+    log.push(...r.log);
+    said.push(r.reaction);
+  }
+  l.moments = l.moments.filter((m) => !m.id.startsWith(`${momentId}:`));
+  const done = l.moments.find((m) => m.id === momentId)!;
+  done.status = 'answered';
+  done.outcome = said.join(' ');
+  return { ok: true, level: l, sim: s, log, reaction: said.join(' ') };
+}
+
 /** Keeping someone for another quarter: no rating, and a note that says so. */
 export const oneMoreQuarter = (id: string): Effect => personEffect(id, 'motivation', 0, action(FINAL_EVALUATION), { note: 'Given one more quarter' });
 
@@ -145,6 +183,18 @@ export function addMoments(s: LineState, sim: SimState) {
     if (able[0]) s.routineWork[item.id] = able[0];
   }
   for (const id of Object.keys(s.routineWork)) covered.add(id);
+  // @spec LINE-WORK-017
+  // Routine reviews left only because everyone who could take them is strained are one problem, and one moment.
+  const piling = open(['designReview']).filter((item) => {
+    const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+    if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) return false;
+    const able = teamEngineers(s, sim).filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty));
+    return able.length > 0 && able.every((id) => band(sim.people[id]!.stress) >= STRAINED);
+  });
+  if (piling.length >= 2 && room > 0) {
+    make({ kind: 'work', ref: piling[0]!.id, refs: piling.map((i) => i.id), day: 0, time: 'morning', choices: structuredClone(PILING_CHOICES) });
+    for (const item of piling) covered.add(item.id);
+  }
   // Closest to expiring first; the sort is stable, so equal deadlines keep their arrival order.
   const work = open(MOMENT_KINDS).sort((a, b) => a.lastWeek - b.lastWeek).slice(0, Math.max(0, room));
   work.forEach((item, i) => {
@@ -168,6 +218,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   if (found.status !== 'open') return { ok: false, error: `moment ${momentId} is already closed` };
   if (!found.choices.some((c) => c.id === choiceId)) return { ok: false, error: `moment ${momentId} does not offer ${choiceId}` };
 
+  if (found.refs) return choosePiling(level, sim, momentId, choiceId);
   const s = structuredClone(level);
   const moment = s.moments.find((m) => m.id === momentId)!;
   const effects: Effect[] = [];
