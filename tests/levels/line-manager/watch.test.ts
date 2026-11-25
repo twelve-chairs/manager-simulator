@@ -98,6 +98,28 @@ describe('the watch line', () => {
   });
 
   // @spec LINE-RECAP-007
+  it('warns again about an engineer who has stayed in that band for watchWeeks weeks, and not before', () => {
+    const { level, sim } = calm();
+    const [a] = engineers(sim);
+    let r = { level, sim: patch(sim, (s) => (s.people[a!]!.stress = 65)) };
+    const seen = [];
+    for (let i = 0; i < LINE_TUNING.watchWeeks; i++) seen.push((r = played(r.level, r.sim)).watch);
+    expect(seen.slice(0, -1)).toEqual(Array(LINE_TUNING.watchWeeks - 1).fill(undefined));
+    expect(seen.at(-1)).toMatchObject({ kind: 'nearing', subject: a, line: 'stress' });
+    // A week out of the band in between starts the count again.
+    let broken = { level, sim: patch(sim, (s) => (s.people[a!]!.stress = 65)) };
+    const after = [];
+    for (let i = 0; i < LINE_TUNING.watchWeeks; i++) after.push((broken = played(broken.level, broken.sim, (s) => (s.people[a!]!.stress = i === 1 ? 50 : 65))).watch?.subject);
+    expect(after.filter((x) => x === a).length).toBeLessThanOrEqual(1);
+    expect(after.at(-1)).toBeUndefined();
+    // and the same for motivation
+    let flat = { level, sim: patch(sim, (s) => (s.people[a!]!.motivation = 35)) };
+    let last;
+    for (let i = 0; i < LINE_TUNING.watchWeeks; i++) last = (flat = played(flat.level, flat.sim)).watch;
+    expect(last).toMatchObject({ kind: 'nearing', subject: a, line: 'motivation' });
+  });
+
+  // @spec LINE-RECAP-007
   it('then an overdue project, a project behind schedule, or one due soon that its pace will not finish', () => {
     const { level, sim } = calm();
     const [p, q] = projects(sim);

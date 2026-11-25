@@ -141,8 +141,13 @@ export interface LineState {
   };
   /** How the team's projects moved in the week that began at `week`, reported after the advance. */
   projectMoves: { week: number; moves: ProjectMove[] };
-  /** The last `watchWeeks` played weeks as they began: the level's own stress causes that week and each project's progress. */
-  recentWeeks: { week: number; stress: Record<string, Partial<Record<StressCause, number>>>; projects: Record<string, number> }[];
+  /** The last `watchWeeks` played weeks as they began: the level's own stress causes that week, each project's progress, and each engineer's stress and motivation. */
+  recentWeeks: {
+    week: number;
+    stress: Record<string, Partial<Record<StressCause, number>>>;
+    projects: Record<string, number>;
+    people: Record<string, { stress: number; motivation: number }>;
+  }[];
   /** The watch line for the week that began at `week`, reported after the advance; none when nothing was close. */
   watch: { week: number; line?: Watch };
   /** The watch lines reported lately, by kind and subject, so the same one is not repeated week after week. */

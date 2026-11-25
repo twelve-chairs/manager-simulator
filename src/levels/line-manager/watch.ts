@@ -64,14 +64,19 @@ function candidates(level: LineState, sim: SimState): Omit<Watch, 'text'>[] {
   const start = level.weekStart.week === sim.week - LEVEL.weeksPerStep ? level.weekStart.people : {};
   const highBand = band(TUNING.highStressLine);
   const lowBand = band(TUNING.lowMotivationLine);
+  const nearStress = (stress: number) => band(stress) === highBand && stress <= TUNING.highStressLine;
+  const nearMotivation = (motivation: number) => band(motivation) === lowBand && motivation >= TUNING.lowMotivationLine;
+  // Started each of the last `watchWeeks` weeks in the band, and still there.
+  const stayed = (id: string, near: (x: { stress: number; motivation: number }) => boolean) =>
+    level.recentWeeks.length >= LINE_TUNING.watchWeeks && level.recentWeeks.every((w) => w.people[id] !== undefined && near(w.people[id]!));
   for (const id of people) {
     const p = sim.people[id]!;
     const was = start[id];
     if (!was) continue;
     const line =
-      band(was.stress) < highBand && band(p.stress) === highBand && p.stress <= TUNING.highStressLine
+      nearStress(p.stress) && (band(was.stress) < highBand || stayed(id, (x) => nearStress(x.stress)))
         ? ('stress' as const)
-        : band(was.motivation) > lowBand && band(p.motivation) === lowBand && p.motivation >= TUNING.lowMotivationLine
+        : nearMotivation(p.motivation) && (band(was.motivation) > lowBand || stayed(id, (x) => nearMotivation(x.motivation)))
           ? ('motivation' as const)
           : undefined;
     if (line) out.push({ kind: 'nearing', subject: id, line, ...withCause(causeOf(level, sim, id, line)) });
@@ -144,7 +149,8 @@ function textOf(sim: SimState, w: Omit<Watch, 'text'>): string {
 export function watchAfterAdvance(level: LineState, sim: SimState, burnedOut: boolean): void {
   const played = sim.week - LEVEL.weeksPerStep;
   if (level.weekStart.week === played) {
-    level.recentWeeks.push({ week: played, stress: structuredClone(level.weekStart.stress), projects: { ...level.weekStart.projects } });
+    const people = Object.fromEntries(Object.entries(level.weekStart.people).map(([id, p]) => [id, { stress: p.stress, motivation: p.motivation }]));
+    level.recentWeeks.push({ week: played, stress: structuredClone(level.weekStart.stress), projects: { ...level.weekStart.projects }, people });
   }
   level.recentWeeks = level.recentWeeks.filter((w) => w.week > played - LINE_TUNING.watchWeeks);
   level.watched = level.watched.filter((w) => w.week > played - REPEAT_WEEKS);

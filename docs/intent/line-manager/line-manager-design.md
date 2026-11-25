@@ -132,7 +132,7 @@ The recap looks back, and it ends with at most one line that looks ahead: a **wa
 
 1. the player's own energy at the edge: the weeks already spent there, and how many more end the run in burnout;
 2. an engineer already over a departure line, their motivation below the low line or their stress above the high line, which makes them likelier to quit every week it lasts; the one with the most weeks over a line first;
-3. an engineer whose stress or motivation moved this week into the band that holds that line, without crossing it;
+3. an engineer whose stress or motivation moved this week into the band that holds that line, without crossing it, or has stayed in that band for the last four weeks: someone strained week after week is still heading for the line, and a warning given once when they entered the band reads, a month on, as a weather report;
 4. a project behind schedule, or due within four weeks with more left to do than the team's recent pace covers.
 
 It speaks through the person where there is one, in words and not numbers, as the rest of the level does ("Nadia looks worn through: she's been over the line for two weeks, and the night pages are still hers alone."), and names the biggest cause of what moved them over the last few weeks, so the player knows which lever to pull: for stress, the largest of the level's own causes, such as night pages taken alone; for motivation, what they want from the job going unserved, when the player has learned what that is, or that the player does not yet know what they want. The same warning about the same person or project is not repeated within three weeks unless it has moved up the list; one that comes back every week becomes a line the player stops reading. A week with nothing close has no watch line.
