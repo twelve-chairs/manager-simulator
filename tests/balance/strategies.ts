@@ -5,6 +5,7 @@ import type { Moment, Seen, Strategy } from './harness';
 /** The better choice in each situation, at every career level, as sound practice judges it. Onboarding situations have none. */
 export const BETTER_CHOICES: Record<string, string> = {
   'flight-risk-1on1': 'ask',
+  'flight-risk-1on1-later': 'act',
   'calm-stretch': 'lead',
   'calm-growth-stalled': 'rotate',
   'calm-credit': 'specific',
@@ -26,6 +27,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'calm-training': 'ask',
   'feedback-gap': 'direct',
   'improvement-plan': 'real-plan',
+  'improvement-plan-later': 'real-plan',
   'quarterly-evaluation': 'count-the-load',
   'incident-postmortem': 'fix-the-cause',
   'review-friction': 'separately',

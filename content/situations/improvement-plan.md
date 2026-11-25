@@ -9,8 +9,10 @@ roles:
   - name: engineer
     kind: person
     where:
-      value: engineer.plan
-      is: pip
+      all:
+        - { value: engineer.plan, is: pip }
+        # Once for the same person; a second plan for them is the follow-up.
+        - { history: engineer, situation: improvement-plan, is: 0 }
 choices:
   - id: real-plan
     label: "Write a concrete plan with {engineer}, with weekly check-ins"
