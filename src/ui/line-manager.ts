@@ -10,8 +10,10 @@ import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 const HABITS: Record<HabitId, { label: string; what: string; options: Record<string, string> }> = {
   nightPages: {
     label: 'Night pages',
-    what: 'Who answers when a service goes down overnight.',
-    options: { rotation: 'A rotation through the team', seniors: 'The most skilled engineer', me: 'You take them' },
+    what: 'Who answers when a service goes down overnight. Whoever is on call handles the pages they can on their own; a page beyond them comes to you.',
+    // Named by who is alone on call: "a rotation" reads as shared, and being alone is what the team comes to resent.
+    // @spec UI-LINE-012
+    options: { rotation: 'Each engineer in turn, a week on their own', seniors: 'The most skilled engineer, on their own every week', me: 'You, every night' },
   },
   oneOnOnes: {
     label: '1:1s',

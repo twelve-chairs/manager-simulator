@@ -593,6 +593,22 @@ describe('line manager panels', () => {
     expect(text(makeApp({ run: r }).root, '[data-panel=vacancies] [data-vacancy=v1] [data-field=interviews]')).toBe('1 interview so far');
   });
 
+  // @spec UI-LINE-012
+  it('names the night pages settings by who is on call and that they are on their own', () => {
+    const NAMES = [
+      ['rotation', 'Each engineer in turn, a week on their own'],
+      ['seniors', 'The most skilled engineer, on their own every week'],
+      ['me', 'You, every night'],
+    ];
+    const before = makeApp({ run: run() }).root;
+    const named = (root: HTMLElement, where: string) => $$(root, `${where} [data-habit=nightPages] option`).map((o) => [(o as HTMLOptionElement).value, o.textContent]);
+    expect(named(before, '[data-scene]')).toEqual(NAMES);
+    expect(named(makeApp({ run: playing() }).root, '[data-panel=habits]')).toEqual(NAMES);
+    const help = $$(before, '[data-scene] .help').map((p) => p.textContent ?? '').find((t) => t.startsWith('Who answers when a service goes down overnight.'))!;
+    expect(help).toMatch(/on call handles the pages they can on their own/);
+    expect(help).toMatch(/a page beyond them comes to you/);
+  });
+
   // @spec UI-LINE-006
   it('changes habits from a panel, folded after week 0, offering engineers by name', () => {
     const r = playing();

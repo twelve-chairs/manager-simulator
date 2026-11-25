@@ -454,7 +454,7 @@ function playInPage(options: InPage): PlaySummary {
       case 'heavyThenEase':
         if (!easing && q('[data-field=burnout]')) {
           easing = true;
-          setHabit('nightPages', /rotation/i);
+          setHabit('nightPages', /in turn/i);
         }
         return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
     }
@@ -574,7 +574,7 @@ function playInPage(options: InPage): PlaySummary {
 
   if (options.strategy === 'decline' || options.strategy === 'waiter') setHabit('oneOnOnes', /every week|weekly/i);
   soundHabits();
-  if (options.strategy === 'hero' || options.strategy === 'heavyThenEase') setHabit('nightPages', /you take/i);
+  if (options.strategy === 'hero' || options.strategy === 'heavyThenEase') setHabit('nightPages', /every night/i);
   if (q('[data-scene]')?.dataset.scene === 'before-monday') {
     look();
     read('before-monday', q('[data-scene]'));
