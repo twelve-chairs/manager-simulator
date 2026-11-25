@@ -90,6 +90,8 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-008**: The line manager's situation content shall include, apart from onboarding, at least five situations of normal priority, marked `quietWeek`, whose conditions can all hold together for a team in which no engineer is strained or above, the team's stress is below strained, and no project is overdue, behind schedule or at high risk, and cannot hold for the same team once every engineer is strained and a project is behind schedule.
 - [x] **LINE-MOMENT-009**: Each line manager situation marked `quietWeek` shall be marked `once`.
 - [x] **LINE-MOMENT-010**: Where a line manager quiet-week situation follows another, its id being that situation's id followed by `-later`, it shall bind as its person only someone who remembers being in the first situation, and only from 13 weeks after the first was presented, and each of the six calm-team situations that otherwise came back most (`calm-loan`, `calm-prototype`, `calm-slack`, `calm-stretch`, `calm-ceremony`, `calm-pairing`) shall have one.
+- [x] **LINE-MOMENT-011**: The line manager situations `scope-creep`, `conference-talk` and `review-friction` shall each be marked `once` and have a follow-up, its id being that situation's id followed by `-later`, that binds as its people only the people who were in the first situation, and only from 13 weeks after the first was presented, whichever choice was made.
+- [x] **LINE-MOMENT-012**: The `scope-creep` situation shall name an engineer on its project's team as the one who would build the request, and each of its choices shall leave that engineer a history entry.
 
 ## Project check-ins
 

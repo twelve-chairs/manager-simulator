@@ -23,6 +23,20 @@ roles:
         - { history: engineer, situation: calm-ceremony, atLeast: 1 }
         - { history: engineer, situation: calm-ceremony, withinWeeks: 13, is: 0 }
 choices:
+  - id: fine
+    label: "Say things are working fine and move on"
+    outcomes:
+      - id: dismissed
+        when: { history: engineer, situation: calm-ceremony, choice: keep, atLeast: 1 }
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -6, wantTags: { against: [autonomy] }, historyNote: Asked twice about how the team works and was waved off }
+        aftermath: "{engineer} stops bringing things up at the retro."
+        debrief: "Waving off the same question twice teaches a team that retros are for show."
+      - id: moved-on
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -2 }
+        aftermath: "The retro moves on to the next sticky note."
+        debrief: "Things may well be fine; the team asked to be the ones who say so."
   - id: ask
     label: "Ask the team what to keep and what to change, and do what they say"
     outcomes:
@@ -46,20 +60,6 @@ choices:
           - { type: value, target: player, field: stress, amount: 2 }
         aftermath: "The team asks, again, to drop the status meeting. This time you do, and write the update yourself."
         debrief: "Coming back to a question you said no to, and changing your answer, earns more trust than getting it right first time."
-  - id: fine
-    label: "Say things are working fine and move on"
-    outcomes:
-      - id: dismissed
-        when: { history: engineer, situation: calm-ceremony, choice: keep, atLeast: 1 }
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -6, wantTags: { against: [autonomy] }, historyNote: Asked twice about how the team works and was waved off }
-        aftermath: "{engineer} stops bringing things up at the retro."
-        debrief: "Waving off the same question twice teaches a team that retros are for show."
-      - id: moved-on
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -2 }
-        aftermath: "The retro moves on to the next sticky note."
-        debrief: "Things may well be fine; the team asked to be the ones who say so."
   - id: check-in
     label: "Add a monthly session on how the team works"
     outcomes:

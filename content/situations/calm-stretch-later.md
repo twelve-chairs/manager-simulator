@@ -29,6 +29,20 @@ roles:
         - { value: project.team, is: { value: player.team } }
         - { value: project.status, is: active }
 choices:
+  - id: not-yet
+    label: "Tell {engineer} they're not ready yet"
+    outcomes:
+      - id: twice-no
+        when: { history: engineer, situation: calm-stretch, choice: keep, atLeast: 1 }
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -8, wantTags: { against: [growth, autonomy] }, historyNote: Was told twice they weren't ready for more }
+        aftermath: "{engineer} thanks you for being honest. Their profile on a jobs site gets a new photo that week."
+        debrief: "'Not yet' twice, with nothing to do in between, sounds like 'not here'."
+      - id: no
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -4, wantTags: { against: [growth, autonomy] } }
+        aftermath: "{engineer} asks what ready would look like. You don't have a good answer."
+        debrief: "'Not ready' is only useful with a path to ready behind it."
   - id: own
     label: "Make {engineer} {project}'s technical lead"
     outcomes:
@@ -49,20 +63,6 @@ choices:
           - { type: value, target: project, field: progress, amount: -3 }
         aftermath: "{engineer} takes it on with no smaller step behind them. The first month is bumpy, and they don't ask for help."
         debrief: "Growing someone in one jump works, at a cost a smaller step earlier would have spread out."
-  - id: not-yet
-    label: "Tell {engineer} they're not ready yet"
-    outcomes:
-      - id: twice-no
-        when: { history: engineer, situation: calm-stretch, choice: keep, atLeast: 1 }
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -8, wantTags: { against: [growth, autonomy] }, historyNote: Was told twice they weren't ready for more }
-        aftermath: "{engineer} thanks you for being honest. Their profile on a jobs site gets a new photo that week."
-        debrief: "'Not yet' twice, with nothing to do in between, sounds like 'not here'."
-      - id: no
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -4, wantTags: { against: [growth, autonomy] } }
-        aftermath: "{engineer} asks what ready would look like. You don't have a good answer."
-        debrief: "'Not ready' is only useful with a path to ready behind it."
   - id: review
     label: "Promise to raise it at their next review"
     outcomes:

@@ -21,6 +21,14 @@ roles:
         - { value: engineer.team, is: { value: player.team } }
         - { value: engineer.stress, below: 60 }
 choices:
+  - id: subscription
+    label: "Buy the whole team a subscription to an online course library"
+    outcomes:
+      - id: subscribed
+        effects:
+          - { type: value, target: engineer, field: skill, amount: 1, historyNote: Got a login to a course library }
+        aftermath: "Everyone gets a login. Two people use it, once."
+        debrief: "Something for everyone is fair, and usually means nothing much for anyone."
   - id: ask
     label: "Ask {engineer} what they'd most like to learn, and book that"
     outcomes:
@@ -30,14 +38,6 @@ choices:
           - { type: value, target: engineer, field: skill, amount: 3 }
         aftermath: "{engineer} picks a course you'd never have thought of, and talks about it for weeks."
         debrief: "Training someone chose for themselves gets used. Training chosen for them gets attended."
-  - id: subscription
-    label: "Buy the whole team a subscription to an online course library"
-    outcomes:
-      - id: subscribed
-        effects:
-          - { type: value, target: engineer, field: skill, amount: 1, historyNote: Got a login to a course library }
-        aftermath: "Everyone gets a login. Two people use it, once."
-        debrief: "Something for everyone is fair, and usually means nothing much for anyone."
   - id: return
     label: "Hand the budget back: the team is doing fine"
     outcomes:

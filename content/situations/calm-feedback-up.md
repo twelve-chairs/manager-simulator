@@ -22,6 +22,14 @@ roles:
         - { value: engineer.stress, below: 60 }
         - { value: engineer.trust, atLeast: 50 }
 choices:
+  - id: explain
+    label: "Explain why you run planning the way you do"
+    outcomes:
+      - id: explained
+        effects:
+          - { type: value, target: engineer, field: trust, amount: -3, historyNote: Gave you feedback and got an explanation }
+        aftermath: "{engineer} says that makes sense. Planning still runs long."
+        debrief: "An explanation answers the feedback without taking it. The engineer hears which one you did."
   - id: change
     label: "Thank {engineer}, and change how you run planning: decisions first, discussion after"
     outcomes:
@@ -32,14 +40,6 @@ choices:
           - { type: value, target: player, field: stress, amount: 2 }
         aftermath: "Planning finishes twenty minutes early the next week. {engineer} doesn't say anything, and doesn't need to."
         debrief: "Acting on feedback is what makes it worth giving. The cost is changing a habit you liked."
-  - id: explain
-    label: "Explain why you run planning the way you do"
-    outcomes:
-      - id: explained
-        effects:
-          - { type: value, target: engineer, field: trust, amount: -3, historyNote: Gave you feedback and got an explanation }
-        aftermath: "{engineer} says that makes sense. Planning still runs long."
-        debrief: "An explanation answers the feedback without taking it. The engineer hears which one you did."
   - id: ask-team
     label: "Ask the whole team at the next retro whether they agree"
     outcomes:

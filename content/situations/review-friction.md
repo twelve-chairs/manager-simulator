@@ -3,7 +3,7 @@ id: review-friction
 title: Friction in code review
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 26
+once: true
 waitDebrief: "Conflict in code review rarely settles itself. Left alone, it hardens into how two people work, and the team learns to route around it."
 roles:
   - name: a
@@ -46,10 +46,12 @@ choices:
             target: a
             field: stress
             amount: 3
+            historyNote: Sat through a mediation with a colleague that went nowhere
           - type: value
             target: b
             field: stress
             amount: 3
+            historyNote: Sat through a mediation with a colleague that went nowhere
         aftermath: "Neither says much with the other in the room."
         debrief: "Mediation needs trust in you first. Without it, talk to each person separately before bringing them together."
   - id: separately
@@ -63,15 +65,15 @@ choices:
             - value: b.trust
               atLeast: 50
         effects:
-          - { type: value, target: a, field: trust, amount: 1 }
-          - { type: value, target: b, field: trust, amount: 1 }
+          - { type: value, target: a, field: trust, amount: 1, historyNote: Was heard out about a conflict with a colleague }
+          - { type: value, target: b, field: trust, amount: 1, historyNote: Was heard out about a conflict with a colleague }
           - { type: value, target: player, field: stress, amount: 3 }
         aftermath: "Both of them say much the same thing to you, a day apart. The threads stay sharp for another week while you go between them."
         debrief: "When both already trust you, two separate conversations drag out what one joint one would settle, and cost you the time of both."
       - id: heard
         effects:
-          - { type: value, target: a, field: trust, amount: 3 }
-          - { type: value, target: b, field: trust, amount: 3 }
+          - { type: value, target: a, field: trust, amount: 3, historyNote: Was heard out about a conflict with a colleague }
+          - { type: value, target: b, field: trust, amount: 3, historyNote: Was heard out about a conflict with a colleague }
           - { type: value, target: a, field: stress, amount: -2 }
           - { type: value, target: b, field: stress, amount: -2 }
           - { type: value, target: player, field: stress, amount: 3 }
@@ -86,10 +88,12 @@ choices:
             target: a
             field: motivation
             amount: -5
+            historyNote: Was left to sort out a conflict with a colleague
           - type: value
             target: b
             field: motivation
             amount: -5
+            historyNote: Was left to sort out a conflict with a colleague
           - type: value
             target: a
             field: stress

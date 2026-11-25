@@ -3,7 +3,7 @@ id: conference-talk
 title: A talk accepted
 levels: [line-manager]
 priority: normal
-cooldownWeeks: 26
+once: true
 waitDebrief: "A growth opportunity left unanswered usually lapses. The engineer notices that it did, and who let it."
 roles:
   - name: engineer
@@ -63,6 +63,7 @@ choices:
             target: engineer
             field: motivation
             amount: -6
+            historyNote: Had their conference talk turned down
           - type: value
             target: engineer
             field: trust

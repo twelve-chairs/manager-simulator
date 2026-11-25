@@ -32,6 +32,21 @@ roles:
         - { value: senior.skill, atLeast: 65 }
         - { value: senior.stress, below: 60 }
 choices:
+  - id: hand-over
+    label: "Give the hard part to {senior}"
+    outcomes:
+      - id: sidelined-again
+        when: { history: junior, situation: calm-pairing, choice: leave, atLeast: 1 }
+        effects:
+          - { type: value, target: junior, field: motivation, amount: -6, wantTags: { against: [growth] }, historyNote: Had the hard part handed to someone else }
+        aftermath: "{junior} gets the easy half again. They've stopped asking why."
+        debrief: "Left alone to learn and then kept off the hard work, a newer engineer learns where they stand."
+      - id: sidelined
+        effects:
+          - { type: value, target: junior, field: motivation, amount: -3, wantTags: { against: [growth] } }
+          - { type: value, target: senior, field: stress, amount: 2 }
+        aftermath: "{senior} does it quickly and well. {junior} reads the pull request afterwards."
+        debrief: "The strongest engineer doing the hardest part is fast, and it's how the gap between them stays the same."
   - id: own
     label: "Let {junior} own it, with {senior} reviewing the design"
     outcomes:
@@ -51,21 +66,6 @@ choices:
           - { type: value, target: senior, field: stress, amount: 3 }
         aftermath: "{senior}'s review turns into two afternoons of redesign. {junior} learns a lot, mostly at once."
         debrief: "Ownership teaches, and without the groundwork the reviewer ends up teaching it all in one go."
-  - id: hand-over
-    label: "Give the hard part to {senior}"
-    outcomes:
-      - id: sidelined-again
-        when: { history: junior, situation: calm-pairing, choice: leave, atLeast: 1 }
-        effects:
-          - { type: value, target: junior, field: motivation, amount: -6, wantTags: { against: [growth] }, historyNote: Had the hard part handed to someone else }
-        aftermath: "{junior} gets the easy half again. They've stopped asking why."
-        debrief: "Left alone to learn and then kept off the hard work, a newer engineer learns where they stand."
-      - id: sidelined
-        effects:
-          - { type: value, target: junior, field: motivation, amount: -3, wantTags: { against: [growth] } }
-          - { type: value, target: senior, field: stress, amount: 2 }
-        aftermath: "{senior} does it quickly and well. {junior} reads the pull request afterwards."
-        debrief: "The strongest engineer doing the hardest part is fast, and it's how the gap between them stays the same."
   - id: pair
     label: "Pair them on it from the start"
     outcomes:

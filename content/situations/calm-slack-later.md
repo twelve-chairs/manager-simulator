@@ -30,24 +30,6 @@ roles:
         - { value: project.status, is: active }
         - { value: project.techDebt, atLeast: 25 }
 choices:
-  - id: clean-first
-    label: "Let {engineer} clean up the path first, then build the feature"
-    outcomes:
-      - id: quick
-        when: { history: engineer, situation: calm-slack, choice: pay-down, atLeast: 1 }
-        effects:
-          - { type: value, target: project, field: techDebt, amount: -6 }
-          - { type: value, target: project, field: progress, amount: -1 }
-          - { type: value, target: engineer, field: motivation, amount: 3, wantTags: { serves: [autonomy] }, historyNote: Cleaned up before building on it }
-        aftermath: "Half the cleanup was done in that quiet week. {engineer} finishes the rest in a day and the feature goes in clean."
-        debrief: "Debt paid down earlier keeps paying: the next change through the same code is cheaper."
-      - id: slow
-        effects:
-          - { type: value, target: project, field: techDebt, amount: -10 }
-          - { type: value, target: project, field: progress, amount: -3 }
-          - { type: value, target: engineer, field: motivation, amount: 3, wantTags: { serves: [autonomy] }, historyNote: Cleaned up before building on it }
-        aftermath: "The cleanup takes most of a week. The feature after it takes a day."
-        debrief: "Cleaning up before building costs a week now. Building on top costs a little on every change after."
   - id: on-top
     label: "Build it on top of the code as it is"
     outcomes:
@@ -67,6 +49,24 @@ choices:
           - { type: value, target: project, field: progress, amount: 3 }
         aftermath: "The feature ships early. The corner is a little harder to step around."
         debrief: "Building on top is faster this week and slower every week after."
+  - id: clean-first
+    label: "Let {engineer} clean up the path first, then build the feature"
+    outcomes:
+      - id: quick
+        when: { history: engineer, situation: calm-slack, choice: pay-down, atLeast: 1 }
+        effects:
+          - { type: value, target: project, field: techDebt, amount: -6 }
+          - { type: value, target: project, field: progress, amount: -1 }
+          - { type: value, target: engineer, field: motivation, amount: 3, wantTags: { serves: [autonomy] }, historyNote: Cleaned up before building on it }
+        aftermath: "Half the cleanup was done in that quiet week. {engineer} finishes the rest in a day and the feature goes in clean."
+        debrief: "Debt paid down earlier keeps paying: the next change through the same code is cheaper."
+      - id: slow
+        effects:
+          - { type: value, target: project, field: techDebt, amount: -10 }
+          - { type: value, target: project, field: progress, amount: -3 }
+          - { type: value, target: engineer, field: motivation, amount: 3, wantTags: { serves: [autonomy] }, historyNote: Cleaned up before building on it }
+        aftermath: "The cleanup takes most of a week. The feature after it takes a day."
+        debrief: "Cleaning up before building costs a week now. Building on top costs a little on every change after."
   - id: ticket
     label: "Write a ticket for the cleanup, and build on top for now"
     outcomes:

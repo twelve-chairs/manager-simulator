@@ -30,6 +30,21 @@ roles:
         - { value: project.team, is: { value: player.team } }
         - { value: project.status, is: active }
 choices:
+  - id: refuse
+    label: "Say no: the team can't spare a day"
+    outcomes:
+      - id: twice
+        when: { history: engineer, situation: calm-loan, choice: refuse, atLeast: 1 }
+        effects:
+          - { type: value, target: engineer, field: motivation, amount: -2, wantTags: { against: [growth] } }
+          - { type: value, target: player, field: reputation, amount: -4 }
+        aftermath: "The other manager doesn't argue this time. You hear later that your team is described as 'not one to ask'."
+        debrief: "Two refusals in a row stop being about the week and start being about you."
+      - id: declined
+        effects:
+          - { type: value, target: player, field: reputation, amount: -2 }
+        aftermath: "The other manager thanks you for the help last time and finds someone else."
+        debrief: "A calm team that can't spare a day a week is telling the rest of the organisation something about its manager."
   - id: share
     label: "Agree to one day a week for a month, and ask what they can do for {project} in return"
     outcomes:
@@ -49,21 +64,6 @@ choices:
           - { type: value, target: player, field: reputation, amount: 2 }
         aftermath: "The other manager agrees, a little warily. {engineer} spends Thursdays on their pipeline and comes back with opinions about yours."
         debrief: "Saying yes now mends some of what the first answer cost, and asking for something back keeps it a trade."
-  - id: refuse
-    label: "Say no: the team can't spare a day"
-    outcomes:
-      - id: twice
-        when: { history: engineer, situation: calm-loan, choice: refuse, atLeast: 1 }
-        effects:
-          - { type: value, target: engineer, field: motivation, amount: -2, wantTags: { against: [growth] } }
-          - { type: value, target: player, field: reputation, amount: -4 }
-        aftermath: "The other manager doesn't argue this time. You hear later that your team is described as 'not one to ask'."
-        debrief: "Two refusals in a row stop being about the week and start being about you."
-      - id: declined
-        effects:
-          - { type: value, target: player, field: reputation, amount: -2 }
-        aftermath: "The other manager thanks you for the help last time and finds someone else."
-        debrief: "A calm team that can't spare a day a week is telling the rest of the organisation something about its manager."
   - id: notes
     label: "Send them {engineer}'s notes on the pipeline instead"
     outcomes:
