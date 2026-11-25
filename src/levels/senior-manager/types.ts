@@ -132,6 +132,8 @@ export interface SeniorState {
   moments: SeniorMoment[];
   /** Per team id: the week its manager last asked for an approval. */
   lastApproval: Record<string, number>;
+  /** Pairs of teams whose dispute the player agreed or decided, and the week they settled it. */
+  settledDisputes: { teams: [string, string]; week: number }[];
   /** Whether the group has been offered its fourth team. */
   restructured: boolean;
   /** Per team id: the week a manager hired from outside starts leading it; until then the team is leaderless. */

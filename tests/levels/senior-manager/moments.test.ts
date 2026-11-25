@@ -183,8 +183,16 @@ describe('a month’s moments', () => {
     const d = find(l, 'dispute');
     expect(new Set([d.teamId, d.otherTeamId])).toEqual(new Set([a, b]));
     expect(d.choices.map((x) => x.id)).toEqual(['agree', 'decide', 'letRun']);
-    const agreed = answer(l, s, d, 'agree').sim;
+    const agreeing = answer(l, s, d, 'agree');
+    const agreed = agreeing.sim;
     for (const t of [a!, b!]) expect(agreed.people[leader(s, t)]!.skill).toBe(s.people[leader(s, t)]!.skill + T.agreeGrowth);
+    // agreeing eases both projects, and says the shared work is planned
+    expect(agreed.projects[pa]!.risk).toBe(70 - T.agreeRelief);
+    expect(agreed.projects[pb]!.risk).toBe(50 - T.agreeRelief);
+    expect(agreeing.reaction).toMatch(/plan/);
+    // deciding eases the winning project by more than agreeing eases each
+    expect(answer(l, s, d, 'decide').sim.projects[pa]!.risk).toBe(70 - T.decideRelief);
+    expect(T.decideRelief).toBeGreaterThan(T.agreeRelief);
     // deciding favours the project at greater risk; the other team's manager loses trust
     const decided = answer(l, s, d, 'decide').sim;
     expect(decided.people[leader(s, b!)]!.trust).toBe(s.people[leader(s, b!)]!.trust - T.decideTrust);
@@ -192,6 +200,40 @@ describe('a month’s moments', () => {
     const ran = answer(l, s, d, 'letRun').sim;
     expect(ran.projects[pa]!.risk).toBe(70 + T.letRunRisk);
     expect(ran.projects[pb]!.risk).toBe(50 + T.letRunRisk);
+  });
+
+  // @spec SENIOR-MOMENT-014
+  it('keeps a dispute the player agreed or decided settled for a quarter, and one let run open', () => {
+    const { level, sim } = calm(5);
+    const [a, b, c] = level.teamIds as [string, string, string];
+    const first = (t: string) => Object.values(sim.projects).find((p) => p.teamId === t)!.id;
+    const risky = (risks: [number, number, number]) => edit(sim, (x) => [a, b, c].forEach((t, i) => (x.projects[first(t)]!.risk = risks[i]!)));
+    const pair = (m: SeniorMoment) => new Set([m.teamId, m.otherTeamId]);
+    const later = (s: SimState, weeks: number) => edit(s, (x) => (x.week += weeks));
+
+    const s = risky([70, 60, 10]);
+    const l = beginMonth(level, s);
+    for (const choice of ['agree', 'decide']) {
+      const settled = answer(l, s, find(l, 'dispute'), choice);
+      // a month later both projects are still at risk, but the two teams settled it
+      const keepRisk = (x: SimState) => edit(x, (y) => ((y.projects[first(a)]!.risk = 70), (y.projects[first(b)]!.risk = 60)));
+      expect(kinds(beginMonth(settled.level, later(keepRisk(settled.sim), 4)))).not.toContain('dispute');
+      expect(kinds(beginMonth(settled.level, later(keepRisk(settled.sim), T.disputeSettledWeeks - 1)))).not.toContain('dispute');
+      // a quarter on, it can come back
+      const back = beginMonth(settled.level, later(keepRisk(settled.sim), T.disputeSettledWeeks));
+      expect(pair(find(back, 'dispute'))).toEqual(new Set([a, b]));
+    }
+    // letting it run settles nothing
+    const ran = answer(l, s, find(l, 'dispute'), 'letRun');
+    expect(pair(find(beginMonth(ran.level, later(ran.sim, 4)), 'dispute'))).toEqual(new Set([a, b]));
+
+    // with the riskiest pair settled, the dispute falls to the riskiest team's next partner
+    const three = risky([70, 60, 50]);
+    const l3 = beginMonth(level, three);
+    expect(pair(find(l3, 'dispute'))).toEqual(new Set([a, b]));
+    const settled = answer(l3, three, find(l3, 'dispute'), 'agree');
+    const again = edit(settled.sim, (y) => [a, b, c].forEach((t, i) => (y.projects[first(t)]!.risk = [70, 60, 50][i]!)));
+    expect(pair(find(beginMonth(settled.level, later(again, 4)), 'dispute'))).toEqual(new Set([a, c]));
   });
 
   // @spec SENIOR-MOMENT-007

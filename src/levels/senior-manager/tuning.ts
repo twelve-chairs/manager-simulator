@@ -60,6 +60,9 @@ export const SENIOR_TUNING = {
   /** Disputes: the skill agreeing grows, the relief and trust cost of deciding, and the risk letting it run adds. */
   agreeGrowth: 2,
   agreeEnergy: 1,
+  agreeRelief: 5,
+  /** Weeks a dispute the player agreed or decided stays settled between those two teams: a quarter. */
+  disputeSettledWeeks: 13,
   decideRelief: 10,
   decideTrust: 5,
   letRunRisk: 8,

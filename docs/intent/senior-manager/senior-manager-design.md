@@ -64,7 +64,7 @@ A month is a handful of moments, Monday of the first week to Friday of the last,
 
 - **Escalation**: a manager brings a problem in their team (stress or attrition risk high, a project slipping, a conflict). Coach them through it; step in and fix it yourself; let them handle it. Stepping in fixes the problem and costs energy and the manager's growth; coaching costs less energy, and works if the manager's skill is at least *developing*; letting them handle it works only for a skilled manager.
 - **Staffing request**: a team is overloaded while another has room. Move a head between teams; backfill with a hire; decline. Moving helps both teams if the giving team has room, and costs its manager's trust if it doesn't.
-- **Cross-team dispute**: two teams need the same thing, or one blocks the other. Get the two managers to agree a plan; decide it yourself; let it run. Deciding is quick and costs the losing manager's trust; agreeing builds both managers' skill.
+- **Cross-team dispute**: two teams need the same thing, or one blocks the other. Get the two managers to agree a plan; decide it yourself; let it run. Agreeing builds both managers' skill and eases both projects' risk a little; deciding is quick, eases the winning project's risk more and costs the losing manager's trust; letting it run raises both projects' risk. Agreeing or deciding settles the dispute between those two teams for a quarter, so it does not come back before then; letting it run settles nothing, and it can come back the next month.
 - **New work for the group**: the player's manager offers a project. Give it to a team with room; decline; take it and spread it thin. Spreading it raises every team's stress. Under the habit of giving it to a team with room, it comes as a moment only for a strained team.
 - **Approval**: a manager asks the player to approve promoting one of their people, which moves one of the team's heads up a rating, or letting one go, which removes a head. Approve; ask for the evidence first; refuse. Approving applies it, and when the manager runs lenient the promotion is unearned and the team's motivation dips; asking for the evidence applies it only when the manager does not run lenient, at a small cost to their trust either way; refusing costs their trust.
 - **Final evaluation**: a manager on an improvement plan whose third low rating is due, as at the first level: let them go, or one more period.
@@ -113,7 +113,7 @@ The level provides the turn loop's career level contract, as the line manager le
 
 ## Level State
 
-The managers' leniency, the habits, the month's moments and their status, the goals, the months each team has spent with true or reported visibility, each manager's oversight history, plans, and the counters burnout and reviews need. Management skill, trust, motivation and the teams' health live in the simulation core.
+The managers' leniency, the habits, the month's moments and their status, the goals, the months each team has spent with true or reported visibility, each manager's oversight history, plans, the pairs of teams whose dispute is settled and when, and the counters burnout and reviews need. Management skill, trust, motivation and the teams' health live in the simulation core.
 
 ## Effects Beyond This Level
 
@@ -129,6 +129,7 @@ Committing to this level changes other segments, each walked through its own des
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
+| When a dispute comes back | Agreeing or deciding settles the two teams' dispute for a quarter, and agreeing eases both projects' risk | Offer it every month both projects are at risk; a cooldown after any answer | Offered every month, a dispute the player had settled came back unchanged, since agreeing moved nothing that raised it, and the scene read as the game ignoring the answer. A cooldown after letting it run would reward ignoring it. |
 | Size of the group | Three teams, a fourth through restructuring | Four from the start; two plus the old team | Three managers are enough to compare and calibrate across, and few enough to know as characters. Two plus the old team pulls attention back to the first level's job. |
 | Who leads the old team | The player chooses: one of their engineers, or an outside hire | The strongest engineer automatically; always an outside hire | The choice is the player's first senior call and has consequences they can trace. An automatic pick hides that strong engineers aren't always good managers; an outside hire loses the team the player built. |
 | Review cadence | Every six months, promotion from the third, last review the sixth | Every three months; yearly | Six-monthly reviews are common at this level and, with monthly turns, put a promotion about an hour into the level. Quarterly reviews would leave nine turns before promotion; yearly ones would leave long stretches without feedback. |

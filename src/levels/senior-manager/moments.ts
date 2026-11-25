@@ -138,10 +138,14 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   if (strained && roomy && strained !== roomy) {
     drafts.push({ kind: 'staffing', teamId: strained, otherTeamId: roomy, title: 'A staffing request', text: `${managerName(s, sim, strained)} asks for another pair of hands. ${name(sim, roomy)} has some room.`, choices: CHOICES.staffing });
   }
-  // A dispute between the two teams whose projects are most at risk.
+  // A dispute between the two teams whose projects are most at risk, skipping pairs whose dispute is settled.
+  // @spec SENIOR-MOMENT-014
+  s.settledDisputes = s.settledDisputes.filter((d) => sim.week - d.week < T.disputeSettledWeeks);
+  const settled = (x: string, y: string) => s.settledDisputes.some((d) => d.teams.includes(x) && d.teams.includes(y));
   const atRisk = s.teamIds.filter((t) => activeProjects(sim, t)[0]?.risk !== undefined && activeProjects(sim, t)[0]!.risk >= T.atRiskProject).sort((x, y) => activeProjects(sim, y)[0]!.risk - activeProjects(sim, x)[0]!.risk);
-  if (atRisk.length >= 2) {
-    const [a, b] = atRisk as [string, string];
+  const disputing = atRisk.flatMap((x, i) => atRisk.slice(i + 1).map((y) => [x, y] as const)).find(([x, y]) => !settled(x, y));
+  if (disputing) {
+    const [a, b] = disputing;
     drafts.push({
       kind: 'dispute',
       teamId: a,
@@ -229,7 +233,7 @@ function addFourthTeam(s: SeniorState, sim: SimState, manager: ReturnType<typeof
 }
 
 /** Applies the player's choice for one of the month's open moments, and closes it. */
-// @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010, SENIOR-PLAN-003
+// @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010, SENIOR-MOMENT-014, SENIOR-PLAN-003
 export function chooseSenior(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
   const found = level.moments.find((m) => m.id === momentId);
   if (!found || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
@@ -312,10 +316,13 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       if (choiceId === 'agree') {
         effects.push(player('stress', T.agreeEnergy, 'senior.dispute'));
         for (const x of [m, otherManager]) if (x) effects.push(person(x, 'skill', T.agreeGrowth, 'senior.dispute'));
-        reaction = `It takes an hour, but ${who} and ${managerName(s, sim, other)} leave with a plan they both own.`;
+        effects.push(project(moment.projectId!, 'risk', -T.agreeRelief, 'senior.dispute'), project(moment.otherProjectId!, 'risk', -T.agreeRelief, 'senior.dispute'));
+        s.settledDisputes.push({ teams: [t, other], week: sim.week });
+        reaction = `It takes an hour, but ${who} and ${managerName(s, sim, other)} leave with a plan they both own, and the shared work is no longer a race.`;
       } else if (choiceId === 'decide') {
         effects.push(project(moment.projectId!, 'risk', -T.decideRelief, 'senior.dispute'));
         if (otherManager) effects.push(person(otherManager, 'trust', -T.decideTrust, 'senior.dispute'));
+        s.settledDisputes.push({ teams: [t, other], week: sim.week });
         reaction = `You call it for ${name(sim, t)}. ${managerName(s, sim, other)} accepts it, without enthusiasm.`;
       } else {
         effects.push(project(moment.projectId!, 'risk', T.letRunRisk, 'senior.dispute'), project(moment.otherProjectId!, 'risk', T.letRunRisk, 'senior.dispute'));

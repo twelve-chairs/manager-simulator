@@ -70,6 +70,7 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     periodStart: { week: lineSim.week, skill: 0, health: {} },
     moments: [],
     lastApproval: {},
+    settledDisputes: [],
     restructured: false,
     arriving: {},
     heldEvaluations: [],
