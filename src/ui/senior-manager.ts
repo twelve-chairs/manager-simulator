@@ -198,7 +198,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
 
 /** A chip per band that moved for a manager, a team as shown, or the player, and per change in a team's headcount. */
 // @spec UI-SENIOR-007
-function chips(before: unknown, after: unknown): Chip[] {
+function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
   const a = before as SeniorView;
   const b = after as SeniorView;
   const out: Chip[] = [];
@@ -211,6 +211,7 @@ function chips(before: unknown, after: unknown): Chip[] {
     if (!n) continue;
     move(`manager:${m.id}:motivation`, m.name, m.motivation, n.motivation, true, 'more motivated', 'less motivated');
     move(`manager:${m.id}:stress`, m.name, m.stress, n.stress, false, 'more stressed', 'less stressed');
+    if (m.stress === n.stress && rose(m.id)) out.push({ key: `manager:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
     move(`manager:${m.id}:skill`, m.name, m.skill, n.skill, true, 'a better manager', 'a weaker manager');
   }
   const teams = new Map(b.teams.map((t) => [t.id, t]));

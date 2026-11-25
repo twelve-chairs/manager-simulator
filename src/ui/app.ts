@@ -106,7 +106,8 @@ export interface LevelRenderer {
   /** The habit controls for Before Monday, each with a line on what it does. */
   habits(ctx: ScreenContext): Child;
   moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined;
-  chips(before: unknown, after: unknown): Chip[];
+  /** Chips for a choice's effects, from the level's view before and after; `rose` says whether a person's stress rose under the bands. */
+  chips(before: unknown, after: unknown, rose?: (personId: string) => boolean): Chip[];
   /** The level's part of the recap: what changed, shown at once, and the routine, folded into The whole week. */
   recap(run: Run, recap: unknown): { changes: Child; routine: Child };
   status(view: unknown): { energy: number; reputation: number; goals: { id: string; text: string; progress: string }[]; edge?: { at: boolean; weeks: number; limit: number } };
@@ -425,7 +426,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       if (command.kind === 'answer' && found) {
         const after = result.run;
         const passed = after.week.filter((m) => m.status === 'expired' && m.id !== command.momentId && before.week.find((x) => x.id === m.id)?.status === 'open');
-        const chips = found.renderer.chips(found.level.view(before.level, before.sim), found.level.view(after.level, after.sim));
+        // @spec UI-WEEK-019
+        const rose = (id: string) => (after.sim.people[id]?.stress ?? 0) > (before.sim.people[id]?.stress ?? Number.POSITIVE_INFINITY);
+        const chips = found.renderer.chips(found.level.view(before.level, before.sim), found.level.view(after.level, after.sim), rose);
         // @spec UI-WEEK-018
         // One choice rarely moves a band of energy; without this, doing it yourself would look free, at every level and in situations.
         if (after.sim.player.stress > before.sim.player.stress && !chips.some((c) => c.key === 'player:energy')) chips.push({ key: 'player:energy-spent', text: 'You: energy spent', tone: 'bad' });

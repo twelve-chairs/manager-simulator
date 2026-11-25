@@ -156,7 +156,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
 
 /** A chip per band that moved between two views, per person who left or joined, and per new memory note on someone with no band chip. */
 // @spec UI-WEEK-008, UI-WEEK-010
-function chips(before: unknown, after: unknown): Chip[] {
+function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
   const a = before as View;
   const b = after as View;
   const out: Chip[] = [];
@@ -172,6 +172,8 @@ function chips(before: unknown, after: unknown): Chip[] {
     }
     move(`person:${p.id}:motivation`, p.name, p.motivation, q.motivation, true, 'more motivated', 'less motivated');
     move(`person:${p.id}:stress`, p.name, p.stress, q.stress, false, 'more stressed', 'less stressed');
+    // A cost too small to move a band is still a cost, as the player's own energy spent is.
+    if (p.stress === q.stress && rose(p.id)) out.push({ key: `person:${p.id}:heavier`, text: `${p.name}: a heavier week`, tone: 'bad' });
     const banded = p.motivation !== q.motivation || p.stress !== q.stress;
     if (!banded && q.notes > p.notes && q.lastNote) out.push({ key: `person:${p.id}:note`, text: `${p.name}: ${q.lastNote}`, tone: 'neutral' });
   }

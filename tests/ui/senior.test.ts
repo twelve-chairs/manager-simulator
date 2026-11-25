@@ -169,6 +169,16 @@ describe('calibration over the curve', () => {
 });
 
 describe('the senior manager renderer', () => {
+  // @spec UI-WEEK-019
+  it('shows a manager a choice added stress to, without moving their band, as a heavier week', () => {
+    const run = senior(8);
+    const view = seniorView(level(run), run.sim);
+    const m = view.managers[0]!;
+    const chips = seniorManagerRenderer.chips(view, view, (id) => id === m.id);
+    expect(chips).toContainEqual({ key: `manager:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
+    expect(seniorManagerRenderer.chips(view, view, () => false).some((c) => c.key.endsWith(':heavier'))).toBe(false);
+  });
+
   // @spec UI-SENIOR-006
   it('shows the manager’s skill beside a choice that depends on them', () => {
     const run = senior(8);

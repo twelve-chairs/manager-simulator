@@ -220,7 +220,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
 
 /** A chip per band that moved, per change in a group's headcount, and per bet whose schedule changed. */
 // @spec UI-DIR-010
-function chips(before: unknown, after: unknown): Chip[] {
+function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
   const a = before as DirectorView;
   const b = after as DirectorView;
   const out: Chip[] = [];
@@ -233,6 +233,7 @@ function chips(before: unknown, after: unknown): Chip[] {
     if (!n) continue;
     move(`sm:${m.id}:motivation`, m.name, m.motivation, n.motivation, true, 'more motivated', 'less motivated');
     move(`sm:${m.id}:stress`, m.name, m.stress, n.stress, false, 'more stressed', 'less stressed');
+    if (m.stress === n.stress && rose(m.id)) out.push({ key: `sm:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
     move(`sm:${m.id}:skill`, m.name, m.skill, n.skill, true, 'a better leader', 'a weaker leader');
   }
   const groups = new Map(b.groups.map((g) => [g.id, g]));

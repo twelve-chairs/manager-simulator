@@ -9,6 +9,15 @@ import { DIRECTOR_HELP_TOPICS, directorRenderer } from '../../src/ui/director';
 import { endWeeks, step, stubReview } from '../loop/fixtures';
 import { $, $$, CONTENT, click, makeApp, select, text } from './fixtures';
 
+describe('director chips', () => {
+  // @spec UI-WEEK-019
+  it('shows a senior manager a choice added stress to, without moving their band, as a heavier week', () => {
+    const view = { seniorManagers: [{ id: 'sm1', name: 'Kofi Mensah', motivation: 2, stress: 2, skill: 2 }], groups: [], upward: [], bets: [], player: { energy: 3, reputation: 3 } };
+    const chips = directorRenderer.chips(view, view, (id) => id === 'sm1');
+    expect(chips).toContainEqual({ key: 'sm:sm1:heavier', text: 'Kofi Mensah: a heavier week', tone: 'bad' });
+  });
+});
+
 const all = (outcome: 'promote' | 'continue' | 'stayed' = 'promote'): Dependencies => ({ levels: [lineManagerLevel, seniorManagerLevel, directorLevel], review: stubReview(outcome).review });
 /** A run promoted from line manager, then from senior manager at its first review: in the director's handover. */
 function promotedTwice(seed = 1): Run {

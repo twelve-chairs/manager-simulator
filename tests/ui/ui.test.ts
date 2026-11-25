@@ -440,6 +440,26 @@ describe('the scene', () => {
     expect(moved.some((c) => c.dataset.chip === 'player:energy-spent')).toBe(false);
   });
 
+  // @spec UI-WEEK-019
+  it('shows the cost to an engineer a choice adds to, marked bad, when it moves no band', () => {
+    const r = structuredClone(atWorkMoment());
+    for (const p of Object.values(r.sim.people)) p.stress = 41; // a little more stays inside the band
+    const { root } = makeApp({ run: r });
+    const give = $$(root, '[data-scene] [data-choice]').find((b) => b.dataset.choice?.startsWith('give:'))!;
+    const who = give.dataset.choice!.slice('give:'.length);
+    give.click();
+    const chip = $(root, `[data-scene] [data-chip="person:${who}:heavier"]`);
+    expect(chip.textContent).toBe(`${r.sim.people[who]!.name}: a heavier week`);
+    expect(chip.dataset.tone).toBe('bad');
+    // When the band moves, the band chip says it, and once.
+    const edge = structuredClone(atWorkMoment());
+    for (const p of Object.values(edge.sim.people)) p.stress = 59;
+    const second = makeApp({ run: edge }).root;
+    $$(second, '[data-scene] [data-choice]').find((b) => b.dataset.choice === `give:${who}`)!.click();
+    expect(second.querySelector(`[data-chip="person:${who}:stress"]`)).not.toBeNull();
+    expect(second.querySelector(`[data-chip="person:${who}:heavier"]`)).toBeNull();
+  });
+
   // @spec UI-WEEK-018
   it('shows the player’s energy spent for a situation’s choice too', () => {
     const tiring = sit({
