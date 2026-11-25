@@ -37,7 +37,7 @@ const moment = (over: Partial<Screen> = {}): Screen => ({
 const reply = (over: Partial<Reply> = {}, action: Partial<Reply['action']> = {}): Reply => ({
   thinkAloud: 'She seems withdrawn; I should ask.',
   feeling: 'clear',
-  action: { kind: 'choose', choiceId: 'ask', place: [], fund: [], calibrate: [], ...action },
+  action: { kind: 'choose', choice: '2', place: [], fund: [], calibrate: [], ...action },
   habits: [],
   notebook: 'Quiet engineers may be flight risks.',
   ...over,
@@ -70,17 +70,28 @@ describe('the AI playtester', () => {
   });
 
   // @spec PLAY-AI-002
-  it('sends only the screen’s text, its choices and habits, what was last read, and the notebook', () => {
+  it('sends only the screen’s text, its choices and habits by neutral handles, what was last read, and the notebook', () => {
     const m = decisionMessage(moment(), 'my notes', 'How week 2 went: Bo is less stressed.');
     expect(m).toContain('my notes');
     expect(m).toContain('How week 2 went');
     expect(addReading(addReading('', 'The review: meets.'), 'How week 13 went.')).toMatch(/^The review: meets\.\n[\s\S]*How week 13 went\.$/);
     expect(m).toContain('Ada answers every question');
-    expect(m).toContain('- `ask`: Ask what would make the job worth staying for');
-    expect(m).toContain('`oneOnOnes` (1:1s), now `fortnightly`');
+    expect(m).toContain('- `1`: Keep the 1:1 on project status');
+    expect(m).toContain('- `2`: Ask what would make the job worth staying for');
+    expect(m).toContain('- `H1` (1:1s), now `2` (Every other week); settings: `1` (Every week), `2` (Every other week)');
     expect(m).toContain('You may also let this wait.');
+    // never the game's ids
+    for (const id of ['move-on', '`ask`', 'oneOnOnes', 'fortnightly', 'weekly`']) expect(m).not.toContain(id);
     const bets = decisionMessage(moment({ funding: { offers: [{ id: 'bo1', label: 'Atlas' }], groups: [{ id: 'g1', label: 'Payments' }] } }), '', '');
-    expect(bets).toMatch(/Bets on offer:\n- `bo1`: Atlas/);
+    expect(bets).toMatch(/Bets on offer:\n- `B1`: Atlas/);
+    expect(bets).toMatch(/Groups that could carry one:\n- `G1`: Payments/);
+    expect(bets).not.toMatch(/bo1|`g1`/);
+    const heads = decisionMessage(moment({ placement: { heads: 2, targets: [{ id: 'group:g1', label: 'Payments' }] } }), '', '');
+    expect(heads).toMatch(/- `T1`: Payments/);
+    expect(heads).not.toContain('group:g1');
+    const cal = decisionMessage(moment({ calibration: { moves: [{ id: 't1:outstanding:exceeds', label: 'Platform: outstanding down to exceeds' }] } }), '', '');
+    expect(cal).toMatch(/Calibration moves[\s\S]*`M1`: Platform: outstanding down to exceeds/);
+    expect(cal).not.toContain('t1:outstanding');
     expect(bets).toContain('(empty: you have just started)');
     const promotion = decisionMessage(moment({ title: 'You have been promoted', text: 'You have been promoted\n\nWho leads Platform now?' }), '', '');
     expect(promotion.match(/You have been promoted/g)).toHaveLength(1);
@@ -89,38 +100,47 @@ describe('the AI playtester', () => {
   });
 
   // @spec PLAY-AI-003
-  it('accepts only what the screen offers', () => {
+  it('accepts only what the screen offers, by its handles, and maps them back to the game’s ids', () => {
     expect(checkReply(moment(), reply())).toMatchObject({ ok: true, action: { kind: 'choose', choiceId: 'ask' } });
-    expect(checkReply(moment(), reply({}, { choiceId: 'shout' }))).toMatchObject({ ok: false, reason: expect.stringContaining('move-on, ask') });
-    expect(checkReply(moment({ canWait: false }), reply({}, { kind: 'wait', choiceId: '' })).ok).toBe(false);
-    expect(checkReply(moment(), reply({ habits: [{ habit: 'oneOnOnes', value: 'daily' }] })).ok).toBe(false);
-    expect(checkReply(moment(), reply({ habits: [{ habit: 'oneOnOnes', value: 'weekly' }] }))).toMatchObject({ ok: true, habits: [{ habit: 'oneOnOnes', value: 'weekly' }] });
+    // a handle not on the screen, or the game's id, is refused, naming the handles
+    const shout = checkReply(moment(), reply({}, { choice: '3' }));
+    expect(shout).toMatchObject({ ok: false, reason: expect.stringContaining('1, 2') });
+    expect(shout.ok === false && shout.reason).not.toMatch(/move-on|ask/);
+    expect(checkReply(moment(), reply({}, { choice: 'ask' })).ok).toBe(false);
+    expect(checkReply(moment({ canWait: false }), reply({}, { kind: 'wait', choice: '' })).ok).toBe(false);
+    const badSetting = checkReply(moment(), reply({ habits: [{ habit: 'H1', value: '3' }] }));
+    expect(badSetting.ok === false && badSetting.reason).toMatch(/1, 2/);
+    expect(badSetting.ok === false && badSetting.reason).not.toMatch(/weekly|fortnightly/);
+    expect(checkReply(moment(), reply({ habits: [{ habit: 'oneOnOnes', value: '1' }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({ habits: [{ habit: 'H1', value: '1' }] }))).toMatchObject({ ok: true, habits: [{ habit: 'oneOnOnes', value: 'weekly' }] });
     const heads = moment({ placement: { heads: 3, targets: [{ id: 'group:g1', label: 'Payments' }, { id: 'group:g2', label: 'Search' }] } });
-    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 2 }, { target: 'group:g2', count: 1 }] }))).toMatchObject({ ok: true, action: { kind: 'place', place: { 'group:g1': 2, 'group:g2': 1 } } });
-    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g1', count: 4 }] })).ok).toBe(false);
+    expect(checkReply(heads, reply({}, { kind: 'place', choice: '', place: [{ target: 'T1', count: 2 }, { target: 'T2', count: 1 }] }))).toMatchObject({ ok: true, action: { kind: 'place', place: { 'group:g1': 2, 'group:g2': 1 } } });
+    expect(checkReply(heads, reply({}, { kind: 'place', choice: '', place: [{ target: 'T1', count: 4 }] })).ok).toBe(false);
+    expect(checkReply(heads, reply({}, { kind: 'place', choice: '', place: [{ target: 'T9', count: 1 }] })).ok).toBe(false);
     const calibration = moment({ calibration: { moves: [{ id: 't1:outstanding:exceeds', label: 'Platform: outstanding down to exceeds' }, { id: 't1:meets:exceeds', label: 'Platform: meets up to exceeds' }] } });
-    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't1:outstanding:exceeds', count: 2 }] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: { 't1:outstanding:exceeds': 2 } } });
-    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: {} } });
-    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't9:meets:below', count: 1 }] })).ok).toBe(false);
-    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choiceId: '', calibrate: [{ move: 't1:meets:exceeds', count: 0 }] })).ok).toBe(false);
-    expect(checkReply(moment(), reply({}, { kind: 'calibrate', choiceId: '', calibrate: [] })).ok, 'no calibration on this screen').toBe(false);
-    expect(decisionMessage(calibration, '', '')).toMatch(/Calibration moves[\s\S]*`t1:outstanding:exceeds`: Platform: outstanding down to exceeds/);
-    expect(checkReply(heads, reply({}, { kind: 'place', choiceId: '', place: [{ target: 'group:g9', count: 1 }] })).ok).toBe(false);
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choice: '', calibrate: [{ move: 'M1', count: 2 }] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: { 't1:outstanding:exceeds': 2 } } });
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choice: '', calibrate: [] }))).toMatchObject({ ok: true, action: { kind: 'calibrate', calibrate: {} } });
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choice: '', calibrate: [{ move: 'M9', count: 1 }] })).ok).toBe(false);
+    expect(checkReply(calibration, reply({}, { kind: 'calibrate', choice: '', calibrate: [{ move: 'M2', count: 0 }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({}, { kind: 'calibrate', choice: '', calibrate: [] })).ok, 'no calibration on this screen').toBe(false);
     const bets = moment({ funding: { offers: [{ id: 'bo1', label: 'A' }, { id: 'bo2', label: 'B' }, { id: 'bo3', label: 'C' }], groups: [{ id: 'g1', label: 'P' }] } });
-    expect(checkReply(bets, reply({}, { kind: 'fund', choiceId: '', fund: [{ offerId: 'bo1', groupId: 'g1' }] }))).toMatchObject({ ok: true, action: { kind: 'fund', fund: { bo1: 'g1' } } });
-    expect(checkReply(bets, reply({}, { kind: 'fund', choiceId: '', fund: [{ offerId: 'bo1', groupId: 'g1' }, { offerId: 'bo2', groupId: 'g1' }, { offerId: 'bo3', groupId: 'g1' }] })).ok).toBe(false);
-    expect(checkReply(moment(), reply({}, { kind: 'fund', choiceId: '', fund: [] })).ok).toBe(false);
+    expect(checkReply(bets, reply({}, { kind: 'fund', choice: '', fund: [{ bet: 'B1', group: 'G1' }] }))).toMatchObject({ ok: true, action: { kind: 'fund', fund: { bo1: 'g1' } } });
+    expect(checkReply(bets, reply({}, { kind: 'fund', choice: '', fund: [{ bet: 'B1', group: 'G1' }, { bet: 'B2', group: 'G1' }, { bet: 'B3', group: 'G1' }] })).ok).toBe(false);
+    expect(checkReply(bets, reply({}, { kind: 'fund', choice: '', fund: [{ bet: 'bo1', group: 'G1' }] })).ok).toBe(false);
+    expect(checkReply(moment(), reply({}, { kind: 'fund', choice: '', fund: [] })).ok).toBe(false);
   });
 
   // @spec PLAY-AI-003, PLAY-AI-004, PLAY-AI-009
   it('sends an invalid reply back once with the reason, then lets the moment wait, and treats a refused reply as invalid', async () => {
-    const good = fake([reply({}, { choiceId: 'shout' }), reply()]);
+    const good = fake([reply({}, { choice: '7' }), reply()]);
     const r = await decide(good, 'sys', moment(), 'old', '', AI_TUNING.models.sonnet);
     expect(good.models).toEqual([AI_TUNING.models.sonnet, AI_TUNING.models.sonnet]);
+    // the action is recorded by the game's ids
     expect(r.action).toEqual({ kind: 'choose', choiceId: 'ask' });
     expect(r.notebook).toBe('Quiet engineers may be flight risks.');
-    expect(good.sent[1]).toMatch(/could not be acted on: There is no choice "shout"/);
-    const bad = await decide(fake([null, reply({}, { choiceId: 'shout' })]), 'sys', moment(), 'old', '');
+    expect(good.sent[1]).toMatch(/could not be acted on: There is no choice "7"/);
+    expect(good.sent[1]).not.toMatch(/move-on/);
+    const bad = await decide(fake([null, reply({}, { choice: '7' })]), 'sys', moment(), 'old', '');
     expect(bad).toMatchObject({ reply: null, action: { kind: 'wait' }, notebook: 'old', note: expect.any(String) });
     const cannotWait = await decide(fake([null, null]), 'sys', moment({ canWait: false }), 'old', '');
     expect(cannotWait.action).toEqual({ kind: 'choose', choiceId: 'move-on' });

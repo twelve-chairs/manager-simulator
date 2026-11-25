@@ -16,18 +16,18 @@ function fakeClient(): AiClient & { asked: string[] } {
     async ask<T>(_system: string, user: string, schema: z.ZodType<T>): Promise<T | null> {
       asked.push(user);
       if (user.includes('The facilitator asks you')) return schema.parse({ answers: [{ heading: 'Promotion changes the job', answer: 'A fake answer.' }] });
-      const choice = /Choices \(ids in backticks\):\n- `([^`]+)`/.exec(user)?.[1] ?? '';
+      const choice = /Choices[^\n]*:\n- `([^`]+)`/.exec(user)?.[1] ?? '';
       const heads = /Heads to place: (\d+)\. Targets:\n- `([^`]+)`/.exec(user);
       const bet = /Bets on offer:\n- `([^`]+)`[\s\S]*Groups that could carry one:\n- `([^`]+)`/.exec(user);
       const move = /Calibration moves[^\n]*\n- `([^`]+)`/.exec(user);
       const none = { place: [], fund: [], calibrate: [] };
       const action = heads
-        ? { ...none, kind: 'place', choiceId: '', place: [{ target: heads[2], count: Number(heads[1]) }] }
+        ? { ...none, kind: 'place', choice: '', place: [{ target: heads[2], count: Number(heads[1]) }] }
         : bet
-          ? { ...none, kind: 'fund', choiceId: '', fund: [{ offerId: bet[1], groupId: bet[2] }] }
+          ? { ...none, kind: 'fund', choice: '', fund: [{ bet: bet[1], group: bet[2] }] }
           : move
-            ? { ...none, kind: 'calibrate', choiceId: '', calibrate: [{ move: move[1], count: 1 }] }
-            : { ...none, kind: 'choose', choiceId: choice };
+            ? { ...none, kind: 'calibrate', choice: '', calibrate: [{ move: move[1], count: 1 }] }
+            : { ...none, kind: 'choose', choice };
       return schema.parse({ thinkAloud: 'A fake thought.', feeling: 'clear', action, habits: [], notebook: 'Fake notes.' });
     },
   };
@@ -59,6 +59,8 @@ test('the AI playtester’s driver reads and acts on every kind of decision scre
   expect(client.asked.some((m) => m.includes('How to play'))).toBe(true);
   // A reaction is read before the next decision: the scene's text, not the panels around it.
   expect(client.asked.some((m) => /reactions, recaps and reviews, in order\):\n[\s\S]*After your choice:\n\S/.test(m))).toBe(true);
+  // The model is shown neutral handles, never the game's ids, which read as an answer key.
+  expect(client.asked.filter((m) => /`(self|pushBack|backUp|takeOver|rollBack|give:[^`]*|agree|decide|letRun|coach|stepIn|rotation|seniors|me|fortnightly|weekly)`/.test(m))).toEqual([]);
   // and the transcript keeps what was read with the decision it came before, so a report's claims can be checked
   expect(run.steps.some((s) => s.read?.includes('After your choice:'))).toBe(true);
   expect(client.asked.some((m) => /"seed"|rngState|leniency/.test(m))).toBe(false);

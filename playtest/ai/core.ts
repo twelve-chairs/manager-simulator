@@ -55,12 +55,12 @@ export const ReplySchema = z.object({
   feeling: z.enum(['clear', 'unsure', 'confused', 'surprised']).describe('How clear this screen and its choices were to you.'),
   action: z.object({
     kind: z.enum(['choose', 'wait', 'place', 'fund', 'calibrate']),
-    choiceId: z.string().describe('For choose: the id of the choice. Otherwise an empty string.'),
-    place: z.array(z.object({ target: z.string(), count: z.number().int() })).describe('For place: where each head goes. Otherwise empty.'),
-    fund: z.array(z.object({ offerId: z.string(), groupId: z.string() })).describe('For fund: each bet funded and the group to carry it. Otherwise empty.'),
-    calibrate: z.array(z.object({ move: z.string(), count: z.number().int() })).describe('For calibrate: each move and how many heads to move that way, then settle. Empty settles as proposed. Otherwise empty.'),
+    choice: z.string().describe('For choose: the handle of the choice, as in `2`. Otherwise an empty string.'),
+    place: z.array(z.object({ target: z.string(), count: z.number().int() })).describe('For place: where each head goes, by the target\'s handle (`T1`). Otherwise empty.'),
+    fund: z.array(z.object({ bet: z.string(), group: z.string() })).describe('For fund: each bet funded (`B1`) and the group to carry it (`G1`). Otherwise empty.'),
+    calibrate: z.array(z.object({ move: z.string(), count: z.number().int() })).describe('For calibrate: each move (`M1`) and how many heads to move that way, then settle. Empty settles as proposed. Otherwise empty.'),
   }),
-  habits: z.array(z.object({ habit: z.string(), value: z.string() })).describe('Habit changes to make before acting, if any. Usually empty.'),
+  habits: z.array(z.object({ habit: z.string(), value: z.string() })).describe('Habit changes to make before acting, if any, by the habit\'s handle (`H1`) and the setting\'s (`2`). Usually empty.'),
   notebook: z.string().describe('Your notebook, rewritten: what you have learned about the game, what you suspect, what you would do differently. Under 300 words.'),
 });
 export type Reply = z.infer<typeof ReplySchema>;
@@ -79,55 +79,86 @@ export type Action =
   | { kind: 'fund'; fund: Record<string, string> }
   | { kind: 'calibrate'; calibrate: Record<string, number> };
 
+/**
+ * The neutral handles a screen's items are shown by, in place of the game's ids, which name what a choice does in the
+ * game's own terms and read as an answer key. Choices and a habit's settings are numbered; the other lists carry a
+ * letter for their kind, so a reply that changes a habit and calibrates at once cannot mix them up.
+ */
+// @spec PLAY-AI-002, PLAY-AI-003
+export function handlesOf(screen: Screen) {
+  const numbered = <T>(items: T[], prefix = '') => items.map((item, i) => ({ handle: `${prefix}${i + 1}`, item }));
+  return {
+    choices: numbered(screen.choices),
+    habits: numbered(screen.habits, 'H').map(({ handle, item }) => ({ handle, item, settings: numbered(item.options) })),
+    targets: numbered(screen.placement?.targets ?? [], 'T'),
+    moves: numbered(screen.calibration?.moves ?? [], 'M'),
+    bets: numbered(screen.funding?.offers ?? [], 'B'),
+    groups: numbered(screen.funding?.groups ?? [], 'G'),
+  };
+}
+
+const listed = (xs: { handle: string }[]) => xs.map((x) => x.handle).join(', ') || 'none';
+
 /** Checks a reply against what the screen offers, returning the action and habit changes to make, or why not. */
 // @spec PLAY-AI-003
 export function checkReply(screen: Screen, reply: Reply): { ok: true; action: Action; habits: { habit: string; value: string }[] } | { ok: false; reason: string } {
-  for (const h of reply.habits) {
-    const habit = screen.habits.find((x) => x.id === h.habit);
-    if (!habit) return { ok: false, reason: `There is no habit "${h.habit}" on this screen. The habits are: ${screen.habits.map((x) => x.id).join(', ') || 'none'}.` };
-    if (!habit.options.some((o) => o.value === h.value)) return { ok: false, reason: `"${h.value}" is not an option for ${habit.label}. Its options are: ${habit.options.map((o) => o.value).join(', ')}.` };
+  const h = handlesOf(screen);
+  // Replies name what they pick by the screen's handles; the action returned uses the game's ids.
+  const habits: { habit: string; value: string }[] = [];
+  for (const change of reply.habits) {
+    const habit = h.habits.find((x) => x.handle === change.habit);
+    if (!habit) return { ok: false, reason: `There is no habit "${change.habit}" on this screen. The habits are: ${listed(h.habits)}.` };
+    const setting = habit.settings.find((x) => x.handle === change.value);
+    if (!setting) return { ok: false, reason: `"${change.value}" is not a setting for ${habit.item.label}. Its settings are: ${listed(habit.settings)}.` };
+    habits.push({ habit: habit.item.id, value: setting.item.value });
   }
   const a = reply.action;
   switch (a.kind) {
-    case 'choose':
-      if (!screen.choices.some((c) => c.id === a.choiceId)) return { ok: false, reason: `There is no choice "${a.choiceId}". The choices are: ${screen.choices.map((c) => c.id).join(', ')}.` };
-      return { ok: true, action: { kind: 'choose', choiceId: a.choiceId }, habits: reply.habits };
+    case 'choose': {
+      const choice = h.choices.find((x) => x.handle === a.choice);
+      if (!choice) return { ok: false, reason: `There is no choice "${a.choice}". The choices are: ${listed(h.choices)}.` };
+      return { ok: true, action: { kind: 'choose', choiceId: choice.item.id }, habits };
+    }
     case 'wait':
       if (!screen.canWait) return { ok: false, reason: 'This screen cannot be let wait: pick one of its choices.' };
-      return { ok: true, action: { kind: 'wait' }, habits: reply.habits };
+      return { ok: true, action: { kind: 'wait' }, habits };
     case 'place': {
       if (!screen.placement) return { ok: false, reason: 'There are no heads to place on this screen.' };
       const place: Record<string, number> = {};
       let total = 0;
       for (const p of a.place) {
-        if (!screen.placement.targets.some((t) => t.id === p.target)) return { ok: false, reason: `"${p.target}" is not somewhere a head can go. The targets are: ${screen.placement.targets.map((t) => t.id).join(', ')}.` };
+        const target = h.targets.find((x) => x.handle === p.target);
+        if (!target) return { ok: false, reason: `"${p.target}" is not somewhere a head can go. The targets are: ${listed(h.targets)}.` };
         if (p.count < 0) return { ok: false, reason: 'A count cannot be negative.' };
-        place[p.target] = (place[p.target] ?? 0) + p.count;
+        place[target.item.id] = (place[target.item.id] ?? 0) + p.count;
         total += p.count;
       }
       if (total > screen.placement.heads) return { ok: false, reason: `Only ${screen.placement.heads} heads were given, not ${total}.` };
-      return { ok: true, action: { kind: 'place', place }, habits: reply.habits };
+      return { ok: true, action: { kind: 'place', place }, habits };
     }
     case 'fund': {
       if (!screen.funding) return { ok: false, reason: 'There are no bets to fund on this screen.' };
       const fund: Record<string, string> = {};
       for (const f of a.fund) {
-        if (!screen.funding.offers.some((o) => o.id === f.offerId)) return { ok: false, reason: `"${f.offerId}" is not a bet on offer.` };
-        if (!screen.funding.groups.some((g) => g.id === f.groupId)) return { ok: false, reason: `"${f.groupId}" is not one of your groups.` };
-        fund[f.offerId] = f.groupId;
+        const bet = h.bets.find((x) => x.handle === f.bet);
+        if (!bet) return { ok: false, reason: `"${f.bet}" is not a bet on offer. The bets are: ${listed(h.bets)}.` };
+        const group = h.groups.find((x) => x.handle === f.group);
+        if (!group) return { ok: false, reason: `"${f.group}" is not one of your groups. The groups are: ${listed(h.groups)}.` };
+        fund[bet.item.id] = group.item.id;
       }
       if (Object.keys(fund).length > 2) return { ok: false, reason: 'At most two bets can be funded.' };
-      return { ok: true, action: { kind: 'fund', fund }, habits: reply.habits };
+      return { ok: true, action: { kind: 'fund', fund }, habits };
     }
     case 'calibrate': {
       if (!screen.calibration) return { ok: false, reason: 'There is no calibration on this screen.' };
       const calibrate: Record<string, number> = {};
       for (const m of a.calibrate) {
-        if (!screen.calibration.moves.some((x) => x.id === m.move)) return { ok: false, reason: `"${m.move}" is not a move on offer. The moves are: ${screen.calibration.moves.map((x) => x.id).join(', ')}.` };
+        const move = h.moves.find((x) => x.handle === m.move);
+        if (!move) return { ok: false, reason: `"${m.move}" is not a move on offer. The moves are: ${listed(h.moves)}.` };
         if (m.count < 1) return { ok: false, reason: 'Move at least one head, or leave the move out.' };
-        calibrate[m.move] = (calibrate[m.move] ?? 0) + m.count;
+        calibrate[move.item.id] = (calibrate[move.item.id] ?? 0) + m.count;
       }
-      return { ok: true, action: { kind: 'calibrate', calibrate }, habits: reply.habits };
+      return { ok: true, action: { kind: 'calibrate', calibrate }, habits };
     }
   }
 }
@@ -143,7 +174,7 @@ export function systemPrompt(persona: Persona): string {
     `Who you are: ${PERSONAS[persona]}`,
     'You know only what the screen shows you and what you wrote in your notebook. Play as yourself: choose what you would really choose, and do not try to game the rules.',
     'Each time, think aloud briefly, say how clear the screen was, take one action the screen offers, and rewrite your notebook.',
-    'Actions: "choose" one of the listed choices by its id; "wait" to let the moment pass when the screen allows it; "place" to place the quarter\'s heads (targets and counts); "fund" to fund at most two bets, naming each bet\'s carrying group; "calibrate" to move heads between ratings in a calibration (each move once per head), then settle it. You may also change habits before acting, using the habit and option ids shown.',
+    'Actions: "choose" one of the listed choices by its handle (`1`, `2`, …); "wait" to let the moment pass when the screen allows it; "place" to place the quarter\'s heads (targets, `T1`, …, and counts); "fund" to fund at most two bets (`B1`, …), naming each bet\'s carrying group (`G1`, …); "calibrate" to move heads between ratings in a calibration (moves `M1`, …, each once per head), then settle it. You may also change habits before acting, naming the habit (`H1`, …) and the setting (`1`, `2`, …) shown. Handles are numbered on each screen and mean nothing beyond it.',
   ].join('\n\n');
 }
 
@@ -159,17 +190,22 @@ export const withHeading = (s: { title: string; text: string }): string => (s.te
 /** The user message for one decision: the notebook, what was last read, and the screen. */
 // @spec PLAY-AI-002
 export function decisionMessage(screen: Screen, notebook: string, lastRead: string): string {
+  const h = handlesOf(screen);
   const lines = [
     `Your notebook:\n${notebook || '(empty: you have just started)'}`,
     ...(lastRead ? [`What you read since your last decision (reactions, recaps and reviews, in order):\n${lastRead}`] : []),
     `The screen now (${screen.turn}):\n${withHeading(screen)}`,
-    `Choices (ids in backticks):\n${screen.choices.map((c) => `- \`${c.id}\`: ${c.label}`).join('\n') || '(none)'}`,
+    `Choices (pick one by its handle in backticks):\n${h.choices.map((c) => `- \`${c.handle}\`: ${c.item.label}`).join('\n') || '(none)'}`,
     screen.canWait ? 'You may also let this wait.' : 'This cannot be let wait.',
   ];
-  if (screen.habits.length) lines.push(`Habits:\n${screen.habits.map((h) => `- \`${h.id}\` (${h.label}), now \`${h.value}\`; options: ${h.options.map((o) => `\`${o.value}\` (${o.label})`).join(', ')}`).join('\n')}`);
-  if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${screen.placement.targets.map((t) => `- \`${t.id}\`: ${t.label}`).join('\n')}`);
-  if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several; moves apply in the order given, so a head moved into a row can be moved on from it):\n${screen.calibration.moves.map((m) => `- \`${m.id}\`: ${m.label}`).join('\n')}`);
-  if (screen.funding) lines.push(`Bets on offer:\n${screen.funding.offers.map((o) => `- \`${o.id}\`: ${o.label}`).join('\n')}\nGroups that could carry one:\n${screen.funding.groups.map((g) => `- \`${g.id}\`: ${g.label}`).join('\n')}`);
+  if (h.habits.length) {
+    const now = (x: (typeof h.habits)[number]) => x.settings.find((o) => o.item.value === x.item.value);
+    lines.push(`Habits:\n${h.habits.map((x) => `- \`${x.handle}\` (${x.item.label}), now \`${now(x)?.handle ?? '?'}\` (${now(x)?.item.label ?? x.item.value}); settings: ${x.settings.map((o) => `\`${o.handle}\` (${o.item.label})`).join(', ')}`).join('\n')}`);
+  }
+  const list = (xs: { handle: string; item: { label: string } }[]) => xs.map((x) => `- \`${x.handle}\`: ${x.item.label}`).join('\n');
+  if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${list(h.targets)}`);
+  if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several; moves apply in the order given, so a head moved into a row can be moved on from it):\n${list(h.moves)}`);
+  if (screen.funding) lines.push(`Bets on offer:\n${list(h.bets)}\nGroups that could carry one:\n${list(h.groups)}`);
   return lines.join('\n\n');
 }
 
