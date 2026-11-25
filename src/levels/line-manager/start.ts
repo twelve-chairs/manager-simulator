@@ -30,6 +30,7 @@ export function startRun(seed: number): { sim: SimState; level: LineState } {
     completions: {},
     calledBack: [],
     routinePages: {},
+    backedPages: {},
     routineWork: {},
     checkIns: {},
     burnoutWeeks: 0,

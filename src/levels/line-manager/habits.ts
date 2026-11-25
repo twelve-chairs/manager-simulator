@@ -4,7 +4,7 @@ import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import type { HabitId, Habits, LevelResult, LineState } from './types';
 
 const OPTIONS: Record<HabitId, readonly string[] | 'engineer'> = {
-  nightPages: ['rotation', 'me', 'seniors'],
+  nightPages: ['rotation', 'me', 'seniors', 'backup'],
   oneOnOnes: ['fortnightly', 'weekly', 'whenNeeded'],
   approvals: 'engineer',
   ceremonies: ['full', 'light'],

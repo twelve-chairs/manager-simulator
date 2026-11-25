@@ -631,9 +631,10 @@ describe('line manager panels', () => {
   });
 
   // @spec UI-LINE-012
-  it('names the night pages settings by who is on call and that they are on their own', () => {
+  it('names the night pages settings by who is on call and whether they are on their own', () => {
     const NAMES = [
       ['rotation', 'Each engineer in turn, a week on their own'],
+      ['backup', 'Each engineer in turn, with the strongest of the others as backup'],
       ['seniors', 'The most skilled engineer, on their own every week'],
       ['me', 'You, every night'],
     ];
@@ -644,6 +645,8 @@ describe('line manager panels', () => {
     const help = $$(before, '[data-scene] .help').map((p) => p.textContent ?? '').find((t) => t.startsWith('Who answers when a service goes down overnight.'))!;
     expect(help).toMatch(/on call handles the pages they can on their own/);
     expect(help).toMatch(/a page beyond them comes to you/);
+    expect(help).toMatch(/a backup takes on with them the pages beyond them that the backup can handle/);
+    expect(help).toMatch(/sleep/);
   });
 
   // @spec UI-LINE-006

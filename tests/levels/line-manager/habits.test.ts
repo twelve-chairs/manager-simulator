@@ -156,6 +156,51 @@ describe('night pages', () => {
     expect(ended.level.items.filter((i) => i.kind === 'onCall')).toEqual([]);
     expect(ended.recap.habits).toContain(`${who.name} handled 1 night page on their own.`);
   });
+
+  // @spec LINE-HABIT-011
+  it('under a backup, rotates who is on call and brings the player only the pages beyond both', () => {
+    const q = quietRun(1);
+    const people = engineers(q.sim);
+    // The first engineer is on call in week 0; the fourth is the strongest of the others.
+    const sim = patch(q.sim, (s) => people.forEach((id, i) => (s.people[id]!.skill = i === 3 ? 70 : 30)));
+    const level = habit(q.level, sim, 'nightPages', 'backup');
+    const page = (l: typeof level, difficulty: number) => withItem(l, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty, lastWeek: sim.week }).level;
+    // within the backup's reach: no moment
+    expect(begin(page(level, 65), sim).moments.filter((m) => m.kind === 'onCall')).toEqual([]);
+    // beyond both: a moment for the engineer on call
+    expect(begin(page(level, 90), sim).moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[0]]);
+    // the week the strongest is on call, the next strongest backs them up
+    const strongWeek = patch(sim, (s) => {
+      s.week = 3;
+      s.people[people[1]!]!.skill = 50;
+    });
+    const l3 = begin(withItem(level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 90, lastWeek: 3 }).level, strongWeek);
+    expect(l3.moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[3]]);
+    // a team of one has no backup
+    const alone = patch(sim, (s) => people.slice(1).forEach((id) => Object.assign(s.people[id]!, { status: 'departed', departure: { week: 0, reason: 'quit' } })));
+    expect(begin(page(level, 65), alone).moments.filter((m) => m.kind === 'onCall').map((m) => m.personId)).toEqual([people[0]]);
+  });
+
+  // @spec LINE-HABIT-018
+  it('resolves a page beyond the engineer on call but within the backup’s reach as handled by the two, at a cost to both', () => {
+    const q = quietRun(1);
+    const people = engineers(q.sim);
+    const [onCall, , , backup] = people;
+    const sim = patch(q.sim, (s) => people.forEach((id, i) => (s.people[id]!.skill = i === 3 ? 70 : 30)));
+    const level = habit(q.level, sim, 'nightPages', 'backup');
+    const paged = withItem(level, { kind: 'onCall', subject: { kind: 'project', id: projects(sim)[0]! }, size: 8, difficulty: 65, lastWeek: sim.week }).level;
+    const ended = end(begin(paged, sim), sim);
+    const quiet = end(begin(level, sim), sim);
+    const now = (id: string) => ended.sim.people[id]!;
+    expect(now(onCall!).stress - quiet.sim.people[onCall!]!.stress).toBe(LINE_TUNING.work.delegateStress);
+    expect(now(backup!).stress - quiet.sim.people[backup!]!.stress).toBe(LINE_TUNING.work.backUpStress);
+    expect(now(onCall!).history.filter((h) => h.week === sim.week).map((h) => h.note)).toContain('Handled a night page with a backup');
+    expect(now(backup!).history.filter((h) => h.week === sim.week).map((h) => h.note)).toContain('Backed up a night page');
+    expect(ended.sim.player.stress).toBe(quiet.sim.player.stress);
+    expect(ended.sim.player.reputation).toBe(quiet.sim.player.reputation);
+    expect(ended.recap.expired).toEqual([]);
+    expect(ended.recap.habits).toContain(`${now(onCall!).name} and ${now(backup!).name} handled 1 night page together.`);
+  });
 });
 
 describe('1:1s', () => {

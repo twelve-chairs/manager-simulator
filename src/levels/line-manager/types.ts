@@ -19,7 +19,7 @@ export interface WorkItem {
 export type HabitId = 'nightPages' | 'oneOnOnes' | 'approvals' | 'ceremonies' | 'growth';
 
 export interface Habits {
-  nightPages: 'rotation' | 'me' | 'seniors';
+  nightPages: 'rotation' | 'me' | 'seniors' | 'backup';
   oneOnOnes: 'fortnightly' | 'weekly' | 'whenNeeded';
   /** `me`, or the id of the engineer who signs routine approvals. */
   approvals: string;
@@ -101,8 +101,10 @@ export interface LineState {
   completions: Record<string, number>;
   /** The memories a reaction has brought up, as person, week and note, so each is called back once. */
   calledBack: string[];
-  /** This week's night pages the engineer on call handles on their own: item id to that engineer. */
+  /** This week's night pages the engineer on call handles without a moment: item id to that engineer. */
   routinePages: Record<string, string>;
+  /** Of those, the pages a backup handles with them: item id to the backup. */
+  backedPages: Record<string, string>;
   /** This week's design reviews and customer requests the team takes with no moment: item id to the engineer taking it. */
   routineWork: Record<string, string>;
   /** Project id to the week of its last check-in moment. */

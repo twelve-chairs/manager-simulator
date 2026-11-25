@@ -122,16 +122,32 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
 
   // @spec LINE-HABIT-017
   // Night pages the engineer on call could handle are theirs, as if the player had left the page to them.
+  // @spec LINE-HABIT-018
+  // Under a backup, a page beyond the engineer on call is the two of theirs, and costs the backup their sleep too.
   const handled = new Map<string, number>();
+  const together = new Map<string, number>();
   for (const item of s.items.filter((i) => i.kind === 'onCall' && Object.hasOwn(s.routinePages, i.id))) {
     const id = s.routinePages[item.id]!;
+    const backup = s.backedPages[item.id];
     signed.add(item.id);
     if (!isEngineer(s, sim, id)) continue;
+    if (backup !== undefined && isEngineer(s, sim, backup)) {
+      effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page with a backup' }));
+      effects.push(personEffect(backup, 'stress', LINE_TUNING.work.backUpStress, action(HABIT_CAUSE.nightPages), { note: 'Backed up a night page' }));
+      const pair = `${id} ${backup}`;
+      together.set(pair, (together.get(pair) ?? 0) + 1);
+      continue;
+    }
     effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page alone' }));
     handled.set(id, (handled.get(id) ?? 0) + 1);
   }
   for (const [id, n] of handled) recap.habits.push(`${nameOf(sim, id)} handled ${n} night page${n === 1 ? '' : 's'} on their own.`);
+  for (const [pair, n] of together) {
+    const [id, backup] = pair.split(' ');
+    recap.habits.push(`${nameOf(sim, id!)} and ${nameOf(sim, backup!)} handled ${n} night page${n === 1 ? '' : 's'} together.`);
+  }
   s.routinePages = {};
+  s.backedPages = {};
 
   // @spec LINE-WORK-014
   // Work the team took, as if the player had given each item to its engineer; one whose engineer left stays open.

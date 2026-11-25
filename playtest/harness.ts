@@ -454,7 +454,7 @@ function playInPage(options: InPage): PlaySummary {
       case 'heavyThenEase':
         if (!easing && q('[data-field=burnout]')) {
           easing = true;
-          setHabit('nightPages', /in turn/i);
+          setHabit('nightPages', /a week on their own/i);
         }
         return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
     }

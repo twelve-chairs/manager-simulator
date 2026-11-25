@@ -11,8 +11,17 @@ import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, W
 export function onCallEngineer(level: LineState, sim: SimState): string | undefined {
   const people = teamEngineers(level, sim);
   if (people.length === 0 || level.habits.nightPages === 'me') return undefined;
-  if (level.habits.nightPages === 'rotation') return people[sim.week % people.length];
+  if (level.habits.nightPages === 'rotation' || level.habits.nightPages === 'backup') return people[sim.week % people.length];
   return [...people].sort((a, b) => sim.people[b]!.skill - sim.people[a]!.skill || (a < b ? -1 : 1))[0];
+}
+
+/** Under a backup, the most skilled engineer other than the one on call, if any. */
+// @spec LINE-HABIT-011
+export function backupEngineer(level: LineState, sim: SimState, onCall: string): string | undefined {
+  if (level.habits.nightPages !== 'backup') return undefined;
+  return teamEngineers(level, sim)
+    .filter((id) => id !== onCall)
+    .sort((a, b) => sim.people[b]!.skill - sim.people[a]!.skill || (a < b ? -1 : 1))[0];
 }
 
 const CHECK_IN_CHOICES: MomentChoice[] = [
@@ -93,9 +102,16 @@ export function addMoments(s: LineState, sim: SimState) {
   const onCall = onCallEngineer(s, sim);
   if (onCall) {
     s.routinePages = Object.fromEntries(Object.entries(s.routinePages).filter(([id]) => s.items.some((i) => i.id === id && i.lastWeek >= week)));
+    s.backedPages = Object.fromEntries(Object.entries(s.backedPages).filter(([id]) => Object.hasOwn(s.routinePages, id)));
     const pages = open(['onCall']).filter((item) => !Object.hasOwn(s.routinePages, item.id));
-    for (const item of pages.filter((i) => band(sim.people[onCall]!.skill) >= band(i.difficulty))) {
+    const backup = backupEngineer(s, sim, onCall);
+    for (const item of pages) {
+      const alone = band(sim.people[onCall]!.skill) >= band(item.difficulty);
+      // A page beyond the engineer on call that the backup can reach is the two of theirs.
+      const backed = !alone && backup !== undefined && band(sim.people[backup]!.skill) >= band(item.difficulty);
+      if (!alone && !backed) continue;
       s.routinePages[item.id] = onCall;
+      if (backed) s.backedPages[item.id] = backup;
       covered.add(item.id);
     }
     for (const [i, item] of pages.filter((p) => !covered.has(p.id)).entries()) {
