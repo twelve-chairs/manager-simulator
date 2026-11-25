@@ -209,6 +209,22 @@ describe('standing', () => {
     expect(toward(neutral(), assessment(['at'], true))).toEqual({ kind: 'twoInARow' });
   });
 
+  // @spec REVIEW-STAND-004
+  it('names the measures below target as what held back a rating below exceeds, while promotion is in reach or the level ends', () => {
+    const held = (sim: SimState, a: Assessment) => review(sim, a).standing.heldBack;
+    // promotion possible now, or at the next review
+    expect(held(neutral(), assessment(['at', 'below', 'above', 'below'], true))).toEqual(['m1', 'm3']);
+    expect(held(neutral(), assessment(['at', 'below', 'above', 'below'], false, { reviewsUntilPromotion: 1 }))).toEqual(['m1', 'm3']);
+    // nothing below target: said as none
+    expect(held(neutral(), assessment(['at', 'at'], true))).toEqual([]);
+    // the level's last review, ended without a promotion
+    expect(held(neutral(), assessment(['at', 'below'], false, { lastReview: true, reviewsLeft: 0 }))).toEqual(['m1']);
+    // not while promotion is further off, nor at exceeds, nor when the run ends managed out
+    expect(held(neutral(), assessment(['at', 'below'], false, { reviewsUntilPromotion: 2 }))).toBeUndefined();
+    expect(held(neutral(), assessment(EXCEEDS, true))).toBeUndefined();
+    expect(held(rated(neutral(), ['partial', 'partial']), assessment(PARTIAL, true))).toBeUndefined();
+  });
+
   // @spec REVIEW-STAND-003
   it('reports the plan a low rating leaves the player on', () => {
     expect(review(neutral(), assessment(PARTIAL)).standing.plan).toBe('coaching');

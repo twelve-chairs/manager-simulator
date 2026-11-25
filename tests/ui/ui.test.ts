@@ -899,6 +899,13 @@ describe('review and end', () => {
     expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'coaching' }).plan).toBe('One more review rated partial or below puts you on an improvement plan.');
     expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'pip' }).plan).toBe("One more review rated partial or below and you'll be managed out.");
     expect(shown({ promotion: { kind: 'twoInARow' } }).margins).toEqual([]);
+    // what held it back, named as the measures table names them
+    const heldBack = (ids: string[]) => makeApp({ run: { ...r, review: { ...r.review!, rating: 'meets', standing: { promotion: { kind: 'twoInARow' }, heldBack: ids } } } }).root.querySelector('[data-field=held-back]')?.textContent ?? null;
+    expect(heldBack(['stress'])).toBe('What kept this from exceeds: Team stress.');
+    expect(heldBack(['stress', 'regrettedQuits', 'oneOnOneShare'])).toBe('What kept this from exceeds: Team stress, People who quit and 1:1s held.');
+    expect(heldBack([])).toBe('Every measure was on target or better; exceeds takes more of them above target.');
+    expect(shown({ promotion: { kind: 'twoInARow' } }).promotion).not.toBeNull();
+    expect(makeApp({ run: { ...r, review: { ...r.review!, standing: { promotion: { kind: 'twoInARow' } } } } }).root.querySelector('[data-field=held-back]')).toBeNull();
   });
 
   // @spec UI-REVIEW-001

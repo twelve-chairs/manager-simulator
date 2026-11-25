@@ -45,6 +45,8 @@ export interface Standing {
   /** The rating one measure a verdict worse would have given, when it is a lower one. */
   marginDown?: Rating;
   promotion: TowardPromotion;
+  /** Below exceeds, with promotion in reach or the level ended: the ids of the measures scored below target, none when every one was on target or better. */
+  heldBack?: string[];
   /** The plan this rating leaves the player on, when there is one. */
   plan?: 'coaching' | 'pip';
 }

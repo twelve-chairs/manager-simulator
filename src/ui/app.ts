@@ -180,15 +180,24 @@ const PLAN_NEXT = {
   pip: "One more review rated partial or below and you'll be managed out.",
 } as const;
 
-/** The standing's words: margins, the way to promotion and the plan's next step. */
+/** Names joined as a sentence lists them: "a", "a and b", "a, b and c". */
+const listed = (names: string[]) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
+
+/** The standing's words: margins, the way to promotion, what held the rating back and the plan's next step. */
 // @spec UI-REVIEW-002
-function standingLines(s: Standing): Child[] {
+function standingLines(s: Standing, name: (id: string) => string): Child[] {
   const p = s.promotion;
   const toward = towardPromotionLine(p);
+  const held = s.heldBack
+    ? s.heldBack.length
+      ? `What kept this from exceeds: ${listed(s.heldBack.map(name))}.`
+      : 'Every measure was on target or better; exceeds takes more of them above target.'
+    : null;
   return [
     s.marginUp ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step better would have made it ${s.marginUp}.`) : null,
     s.marginDown ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step worse would have made it ${s.marginDown}.`) : null,
     toward ? h('p', { class: 'standing', 'data-field': 'promotion' }, toward) : null,
+    held ? h('p', { class: 'standing', 'data-field': 'held-back' }, held) : null,
     s.plan ? h('p', { class: 'standing plan', 'data-field': 'plan' }, PLAN_NEXT[s.plan]) : null,
   ];
 }
@@ -728,7 +737,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' ', h('small', { class: 'numbers', 'data-field': 'score' }, `score ${review.score.toFixed(2)}, from −1 to 1`)),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
-      standingLines(review.standing),
+      standingLines(review.standing, (id) => renderer.measureName(ctx.view, id) ?? id),
       h(
         'table',
         { class: 'measures' },
