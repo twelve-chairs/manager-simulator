@@ -70,7 +70,7 @@ const BY_PERSONALITY = { give: GIVE, stretch: STRETCH, ask: ASK_INTERVIEW, backU
 
 /** Reactions to choices with no engineer in them. */
 const PLAIN = {
-  self: 'You clear the time and do the {thing} yourself. It’s done properly, and it’s done by you.',
+  self: 'You clear the time and do the {thing} yourself. It’s done properly, and it comes out of your own energy.',
   pushBack: 'You push back on the {thing}. It’ll still be there next week.',
   rollBack: 'The change behind the outage on {thing} comes out, and everything is back up within the hour. The work it carried will have to be done again.',
   payDown: 'The team takes the time to fix the code the design builds on. {thing} slips a few days, and the next change there will be easier.',

@@ -192,8 +192,8 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   }
 
   // A quiet week, with no choice that raised the player's stress, lets them recover.
-  if (!s.tookOnWork) effects.push(playerEffect('stress', -LINE_TUNING.restRecovery, rule(REST)));
-  s.tookOnWork = false;
+  if (s.energySpent === 0) effects.push(playerEffect('stress', -LINE_TUNING.restRecovery, rule(REST)));
+  s.energySpent = 0;
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };

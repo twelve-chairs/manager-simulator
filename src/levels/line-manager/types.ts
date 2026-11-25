@@ -119,8 +119,8 @@ export interface LineState {
   intakeDeclinedWeek: number | null;
   /** Third low ratings held back at a period's end, for the player to decide in a final evaluation. */
   heldEvaluations: { personId: string; rating: Rating }[];
-  /** Whether a choice in the level's moments raised the player's stress this week; a week without one is quiet. */
-  tookOnWork: boolean;
+  /** How many of this week's choices in the level's moments raised the player's stress; a week with none is quiet. */
+  energySpent: number;
   goals: Goal[];
   /** The first week of the review period the goals belong to; -1 before any are set. */
   goalsPeriod: number;
@@ -216,6 +216,8 @@ export interface View {
     reputation: Band;
     /** Burnout: whether stress is at the threshold now, the weeks in a row ended there, and how many end the run. */
     edge: { at: boolean; weeks: number; limit: number };
+    /** How many of this week's moment choices spent the player's energy, since one rarely moves a band. */
+    energySpent: number;
   };
   habits: Habits;
   vacancies: Vacancy[];

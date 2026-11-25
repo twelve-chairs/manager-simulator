@@ -142,7 +142,7 @@ export function addMoments(s: LineState, sim: SimState) {
 const resolve = (s: LineState, item: WorkItem) => (s.items = s.items.filter((i) => i.id !== item.id));
 
 /** Applies one choice for an open level moment at once and closes the moment. */
-// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011, LINE-WORK-012
+// @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011, LINE-WORK-012, LINE-WORK-016
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-011, LINE-INBOX-012
 // @spec LINE-HIRE-003, LINE-HIRE-004, LINE-CHECK-003, LINE-CHECK-004, LINE-CHECK-005, LINE-CHECK-006
 export function chooseMoment(level: LineState, sim: SimState, momentId: string, choiceId: string): LevelResult<ChoiceResult> {
@@ -293,8 +293,9 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   // @spec LINE-WORK-006
   const recalled = involved !== undefined ? callBack(s, sim, involved, moment.kind === 'onCall') : null;
   if (recalled) text = `${text} ${recalled}`;
-  // A choice that costs the player energy ends the week's chance of being quiet.
-  if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.tookOnWork = true;
+  // A choice that costs the player energy is counted, so it shows when no band moves, and ends the week's chance of being quiet.
+  // @spec LINE-VIS-016
+  if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.energySpent += 1;
   moment.status = 'answered';
   moment.outcome = text;
   return { ok: true, level: s, sim: applied.state, log: applied.log, reaction: text };

@@ -419,6 +419,27 @@ describe('the scene', () => {
     expect(text(second, `[data-scene] [data-chip="person:${who}:note"]`)).toBe(`${r.sim.people[who]!.name}: ${note}`);
   });
 
+  // @spec UI-WEEK-018
+  it('shows the player’s energy spent, marked bad, when doing it yourself moves no band', () => {
+    const r = structuredClone(atWorkMoment());
+    r.sim.player.stress = 0; // a piece of work stays inside the freshest band
+    const { root } = makeApp({ run: r });
+    click(root, '[data-scene] [data-choice="self"]');
+    const chips = $$(root, '[data-scene] [data-chip]');
+    const chip = chips.find((c) => c.dataset.chip === 'player:energy-spent')!;
+    expect(chip.textContent).toBe('You: energy spent');
+    expect(chip.dataset.tone).toBe('bad');
+    expect(chips.some((c) => c.dataset.chip === 'player:energy')).toBe(false);
+    // When the band moves, the band chip says it, and once.
+    const edge = structuredClone(atWorkMoment());
+    edge.sim.player.stress = 19;
+    const second = makeApp({ run: edge }).root;
+    click(second, '[data-scene] [data-choice="self"]');
+    const moved = $$(second, '[data-scene] [data-chip]');
+    expect(moved.some((c) => c.dataset.chip === 'player:energy')).toBe(true);
+    expect(moved.some((c) => c.dataset.chip === 'player:energy-spent')).toBe(false);
+  });
+
   // @spec UI-WEEK-008
   it('shows chips for people who leave or join the team', () => {
     const shuffle: AnyLevel = {

@@ -15,7 +15,7 @@ Four principles shape it:
 
 - **Habits over chores.** Anything that would be the same decision every week is a habit: set once, changed when the player wants, and visible in its effects in each recap. A habit has real costs as well as benefits, so there is no single right setting for every team.
 - **Work keeps arriving.** Approvals, design reviews, customer requests, on-call pages and new work keep arriving from the state of the team's projects, as they do in the real job; busier and riskier projects bring more. Routine work is absorbed by habits; the rest becomes moments. This keeps the pressure systemic: it is not only as strong as the content written about it.
-- **Energy is your stress.** The player has no hours to budget. Doing work yourself, demanding habits and hard conversations raise the player's stress; a well-run team lowers it. Shown to the player as energy, it is the simulation's own player stress, and burnout is what happens when it stays at the edge. A **quiet week**, one in which none of the player's choices in the level's moments raised their stress, brings extra recovery on top of the simulation's own: the habits' routine costs eat most of that, and without the extra a player who eases off at the edge still cannot get back from it before burning out.
+- **Energy is your stress.** The player has no hours to budget. Doing work yourself, demanding habits and hard conversations raise the player's stress; a well-run team lowers it. Shown to the player as energy, it is the simulation's own player stress, and burnout is what happens when it stays at the edge. A **quiet week**, one in which none of the player's choices in the level's moments raised their stress, brings extra recovery on top of the simulation's own: the habits' routine costs eat most of that, and without the extra a player who eases off at the edge still cannot get back from it before burning out. One piece of work rarely moves a band of energy, so a cost the band does not show would make doing it yourself look free: the view counts the week's choices that spent the player's energy, so the UI can show each one, and the reaction to doing work yourself names what it cost.
 - **People are characters.** Each engineer has a personality as well as numbers, and moments and their reactions are written for it: the same choice lands differently on a quiet engineer and an ambitious one.
 
 ## The Organization
@@ -39,7 +39,7 @@ The player sees what a manager of this team would see, which is less than the si
 | What they remember | Their most recent notable history entries, as short lines in their own terms; a habit's routine notes, such as each 1:1, are left out, since they come every week and would crowd out what happened between you; a note repeated back to back shows once with its count, as in the recap |
 | Project progress, deadline, schedule status | Exactly |
 | Project risk and tech debt | A coarse band |
-| The player's energy and reputation | A coarse band |
+| The player's energy and reputation | A coarse band; and how many of the week's choices have spent the player's energy |
 | Habits, open vacancies, the quarter's goals and their progress | Exactly |
 
 Every banded value uses the same scale of bands over 0–100 (the cut-offs are tuning values), so a work moment's difficulty and an engineer's skill compare directly.

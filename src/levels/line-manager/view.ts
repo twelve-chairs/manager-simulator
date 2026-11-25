@@ -123,6 +123,8 @@ export function view(level: LineState, sim: SimState): View {
       reputation: band(sim.player.reputation),
       // @spec LINE-VIS-015
       edge: { at: sim.player.stress >= LINE_TUNING.burnoutThreshold, weeks: level.burnoutWeeks, limit: LINE_TUNING.burnoutWeeks },
+      // @spec LINE-VIS-016
+      energySpent: level.energySpent,
     },
     habits: { ...level.habits },
     vacancies: structuredClone(level.vacancies),
