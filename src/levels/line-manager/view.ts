@@ -85,8 +85,15 @@ export function describeMoment(level: LineState, sim: SimState, m: LevelMoment):
       const customer = NAMES.customers[itemNumber(item) % NAMES.customers.length]!;
       return { title: 'Customer request', text: pick(CUSTOMER_REQUEST, item).replaceAll('{project}', about).replaceAll('{customer}', customer), ...difficulty };
     }
-    case 'workIntake':
-      return { title: 'New work on offer', text: 'Another team has work it wants yours to take on as a new project.', ...difficulty };
+    // @spec LINE-INBOX-018
+    case 'workIntake': {
+      const offer = item.offer ?? { kind: 'launch' };
+      if (offer.kind === 'handover')
+        return { title: 'New work: a handover', text: 'Another team wants to hand yours a system it can no longer keep up: old code, heavy tech debt, and nobody asking for it. Taking it on helps them; declining costs you little.', ...difficulty };
+      if (offer.kind === 'rewrite')
+        return { title: 'New work: a rewrite', text: `Another team needs a service rewritten from scratch, and ${nameOf(sim, offer.engineerId!)} has been wanting exactly this kind of work. Saying no is saying no to them too.`, ...difficulty };
+      return { title: 'New work: a launch', text: 'Another team wants yours to take on a launch the whole company will see. Taking it on lifts your standing and loads the team; declining it is noticed.', ...difficulty };
+    }
     default:
       return { title: item ? WORK_LABELS[item.kind] : 'Work', text: about, ...difficulty };
   }

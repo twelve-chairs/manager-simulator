@@ -76,7 +76,7 @@ The HLD: playtesters describe a session as playing a game. If they describe it a
 **Watch for**
 - Words they use for the experience while playing: "game", "story", "quiz", "test", "form".
 - Repetition they comment on ("this again"), and which scene it was.
-- New work on offer: it comes only while someone, the player included, is strained. Whether they see why it costs something to say yes.
+- New work (a launch, a handover, or a rewrite someone on the team wants): it comes only while someone, the player included, is strained. Whether they see why it costs something to say yes, and why declining costs different things for each kind.
 - Moments of enjoyment or frustration, and what was on screen.
 
 **Ask afterwards**

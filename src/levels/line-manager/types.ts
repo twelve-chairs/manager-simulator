@@ -14,6 +14,8 @@ export interface WorkItem {
   arrivedWeek: number;
   /** The last week it can be dealt with; still open through it, it expires. */
   lastWeek: number;
+  /** For work intake: what kind of offer it is, and for a rewrite the engineer who wants it; a launch when absent. */
+  offer?: { kind: 'launch' | 'handover' | 'rewrite'; engineerId?: string };
 }
 
 export type HabitId = 'nightPages' | 'oneOnOnes' | 'approvals' | 'ceremonies' | 'growth';

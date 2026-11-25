@@ -26,7 +26,7 @@ const RATING_SCORES: Record<string, number> = { below: 0, partial: 1, meets: 2, 
  * The titles of the line manager's own moments; any other moment there is a situation. A moment's kind is its title
  * before the colon, and work items are titled by their kind in lower case ("release approval").
  */
-export const LINE_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;
+export const LINE_TITLES = /^(Check-in|Night page|Interview|Design review|Customer request|New work|Final evaluation|Onboarding|release approval|expense approval|work intake|Work$)/i;
 /** The senior manager's own moments, by kind, recognised from the fixed wording around the names their titles carry. */
 export const SENIOR_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Escalation', / needs help$/],

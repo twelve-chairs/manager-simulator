@@ -425,7 +425,7 @@ function playInPage(options: InPage): PlaySummary {
     const by = (pred: (id: string, el: HTMLElement) => boolean) => choices.find((c) => pred(c.dataset.choice ?? '', c)) ?? null;
     const title = text('[data-scene] [data-part=heading]');
     // The strategies' own rule, kept as their runs were tuned against it: approvals count as situations here.
-    const situation = !/^(Check-in|Night page|Interview|Design review|Customer request|New work on offer|Final evaluation|Onboarding)/.test(title);
+    const situation = !/^(Check-in|Night page|Interview|Design review|Customer request|New work|Final evaluation|Onboarding)/.test(title);
     // @spec PLAY-RUN-007
     const sound = () => lineSound(choices, by);
     if (senior()) return seniorChoice(choices, by);

@@ -73,7 +73,19 @@ function addItem(level: LineState, sim: SimState, kind: WorkKind, subject: WorkI
     difficulty: randomInt(level, low, high),
     arrivedWeek: sim.week,
     lastWeek: sim.week + WORK_KINDS[kind].expiryWeeks,
+    ...(kind === 'workIntake' && { offer: offerFor(level, sim, level.counters.item) }),
   });
+}
+
+/** An offer's kind, in turn by its number: a launch, a handover, or a rewrite for whoever has wanted growth or autonomy longest. */
+// @spec LINE-INBOX-015
+function offerFor(level: LineState, sim: SimState, n: number): NonNullable<WorkItem['offer']> {
+  if (n % 3 === 1) return { kind: 'launch' };
+  if (n % 3 === 2) return { kind: 'handover' };
+  const wanting = teamEngineers(level, sim)
+    .filter((id) => sim.people[id]!.want === 'growth' || sim.people[id]!.want === 'autonomy')
+    .sort((a, b) => sim.people[a]!.wantServedWeek - sim.people[b]!.wantServedWeek || (a < b ? -1 : 1));
+  return wanting[0] ? { kind: 'rewrite', engineerId: wanting[0] } : { kind: 'launch' };
 }
 
 /** Whether anyone on the team is strained or more stressed, so new work is a real ask rather than routine. */

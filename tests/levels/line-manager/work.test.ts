@@ -614,3 +614,77 @@ describe('design reviews piling up', () => {
     expect(pushed.level.moments.find((m) => m.id === id)!.status).toBe('answered');
   });
 });
+
+describe('offers that differ', () => {
+  /** A team with one active project and someone strained, so new work arrives as an offer, numbered after `count` items. */
+  function offered(count: number, shape: (s: SimState) => void = () => {}) {
+    const { level, sim } = run(1);
+    const one = patch(sim, (s) => {
+      s.projects[projects(sim)[0]!]!.status = 'completed';
+      for (const id of engineers(sim)) Object.assign(s.people[id]!, { stress: 10, want: 'stability', wantServedWeek: s.week });
+      s.people[engineers(sim)[0]!]!.stress = 70;
+      shape(s);
+    });
+    const l = beginWeek({ ...level, items: [], counters: { ...level.counters, item: count } }, one);
+    return { level: l, sim: one, item: l.items.find((i) => i.kind === 'workIntake')! };
+  }
+
+  // @spec LINE-INBOX-015
+  it('makes each offer a launch, a handover or a rewrite for someone who wants one, in turn', () => {
+    expect(offered(0).item.offer).toEqual({ kind: 'launch' });
+    expect(offered(1).item.offer).toEqual({ kind: 'handover' });
+    // A rewrite for whoever has wanted growth or autonomy longest; a launch when nobody does.
+    const [, b, c] = engineers(run(1).sim);
+    const wanting = offered(2, (s) => {
+      Object.assign(s.people[b!]!, { want: 'growth', wantServedWeek: 0 });
+      Object.assign(s.people[c!]!, { want: 'autonomy', wantServedWeek: 1 });
+    });
+    expect(wanting.item.offer).toEqual({ kind: 'rewrite', engineerId: b });
+    expect(offered(2).item.offer).toEqual({ kind: 'launch' });
+  });
+
+  // @spec LINE-INBOX-016
+  it('takes each kind at its own cost and gain', () => {
+    const take = (o: ReturnType<typeof offered>) => choose(o.level, o.sim, momentFor(o.level, o.item.id).id, 'take');
+    const launch = offered(0);
+    expect(take(launch).sim.player.reputation - launch.sim.player.reputation).toBe(LINE_TUNING.work.launchReputation);
+    const handover = offered(1);
+    const taken = take(handover);
+    const started = projects(taken.sim).find((p) => !projects(handover.sim).includes(p))!;
+    expect(taken.sim.projects[started]!.techDebt).toBe(LINE_TUNING.work.handoverTechDebt);
+    const [, b] = engineers(run(1).sim);
+    const rewrite = offered(2, (s) => Object.assign(s.people[b!]!, { want: 'growth', wantServedWeek: 0, motivation: 40 }));
+    const got = take(rewrite).sim.people[b!]!;
+    expect(got.motivation).toBeGreaterThan(rewrite.sim.people[b!]!.motivation);
+    expect(got.history.map((h) => h.note)).toContain('Got the rewrite they wanted');
+  });
+
+  // @spec LINE-INBOX-017
+  it('declines each kind at its own cost', () => {
+    const decline = (o: ReturnType<typeof offered>) => choose(o.level, o.sim, momentFor(o.level, o.item.id).id, 'decline');
+    const launch = offered(0);
+    expect(decline(launch).sim.player.reputation - launch.sim.player.reputation).toBe(LINE_TUNING.work.launchDeclineReputation);
+    const handover = offered(1);
+    expect(decline(handover).sim.player.reputation - handover.sim.player.reputation).toBe(LINE_TUNING.work.handoverDeclineReputation);
+    const [, b] = engineers(run(1).sim);
+    const rewrite = offered(2, (s) => Object.assign(s.people[b!]!, { want: 'growth', wantServedWeek: 0, motivation: 50 }));
+    const declined = decline(rewrite);
+    expect(declined.sim.player.reputation - rewrite.sim.player.reputation).toBe(LINE_TUNING.work.declineIntakeReputation);
+    expect(declined.sim.people[b!]!.motivation - rewrite.sim.people[b!]!.motivation).toBe(-LINE_TUNING.work.rewriteDeclineMotivation);
+    expect(declined.sim.people[b!]!.history.map((h) => h.note)).toContain('Saw the rewrite they wanted turned down');
+    // A launch costs more to decline than a handover; neither as much as letting it expire.
+    expect(LINE_TUNING.work.launchDeclineReputation).toBeLessThan(LINE_TUNING.work.handoverDeclineReputation);
+    expect(LINE_TUNING.work.launchDeclineReputation).toBeGreaterThan(LINE_TUNING.expiry.workIntakeReputation);
+  });
+
+  // @spec LINE-INBOX-018
+  it('names the kind of offer, and for a rewrite the engineer who wants it', () => {
+    const shown = (o: ReturnType<typeof offered>) => view(o.level, o.sim).moments.find((m) => m.ref === o.item.id)!;
+    expect(shown(offered(0)).title).toBe('New work: a launch');
+    expect(shown(offered(1)).title).toBe('New work: a handover');
+    const [, b] = engineers(run(1).sim);
+    const rewrite = offered(2, (s) => Object.assign(s.people[b!]!, { want: 'growth', wantServedWeek: 0 }));
+    expect(shown(rewrite).title).toBe('New work: a rewrite');
+    expect(shown(rewrite).text).toContain(rewrite.sim.people[b!]!.name);
+  });
+});

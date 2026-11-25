@@ -331,14 +331,29 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
       text = reaction('smaller', thing);
       resolve(s, item);
     } else if (choiceId === 'take') {
+      // @spec LINE-INBOX-016
+      const W = LINE_TUNING.work;
+      const offer = item.offer ?? { kind: 'launch' };
       const started = generateProject(s, projectNames(sim), s.teamId, sim.week, calmRisk(s));
+      if (offer.kind === 'handover') started.techDebt = W.handoverTechDebt;
       effects.push({ type: 'startProject', project: started, cause: action(ACCEPT_INTAKE) }, playerEffect('stress', item.size, action(ACCEPT_INTAKE)));
+      if (offer.kind === 'launch') effects.push(playerEffect('reputation', W.launchReputation, action(ACCEPT_INTAKE)));
+      if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
+        effects.push(personEffect(offer.engineerId, 'motivation', W.rewriteMotivation, action(ACCEPT_INTAKE), { serves: ['growth', 'autonomy'], note: 'Got the rewrite they wanted' }));
+      }
       // Offered only while someone is strained, so the whole team feels it.
       for (const id of teamEngineers(s, sim)) effects.push(personEffect(id, 'stress', LINE_TUNING.work.intakeTeamStress, action(ACCEPT_INTAKE), { note: 'Took on new work while stretched' }));
       text = `${reaction('take', thing)} It’s called ${started.name}.`;
       resolve(s, item);
     } else if (choiceId === 'decline') {
-      effects.push(playerEffect('reputation', LINE_TUNING.work.declineIntakeReputation, action(DECLINE_INTAKE)));
+      // @spec LINE-INBOX-017
+      const W = LINE_TUNING.work;
+      const offer = item.offer ?? { kind: 'launch' };
+      const lost = offer.kind === 'launch' ? W.launchDeclineReputation : offer.kind === 'handover' ? W.handoverDeclineReputation : W.declineIntakeReputation;
+      effects.push(playerEffect('reputation', lost, action(DECLINE_INTAKE)));
+      if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
+        effects.push(personEffect(offer.engineerId, 'motivation', -W.rewriteDeclineMotivation, action(DECLINE_INTAKE), { note: 'Saw the rewrite they wanted turned down' }));
+      }
       s.intakeDeclinedWeek = sim.week;
       text = reaction('decline', thing);
       resolve(s, item);

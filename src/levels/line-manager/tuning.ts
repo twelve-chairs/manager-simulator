@@ -65,6 +65,13 @@ export const LINE_TUNING = {
     delegateStress: 6,
     stretchSkill: 1,
     declineIntakeReputation: -2,
+    /** Offers that differ: a launch's reputation taken and declined; a handover's tech debt, and its decline; a rewrite's motivation for its engineer, taken and declined. */
+    launchReputation: 3,
+    launchDeclineReputation: -4,
+    handoverTechDebt: 60,
+    handoverDeclineReputation: -1,
+    rewriteMotivation: 8,
+    rewriteDeclineMotivation: 4,
     /** Stress each engineer takes on when the player takes on new work while someone is strained. */
     intakeTeamStress: 4,
     interviewStress: 3,
