@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "A neighbouring team's ask left unanswered is answered anyway: they stop asking, and remember who didn't reply."
 roles:
   - name: team
@@ -60,6 +61,11 @@ choices:
       - id: refused
         effects:
           - type: value
+            target: engineer
+            field: motivation
+            amount: 0
+            historyNote: Was asked for by another team, and kept
+          - type: value
             target: player
             field: reputation
             amount: -2
@@ -74,6 +80,7 @@ choices:
             target: engineer
             field: motivation
             amount: 1
+            historyNote: Was offered to another team for an hour of advice
           - type: value
             target: player
             field: reputation

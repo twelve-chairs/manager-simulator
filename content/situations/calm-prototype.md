@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "An idea that gets no answer is usually not raised again. The engineer keeps the next one to themselves."
 roles:
   - name: team
@@ -38,6 +39,7 @@ choices:
             target: engineer
             field: motivation
             amount: 2
+            historyNote: Had an idea sent to the hack day list
           - type: value
             target: player
             field: stress

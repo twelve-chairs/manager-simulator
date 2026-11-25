@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "Someone who trusts you enough to ask about their future and hears nothing tends to ask someone else next time, often a recruiter."
 roles:
   - name: team

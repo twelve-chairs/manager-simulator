@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "A developing engineer left to work it out alone usually does, slowly, and picks up whatever habits are nearest."
 roles:
   - name: team
@@ -38,6 +39,7 @@ choices:
             target: junior
             field: skill
             amount: 1
+            historyNote: Was pointed at the docs to learn from
           - type: value
             target: junior
             field: stress

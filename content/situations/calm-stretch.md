@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "A strong engineer with room to grow who hears nothing back usually takes it as the answer, and starts looking for the next step somewhere else."
 roles:
   - name: team
@@ -80,6 +81,7 @@ choices:
             amount: 2
             wantTags:
               serves: [growth]
+            historyNote: Shadowed you on planning
           - type: value
             target: player
             field: stress

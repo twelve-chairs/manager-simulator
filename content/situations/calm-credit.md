@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "A project going well that nobody remarks on teaches the team that shipping well is invisible. The people who wanted it seen notice most."
 roles:
   - name: team

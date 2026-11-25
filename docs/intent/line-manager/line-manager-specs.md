@@ -88,6 +88,8 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-006**: When the line manager level describes a design review, its text shall be one of the kind's phrasings picked by the item's number, name the project and its tech debt band, and say that the debt rises if nobody reviews the design before it expires.
 - [x] **LINE-MOMENT-007**: When the line manager level describes a customer request, its text shall be one of the kind's phrasings picked by the item's number, name the project and a customer from the level's list of fictional companies picked by the item's number, and say that the player's reputation slips if nobody answers before it expires.
 - [x] **LINE-MOMENT-008**: The line manager's situation content shall include, apart from onboarding, at least five situations of normal priority, marked `quietWeek`, whose conditions can all hold together for a team in which no engineer is strained or above, the team's stress is below strained, and no project is overdue, behind schedule or at high risk, and cannot hold for the same team once every engineer is strained and a project is behind schedule.
+- [x] **LINE-MOMENT-009**: Each line manager situation marked `quietWeek` shall be marked `once`.
+- [x] **LINE-MOMENT-010**: Where a line manager quiet-week situation follows another, its id being that situation's id followed by `-later`, it shall bind as its person only someone who remembers being in the first situation, and only from 13 weeks after the first was presented, and each of the six calm-team situations that otherwise came back most (`calm-loan`, `calm-prototype`, `calm-slack`, `calm-stretch`, `calm-ceremony`, `calm-pairing`) shall have one.
 
 ## Project check-ins
 

@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "Slack nobody claims gets spent anyway: on whatever is loudest that week, which is rarely the debt."
 roles:
   - name: team
@@ -62,6 +63,11 @@ choices:
       - id: ahead
         effects:
           - type: value
+            target: engineer
+            field: motivation
+            amount: 0
+            historyNote: Started the next feature in a quiet week
+          - type: value
             target: project
             field: progress
             amount: 4
@@ -84,6 +90,7 @@ choices:
             target: engineer
             field: stress
             amount: -5
+            historyNote: Had a quiet week off the hook
           - type: value
             target: engineer
             field: motivation

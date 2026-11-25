@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
 quietWeek: true
+once: true
 waitDebrief: "Coasting rarely announces itself. Left alone, a capable engineer who has stopped learning drifts until someone else offers them something new."
 roles:
   - name: team

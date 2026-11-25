@@ -5,6 +5,7 @@ levels: [line-manager]
 priority: normal
 cooldownWeeks: 26
 quietWeek: true
+once: true
 waitDebrief: "A team that asks to change how it works and hears nothing keeps the meeting and loses a little faith that asking helps."
 roles:
   - name: team
@@ -65,6 +66,7 @@ choices:
             amount: 2
             wantTags:
               serves: [autonomy]
+            historyNote: Got a meeting turned into a written update
           - type: value
             target: engineer
             field: stress
