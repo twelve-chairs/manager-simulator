@@ -426,6 +426,9 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         const after = result.run;
         const passed = after.week.filter((m) => m.status === 'expired' && m.id !== command.momentId && before.week.find((x) => x.id === m.id)?.status === 'open');
         const chips = found.renderer.chips(found.level.view(before.level, before.sim), found.level.view(after.level, after.sim));
+        // @spec UI-WEEK-018
+        // One choice rarely moves a band of energy; without this, doing it yourself would look free, at every level and in situations.
+        if (after.sim.player.stress > before.sim.player.stress && !chips.some((c) => c.key === 'player:energy')) chips.push({ key: 'player:energy-spent', text: 'You: energy spent', tone: 'bad' });
         reaction = { momentId: command.momentId, chips, passed };
       } else if (command.kind !== 'plan') reaction = null;
       focusScene = !sendOptions.keepFocus;

@@ -245,24 +245,6 @@ describe('work moments', () => {
     expect(choose(level, sim, m.id, 'self').reaction).toMatch(/your own energy/);
   });
 
-  // @spec LINE-VIS-016
-  it('counts the week’s moment choices that raised the player’s stress', () => {
-    const { level: quiet, sim } = quietRun(1);
-    const review = withItem(quiet, { kind: 'designReview', subject: project(sim), size: 5, difficulty: 90, lastWeek: sim.week + 2 });
-    const withTwo = withItem(review.level, { kind: 'customerRequest', subject: project(sim), size: 4, difficulty: 90, lastWeek: sim.week + 2 });
-    const id = review.id;
-    const begun = begin(withTwo.level, sim);
-    expect(view(begun, sim).player.energySpent).toBe(0);
-    // Pushing back costs the player nothing.
-    const pushed = choose(begun, sim, momentFor(begun, withTwo.id).id, 'pushBack');
-    expect(view(pushed.level, pushed.sim).player.energySpent).toBe(0);
-    const done = choose(pushed.level, pushed.sim, momentFor(pushed.level, id).id, 'self');
-    expect(view(done.level, done.sim).player.energySpent).toBe(1);
-    // A new week starts the count again.
-    const ended = end(done.level, done.sim);
-    expect(view(ended.level, ended.sim).player.energySpent).toBe(0);
-  });
-
   // @spec LINE-WORK-004
   it('words the reaction for the personality of the engineer involved', () => {
     const reactions = new Set<string>();

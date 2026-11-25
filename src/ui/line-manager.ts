@@ -150,7 +150,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
 }
 
 /** A chip per band that moved between two views, per person who left or joined, and per new memory note on someone with no band chip. */
-// @spec UI-WEEK-008, UI-WEEK-010, UI-WEEK-018
+// @spec UI-WEEK-008, UI-WEEK-010
 function chips(before: unknown, after: unknown): Chip[] {
   const a = before as View;
   const b = after as View;
@@ -173,8 +173,6 @@ function chips(before: unknown, after: unknown): Chip[] {
   const was = new Set(a.people.map((p) => p.id));
   for (const q of b.people) if (!was.has(q.id)) out.push({ key: `person:${q.id}:joined`, text: `${q.name}: joined the team`, tone: 'good' });
   move('player:energy', 'You', a.player.energy, b.player.energy, true, 'more energy', 'less energy');
-  // One piece of work rarely moves a band of energy; without this, doing it yourself would look free.
-  if (a.player.energy === b.player.energy && b.player.energySpent > a.player.energySpent) out.push({ key: 'player:energy-spent', text: 'You: energy spent', tone: 'bad' });
   move('player:reputation', 'Your reputation', a.player.reputation, b.player.reputation, true, 'up', 'down');
   const afterProjects = new Map(b.projects.map((p) => [p.id, p]));
   for (const p of a.projects) {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { band, lineManagerLevel, type LineState, type View } from '../../src/levels/line-manager';
-import type { AnyLevel, Dependencies, Run } from '../../src/loop';
+import { newRun, type AnyLevel, type Dependencies, type Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
 import { current, waitUntil } from '../loop/fixtures';
@@ -438,6 +438,43 @@ describe('the scene', () => {
     const moved = $$(second, '[data-scene] [data-chip]');
     expect(moved.some((c) => c.dataset.chip === 'player:energy')).toBe(true);
     expect(moved.some((c) => c.dataset.chip === 'player:energy-spent')).toBe(false);
+  });
+
+  // @spec UI-WEEK-018
+  it('shows the player’s energy spent for a situation’s choice too', () => {
+    const tiring = sit({
+      id: 'tiring',
+      priority: 'urgent',
+      choices: [{ id: 'stay-late', label: 'Stay late with {engineer}', outcomes: [{ id: 'late', effects: [{ type: 'value', target: 'player', field: 'stress', amount: 2 }], aftermath: 'You stay late.', debrief: 'Late nights add up.' }] }],
+    });
+    const content = [tiring];
+    const r = structuredClone(waitUntil(newRun(1, content, DEPS), 'situation', DEPS, content));
+    r.sim.player.stress = 0;
+    const { root } = makeApp({ run: r, content });
+    click(root, '[data-scene] [data-choice="stay-late"]');
+    expect(text(root, '[data-scene] [data-chip="player:energy-spent"]')).toBe('You: energy spent');
+  });
+
+  // @spec UI-WEEK-018
+  it('shows the player’s energy spent for any level’s choice, read from the player’s own stress', () => {
+    // A level whose every choice costs the player a little energy, whatever its view counts.
+    const draining: AnyLevel = {
+      ...L,
+      choose(l, s, momentId, choiceId) {
+        const result = L.choose(l, s, momentId, choiceId);
+        if (!result.ok) return result;
+        const sim = structuredClone(result.sim);
+        sim.player.stress += 1;
+        return { ...result, sim };
+      },
+    };
+    const deps = { ...DEPS, levels: [draining] };
+    const r = structuredClone(waitUntil(playing(), 'level', deps));
+    r.sim.player.stress = 0;
+    const { root } = makeApp({ run: r, deps });
+    const choice = $$(root, '[data-scene] [data-choice]').find((b) => b.dataset.choice === 'pushBack' || b.dataset.choice === 'wait') ?? $(root, '[data-scene] [data-choice]');
+    choice.click();
+    expect(root.querySelector('[data-scene] [data-chip="player:energy-spent"]')).not.toBeNull();
   });
 
   // @spec UI-WEEK-008

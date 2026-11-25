@@ -244,8 +244,6 @@ export interface View {
     reputation: Band;
     /** Burnout: whether stress is at the threshold now, the weeks in a row ended there, and how many end the run. */
     edge: { at: boolean; weeks: number; limit: number };
-    /** How many of this week's moment choices spent the player's energy, since one rarely moves a band. */
-    energySpent: number;
   };
   habits: Habits;
   vacancies: Vacancy[];

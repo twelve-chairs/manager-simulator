@@ -293,8 +293,8 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   // @spec LINE-WORK-006
   const recalled = involved !== undefined ? callBack(s, sim, involved, moment.kind === 'onCall') : null;
   if (recalled) text = `${text} ${recalled}`;
-  // A choice that costs the player energy is counted, so it shows when no band moves, and ends the week's chance of being quiet.
-  // @spec LINE-VIS-016
+  // A choice that costs the player energy ends the week's chance of being quiet.
+  // @spec LINE-END-013
   if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.energySpent += 1;
   moment.status = 'answered';
   moment.outcome = text;

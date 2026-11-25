@@ -39,7 +39,7 @@ The player sees what a manager of this team would see, which is less than the si
 | What they remember | Their most recent notable history entries, as short lines in their own terms; a habit's routine notes, such as each 1:1, are left out, since they come every week and would crowd out what happened between you; a note repeated back to back shows once with its count, as in the recap |
 | Project progress, deadline, schedule status | Exactly |
 | Project risk and tech debt | A coarse band |
-| The player's energy and reputation | A coarse band; and how many of the week's choices have spent the player's energy |
+| The player's energy and reputation | A coarse band |
 | Habits, open vacancies, the quarter's goals and their progress | Exactly |
 
 Every banded value uses the same scale of bands over 0–100 (the cut-offs are tuning values), so a work moment's difficulty and an engineer's skill compare directly.
