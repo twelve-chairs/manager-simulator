@@ -384,16 +384,14 @@ export function formatScorecard(card: Scorecard): string {
   const quits = card.runs.flatMap((r) => r.trace.quits);
   out.push('', 'Bad outcomes can be traced', `  quits with a warning: ${quits.filter((q) => q.warned).length} of ${quits.length} (${pct(card.trace.quits)})`);
   for (const r of card.runs) for (const q of r.trace.quits.filter((x) => !x.warned)) out.push(`    seed ${r.seed}: ${q.name} quit with no warning on their card`);
-  out.push(`  low ratings with a warning: ${pct(card.trace.lowRatings)}; overdue projects: ${pct(card.trace.overdue)}; burnout warnings: ${pct(card.trace.burnout)}`);
-  out.push('', 'Choices feel consequential');
+  out.push(`  low ratings with a warning: ${pct(card.trace.lowRatings)}; overdue projects: ${pct(card.trace.overdue)}; burnout warnings: ${pct(card.trace.burnout)}`, '', 'Choices feel consequential');
   for (const r of card.runs) out.push(`  seed ${r.seed}: ${r.choices.answered} answered, ${pct(r.choices.withChip)} with a chip, ${pct(r.choices.notesKept)} of notes still on the card two weeks later`);
   out.push('', 'The shape of a session');
   for (const r of card.runs) {
     const d = r.shape.decisions;
     out.push(`  seed ${r.seed}: ${num(d.mean)} decisions a week (${d.fewest} to ${d.most}), ${pct(d.weeksWithNone)} of weeks with none, longest run of one kind ${r.shape.longestSameKind}, ${r.shape.situationRepeats} situation repeats within ${REPEAT_WEEKS} weeks, ${pct(r.shape.distinctReactions)} distinct reactions`);
   }
-  out.push('', 'Promotion changes the job', ...jobLines(card));
-  out.push('', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`, '', 'Hard checks');
+  out.push('', 'Promotion changes the job', ...jobLines(card), '', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`, '', 'Hard checks');
   for (const c of card.checks) out.push(`  ${c.id.padEnd(16)}${c.passed ? 'passed' : 'FAILED'}  ${c.name}`, ...c.failures.map((f) => `    ${f}`));
   return out.join('\n');
 }
