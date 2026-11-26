@@ -28,8 +28,8 @@ Resources:
   # @spec UI-HOST-001
   # Access logging is off by design: the game collects nothing about its players, and a log would record every
   # visitor's address (docs/decisions/hosting.md, the security rule's AWS section).
-  SiteBucket: # NOSONAR
-    Type: AWS::S3::Bucket
+  SiteBucket:
+    Type: AWS::S3::Bucket # NOSONAR
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
