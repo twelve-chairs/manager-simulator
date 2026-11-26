@@ -131,36 +131,49 @@ export function selectSituations(
     if (onlyIfEmpty && (presented.length > 0 || levelMoments > 0)) continue;
     while (pool.length > 0 && presented.length < upTo) {
       const [situation] = pool.splice(pickWeighted(s, pool), 1) as [Situation];
-      const bindings = bind(s, sim, situation, boundPeople, timing);
-      if (!bindings) continue;
-
-      // Record the presentation before offering choices, so conditions inside it count it as presented.
-      const people = situation.roles.filter((r) => r.kind === 'person').map((r) => bindings[r.name]!);
-      s.presentations.push({ situationId: situation.id, week: sim.week, ...(people.length && { people }) });
-      const ctx = ctxFor(sim, s, situation, bindings, timing);
-      const kinds = kindsOf(situation);
-      const choices = situation.choices
-        .filter((c) => !c.availableIf || evaluateCondition(c.availableIf, ctx))
-        .map((c) => ({ id: c.id, label: render(c.label, sim, bindings, kinds) }));
-      if (choices.length === 0) {
-        s.presentations.pop();
-        continue;
-      }
-
-      s.presentationCount += 1;
-      const id = `presentation-${s.presentationCount}`;
-      s.open.push({ id, situationId: situation.id, week: sim.week, bindings });
-      for (const role of situation.roles) if (role.kind === 'person') boundPeople.add(bindings[role.name]!);
-      presented.push({ id, situationId: situation.id, bindings: { ...bindings }, day: 0, time: 'morning', text: render(situation.text, sim, bindings, kinds), choices });
+      const p = present(s, sim, situation, boundPeople, timing);
+      if (p) presented.push(p);
     }
   }
-  // Placed only once the selection is made, so authoring a situation's time never changes which situations are selected.
+  placeInWeek(s, situations, presented);
+  return { engine: s, presented };
+}
+
+/**
+ * Binds a drawn situation's roles and opens it, or returns nothing when its roles cannot be bound or it offers no choice.
+ * Its people are then bound for the rest of the selection.
+ */
+function present(s: EngineState, sim: SimState, situation: Situation, boundPeople: Set<string>, timing: Timing): Presentation | undefined {
+  const bindings = bind(s, sim, situation, boundPeople, timing);
+  if (!bindings) return undefined;
+
+  // Record the presentation before offering choices, so conditions inside it count it as presented.
+  const people = situation.roles.filter((r) => r.kind === 'person').map((r) => bindings[r.name]!);
+  s.presentations.push({ situationId: situation.id, week: sim.week, ...(people.length && { people }) });
+  const ctx = ctxFor(sim, s, situation, bindings, timing);
+  const kinds = kindsOf(situation);
+  const choices = situation.choices
+    .filter((c) => !c.availableIf || evaluateCondition(c.availableIf, ctx))
+    .map((c) => ({ id: c.id, label: render(c.label, sim, bindings, kinds) }));
+  if (choices.length === 0) {
+    s.presentations.pop();
+    return undefined;
+  }
+
+  s.presentationCount += 1;
+  const id = `presentation-${s.presentationCount}`;
+  s.open.push({ id, situationId: situation.id, week: sim.week, bindings });
+  for (const p of people) boundPeople.add(p);
+  return { id, situationId: situation.id, bindings: { ...bindings }, day: 0, time: 'morning', text: render(situation.text, sim, bindings, kinds), choices };
+}
+
+/** Gives each presented situation its day and time. Placed only once the selection is made, so authoring a situation's time never changes which situations are selected. */
+function placeInWeek(s: EngineState, situations: Situation[], presented: Presentation[]) {
   for (const p of presented) {
     const situation = situations.find((x) => x.id === p.situationId)!;
     p.day = situation.day ? DAYS.indexOf(situation.day) : Math.floor(random(s) * DAYS.length);
     p.time = situation.time ?? (random(s) < 0.5 ? 'morning' : 'afternoon');
   }
-  return { engine: s, presented };
 }
 
 function stillBound(sim: SimState, situation: Situation, bindings: Record<string, string>): boolean {

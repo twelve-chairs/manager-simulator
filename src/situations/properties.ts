@@ -106,107 +106,120 @@ const ledTeam = (sim: SimState, personId: string) =>
       return leader?.kind === 'person' && leader.id === personId;
     });
 
+function personValue(sim: SimState, id: string, property: string): Value {
+  const p = sim.people[id];
+  if (!p) return undefined;
+  switch (property) {
+    case 'id':
+      return p.id;
+    case 'skill':
+    case 'motivation':
+    case 'stress':
+    case 'trust':
+    case 'want':
+    case 'personality':
+    case 'role':
+    case 'performance':
+    case 'lowMotivationWeeks':
+    case 'highStressWeeks':
+      return p[property];
+    case 'plan':
+      return planOf(sim, { kind: 'person', id });
+    case 'contribution':
+      return contribution(sim, id) ?? undefined;
+    case 'correspondingRating':
+      return correspondingRating(sim, id) ?? undefined;
+    case 'team':
+      return p.teamId ?? undefined; // none for a person outside the organization
+    case 'ledTeam':
+      return ledTeam(sim, id);
+    case 'tenureWeeks':
+      return sim.week - p.joinedWeek;
+    case 'weeksSinceWantServed':
+      return sim.week - p.wantServedWeek;
+  }
+  return undefined;
+}
+
+function teamValue(sim: SimState, id: string, property: string): Value {
+  const t = sim.teams[id];
+  if (!t) return undefined;
+  switch (property) {
+    case 'id':
+      return t.id;
+    case 'form':
+      return t.form;
+    case 'leader':
+      return t.leader?.kind === 'person' ? t.leader.id : undefined;
+    case 'leaderless':
+      return t.leader === null;
+    case 'troubled':
+      return t.leader === null || [...overdueProjects(sim), ...behindScheduleProjects(sim)].some((p) => p.teamId === id);
+  }
+  const summary = teamSummary(sim, id);
+  if (property.startsWith('ratings.')) return summary.ratings[property.slice('ratings.'.length) as PerformanceLevel];
+  switch (property) {
+    case 'headcount':
+    case 'skill':
+    case 'motivation':
+    case 'stress':
+    case 'attritionRisk':
+      return summary[property];
+  }
+  return undefined;
+}
+
+function projectValue(sim: SimState, id: string, property: string): Value {
+  const p = sim.projects[id];
+  if (!p) return undefined;
+  switch (property) {
+    case 'id':
+      return p.id;
+    case 'team':
+      return p.teamId;
+    case 'progressShare':
+      return p.scope > 0 ? (p.progress / p.scope) * 100 : 0;
+    case 'risk':
+    case 'techDebt':
+    case 'status':
+      return p[property];
+    case 'overdue':
+      return overdueProjects(sim).some((x) => x.id === id);
+    case 'behind':
+      return behindScheduleProjects(sim).some((x) => x.id === id);
+    case 'weeksToDeadline':
+      return p.deadlineWeek - sim.week;
+  }
+  return undefined;
+}
+
+function playerValue(sim: SimState, property: string): Value {
+  switch (property) {
+    case 'reputation':
+    case 'stress':
+    case 'performance':
+      return sim.player[property];
+    case 'plan':
+      return planOf(sim, { kind: 'player' });
+    case 'team':
+      return Object.keys(sim.teams)
+        .sort(compareCodeUnits)
+        .find((tid) => sim.teams[tid]!.leader?.kind === 'player');
+  }
+  return undefined;
+}
+
 /** The value of a property of the entity with the given id, or undefined when it has none. */
 // @spec SIT-COND-006, SIT-COND-012, SIT-COND-015
 export function propertyValue(sim: SimState, subject: Subject, id: string, property: string): Value {
   switch (subject) {
-    case 'person': {
-      const p = sim.people[id];
-      if (!p) return undefined;
-      switch (property) {
-        case 'id':
-          return p.id;
-        case 'skill':
-        case 'motivation':
-        case 'stress':
-        case 'trust':
-        case 'want':
-        case 'personality':
-        case 'role':
-        case 'performance':
-        case 'lowMotivationWeeks':
-        case 'highStressWeeks':
-          return p[property];
-        case 'plan':
-          return planOf(sim, { kind: 'person', id });
-        case 'contribution':
-          return contribution(sim, id) ?? undefined;
-        case 'correspondingRating':
-          return correspondingRating(sim, id) ?? undefined;
-        case 'team':
-          return p.teamId ?? undefined; // none for a person outside the organization
-        case 'ledTeam':
-          return ledTeam(sim, id);
-        case 'tenureWeeks':
-          return sim.week - p.joinedWeek;
-        case 'weeksSinceWantServed':
-          return sim.week - p.wantServedWeek;
-      }
-      return undefined;
-    }
-    case 'team': {
-      const t = sim.teams[id];
-      if (!t) return undefined;
-      switch (property) {
-        case 'id':
-          return t.id;
-        case 'form':
-          return t.form;
-        case 'leader':
-          return t.leader?.kind === 'person' ? t.leader.id : undefined;
-        case 'leaderless':
-          return t.leader === null;
-        case 'troubled':
-          return t.leader === null || [...overdueProjects(sim), ...behindScheduleProjects(sim)].some((p) => p.teamId === id);
-      }
-      const summary = teamSummary(sim, id);
-      if (property.startsWith('ratings.')) return summary.ratings[property.slice('ratings.'.length) as PerformanceLevel];
-      switch (property) {
-        case 'headcount':
-        case 'skill':
-        case 'motivation':
-        case 'stress':
-        case 'attritionRisk':
-          return summary[property];
-      }
-      return undefined;
-    }
-    case 'project': {
-      const p = sim.projects[id];
-      if (!p) return undefined;
-      switch (property) {
-        case 'id':
-          return p.id;
-        case 'team':
-          return p.teamId;
-        case 'progressShare':
-          return p.scope > 0 ? (p.progress / p.scope) * 100 : 0;
-        case 'risk':
-        case 'techDebt':
-        case 'status':
-          return p[property];
-        case 'overdue':
-          return overdueProjects(sim).some((x) => x.id === id);
-        case 'behind':
-          return behindScheduleProjects(sim).some((x) => x.id === id);
-        case 'weeksToDeadline':
-          return p.deadlineWeek - sim.week;
-      }
-      return undefined;
-    }
+    case 'person':
+      return personValue(sim, id, property);
+    case 'team':
+      return teamValue(sim, id, property);
+    case 'project':
+      return projectValue(sim, id, property);
     case 'player':
-      switch (property) {
-        case 'reputation':
-        case 'stress':
-        case 'performance':
-          return sim.player[property];
-        case 'plan':
-          return planOf(sim, { kind: 'player' });
-        case 'team':
-          return Object.keys(sim.teams)
-            .sort(compareCodeUnits)
-            .find((tid) => sim.teams[tid]!.leader?.kind === 'player');
-      }
-      return undefined;
+      return playerValue(sim, property);
   }
 }

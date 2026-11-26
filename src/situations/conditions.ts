@@ -110,6 +110,28 @@ function candidates(sim: SimState, kind: RoleKind): string[] {
 /** Active people, existing teams or active projects of a kind, in id order. */
 export const candidatesOf = (sim: SimState, kind: RoleKind) => candidates(sim, kind).sort(compareCodeUnits);
 
+type HistoryEntry = SimState['people'][string]['history'][number];
+
+/** Whether a history entry matches every filter a history condition names: situation, choice, action, note, rating and window. */
+function historyMatches(h: HistoryEntry, c: Record<string, unknown>, ctx: EvalContext): boolean {
+  const cause = h.cause;
+  if (c.situation !== undefined && !(cause.kind === 'situation' && cause.situationId === c.situation)) return false;
+  if (c.choice !== undefined && !(cause.kind === 'situation' && cause.choiceId === c.choice)) return false;
+  if (c.action !== undefined && !(cause.kind === 'action' && cause.actionId === c.action)) return false;
+  // @spec SIT-COND-017
+  if (c.note !== undefined && h.note !== c.note) return false;
+  const ratings = c.rating as string[] | undefined;
+  if (ratings !== undefined && !(h.rating !== undefined && ratings.includes(h.rating))) return false;
+  return inWindow(ctx, h.week, c.withinWeeks as number | undefined);
+}
+
+/** How many entries in the bound person's history match a history condition, or undefined when the role is bound to no one in the simulation, which no count satisfies. */
+function historyCount(c: Record<string, unknown>, ctx: EvalContext): number | undefined {
+  const id = has(ctx.bindings, c.history as string) ? ctx.bindings[c.history as string]! : undefined;
+  const person = id !== undefined && has(ctx.sim.people, id) ? ctx.sim.people[id]! : undefined;
+  return person?.history.filter((h) => historyMatches(h, c, ctx)).length;
+}
+
 /** Evaluates a condition against the simulation and engine state. Changes neither. */
 // @spec SIT-COND-001, SIT-COND-002, SIT-COND-003, SIT-COND-004, SIT-COND-005, SIT-COND-007, SIT-COND-008, SIT-COND-009, SIT-COND-010, SIT-COND-011, SIT-COND-013
 export function evaluateCondition(condition: Condition, ctx: EvalContext): boolean {
@@ -125,25 +147,8 @@ export function evaluateCondition(condition: Condition, ctx: EvalContext): boole
   }
 
   if (has(c, 'history')) {
-    const id = has(ctx.bindings, c.history as string) ? ctx.bindings[c.history as string]! : undefined;
-    const person = id !== undefined && has(ctx.sim.people, id) ? ctx.sim.people[id]! : undefined;
-    if (!person) return false;
-    const situation = c.situation as string | undefined;
-    const choice = c.choice as string | undefined;
-    const action = c.action as string | undefined;
-    const ratings = c.rating as string[] | undefined;
-    const note = c.note as string | undefined;
-    const n = person.history.filter(
-      (h) =>
-        (situation === undefined || (h.cause.kind === 'situation' && h.cause.situationId === situation)) &&
-        (choice === undefined || (h.cause.kind === 'situation' && h.cause.choiceId === choice)) &&
-        (action === undefined || (h.cause.kind === 'action' && h.cause.actionId === action)) &&
-        // @spec SIT-COND-017
-        (note === undefined || h.note === note) &&
-        (ratings === undefined || (h.rating !== undefined && ratings.includes(h.rating))) &&
-        inWindow(ctx, h.week, c.withinWeeks as number | undefined),
-    ).length;
-    return compareCount(n, c, ctx);
+    const n = historyCount(c, ctx);
+    return n !== undefined && compareCount(n, c, ctx);
   }
 
   if (has(c, 'presented')) {
