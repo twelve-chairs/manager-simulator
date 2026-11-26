@@ -1,5 +1,5 @@
 import { LINE_TUNING, band, quitsIn, type Quit } from '../line-manager';
-import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
+import { behindScheduleProjects, compareCodeUnits, overdueProjects, type SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { managerOf } from './core';
 import { goalStatus } from './goals';
@@ -78,7 +78,7 @@ export function shippedLastMonth(level: SeniorState, sim: SimState): { projectId
       const p = sim.projects[id]!;
       return { projectId: id, name: p.name, team: sim.teams[p.teamId]?.name ?? p.teamId, weeksLate: Math.max(0, when - p.deadlineWeek) };
     })
-    .sort((a, b) => (a.projectId < b.projectId ? -1 : a.projectId > b.projectId ? 1 : 0));
+    .sort((a, b) => compareCodeUnits(a.projectId, b.projectId));
 }
 
 /**

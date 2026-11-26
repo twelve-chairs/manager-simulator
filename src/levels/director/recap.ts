@@ -29,7 +29,10 @@ export interface DirectorRecap {
   routine: { habits: string[]; goals: { text: string; progress: string }[] };
 }
 
-const moved = (was: number, now: number, up: string, down: string) => (now > was ? [up] : now < was ? [down] : []);
+const moved = (was: number, now: number, up: string, down: string): string[] => {
+  if (now > was) return [up];
+  return now < was ? [down] : [];
+};
 const TIME = { organization: 'Your time went to your organization.', balanced: 'Your time was split between your organization and the room above.', upward: 'Your time went to your executive and peers.' } as const;
 
 /** The quarter's recap: what changed since it began, then the routine. */

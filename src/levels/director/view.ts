@@ -1,12 +1,11 @@
 import { band } from '../line-manager';
-import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating, type SimState } from '../../sim';
+import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type HistoryEntry, type Rating, type Schedule, type SimState } from '../../sim';
 import { LINE_TUNING } from '../line-manager';
 import { leaderOf, quarterOf } from './core';
 import { goalStatus } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { BetOffer, DirectorMoment, DirectorState } from './types';
 
-type Schedule = 'onSchedule' | 'behind' | 'overdue';
 
 export interface SeniorManagerView {
   id: string;
@@ -96,7 +95,7 @@ const memoryOf = (history: HistoryEntry[]) =>
 export function directorView(level: DirectorState, sim: SimState): DirectorView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
-  const schedule = (id: string): Schedule => (overdue.has(id) ? 'overdue' : behind.has(id) ? 'behind' : 'onSchedule');
+  const schedule = (id: string): Schedule => scheduleOf(id, overdue, behind);
   const want = (id: string) => (level.learnedWants[id] ? sim.people[id]!.want : 'unknown');
   const quarter = quarterOf(level, sim);
   const seniorManagers: SeniorManagerView[] = [];
@@ -123,7 +122,7 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
       quarter: toured ? quarter : level.survey.quarter,
       projects: Object.values(sim.projects)
         .filter((p) => p.teamId === g && p.status === 'active')
-        .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+        .sort(byId)
         .map((p) => ({ id: p.id, name: p.name, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: schedule(p.id) })),
     });
   }

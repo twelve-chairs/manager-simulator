@@ -1,4 +1,4 @@
-import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
+import { behindScheduleProjects, overdueProjects, scheduleOf, type SimState } from '../../sim';
 import { goalStatus } from './goals';
 import type { MonthStart, SeniorState } from './types';
 import { seniorView } from './view';
@@ -9,7 +9,7 @@ const schedules = (level: SeniorState, sim: SimState) => {
   return Object.fromEntries(
     Object.values(sim.projects)
       .filter((p) => level.teamIds.includes(p.teamId) && p.status === 'active')
-      .map((p) => [p.id, overdue.has(p.id) ? 'overdue' : behind.has(p.id) ? 'behind' : 'onSchedule']),
+      .map((p) => [p.id, scheduleOf(p.id, overdue, behind)]),
   );
 };
 
@@ -36,7 +36,10 @@ export interface SeniorRecap {
   routine: { habits: string[]; goals: { text: string; progress: string }[] };
 }
 
-const moved = (was: number, now: number, up: string, down: string) => (now > was ? [up] : now < was ? [down] : []);
+const moved = (was: number, now: number, up: string, down: string): string[] => {
+  if (now > was) return [up];
+  return now < was ? [down] : [];
+};
 
 /** The month's recap: what changed since it began, then the routine. */
 // @spec SENIOR-RECAP-001

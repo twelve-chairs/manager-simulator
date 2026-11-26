@@ -23,7 +23,8 @@ type GoalStatus = { text: string; progress: string; achieved: boolean };
 function regrettedStatus(goal: DirectorGoal, level: DirectorState): GoalStatus {
   const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
   const most = T.goalRegrettedMost;
-  const progress = left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left';
+  const people = left === 1 ? 'person' : 'people';
+  const progress = left ? `${left} ${people} you'd have kept left` : 'Nobody you would keep has left';
   return { text: `Lose no more than ${most} of the people you would want to keep`, progress, achieved: left <= most };
 }
 

@@ -1,5 +1,5 @@
 import { NAMES, type LineState } from '../line-manager';
-import { addTeam, aggregateTeam, applyEffects, type Effect, type NewProject, type SimState, type Want } from '../../sim';
+import { addTeam, aggregateTeam, applyEffects, byId, type Effect, type NewProject, type SimState, type Want } from '../../sim';
 import { generateManager, nextId, randomInt, rule, summarizeTeam, unusedName } from './core';
 import { DEFAULT_SENIOR_HABITS } from './habits';
 import { periodSnapshot, remember } from './review';
@@ -20,7 +20,7 @@ export interface HandoverChoice {
 const engineersOf = (line: LineState, sim: SimState) =>
   Object.values(sim.people)
     .filter((p) => p.teamId === line.teamId && p.status === 'active' && p.role === 'engineer')
-    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    .sort(byId);
 
 /** Who can lead the promoted player's old team: each of its engineers, or an outside hire. */
 // @spec SENIOR-HAND-001

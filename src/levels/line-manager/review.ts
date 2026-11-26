@@ -149,12 +149,23 @@ export const STRETCHED_TEAM = "Your manager won't call it a strong quarter with 
 /** Why a team overwhelmed for most of the quarter caps it lower. */
 export const OVERLOADED_TEAM = 'Your team spent most of the quarter overwhelmed.';
 
+/** A team overwhelmed for most of the quarter caps the rating at partial; one still stretched at its end, at meets. */
+function teamCeiling(overwhelmedWeeks: number, stress: number) {
+  if (overwhelmedWeeks > LINE_TUNING.overloadedWeeks) return { ceiling: { rating: 'partial' as const, reason: OVERLOADED_TEAM } };
+  return band(stress) >= LINE_TUNING.stretchedTeamBand ? { ceiling: { rating: 'meets' as const, reason: STRETCHED_TEAM } } : {};
+}
+
 /** The measures a review scores, with the level's targets, whether promotion is possible yet, whether this is the last review, and any ceiling. */
 // @spec LINE-END-004, LINE-END-007, LINE-END-008, LINE-END-009, LINE-END-011, LINE-GOAL-003
 export function assess(level: LineState, sim: SimState): Assessment {
   const card = scorecard(level, sim);
   const t = LINE_TUNING.review;
   const measure = (id: Exclude<keyof typeof t, 'goal'>, value: number, better: Measure['better']): Measure => ({ id, value, ...t[id], better });
+  // A team between projects has no on-schedule share to reward or punish, unless it spent most of the quarter with none.
+  const onScheduleMeasure = (share: number | null, idleWeeks: number): Measure[] => {
+    if (share !== null) return [measure('onScheduleShare', share, 'higher')];
+    return idleWeeks > LINE_TUNING.idleQuarterWeeks ? [measure('onScheduleShare', 0, 'higher')] : [];
+  };
   // A goal about an engineer who has left no longer counts.
   const goals = level.goals
     .map((g) => ({ g, status: goalStatus(g, level, sim) }))
@@ -163,12 +174,7 @@ export function assess(level: LineState, sim: SimState): Assessment {
   return {
     measures: [
       measure('completedOnTime', card.delivery.completedOnTime, 'higher'),
-      // A team between projects has no on-schedule share to reward or punish, unless it spent most of the quarter with none.
-      ...(card.delivery.onScheduleShare !== null
-        ? [measure('onScheduleShare', card.delivery.onScheduleShare, 'higher')]
-        : level.idleWeeks > LINE_TUNING.idleQuarterWeeks
-          ? [measure('onScheduleShare', 0, 'higher')]
-          : []),
+      ...onScheduleMeasure(card.delivery.onScheduleShare, level.idleWeeks),
       measure('regrettedQuits', card.retention.quitsRatedMeetsOrAbove, 'lower'),
       measure('motivation', card.teamHealth.motivation, 'higher'),
       measure('stress', card.teamHealth.stress, 'lower'),
@@ -180,10 +186,6 @@ export function assess(level: LineState, sim: SimState): Assessment {
     // @spec LINE-END-004
     reviewsUntilPromotion: Math.max(0, LINE_TUNING.promotionFromReview - Math.floor(sim.week / LINE_TUNING.reviewEveryWeeks)),
     reviewsLeft: Math.max(0, LINE_TUNING.lastReview - Math.floor(sim.week / LINE_TUNING.reviewEveryWeeks)),
-    ...(level.overwhelmedWeeks > LINE_TUNING.overloadedWeeks
-      ? { ceiling: { rating: 'partial' as const, reason: OVERLOADED_TEAM } }
-      : band(card.teamHealth.stress) >= LINE_TUNING.stretchedTeamBand
-        ? { ceiling: { rating: 'meets' as const, reason: STRETCHED_TEAM } }
-        : {}),
+    ...teamCeiling(level.overwhelmedWeeks, card.teamHealth.stress),
   };
 }

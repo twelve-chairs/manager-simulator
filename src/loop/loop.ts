@@ -40,7 +40,8 @@ function beginWeek(run: Run, level: AnyLevel, content: Situation[]) {
     ...presented.filter((p) => !urgent(p)).map(situation),
   ];
   // The sort is stable, so within a slot urgent situations lead, then the level's moments, then the other situations, each in its own order.
-  run.week = moments.sort((a, b) => a.day - b.day || TIME_ORDER[a.time] - TIME_ORDER[b.time]);
+  moments.sort((a, b) => a.day - b.day || TIME_ORDER[a.time] - TIME_ORDER[b.time]);
+  run.week = moments;
   run.phase = 'week';
 }
 

@@ -27,7 +27,20 @@ export interface Ctx {
  * way wherever order matters, because a locale-aware comparison could order them differently for different players and
  * so break the rule that a run is reproducible from its seed.
  */
-export const compareCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+export function compareCodeUnits(a: string, b: string): number {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
+/** Orders records by id, in code-unit order. */
+export const byId = (x: { id: string }, y: { id: string }) => compareCodeUnits(x.id, y.id);
+
+/** Where a project stands against its schedule, given the ids of the overdue and the behind-schedule projects. */
+export type Schedule = 'onSchedule' | 'behind' | 'overdue';
+export function scheduleOf(id: string, overdue: ReadonlySet<string>, behind: ReadonlySet<string>): Schedule {
+  if (overdue.has(id)) return 'overdue';
+  return behind.has(id) ? 'behind' : 'onSchedule';
+}
 
 export const sortedIds = (record: Record<string, unknown>) => Object.keys(record).sort(compareCodeUnits);
 
@@ -146,7 +159,8 @@ const isLow = (r: Rating) => r === 'below' || r === 'partial';
 export function planFrom(ratings: Rating[]): Plan {
   let run = 0;
   for (let i = ratings.length - 1; i >= 0 && isLow(ratings[i]!); i--) run++;
-  return run === 0 ? 'none' : run === 1 ? 'coaching' : run === 2 ? 'pip' : 'failedPip';
+  const PLANS: Plan[] = ['none', 'coaching', 'pip'];
+  return PLANS[run] ?? 'failedPip';
 }
 
 export const personRatings = (p: Person): Rating[] => p.history.flatMap((h) => (h.rating ? [h.rating] : []));

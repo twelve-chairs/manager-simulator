@@ -32,6 +32,13 @@ export const isEngineer = (level: LineState, sim: SimState, id: string) => teamE
 
 /** Whether a work item's subject still exists in a form it can be about. */
 // @spec LINE-INBOX-010
+/** A memory line with how often it happened: as it is once, then "twice", then "3 times" and on. */
+export function withCount(note: string, times: number): string {
+  if (times === 1) return note;
+  if (times === 2) return `${note}, twice`;
+  return `${note}, ${times} times`;
+}
+
 export function subjectValid(level: LineState, sim: SimState, item: WorkItem): boolean {
   switch (item.subject.kind) {
     case 'project':

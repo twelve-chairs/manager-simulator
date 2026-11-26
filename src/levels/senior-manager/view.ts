@@ -1,5 +1,5 @@
 import { band } from '../line-manager';
-import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Person, type Rating, type SimState } from '../../sim';
+import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type HistoryEntry, type Person, type Rating, type SimState } from '../../sim';
 import { leadOf } from './core';
 import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
@@ -83,16 +83,11 @@ function managerView(level: SeniorState, person: Person, teamId: string): Manage
   };
 }
 
-const scheduleOf = (id: string, overdue: ReadonlySet<string>, behind: ReadonlySet<string>) => {
-  if (overdue.has(id)) return 'overdue';
-  return behind.has(id) ? 'behind' : 'onSchedule';
-};
-
 /** A team's active projects in id order, each with its schedule. */
 function projectsView(sim: SimState, teamId: string, overdue: ReadonlySet<string>, behind: ReadonlySet<string>): TeamView['projects'] {
   return Object.values(sim.projects)
     .filter((p) => p.teamId === teamId && p.status === 'active')
-    .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+    .sort(byId)
     .map((p) => ({ id: p.id, name: p.name, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: scheduleOf(p.id, overdue, behind) }));
 }
 
@@ -131,6 +126,11 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
     const id = t ? leadOf(level, sim, t) : null;
     return id ? [id] : [];
   };
+  /** The managers a moment is about: a calibration's, nobody for a restructuring, or the leads of the teams it names. */
+  const managersOf = (m: SeniorMoment): string[] => {
+    if (m.kind === 'calibration') return m.calibration!.flatMap((c) => c.managerId ?? []);
+    return m.kind === 'restructuring' ? [] : [...leads(m.teamId), ...leads(m.otherTeamId)];
+  };
   const moments: MomentView[] = level.moments.map((m) => ({
     id: m.id,
     kind: m.kind,
@@ -138,7 +138,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
     text: m.text,
     ...(m.teamId && { teamId: m.teamId }),
     choices: m.choices,
-    managerIds: m.kind === 'calibration' ? m.calibration!.flatMap((c) => c.managerId ?? []) : m.kind === 'restructuring' ? [] : [...leads(m.teamId), ...leads(m.otherTeamId)],
+    managerIds: managersOf(m),
     ...(m.calibration && { calibration: m.calibration }),
     ...(m.curve !== undefined && { curve: m.curve }),
     ...(m.overCurve && { overCurve: m.overCurve }),

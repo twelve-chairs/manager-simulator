@@ -1,5 +1,6 @@
 import {
   attritionRiskOf,
+  byId,
   clamp100,
   emptyRatings,
   gainHeads,
@@ -36,7 +37,7 @@ import type {
 
 export * from './types';
 export { TUNING } from './tuning';
-export { attritionRiskOf, compareCodeUnits, nextRandom } from './core';
+export { attritionRiskOf, byId, compareCodeUnits, nextRandom, scheduleOf, type Schedule } from './core';
 export {
   applyEffects,
   AGGREGATE_TEAM_FIELDS,
@@ -58,8 +59,8 @@ export const RULE_ORDER = [
   'rule.gameTime',
 ] as const;
 
-const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
-  Object.fromEntries([...items].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).map((x) => [x.id, x]));
+const keyedById = <T extends { id: string }>(items: T[]): Record<string, T> =>
+  Object.fromEntries([...items].sort(byId).map((x) => [x.id, x]));
 
 /** The rule recorded as the cause of the ratings a simulation starts with. */
 export const STARTING_ORGANIZATION_RULE = 'rule.startingOrganization';
@@ -96,9 +97,9 @@ export function create(seed: number, org: StartingOrganization): SimState {
       performance: performance ?? 'unrated',
       ratingHistory: performance ? [{ week: 0, cause: STARTING_ORGANIZATION, rating: performance }] : [],
     },
-    people: byId(people),
-    teams: byId(teams),
-    projects: byId(projects),
+    people: keyedById(people),
+    teams: keyedById(teams),
+    projects: keyedById(projects),
   };
 }
 

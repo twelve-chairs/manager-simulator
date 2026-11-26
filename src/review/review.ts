@@ -8,7 +8,8 @@ const POINTS: Record<Verdict, number> = { above: 1, at: 0, below: -1 };
 // @spec REVIEW-MEASURE-001
 export function verdictOf(m: Measure): Verdict {
   const gap = m.better === 'higher' ? m.value - m.target : m.target - m.value;
-  return gap > m.tolerance ? 'above' : gap < -m.tolerance ? 'below' : 'at';
+  if (gap > m.tolerance) return 'above';
+  return gap < -m.tolerance ? 'below' : 'at';
 }
 
 /** The highest rating whose threshold the score reaches. */
@@ -48,6 +49,13 @@ function towardPromotion(outcome: ReviewOutcome, rating: Rating, a: Assessment):
 
 /** Whether the standing says what held the rating back: below exceeds, at any review the run goes on from or ends at. */
 // @spec REVIEW-STAND-004
+/** Managed out at the end of a failed plan; promoted after two reviews in a row at exceeds or better where promotion is open; at the last review, stayed. */
+function outcomeOf(plan: string, a: Assessment, previous: Rating | undefined, rating: Rating): ReviewOutcome {
+  if (plan === 'failedPip') return 'managedOut';
+  if (a.promotionPossible && previous !== undefined && exceedsOrBetter(previous) && exceedsOrBetter(rating)) return 'promote';
+  return a.lastReview ? 'stayed' : 'continue';
+}
+
 const heldBack = (outcome: ReviewOutcome, rating: Rating) =>
   !exceedsOrBetter(rating) && (outcome === 'stayed' || outcome === 'continue');
 
@@ -71,14 +79,7 @@ export function conductReview(input: ReviewInput): ReviewResult {
   if (!rated.ok) throw new Error(`the simulation rejected the review's rating: ${rated.error.message}`);
 
   const plan = planOf(rated.state, { kind: 'player' });
-  const outcome: ReviewOutcome =
-    plan === 'failedPip'
-      ? 'managedOut'
-      : input.assessment.promotionPossible && previous !== undefined && exceedsOrBetter(previous) && exceedsOrBetter(rating)
-        ? 'promote'
-        : input.assessment.lastReview
-          ? 'stayed'
-          : 'continue';
+  const outcome = outcomeOf(plan, input.assessment, previous, rating);
   const standing: Standing = {
     ...margins(measures, rating, ceiling?.rating, capped),
     promotion: towardPromotion(outcome, rating, input.assessment),

@@ -10,7 +10,10 @@ export const FELL_SHORT = rule(FELL_SHORT_RULE);
 
 /** The level's causes of a change to a project's progress, by what the simulation recorded as the cause. */
 function progressCause(cause: ChangeLogEntry['cause']): LevelProgressCause | null {
-  if (cause.kind === 'action') return cause.actionId === PAY_DOWN ? 'payDown' : cause.actionId === ROLL_BACK ? 'rollBack' : null;
+  if (cause.kind === 'action') {
+    if (cause.actionId === PAY_DOWN) return 'payDown';
+    return cause.actionId === ROLL_BACK ? 'rollBack' : null;
+  }
   if (cause.kind === 'rule') return cause.ruleId === EXPIRED_RULE || cause.ruleId === FELL_SHORT_RULE ? 'approvals' : null;
   return null;
 }

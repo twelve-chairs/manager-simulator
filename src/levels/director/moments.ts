@@ -132,10 +132,11 @@ function orgDesignDrafts(s: DirectorState, sim: SimState): Draft[] {
 function reviewDraft(s: DirectorState, sim: SimState): Draft {
   const held = quarterHeld(s, sim);
   const onSchedule = held.active.length - held.troubled.length;
+  const projects = onSchedule === 1 ? 'one project' : `${onSchedule} projects`;
   return {
     kind: 'review',
     title: 'The quarterly review',
-    text: `You present the quarter to your executive: ${onSchedule === 1 ? 'one project' : `${onSchedule} projects`} on schedule and ${held.troubled.length} in trouble.`,
+    text: `You present the quarter to your executive: ${projects} on schedule and ${held.troubled.length} in trouble.`,
     choices: CHOICES.review,
   };
 }

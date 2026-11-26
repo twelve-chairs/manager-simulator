@@ -29,7 +29,10 @@ const isObject = (x: unknown): x is Obj => {
   return proto === Object.prototype || proto === null;
 };
 
-const at = (path: string, key: string | number) => (typeof key === 'number' ? `${path}[${key}]` : path ? `${path}.${key}` : key);
+const at = (path: string, key: string | number) => {
+  if (typeof key === 'number') return `${path}[${key}]`;
+  return path ? `${path}.${key}` : key;
+};
 const get = (o: Obj, key: string) => (Object.hasOwn(o, key) ? o[key] : undefined);
 
 function object(x: unknown, path: string, what: string, required: readonly string[], optional: readonly string[] = []): Obj {
@@ -76,7 +79,10 @@ interface Scope {
 
 // ---- conditions ----
 
-const describe = (t: PropertyType) => (t.kind === 'enum' ? `a ${t.name}` : t.kind === 'id' ? 'an id' : `a ${t.kind}`);
+const describe = (t: PropertyType) => {
+  if (t.kind === 'enum') return `a ${t.name}`;
+  return t.kind === 'id' ? 'an id' : `a ${t.kind}`;
+};
 
 function pathType(path: unknown, scope: Scope, where: string): PropertyType {
   if (typeof path !== 'string') fail(where, 'a path must be text');

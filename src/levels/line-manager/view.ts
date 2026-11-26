@@ -1,5 +1,5 @@
-import { behindScheduleProjects, overdueProjects, type HistoryEntry, type SimState } from '../../sim';
-import { band, isEngineer, nameOf, teamEngineers, teamProjects } from './core';
+import { behindScheduleProjects, overdueProjects, scheduleOf, type HistoryEntry, type SimState } from '../../sim';
+import { band, isEngineer, nameOf, teamEngineers, teamProjects, withCount } from './core';
 import { goalStatus } from './goals';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import { NAMES } from './names';
@@ -38,7 +38,7 @@ function collapsed(notes: string[]): string[] {
     if (last?.note === note) last.times++;
     else lines.push({ note, times: 1 });
   }
-  return lines.map(({ note, times }) => (times === 1 ? note : `${note}, ${times === 2 ? 'twice' : `${times} times`}`));
+  return lines.map(({ note, times }) => withCount(note, times));
 }
 
 /** Why a project is due a check-in, as the rest of a sentence about it: the first that holds of overdue, behind schedule and high risk. */
@@ -151,7 +151,7 @@ export function view(level: LineState, sim: SimState): View {
         progress: p.progress,
         scope: p.scope,
         deadlineWeek: p.deadlineWeek,
-        schedule: overdue.has(id) ? ('overdue' as const) : behind.has(id) ? ('behind' as const) : ('onSchedule' as const),
+        schedule: scheduleOf(id, overdue, behind),
         risk: band(p.risk),
         techDebt: band(p.techDebt),
       };

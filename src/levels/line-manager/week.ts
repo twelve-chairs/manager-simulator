@@ -1,5 +1,5 @@
 import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type ChangeLogEntry, type Effect, type HistoryEntry, type SimState } from '../../sim';
-import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
+import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects, withCount } from './core';
 import { recallInRecap } from './callbacks';
 import { setGoals, goalStatus } from './goals';
 import { fallBack, habitEffects } from './habits';
@@ -63,7 +63,7 @@ const REST = 'line-manager.rest';
 function counted(notes: string[]): string[] {
   const times = new Map<string, number>();
   for (const n of notes) times.set(n, (times.get(n) ?? 0) + 1);
-  return [...times].map(([n, k]) => (k === 1 ? n : `${n}, ${k === 2 ? 'twice' : `${k} times`}`));
+  return [...times].map(([n, k]) => withCount(n, k));
 }
 
 /** What the week's end works on: the level's copy, the simulation as the week leaves it, and what the steps gather. */
@@ -126,7 +126,8 @@ function signApprovals({ s, sim, effects, recap, signed }: WeekEnd) {
     signed.add(item.id);
   }
   const n = beyond.length;
-  const rest = n ? ` ${n} ${n === 1 ? 'was beyond them, so you signed it' : 'were beyond them, so you signed them'}.` : '';
+  const beyondThem = n === 1 ? 'was beyond them, so you signed it' : 'were beyond them, so you signed them';
+  const rest = n ? ` ${n} ${beyondThem}.` : '';
   if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${plural(able.length, 'routine approval')}.${rest}`);
 }
 
