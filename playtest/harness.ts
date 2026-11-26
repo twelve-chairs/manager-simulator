@@ -220,12 +220,14 @@ function playInPage(options: InPage): PlaySummary {
     el.click();
     log.push({ kind: 'click', decision });
   };
+  const PERSON_CARDS = ['[data-panel=team] [data-person]', '[data-panel=managers] [data-manager]', '[data-panel=senior-managers] [data-senior-manager]', '[data-panel=directors] [data-director]'].join(', ');
   let lastLook = '';
   function look() {
     const entry: Look = {
       kind: 'look',
       week: runWeek(),
-      people: qa('[data-panel=team] [data-person]').map((card) => ({
+      // Everyone the player leads, on a card beside the scene: engineers, then managers, senior managers or directors (PLAY-TRACE-001).
+      people: qa(PERSON_CARDS).map((card) => ({
         name: text('[data-field=name]', card),
         motivation: text('[data-field=motivation]', card),
         stress: text('[data-field=stress]', card),

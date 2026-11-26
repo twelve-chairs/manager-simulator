@@ -32,7 +32,7 @@ The worse half of a person's bands is struggling or flat for motivation, and str
 
 ## Bad outcomes can be traced
 
-- [x] **PLAY-TRACE-001**: When the ended screen's career summary lists an engineer as quit, the scorecard shall record whether the engineer's card showed, in one of the last four weeks it was on screen, their motivation or stress in the worse half of its bands.
+- [x] **PLAY-TRACE-001**: When the ended screen's career summary lists someone as quit, the scorecard shall record whether their card, an engineer's on the team panel or a manager's, senior manager's or director's beside the scene at the levels above, showed in one of the last four weeks it was on screen their motivation or stress in the worse half of its bands.
 - [x] **PLAY-TRACE-002**: When a review is rated partial or below, the scorecard shall record whether, in the four weeks before it (or the weeks the run has had, when fewer), a project was shown as behind or overdue, or an engineer's motivation or stress in the worse half of its bands.
 - [x] **PLAY-TRACE-003**: When a project is first shown as overdue, the scorecard shall record whether, in the four weeks before (or the weeks the run has had, when fewer), it was shown as behind or with its risk elevated, high or severe.
 - [x] **PLAY-TRACE-004**: When the burnout warning is first shown in a run, the scorecard shall record whether, in the four weeks before (or the weeks the run has had, when fewer), the player's energy was shown as tired or running on fumes.
