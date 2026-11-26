@@ -81,7 +81,7 @@ Run, in order:
 3. `npx vitest run` — must pass.
 4. `npm run test:e2e` — must pass. It builds the game and plays it in Chromium; run it whenever the change touches `src/`, `index.html`, styles, assets or the build, and say so when it was skipped for a docs-only change. The first time on a machine, `npm run playwright:install` downloads the browser.
 
-Do not commit if any of them fails.
+Do not commit if any of them fails. **Judge each by its exit code** (`npm run lint; echo $?`), never by grepping or tailing its output: a filter that does not match a tool's error format reads as a pass, and a failing lint once went unnoticed through 19 commits that way.
 
 **If a test fails, fix the code, not the test.** Read the failure, find the
 cause, fix it, and run again until it passes. Change a test only when the
@@ -159,8 +159,38 @@ Run `git push` after a successful commit. The remote is
 default branch is `main`. If the branch has no upstream yet, use
 `git push -u origin <branch>`.
 
-## 10. Report
+## 10. Check CI and SonarQube on the pushed commit
+
+The push is not done until GitHub Actions and SonarQube Cloud have passed it.
+Both run after the push, so no earlier step can see what they find.
+
+1. Wait for the Deploy workflow's run on the pushed commit and read its result:
+
+   ```bash
+   sha=$(git rev-parse HEAD)
+   id=$(gh run list --workflow "Deploy to GitHub Pages" --commit "$sha" --json databaseId --jq '.[0].databaseId')
+   gh run watch "$id" --exit-status; echo "deploy exit: $?"
+   ```
+
+   A failure means the game did not deploy. Read it with `gh run view "$id" --log-failed`.
+2. Read SonarQube Cloud's check on the same commit. It is posted as a check run named "SonarCloud Code Analysis":
+
+   ```bash
+   gh api "repos/twelve-chairs/manager-simulator/commits/$sha/check-runs" --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv'
+   ```
+
+   Wait until it is `completed`. When it is not `success`, read the quality gate
+   with the `sonarqube` MCP tools (`get_project_quality_gate_status`, project
+   `twelve-chairs_manager-simulator`), and the failing condition's issues with
+   `search_sonar_issues_in_projects` (`inNewCodePeriod: true`, filtered to that
+   software quality).
+
+**A failing deploy or quality gate is a failing test.** Fix it in a follow-up
+commit through these same steps, and do not report the change as done until both
+pass.
+
+## 11. Report
 
 Summarize: the commit hash and message summary line, the arrow check (step 2),
-README and AGENTS.md (updated or not, and why), test results (step 6), and the
-security review (step 7).
+README and AGENTS.md (updated or not, and why), test results (step 6), the
+security review (step 7), and the CI and quality gate results (step 10).
