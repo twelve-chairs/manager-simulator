@@ -78,12 +78,13 @@ export interface DirectorScorecard {
 // @spec DIR-END-003
 export function directorScorecard(level: DirectorState, sim: SimState): DirectorScorecard {
   const week = sim.week;
-  const funded = level.funded.filter((f) => inPeriod(f.week, week)).length;
-  const landed = level.betResults.filter((r) => r.landed && inPeriod(r.week, week)).length;
+  // Only bets whose results came in this period: one still running counts for nothing yet.
+  const resolved = level.betResults.filter((r) => inPeriod(r.week, week));
+  const landed = resolved.filter((r) => r.landed).length;
   const onTime = Object.entries(level.completions).filter(([id, when]) => inPeriod(when, week) && when <= (sim.projects[id]?.deadlineWeek ?? -1)).length;
   const surveyed = Object.values(level.survey.groups);
   return {
-    strategic: { betsLanded: funded ? landed / funded : null, projectsOnTime: onTime },
+    strategic: { betsLanded: resolved.length ? landed / resolved.length : null, projectsOnTime: onTime },
     retention: { regretted: level.regretted.filter((r) => inPeriod(r.week, week)).reduce((n, r) => n + r.count, 0) },
     health: { motivation: average(surveyed.map((g) => g.motivation)), stress: average(surveyed.map((g) => g.stress)) },
     confidence: sim.people[level.executiveId]?.trust ?? 0,

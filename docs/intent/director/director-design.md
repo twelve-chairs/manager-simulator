@@ -88,7 +88,7 @@ Each quarter ends with a recap, folded as the earlier levels' are: what changed 
 ## Scorecard, Reviews and the End of the Level
 
 - **Cadence**: a turn is a quarter of thirteen weeks. Reviews come every two quarters, after the second, fourth and so on, counting from the start of this level. The engagement survey is taken in the last quarter before each review.
-- **Scorecard**: strategic outcomes (bets landed against bets funded, and projects shipped on time); retention and health (regretted attrition, and the groups' motivation and stress as surveyed); and the executive's confidence (the executive's trust in the player). The period's goals are added as measures.
+- **Scorecard**: strategic outcomes (bets landed against the bets whose results came in during the period, so a bet still running counts for nothing yet, and projects shipped on time); retention and health (regretted attrition, and the groups' motivation and stress as surveyed); and the executive's confidence (the executive's trust in the player). The period's goals are added as measures.
 - **Promotion**: possible from the third review (quarter 6), when the performance review rates the player highly enough twice in a row.
 - **The last review**: the sixth, at quarter 12. A player not promoted there has stayed a director, and the run ends.
 - **Burnout**: two quarters in a row ending at the edge.

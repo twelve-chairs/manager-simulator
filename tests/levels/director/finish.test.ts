@@ -130,10 +130,26 @@ describe('the scorecard', () => {
   });
 
   // @spec DIR-END-003
-  it('counts bets landed against bets funded in the period', () => {
+  it('counts bets landed against the bets whose results came in, and nothing for bets still running', () => {
     const fund = (kind: string, choices: string[]) => (kind === 'bets' ? null : choices[0] ?? null);
     const none = play(5, 2, fund);
     expect(directorScorecard(none.level, none.sim).strategic.betsLanded).toBeNull();
+    // funded this period, but no result yet: no score, not a miss
+    const { level, sim } = play(5, 2);
+    const w = sim.week - 1;
+    const running = { ...level, funded: [{ week: w, projectId: 'pa' }, { week: w, projectId: 'pb' }], betResults: [] };
+    expect(directorScorecard(running, sim).strategic.betsLanded).toBeNull();
+    expect(assessDirector(running, sim).measures.map((m) => m.id)).not.toContain('betsLanded');
+    // one landed and one failed of those whose results came in; a third still running counts for nothing
+    const resolved = { ...running, funded: [...running.funded, { week: w, projectId: 'pc' }], betResults: [{ week: w, projectId: 'pa', landed: true }, { week: w, projectId: 'pb', landed: false }] };
+    expect(directorScorecard(resolved, sim).strategic.betsLanded).toBe(0.5);
+  });
+
+  // @spec DIR-END-003
+  it('agrees with the regretted-attrition goal on how many lost is too many', () => {
+    const target = T.review_targets.regrettedAttrition;
+    // the measure is below target exactly when the goal is missed: more than the goal's limit
+    expect(target.target + target.tolerance).toBe(T.goalRegrettedMost);
   });
 });
 

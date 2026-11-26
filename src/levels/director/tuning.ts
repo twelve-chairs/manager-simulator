@@ -66,7 +66,8 @@ export const DIRECTOR_TUNING = {
     betsLanded: { target: 0.5, tolerance: 0.3 },
     projectsOnTime: { target: 1, tolerance: 1 },
     // Three groups of about twenty: a healthy organization loses about an eighth of its people a year (the simulation core's aggregate attrition rate), some of them people you would have kept.
-    regrettedAttrition: { target: 4, tolerance: 3 },
+    // On target up to the regretted-attrition goal's limit, so the measure and the goal agree.
+    regrettedAttrition: { target: 3, tolerance: 1 },
     motivation: { target: 60, tolerance: 10 },
     stress: { target: 45, tolerance: 10 },
     executiveConfidence: { target: 60, tolerance: 10 },

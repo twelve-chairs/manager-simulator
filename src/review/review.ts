@@ -46,10 +46,10 @@ function towardPromotion(outcome: ReviewOutcome, rating: Rating, a: Assessment):
   return { kind: exceedsOrBetter(rating) ? 'oneMore' : 'twoInARow' };
 }
 
-/** Whether the standing says what held the rating back: below exceeds, while promotion is in reach or as the level ends. */
+/** Whether the standing says what held the rating back: below exceeds, at any review the run goes on from or ends at. */
 // @spec REVIEW-STAND-004
-const heldBack = (outcome: ReviewOutcome, rating: Rating, a: Assessment) =>
-  !exceedsOrBetter(rating) && (outcome === 'stayed' || (outcome === 'continue' && a.reviewsUntilPromotion <= 1));
+const heldBack = (outcome: ReviewOutcome, rating: Rating) =>
+  !exceedsOrBetter(rating) && (outcome === 'stayed' || outcome === 'continue');
 
 /** Scores the quarter, rates the player and decides whether the run continues, the player is promoted, or managed out. */
 // @spec REVIEW-MEASURE-002, REVIEW-RATE-001, REVIEW-RATE-003, REVIEW-RATE-004, REVIEW-OUT-001, REVIEW-OUT-002, REVIEW-OUT-003
@@ -82,7 +82,7 @@ export function conductReview(input: ReviewInput): ReviewResult {
   const standing: Standing = {
     ...margins(measures, rating, ceiling?.rating, capped),
     promotion: towardPromotion(outcome, rating, input.assessment),
-    ...(heldBack(outcome, rating, input.assessment) && { heldBack: measures.filter((m) => m.verdict === 'below').map((m) => m.id) }),
+    ...(heldBack(outcome, rating) && { heldBack: measures.filter((m) => m.verdict === 'below').map((m) => m.id) }),
     ...((plan === 'coaching' || plan === 'pip') && { plan }),
   };
   return { sim: rated.state, rating, outcome, standing, score, measures, ...(capped ? { ceilingReason: ceiling.reason } : {}), debriefs: structuredClone(input.debriefs) };
