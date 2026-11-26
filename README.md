@@ -105,7 +105,7 @@ npm run lint        # lint with oxlint, including type-aware rules
 npm run balance     # play 200 seeded runs per scripted strategy and print the balance table
 ```
 
-Every push to `main` is typechecked, linted, unit- and end-to-end tested, built and published to [www.manager-simulator.io](https://www.manager-simulator.io/) (S3 and CloudFront, defined in `infra/site.yml`), and to a copy on [GitHub Pages](https://twelve-chairs.github.io/manager-simulator/) kept while players move their saves; pull requests get the same checks. CodeQL scans the code on every push, OpenSSF Scorecard grades the supply-chain practices, and Dependabot keeps the dev tools and pinned actions up to date.
+Every push to `main` is typechecked, linted, unit- and end-to-end tested, built and published to [www.manager-simulator.io](https://www.manager-simulator.io/) (S3 and CloudFront, defined in `infra/site.yml`); the old address on GitHub Pages sends visitors there. Pull requests get the same checks. CodeQL scans the code on every push, OpenSSF Scorecard grades the supply-chain practices, and Dependabot keeps the dev tools and pinned actions up to date.
 
 ## Layout
 
@@ -133,7 +133,8 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `.mcp.json` | A Playwright MCP server for AI-assisted exploratory testing in a real browser |
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs at each career level to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools: the situation content compiler and the version stamp |
-| `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to www.manager-simulator.io and the GitHub Pages copy from `main` |
+| `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to www.manager-simulator.io from `main`, with a page at the old GitHub Pages address sending visitors there |
+| `redirect/` | The page the old GitHub Pages address serves, sending visitors to www.manager-simulator.io |
 | `infra/site.yml` | The hosting stack: the S3 bucket, CloudFront distribution and security headers, the bare-domain redirect, certificate, DNS records and the deploy's role |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |
 | `.github/workflows/scorecard.yml` | OpenSSF Scorecard, which publishes the score behind the README badge |

@@ -1,5 +1,6 @@
 # Typechecks, lints, tests (unit and end-to-end) and builds the game on every push and pull request to main, and on a push
-# to main only publishes it to www.manager-simulator.io (S3 and CloudFront, infra/site.yml) and to the GitHub Pages copy.
+# to main only publishes it to www.manager-simulator.io (S3 and CloudFront, infra/site.yml). GitHub Pages, the game's
+# old address, serves only a page sending visitors there (UI-HOST-007).
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
 name: Deploy to GitHub Pages
 
@@ -41,14 +42,12 @@ jobs:
       # Through the locked Playwright in node_modules: npx could fetch and run an unpinned package.
       - run: npm run playwright:install
       - run: npm run test:e2e
-      # The site is served from /manager-simulator/, so asset paths need that prefix.
-      - run: npm run build -- --base=/manager-simulator/
       - if: github.event_name != 'pull_request'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: dist
+          path: redirect
 
   deploy:
     needs: build

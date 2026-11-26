@@ -122,6 +122,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-HOST-004**: The site's template shall give the deploy a role trusted only for the repository's `main` branch through GitHub's OpenID Connect provider, allowed only to list and write the site's bucket and invalidate its distribution.
 - [x] **UI-HOST-005**: The site's template shall publish DNS records saying the domain sends no mail (a null MX, SPF that allows no sender, and DMARC that rejects), and a CAA record allowing only Amazon to issue its certificates.
 - [x] **UI-HOST-006**: When a push to `main` passes its checks, the deploy shall build the game for the domain's root, upload it to the site's bucket with the page uncached and hashed assets cached for a year, removing files no longer built, and invalidate the page.
+- [x] **UI-HOST-007**: When a push to `main` passes its checks, the deploy shall publish to GitHub Pages only a page, as both its index and its not-found page, that holds no script, sends the browser to `https://www.manager-simulator.io/` at once and links there for a browser that does not follow it.
 
 ## The director's screens
 

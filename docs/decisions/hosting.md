@@ -55,4 +55,4 @@ Committing obligates:
 - the deploy workflow publishing the build to the bucket from `main`;
 - the security rule's GitHub Pages exception removed, and the domain named as the game's address.
 
-The copy on GitHub Pages stays up while players move over: a save lives in the browser under the address it was made on, so a run started on `github.io` is carried over by exporting it there and importing it on the domain.
+The old address on GitHub Pages serves only a page that sends visitors to the domain, for every path, so old links still arrive. A save lives in the browser under the address it was made on, so a run saved under the old address stays behind; that address served playtests, and its runs are not carried over.

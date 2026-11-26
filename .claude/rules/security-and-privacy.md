@@ -82,13 +82,10 @@ Treat as untrusted anything the game did not just compute itself:
   `Referrer-Policy: no-referrer`; the bare domain redirects to `www`. The
   production build also carries the policy in a `<meta>` tag (UI-BUILD-002),
   so a copy served anywhere else is still held to it.
-- **Exception, the GitHub Pages copy.** The copy at `github.io` stays up while
-  players carry their saves over, and GitHub Pages cannot send headers:
-  `frame-ancestors` and `nosniff` are not set there. The accepted risk is
-  small: the game has no accounts, payments or server, the worst a framing
-  site could trick a player into is discarding a run (which asks for
-  confirmation), and the site serves only its own static files. Retire the
-  copy, and this exception, once players have moved.
+- The game's old address on GitHub Pages serves only a static page that sends
+  visitors to the domain (`redirect/`): no script, nothing to frame, and a
+  policy of its own that allows nothing to load. GitHub Pages cannot send
+  headers; with no game there, it needs none.
 
 ## AWS
 
