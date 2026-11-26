@@ -49,7 +49,7 @@ Four principles shape it:
 
 An earlier moment can leave a later level moment impossible to answer (the engineer on call for Thursday's page left on Tuesday). After every answer, the loop records as **expired** each level moment the level no longer reports open, as the situation engine expires a situation whose people are gone.
 
-A moment let wait is not an error. The level closes its own unanswered moments at the week's end, and the situation engine closes unanswered situations as ignored at its next selection.
+A level's moment can have a further step: when the level still reports it open after a choice (the senior manager's calibration settled over the curve, which then asks whether to argue or let the room trim), the loop keeps it open, with the first choice's reaction, so the next step comes straight after that reaction instead of being lost behind the week's later moments. A moment let wait is not an error. The level closes its own unanswered moments at the week's end, and the situation engine closes unanswered situations as ignored at its next selection.
 
 **Review.** A review has been conducted; its result waits for the player. The only command is **acknowledge**, which applies the result: continue with the next week, promote, or end the run as managed out.
 

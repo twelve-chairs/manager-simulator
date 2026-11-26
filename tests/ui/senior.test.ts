@@ -145,6 +145,28 @@ describe('the senior manager’s week screen', () => {
   });
 });
 
+describe('calibration over the curve, played', () => {
+  // @spec UI-SENIOR-011, LOOP-CMD-003
+  it('asks the room’s question straight after a settlement over the curve, through the real loop', () => {
+    let run = senior(7);
+    run = endWeeks(run, 5, both('continue'));
+    const calibrationId = level(run).moments.find((m) => m.kind === 'calibration')!.id;
+    while (run.week.find((m) => m.status === 'open')?.id !== calibrationId) run = step(run, { kind: 'wait' }, both('continue'));
+    const moment = level(run).moments.find((m) => m.id === calibrationId)!;
+    const proposedTop = moment.calibration!.reduce((n, c) => n + c.proposed.exceeds + c.proposed.outstanding, 0);
+    expect(proposedTop, 'the proposals go over the curve').toBeGreaterThan(moment.curve!);
+    const { root } = makeApp({ run, deps: both('continue') });
+    if (scene(root) === 'recap') click(root, '[data-action=close-recap]');
+    if (scene(root) === 'opening') click(root, '[data-action=start-week]');
+    click(root, '[data-scene] [data-choice=acceptAll]');
+    // the reaction, then the same moment again with the room's question
+    if (root.querySelector('[data-action=continue]')) click(root, '[data-action=continue]');
+    expect(text(root, '[data-part=over-curve]')).toContain(`the curve allows ${moment.curve}`);
+    expect(root.querySelector('[data-scene] [data-choice=argue]')).not.toBeNull();
+    expect(root.querySelector('[data-scene] [data-choice=trim]')).not.toBeNull();
+  });
+});
+
 describe('calibration over the curve', () => {
   // @spec UI-SENIOR-011
   it('says how far over the curve the settled ratings are, and offers to argue or let the room trim', () => {

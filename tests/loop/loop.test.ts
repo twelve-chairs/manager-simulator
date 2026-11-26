@@ -125,6 +125,31 @@ describe('commands', () => {
   });
 
   // @spec LOOP-CMD-003
+  it('keeps a level moment open after a choice when the level still has a step for it, so it comes back at once', () => {
+    let target = '';
+    // A level whose moment, once answered, asks one more question: the level reports it still open.
+    const twoStep: AnyLevel = {
+      ...L,
+      choose(l, s, momentId, choiceId) {
+        const r = L.choose(l as LineState, s, momentId, choiceId);
+        target = momentId;
+        return r;
+      },
+      moments(l, s) {
+        return L.moments(l as LineState, s).map((m) => (m.id === target ? { ...m, open: true } : m));
+      },
+    };
+    const d = { ...deps(), levels: [twoStep] };
+    const run = waitUntil(start(1, d), 'level', d);
+    const m = current(run)!;
+    const answered = step(run, { kind: 'answer', momentId: m.id, choiceId: choicesOf(run, m)[0]! }, d);
+    const entry = answered.week.find((x) => x.id === m.id)!;
+    expect(entry.status).toBe('open');
+    expect(typeof entry.text).toBe('string');
+    expect(current(answered)!.id).toBe(m.id);
+  });
+
+  // @spec LOOP-CMD-003
   it('resolves a situation through the engine and records its aftermath, or its expiry', () => {
     const run = waitUntil(start(), 'situation');
     const m = current(run)!;

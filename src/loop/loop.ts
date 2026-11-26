@@ -175,7 +175,9 @@ function answer(run: Run, level: AnyLevel, content: Situation[], momentId: unkno
     if (!chosen.ok) return chosen;
     run.level = chosen.level;
     run.sim = chosen.sim;
-    m.status = 'answered';
+    // A moment the level still reports open has a further step (calibration over the curve): it stays current.
+    const further = level.moments(run.level, run.sim).some((x) => x.id === m.id && x.open);
+    m.status = further ? 'open' : 'answered';
     m.text = chosen.reaction;
   } else {
     const result = resolveChoice(run.engine, run.sim, content, m.id, choiceId, timingOf(run, level));
