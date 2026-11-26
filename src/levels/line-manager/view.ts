@@ -120,7 +120,8 @@ export function describeMoment(level: LineState, sim: SimState, m: LevelMoment):
 }
 
 /** What the player can see: exact where a manager would know, bands where they would only have a sense. */
-// @spec LINE-VIS-001, LINE-VIS-002, LINE-VIS-003, LINE-VIS-004, LINE-VIS-005, LINE-VIS-006, LINE-VIS-011, LINE-VIS-012, LINE-VIS-013, LINE-GOAL-002
+// @spec LINE-VIS-001, LINE-VIS-002, LINE-VIS-003, LINE-VIS-004, LINE-VIS-005, LINE-VIS-006, LINE-VIS-011, LINE-VIS-012, LINE-VIS-013, LINE-VIS-016
+// @spec LINE-GOAL-002
 export function view(level: LineState, sim: SimState): View {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
@@ -141,6 +142,7 @@ export function view(level: LineState, sim: SimState): View {
         memory: collapsed(remembered(p.history).map((h) => h.note!).reverse()).slice(0, 3),
         notes: remembered(p.history).length,
         lastNote: remembered(p.history).at(-1)?.note ?? null,
+        restless: p.restlessSince !== null,
       };
     }),
     projects: teamProjects(level, sim).map((id) => {

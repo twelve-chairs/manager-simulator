@@ -598,6 +598,15 @@ function answerAndEnd(r: Run): Run {
 }
 
 describe('line manager panels', () => {
+  // @spec UI-QUIT-002
+  it('shows the restless line on a restless person’s card, and on no other', () => {
+    const r = structuredClone(playing());
+    const first = $$(makeApp({ run: r }).root, '[data-panel=team] [data-person]')[0]!.dataset.person!;
+    r.sim.people[first]!.restlessSince = r.sim.week;
+    const cards = $$(makeApp({ run: r }).root, '[data-panel=team] [data-person]');
+    expect(cards.map((c) => c.querySelector('[data-field=restless]')?.textContent ?? null)).toEqual(cards.map((c) => (c.dataset.person === first ? 'Restless: may leave within weeks unless they get what they want.' : null)));
+  });
+
   // @spec UI-LINE-001, UI-BAND-001
   it('shows each engineer as a card with band words, personality, want and memory', () => {
     const r = structuredClone(playing());
@@ -707,9 +716,13 @@ describe('line manager panels', () => {
 
   // @spec UI-QUIT-001
   it('says in the recap who quit in the week, and what led to it', () => {
-    const r = answerAndEnd(playing());
+    // An engineer whose restless notice has run, content and trusting, so nothing but their own reasons explains it.
+    const start = structuredClone(playing());
+    const id = Object.keys(start.sim.people).sort().find((k) => start.sim.people[k]!.role !== 'manager' && start.sim.people[k]!.teamId !== null)!;
+    Object.assign(start.sim.people[id]!, { restlessSince: start.sim.week - 4, trust: 70 });
+    const r = answerAndEnd(start);
     const quit = Object.values(r.sim.people).find((p) => p.departure?.reason === 'quit' && p.departure.week === r.sim.week - 1);
-    expect(quit, 'seed 5 has a quit in its first week').toBeDefined();
+    expect(quit?.id).toBe(id);
     const { root } = makeApp({ run: r });
     expect(text(root, '[data-part=recap-changes] [data-part=recap-left]')).toContain(`${quit!.name} quit, for reasons of their own.`);
   });

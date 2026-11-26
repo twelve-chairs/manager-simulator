@@ -11,6 +11,8 @@ export interface ManagerView {
   personality: string | null;
   teamId: string;
   performance: Rating | 'unrated';
+  /** Whether they are restless: a quit is coming unless their want is served. */
+  restless: boolean;
   motivation: number;
   stress: number;
   /** Management skill, as a band. */
@@ -73,6 +75,7 @@ function managerView(level: SeniorState, person: Person, teamId: string): Manage
     name: person.name,
     personality: person.personality ?? null,
     teamId,
+    restless: person.restlessSince !== null,
     performance: person.performance,
     motivation: band(person.motivation),
     stress: band(person.stress),
@@ -91,7 +94,7 @@ function projectsView(sim: SimState, teamId: string, overdue: ReadonlySet<string
 }
 
 /** The player's view: managers as people, teams as their managers report them unless the player has seen for themselves. */
-// @spec SENIOR-VIS-001, SENIOR-VIS-002, SENIOR-VIS-003, SENIOR-VIS-004, SENIOR-VIS-005, SENIOR-VIS-006, SENIOR-ORG-002
+// @spec SENIOR-VIS-001, SENIOR-VIS-002, SENIOR-VIS-003, SENIOR-VIS-004, SENIOR-VIS-005, SENIOR-VIS-006, SENIOR-VIS-008, SENIOR-ORG-002
 export function seniorView(level: SeniorState, sim: SimState): SeniorView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));

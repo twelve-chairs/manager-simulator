@@ -45,6 +45,7 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-EFFECT-017**: When a cancel-project effect is applied, the simulation core shall set the project's status to `cancelled`.
 - [x] **SIM-EFFECT-019**: When an effect tagged as serving a person's want is applied to that person, the simulation core shall record the current game week as the week that person's want was last served, whatever field the effect changes.
 - [x] **SIM-EFFECT-024**: When an effect carrying want tags targets anything other than a person, the simulation core shall apply the effect and ignore its want tags.
+- [x] **SIM-EFFECT-025**: When an effect caused by the player (a player action or a situation choice) and tagged as serving a person's want is applied to a restless person, the simulation core shall make them no longer restless.
 
 ## Change log and history
 
@@ -112,11 +113,12 @@ Design: [simulation-core-design.md](simulation-core-design.md)
 - [x] **SIM-ADV-008**: While a team has no overdue or behind-schedule projects and has a leader, the simulation core shall lower that team's stress on each advance.
 - [x] **SIM-ADV-009**: While more weeks than the drift threshold have passed since a person's want was last served, the simulation core shall lower that person's motivation on each advance.
 - [x] **SIM-ADV-010**: While no more weeks than the drift threshold have passed since a person's want was last served, the simulation core shall raise that person's motivation slowly on each advance.
-- [x] **SIM-ADV-011**: When the simulation is advanced, the simulation core shall give each active person a chance to quit that rises with how long their motivation has been low, how long their stress has been high, and how low their trust is.
+- [x] **SIM-ADV-011**: When the simulation is advanced, the simulation core shall give each active person in the organization who is not restless a chance to become restless, recording the current game week, that rises with how long their motivation has been low, how long their stress has been high, and how low their trust is.
 - [x] **SIM-ADV-012**: When the simulation is advanced, the simulation core shall reduce each aggregate team's headcount with a probability that rises with its attrition risk, taking each head lost from a performance level as SIM-PERF-016 describes.
 - [x] **SIM-ADV-013**: When the simulation is advanced, the simulation core shall move the player's reputation up when the projects they are responsible for are on track and down when they are overdue or behind.
 - [x] **SIM-ADV-014**: When the simulation is advanced, the simulation core shall raise the player's stress with the number of teams in trouble (leaderless, or with overdue or behind-schedule projects) that the player leads directly or that have no leader, and lower it when there are none; a team led by another person does not count.
 - [x] **SIM-ADV-015**: When the simulation is advanced by a step of N weeks, the simulation core shall scale each rule's magnitude with N.
+- [x] **SIM-ADV-016**: When the simulation is advanced, the simulation core shall make each restless person quit if at least four weeks have passed since they became restless, and no one who is not restless.
 
 ## Queries
 

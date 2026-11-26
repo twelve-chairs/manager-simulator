@@ -53,6 +53,8 @@ export interface Person {
   lowMotivationWeeks: number;
   /** Consecutive weeks stress has been above the high-stress line. */
   highStressWeeks: number;
+  /** The game week they became restless, or null; a restless person quits after the notice period (SIM-ADV-016). */
+  restlessSince: number | null;
   /** The team they belong to, or lead; null for a person outside the organization. */
   teamId: string | null;
   status: PersonStatus;

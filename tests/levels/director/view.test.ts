@@ -7,6 +7,16 @@ import { director } from './fixtures';
 const RULE = { kind: 'rule', ruleId: 'test' } as const;
 
 describe('what a director sees', () => {
+  // @spec DIR-VIS-007
+  it('marks the senior manager who is restless, and no one else', () => {
+    const { level, sim } = director(2);
+    const id = directorView(level, sim).seniorManagers[0]!.id;
+    const marked = structuredClone(sim);
+    marked.people[id]!.restlessSince = sim.week;
+    const v = directorView(level, marked);
+    expect(v.seniorManagers.map((p) => p.restless)).toEqual(v.seniorManagers.map((p) => p.id === id));
+  });
+
   // @spec DIR-VIS-001, DIR-ORG-003
   it('shows each senior manager as a person, their want only once learned, and no card for a leaderless group', () => {
     const { level, sim } = director(2);

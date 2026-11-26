@@ -214,6 +214,11 @@ export function changePerson(
     const was = person.wantServedWeek;
     person.wantServedWeek = ctx.s.week;
     record(ctx, cause, target, 'wantServedWeek', was, person.wantServedWeek);
+    // Serving a restless person's want settles them (SIM-EFFECT-025).
+    if (person.restlessSince !== null && (cause.kind === 'action' || cause.kind === 'situation')) {
+      record(ctx, cause, target, 'restlessSince', person.restlessSince, null);
+      person.restlessSince = null;
+    }
   }
   if (historyNote !== undefined) {
     const entry: HistoryEntry = { week: ctx.s.week, cause, note: historyNote };

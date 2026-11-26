@@ -1,4 +1,5 @@
 import { draftObject } from './drafts';
+import { restlessSign } from './org';
 import { headcountWords, moverInto } from './chips';
 import { headsLostLastMonth, quitLastMonth, shippedLastMonth, type CalibrationEntry, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
 import type { Run } from '../loop';
@@ -104,6 +105,7 @@ function panels(ctx: ScreenContext): Child {
           { 'data-manager': m.id, class: 'person' },
           h('div', { class: 'who' }, h('strong', { 'data-field': 'name' }, m.name), h('span', { class: 'role' }, 'manager · ', h('span', { 'data-field': 'personality' }, m.personality ?? ''))),
           h('p', { class: 'mood' }, 'Seems ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', m.motivation)), ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', m.stress)), '.'),
+          restlessSign(m.restless),
           h('p', { class: 'facts' }, 'Manages: ', h('span', { 'data-field': 'skill' }, bandWord('skill', m.skill)), ' · wants ', h('span', { 'data-field': 'want' }, m.want), ' · ', h('span', { 'data-field': 'performance' }, m.performance)),
           m.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, m.memory.map((note) => h('li', {}, note))) : null,
           team(t),

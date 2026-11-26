@@ -81,7 +81,8 @@ export function momentKind(title: string, level: Level): string | null {
 export interface Look {
   kind: 'look';
   week: number;
-  people: { name: string; motivation: string; stress: string; memory: string[] }[];
+  /** Each person card on screen; `restless` when it shows the restless sign (absent in looks recorded before it existed). */
+  people: { name: string; motivation: string; stress: string; memory: string[]; restless?: boolean }[];
   projects: { name: string; schedule: string; risk: string }[];
   energy: string;
   burnout: boolean;
@@ -138,7 +139,7 @@ export interface JobParts {
 }
 
 export interface Check {
-  id: 'PLAY-CHOICE-001';
+  id: 'PLAY-TRACE-006' | 'PLAY-CHOICE-001';
   name: string;
   passed: boolean;
   failures: string[];
@@ -284,7 +285,7 @@ export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
     .map(({ name }) => {
       const seen = looks.filter((l) => l.people.some((p) => p.name === name));
       const lastWeeks = new Set([...new Set(seen.map((l) => l.week))].slice(-WINDOW_WEEKS));
-      const warned = seen.filter((l) => lastWeeks.has(l.week)).some((l) => l.people.some((p) => p.name === name && worse(p)));
+      const warned = seen.filter((l) => lastWeeks.has(l.week)).some((l) => l.people.some((p) => p.name === name && (p.restless === true || worse(p))));
       return { name, warned };
     });
 
@@ -345,13 +346,14 @@ function jobCounts(jobs: Job[], side: 'gone' | 'came'): JobCounts {
   return { panels: count('panels'), habits: count('habits'), moments: count('moments') };
 }
 
-// @spec PLAY-PROMO-003, PLAY-TRACE-005, PLAY-CHOICE-001, PLAY-SKILL-001
+// @spec PLAY-PROMO-003, PLAY-TRACE-005, PLAY-TRACE-006, PLAY-CHOICE-001, PLAY-SKILL-001
 export function scorecard(player: string, runs: RunCard[]): Scorecard {
   const events = <T extends { warned: boolean }>(pick: (r: RunCard) => T[]) => {
     const all = runs.flatMap(pick);
     return share(all.filter((x) => x.warned).length, all.length);
   };
   const ratings = runs.flatMap((r) => r.ratings);
+  const quitFailures = runs.flatMap((r) => r.trace.quits.filter((q) => !q.warned).map((q) => `seed ${r.seed}: ${q.name} quit with no warning on their card`));
   const reactionFailures = runs.flatMap((r) => r.choices.unanswered.map((u) => `seed ${r.seed}, week ${u.week}: ${u.title} had no reaction`));
   return {
     player,
@@ -373,6 +375,7 @@ export function scorecard(player: string, runs: RunCard[]): Scorecard {
       return jobs.length ? [{ from, to, runs: jobs.length, gone: jobCounts(jobs, 'gone'), came: jobCounts(jobs, 'came') }] : [];
     }),
     checks: [
+      { id: 'PLAY-TRACE-006', name: 'Every quit had a warning on the card', passed: !quitFailures.length, failures: quitFailures },
       { id: 'PLAY-CHOICE-001', name: 'Every answered moment had a reaction at once', passed: !reactionFailures.length, failures: reactionFailures },
     ],
   };

@@ -91,7 +91,8 @@ export function play(page: Page, options: PlayOptions): Promise<PlaySummary> {
     strategy: options.strategy,
     seed: options.seed,
     until: options.until ?? 'end',
-    maxWeeks: options.maxWeeks ?? 400,
+    // Past the longest career, two years at the line manager and three at each level above (560 weeks), so a run ends on its own.
+    maxWeeks: options.maxWeeks ?? 600,
     // the page cannot import the title table, so it gets the patterns as text
     titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source), director: DIRECTOR_TITLES.map(([, re]) => re.source), vp: VP_TITLES.map(([, re]) => re.source) },
     better: betterByTitle(),
@@ -232,6 +233,7 @@ function playInPage(options: InPage): PlaySummary {
         motivation: text('[data-field=motivation]', card),
         stress: text('[data-field=stress]', card),
         memory: qa('[data-part=memory] li', card).map((l) => l.textContent ?? ''),
+        restless: q('[data-field=restless]', card) !== null,
       })),
       projects: qa('[data-project]').map((p) => ({ name: text('[data-field=name]', p), schedule: text('[data-field=schedule]', p), risk: text('[data-field=risk]', p) })),
       energy: text('[data-field=energy]'),

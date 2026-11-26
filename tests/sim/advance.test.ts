@@ -142,7 +142,7 @@ describe('advance', () => {
   });
 
   // @spec SIM-ADV-011
-  it('makes quitting more likely with long low motivation, long high stress, and low trust', () => {
+  it('makes becoming restless more likely with long low motivation, long high stress, and low trust, and records the week', () => {
     const quits = (change: (s: SimState) => void) =>
       seeds(200).filter((seed) => {
         const s = patch(quiet(seed), (st) => {
@@ -150,7 +150,10 @@ describe('advance', () => {
           st.people.e1!.wantServedWeek = 4;
           change(st);
         });
-        return person(advance(s, 4).state, 'e1').status === 'departed';
+        const p = person(advance(s, 4).state, 'e1');
+        expect(p.status).toBe('active');
+        if (p.restlessSince !== null) expect(p.restlessSince).toBe(4);
+        return p.restlessSince !== null;
       }).length;
     const baseline = quits(() => {});
     expect(quits((s) => {
@@ -167,6 +170,32 @@ describe('advance', () => {
       s.people.e1!.trust = trust;
     };
     expect(quits(lowMotivation(5))).toBeGreaterThan(quits(lowMotivation(95)));
+  });
+
+  // @spec SIM-ADV-016
+  it('makes a restless person quit once four weeks have passed since they became restless, and no one else', () => {
+    const at = (since: number | null, seed = 1) =>
+      person(
+        advance(
+          patch(quiet(seed), (st) => {
+            st.week = 20;
+            st.people.e1!.wantServedWeek = 20;
+            st.people.e1!.restlessSince = since;
+          }),
+          1,
+        ).state,
+        'e1',
+      );
+    expect(at(16)).toMatchObject({ status: 'departed', departure: { week: 20, reason: 'quit' } });
+    expect(at(17)).toMatchObject({ status: 'active', restlessSince: 17 });
+    // Someone who is not restless never quits on the advance itself, however miserable.
+    for (const seed of seeds(200)) {
+      const s = patch(quiet(seed), (st) => {
+        st.week = 20;
+        Object.assign(st.people.e1!, { motivation: 5, lowMotivationWeeks: 100, stress: 99, highStressWeeks: 100, trust: 0 });
+      });
+      expect(person(advance(s, 13).state, 'e1').status).toBe('active');
+    }
   });
 
   // @spec SIM-ADV-012

@@ -81,8 +81,22 @@ describe('bad outcomes can be traced', () => {
     const card = scoreRun(7, events);
     // Ada's flat week fell out of her last four weeks on screen, and a memory note is no warning; Bo was strained.
     expect(card.trace.quits).toEqual([{ name: 'Ada', warned: false }, { name: 'Bo', warned: true }]);
-    // The simulation lets anyone quit, so a quit with no warning is reported, never a failure.
-    expect(scorecard('sound', [card]).checks.every((c) => c.passed)).toBe(true);
+  });
+
+  // @spec PLAY-TRACE-001
+  it('counts the restless sign as a warning, whatever the bands', () => {
+    const restless = { ...person('Ada'), restless: true };
+    const card = scoreRun(1, [look(1, { people: [restless] }), look(2, { people: [] }), ended('x', [{ name: 'Ada', reason: 'quit' }])]);
+    expect(card.trace.quits).toEqual([{ name: 'Ada', warned: true }]);
+  });
+
+  // @spec PLAY-TRACE-006
+  it('fails a quit with no warning sign on the person’s card, naming the seed and the person', () => {
+    const quiet = scoreRun(4, [look(1, { people: [person('Ada'), person('Bo', 'flat')] }), look(2, { people: [] }), ended('x', [{ name: 'Ada', reason: 'quit' }, { name: 'Bo', reason: 'quit' }])]);
+    const check = scorecard('sound', [quiet]).checks.find((c) => c.id === 'PLAY-TRACE-006')!;
+    expect(check).toMatchObject({ passed: false, failures: ['seed 4: Ada quit with no warning on their card'] });
+    const warned = scoreRun(4, [look(1, { people: [person('Bo', 'flat')] }), look(2, { people: [] }), ended('x', [{ name: 'Bo', reason: 'quit' }])]);
+    expect(scorecard('sound', [warned]).checks.find((c) => c.id === 'PLAY-TRACE-006')!.passed).toBe(true);
   });
 
   // @spec PLAY-TRACE-001
@@ -335,7 +349,7 @@ describe('promotion changes the job', () => {
       { name: 'Projects', runs: 2 },
       { name: 'Your team', runs: 2 },
     ]);
-    expect(card.checks.map((c) => c.id)).toEqual(['PLAY-CHOICE-001']);
+    expect(card.checks.map((c) => c.id)).toEqual(['PLAY-TRACE-006', 'PLAY-CHOICE-001']);
     const table = formatScorecard(card);
     expect(table).toMatch(/Promotion changes the job\n {2}line manager to senior manager: 2 of 3 runs/);
     expect(table).toMatch(/no longer.*Your team \(2\)/);
@@ -358,7 +372,7 @@ describe('the scorecard', () => {
     const run = scoreRun(11, [read(230), look(1), moment(1, 'Check-in: Ada'), answer(1, 'Check-in: Ada', 'Ok.', ['Ada: less stressed']), review(13, 'meets'), ended('You stayed a line manager.')]);
     const card = scorecard('sound', [run]);
     expect(card.runs[0]).toMatchObject({ seed: 11, ending: 'You stayed a line manager.' });
-    expect(card.checks.map((c) => c.id)).toEqual(['PLAY-CHOICE-001']);
+    expect(card.checks.map((c) => c.id)).toEqual(['PLAY-TRACE-006', 'PLAY-CHOICE-001']);
     const table = formatScorecard(card);
     for (const heading of ['A promotion in the first session', 'Bad outcomes can be traced', 'Choices feel consequential', 'The shape of a session', 'Promotion changes the job', 'Skill can be learned']) {
       expect(table).toContain(heading);

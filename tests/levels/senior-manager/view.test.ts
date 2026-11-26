@@ -17,6 +17,16 @@ const setPerson = (sim: SimState, id: string, values: object) => {
 };
 
 describe('the senior manager’s view', () => {
+  // @spec SENIOR-VIS-008
+  it('marks the manager who is restless, and no one else', () => {
+    const { level, sim } = senior(1);
+    const id = seniorView(level, sim).managers[0]!.id;
+    const marked = structuredClone(sim);
+    marked.people[id]!.restlessSince = sim.week;
+    const v = seniorView(level, marked);
+    expect(v.managers.map((p) => p.restless)).toEqual(v.managers.map((p) => p.id === id));
+  });
+
   // @spec SENIOR-VIS-001
   it('shows each manager with name, personality, team, rating, memory, bands, and their want only after a 1:1', () => {
     const { level, sim } = senior(1);

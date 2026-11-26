@@ -28,6 +28,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-VIS-004**: When the player's view is requested, the director level shall show each funded bet with the group carrying it, its project's progress against scope, deadline and schedule status, and what it stakes on landing and on failing.
 - [x] **DIR-VIS-005**: When the player's view is requested, the director level shall also give the habits, the quarter's moments with their kind, title, text and choices, the player's energy and reputation as bands with whether they are at the edge, the goals with their progress, and the career summary.
 - [x] **DIR-VIS-006**: The director level shall never show a senior manager's leniency as a value, and shall show no team or line manager inside a group except as named in situations and the recap.
+- [x] **DIR-VIS-007**: When the player's view is requested, the director level shall mark each senior manager who is restless.
 
 ## Habits
 

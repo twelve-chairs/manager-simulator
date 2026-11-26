@@ -239,6 +239,8 @@ export interface View {
     notes: number;
     /** Their newest remembered note, as recorded, without the count the memory adds to a repeat. */
     lastNote: string | null;
+    /** Whether they are restless: a quit is coming unless their want is served. */
+    restless: boolean;
   }[];
   projects: {
     id: string;

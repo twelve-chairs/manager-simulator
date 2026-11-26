@@ -27,11 +27,13 @@ export const TUNING = {
   lowMotivationLine: 30,
   /** Stress above this counts as high. */
   highStressLine: 75,
-  /** Weekly quit chance with no risk factors. */
+  /** Weeks a restless person waits before quitting. */
+  restlessNoticeWeeks: 4,
+  /** Weekly chance of becoming restless with no risk factors. */
   baseQuitChancePerWeek: 0.002,
-  /** Added weekly quit chance per year of low motivation. */
+  /** Added weekly chance of becoming restless per year of low motivation. */
   lowMotivationQuitChancePerYear: 0.15,
-  /** Added weekly quit chance per year of high stress. */
+  /** Added weekly chance of becoming restless per year of high stress. */
   highStressQuitChancePerYear: 0.1,
   /** Weekly chance that each head of an aggregate team leaves, at 100 attrition risk. */
   aggregateAttritionPerWeek: 0.01,

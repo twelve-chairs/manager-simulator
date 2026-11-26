@@ -3,6 +3,7 @@ import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_TOPICS, PANEL_HELP } from './help';
+import { restlessSign } from './org';
 import { lateness, moveLine, quitLine, shareWord } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
@@ -91,6 +92,7 @@ function panels(ctx: ScreenContext): Child {
           h('p', { class: 'mood' },
             'Seems ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', p.motivation)),
             ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', p.stress)), '.'),
+          restlessSign(p.restless),
           h('p', { class: 'facts' },
             'Skill ', h('span', { 'data-field': 'skill' }, bandWord('skill', p.skill)),
             ' · wants ', h('span', { 'data-field': 'want' }, p.want),

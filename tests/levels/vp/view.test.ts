@@ -7,6 +7,16 @@ import { vp } from './fixtures';
 const RULE = { kind: 'rule', ruleId: 'test' } as const;
 
 describe('what a VP sees', () => {
+  // @spec VP-VIS-007
+  it('marks the director who is restless, and no one else', () => {
+    const { level, sim } = vp(2);
+    const id = vpView(level, sim).directors[0]!.id;
+    const marked = structuredClone(sim);
+    marked.people[id]!.restlessSince = sim.week;
+    const v = vpView(level, marked);
+    expect(v.directors.map((p) => p.restless)).toEqual(v.directors.map((p) => p.id === id));
+  });
+
   // @spec VP-VIS-001, VP-ORG-003
   it('shows each director as a person, their want only once revealed, and no card for a leaderless division', () => {
     const { level, sim } = vp(2);

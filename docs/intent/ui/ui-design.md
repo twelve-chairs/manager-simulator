@@ -284,6 +284,10 @@ The VP level keeps the shell (header, scene, recap, review, ended) and brings it
 | The year's plan | The year's heads arrive over its four quarters, to the division that needs them most. |
 | Habits | Changes apply from this quarter's end, and to moments from next quarter. |
 
+## Restlessness
+
+Every person card, at every level, shows a restless person with a line under their mood: "Restless: may leave within weeks unless they get what they want." A quit is always preceded by it (the simulation core's *Departure*), and the card already names the person's want once it is known, so the line says both what is coming and what answers it.
+
 ## Bands as Words
 
 The career level shows values as bands, 0 for the lowest. The UI names each band per kind of value:

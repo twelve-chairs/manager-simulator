@@ -76,6 +76,7 @@ export function create(seed: number, org: StartingOrganization): SimState {
     wantServedWeek: 0,
     lowMotivationWeeks: 0,
     highStressWeeks: 0,
+    restlessSince: null,
     status: 'active',
     history: performance ? [{ week: 0, cause: STARTING_ORGANIZATION, rating: performance }] : [],
   }));
@@ -163,6 +164,7 @@ export function addTeam(state: SimState, input: { team: NewAggregateTeam; manage
       wantServedWeek: ctx.s.week,
       lowMotivationWeeks: 0,
       highStressWeeks: 0,
+      restlessSince: null,
       status: 'active',
       history: [],
     };
@@ -210,6 +212,7 @@ export function addOutsider(state: SimState, person: NewOutsider, cause: Cause):
     wantServedWeek: ctx.s.week,
     lowMotivationWeeks: 0,
     highStressWeeks: 0,
+    restlessSince: null,
     teamId: null,
     status: 'active',
     history: [],

@@ -59,6 +59,15 @@ describe('the senior manager’s week screen', () => {
     expect(['moment', 'done']).toContain(scene(root));
   });
 
+  // @spec UI-QUIT-002
+  it('shows the restless line on a restless person’s card, and on no other', () => {
+    const r = structuredClone(senior(5));
+    const first = $$(makeApp({ run: r, deps: both() }).root, '[data-panel=managers] [data-manager]')[0]!.dataset.manager!;
+    r.sim.people[first]!.restlessSince = r.sim.week;
+    const cards = $$(makeApp({ run: r, deps: both() }).root, '[data-panel=managers] [data-manager]');
+    expect(cards.map((c) => c.querySelector('[data-field=restless]')?.textContent ?? null)).toEqual(cards.map((c) => (c.dataset.manager === first ? 'Restless: may leave within weeks unless they get what they want.' : null)));
+  });
+
   // @spec UI-SENIOR-002, UI-SENIOR-003
   it('shows a card per manager with their team beneath, labelled by where its numbers come from', () => {
     const run = senior(5);

@@ -77,7 +77,8 @@ describe('playing runs', () => {
       habits: (s) => (weeks.push({ week: s.week, moments: 0 }), []),
       choose: (_s, m) => (weeks.at(-1)!.moments++, m.choices[0]!.id),
     };
-    const result = playRun(counter, 4, CONTENT);
+    // A seed with at least one quiet week, so the count is tested on something.
+    const result = playRun(counter, 1, CONTENT);
     expect(result.lineWeeks).toBe(weeks.length);
     expect(result.quietWeeks).toBe(weeks.filter((w) => w.moments === 0).length);
     expect(result.quietWeeks).toBeGreaterThan(0);

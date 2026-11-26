@@ -90,12 +90,21 @@ function mayQuit(ctx: Ctx, p: Person, weeks: number, cause: Cause) {
   record(ctx, cause, target, 'highStressWeeks', p.highStressWeeks, high);
   p.highStressWeeks = high;
 
+  // A restless person quits once their notice has run; anyone else may become restless, never quit outright, so every
+  // quit has at least one step in which the career level can show it coming (SIM-ADV-011, SIM-ADV-016).
+  if (p.restlessSince !== null) {
+    if (ctx.s.week - p.restlessSince >= TUNING.restlessNoticeWeeks) depart(ctx, p, 'quit', cause);
+    return;
+  }
   const weekly =
     (TUNING.baseQuitChancePerWeek +
       (low / 52) * TUNING.lowMotivationQuitChancePerYear +
       (high / 52) * TUNING.highStressQuitChancePerYear) *
     (1.5 - p.trust / 100);
-  if (random(ctx) < chanceOver(weekly, weeks)) depart(ctx, p, 'quit', cause);
+  if (random(ctx) < chanceOver(weekly, weeks)) {
+    record(ctx, cause, target, 'restlessSince', null, ctx.s.week);
+    p.restlessSince = ctx.s.week;
+  }
 }
 
 /** An aggregate team loses heads one roll at a time, each at its attrition risk. */
@@ -146,7 +155,7 @@ function gameTime(ctx: Ctx, weeks: number) {
 }
 
 // @spec SIM-ADV-001, SIM-ADV-002, SIM-ADV-003, SIM-ADV-004, SIM-ADV-005, SIM-ADV-006, SIM-ADV-007, SIM-ADV-008
-// @spec SIM-ADV-009, SIM-ADV-010, SIM-ADV-011, SIM-ADV-012, SIM-ADV-013, SIM-ADV-014, SIM-ADV-015
+// @spec SIM-ADV-009, SIM-ADV-010, SIM-ADV-011, SIM-ADV-012, SIM-ADV-013, SIM-ADV-014, SIM-ADV-015, SIM-ADV-016
 // @spec SIM-TIME-002, SIM-TIME-003, SIM-LOG-002, SIM-STATE-007
 export function advance(state: SimState, weeks: number): OperationResult {
   const ctx: Ctx = { s: cloneState(state), log: [] };

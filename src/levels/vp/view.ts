@@ -10,6 +10,8 @@ export interface DirectorCard {
   personality: string | null;
   divisionId: string;
   performance: Rating | 'unrated';
+  /** Whether they are restless: a quit is coming unless their want is served. */
+  restless: boolean;
   motivation: number;
   stress: number;
   /** Management skill, as a band. */
@@ -75,7 +77,7 @@ export interface VpView {
 }
 
 /** The player's view: directors as people, divisions as last surveyed, the leadership team, and the year's plan. */
-// @spec VP-VIS-001, VP-VIS-002, VP-VIS-003, VP-VIS-004, VP-VIS-005, VP-VIS-006, VP-ORG-003
+// @spec VP-VIS-001, VP-VIS-002, VP-VIS-003, VP-VIS-004, VP-VIS-005, VP-VIS-006, VP-VIS-007, VP-ORG-003
 export function vpView(level: VpState, sim: SimState, goals: VpView['goals'] = []): VpView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
@@ -89,7 +91,7 @@ export function vpView(level: VpState, sim: SimState, goals: VpView['goals'] = [
     const lead = leaderOf(sim, g);
     if (lead) {
       const p = sim.people[lead]!;
-      directors.push({ id: p.id, name: p.name, personality: p.personality ?? null, divisionId: g, performance: p.performance, motivation: band(p.motivation), stress: band(p.stress), skill: band(p.skill), want: want(p.id), memory: memoryOf(p.history) });
+      directors.push({ id: p.id, name: p.name, personality: p.personality ?? null, divisionId: g, restless: p.restlessSince !== null, performance: p.performance, motivation: band(p.motivation), stress: band(p.stress), skill: band(p.skill), want: want(p.id), memory: memoryOf(p.history) });
     }
     const mood = level.survey.divisions[g] ?? team.aggregate;
     divisions.push({

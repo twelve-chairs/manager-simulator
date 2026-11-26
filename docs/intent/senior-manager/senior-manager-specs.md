@@ -25,6 +25,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **SENIOR-VIS-003**: While a team's manager has management skill below the *capable* band or trust in the player below 40, the senior manager level shall show that team's motivation, stress and attrition risk one band better than their true bands, unless the team's truth is shown.
 - [x] **SENIOR-VIS-004**: While the player's oversight of a team's manager is close, or in a month in which a skip-level session listened to that team, the senior manager level shall show that team's true bands and say that they come from what the player saw.
 - [x] **SENIOR-VIS-007**: When the player's view is requested, the senior manager level shall also give the habits, the month's moments with their kind, title, text, choices and the managers their choices depend on (and, for calibration, each team's entry), the player's energy and reputation as bands with whether they are at the edge and their months there, and the career so far: the months played, the managers who joined the group and those let go.
+- [x] **SENIOR-VIS-008**: When the player's view is requested, the senior manager level shall mark each manager who is restless.
 - [x] **SENIOR-VIS-005**: The senior manager level shall never show a manager's leniency as a value.
 - [x] **SENIOR-VIS-006**: The senior manager level shall show no individual engineer of a team in aggregate form, except as named in situations and the recap.
 

@@ -89,7 +89,13 @@ export interface LeaderCard {
   skill: number;
   want: string;
   memory: string[];
+  restless: boolean;
 }
+
+/** The line under a restless person's mood: a quit is coming, and what answers it. */
+// @spec UI-QUIT-002
+export const restlessSign = (restless: boolean): Child =>
+  restless ? h('p', { 'data-field': 'restless', class: 'restless' }, 'Restless: may leave within weeks unless they get what they want.') : null;
 
 /** A unit's leader as a person, with their unit under them. */
 export function leaderCard(m: LeaderCard, attribute: string, role: string, unit: Child): Child {
@@ -98,6 +104,7 @@ export function leaderCard(m: LeaderCard, attribute: string, role: string, unit:
     { [attribute]: m.id, class: 'person' },
     h('div', { class: 'who' }, h('strong', { 'data-field': 'name' }, m.name), h('span', { class: 'role' }, `${role} · `, h('span', { 'data-field': 'personality' }, m.personality ?? ''))),
     h('p', { class: 'mood' }, 'Seems ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', m.motivation)), ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', m.stress)), '.'),
+    restlessSign(m.restless),
     h('p', { class: 'facts' }, 'Leads: ', h('span', { 'data-field': 'skill' }, bandWord('skill', m.skill)), ' · wants ', h('span', { 'data-field': 'want' }, m.want), ' · ', h('span', { 'data-field': 'performance' }, m.performance)),
     m.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, m.memory.map((note) => h('li', {}, note))) : null,
     unit,

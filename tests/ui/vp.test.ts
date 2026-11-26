@@ -51,6 +51,15 @@ describe('the VP’s week screen', () => {
     expect(text(root, '[data-action=start-week]')).toBe('Start quarter 1');
   });
 
+  // @spec UI-QUIT-002
+  it('shows the restless line on a restless person’s card, and on no other', () => {
+    const r = structuredClone(vp(3));
+    const first = $$(makeApp({ run: r, deps: all() }).root, '[data-panel=directors] [data-director]')[0]!.dataset.director!;
+    r.sim.people[first]!.restlessSince = r.sim.week;
+    const cards = $$(makeApp({ run: r, deps: all() }).root, '[data-panel=directors] [data-director]');
+    expect(cards.map((c) => c.querySelector('[data-field=restless]')?.textContent ?? null)).toEqual(cards.map((c) => (c.dataset.director === first ? 'Restless: may leave within weeks unless they get what they want.' : null)));
+  });
+
   // @spec UI-VP-002
   it('shows a card per director with their division, its mood labelled by the survey', () => {
     const { root } = makeApp({ run: vp(3), deps: all() });

@@ -28,6 +28,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **VP-VIS-004**: When the player's view is requested, the VP level shall show the year's plan: the headcount given for the year and how much of it has arrived, and the company priority with the division or divisions carrying it, its project's progress, deadline and schedule status, and its stake.
 - [x] **VP-VIS-005**: When the player's view is requested, the VP level shall also give the habits, the quarter's moments with their kind, title, text and choices, the player's energy and reputation as bands with whether they are at the edge, the goals with their progress, and the career summary.
 - [x] **VP-VIS-006**: The VP level shall never show a director's leniency as a value, and shall show no group, team or person inside a division except as named in situations and the recap.
+- [x] **VP-VIS-007**: When the player's view is requested, the VP level shall mark each director who is restless.
 
 ## Habits
 

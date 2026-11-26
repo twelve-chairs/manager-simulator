@@ -80,12 +80,12 @@ This is reported rather than checked. A promotion needs two strong reviews in a 
 
 The **bad events** a player sees are: someone the player leads quitting (their card leaves its panel beside the scene, and the ended screen's career summary lists them as quit rather than let go or moved): an engineer on the line manager's team, or a manager, senior manager or director at the levels above, a review rated *partial* or *below*, a project shown as overdue, and the burnout warning. The **worse half** of a person's bands is *struggling* or *flat* for motivation and *strained* or *overwhelmed* for stress; the middle band is in neither half. For each bad event, the scorecard records whether a **warning sign** showed on screen in the four weeks before it, or in the weeks the run has had when it is younger than that:
 
-- A quit: in the last four weeks the person's card was on screen, it showed their motivation or stress in the worse half of its bands. A memory note does not count: almost everyone has one, so it would warn of nothing.
+- A quit: in the last four weeks the person's card was on screen, it showed them restless, or their motivation or stress in the worse half of its bands. A memory note does not count: almost everyone has one, so it would warn of nothing.
 - A low rating: a project shown as behind or overdue, or an engineer's motivation or stress in the worse half of its bands. The scorecard's measures show only on the review itself, and goals show progress rather than a verdict, so neither can warn beforehand.
 - An overdue project: the project shown as behind, or with its risk *elevated*, *high* or *severe*.
 - The burnout warning: the player's energy shown as *tired* or *running on fumes*.
 
-All four kinds are reported as the share of events that had a warning sign. Quits are reported rather than checked because the simulation lets anyone quit: each engineer has a small chance to leave every week even with no risk factor, and low trust, which no card shows, raises it (the simulation core's *Departure*). So a share of quits come with no sign by design, and whether every quit should be foreshadowed is a question for the game's design, not for this instrument.
+All four kinds are reported as the share of events that had a warning sign. Quits are also a hard check: the simulation makes every person restless for at least one step before they quit, and every card shows it (the simulation core's *Departure*, the UI design's *Restlessness*), so a quit with no sign on the person's card is a regression. The other three stay reported, because whether the signs before them are the ones a player reads is a question for human sessions.
 
 ### Choices feel consequential
 
@@ -159,7 +159,7 @@ A run that an error stops, such as a request the API refuses for want of credit,
 |---|---|---|---|
 | Home | Its own leaf, beside the balance harness | A section of the UI design | It is a measuring instrument with its own measures and thresholds, as the balance harness is; the UI design already describes how the playtests run. |
 | Checks | Hard checks on the solid proxies, the rest reported | A threshold on every proxy; report only | The soft proxies' right values are unknown until human sessions; failing on them would fail for reasons players may not care about. Reporting only would let a clear regression through, such as a choice with no reaction. |
-| Quits with a warning sign | Reported as a share | A hard check that every quit had a sign; a hard check on a minimum share | The simulation's base chance to quit and its hidden trust make some quits unforeseeable by design, so an every-quit check fails on the game as designed; a minimum share would be a guess that random runs sit close to. |
+| Quits with a warning sign | Reported as a share, and a hard check that every quit had a sign | Reported only; a hard check on a minimum share | Every quit is preceded by the restless sign by design, so one without it is a regression the check should catch; a minimum share would let some through. |
 | Promotion within a session | Reported against a target share of half the first-timer runs | A hard check now | The level's pacing may not reach a promotion within an hour; a check that fails until the pacing changes would hide every other failure of the weekly playtest. |
 | Session length | Estimated from words read and decisions made | Wall-clock time of the scripted run; a fixed number of weeks | Scripted players click instantly, so wall-clock time measures the machine. A fixed number of weeks ignores how much each week asks the player to read. |
 | First-timer | The existing *mixed* player | A new strategy; the sound player | It already plays as a new player might, mostly well with some mistakes and waiting. The sound player would overstate how quickly a first session gets anywhere. |
@@ -177,9 +177,8 @@ A run that an error stops, such as a request the API refuses for want of credit,
 
 ### Deferred
 1. Making *A promotion in the first session* a hard check, once the line manager level's pacing can meet it.
-2. Whether every quit should be foreshadowed on screen (a sign of restlessness, visible trust, or no base chance to quit), and then whether quits with a warning become a hard check.
-3. Thresholds for the reported proxies, set from the first rounds of human sessions.
-4. Calibrating the session clock's constants against timed human sessions.
+2. Thresholds for the reported proxies, set from the first rounds of human sessions.
+3. Calibrating the session clock's constants against timed human sessions.
 
 ## References
 

@@ -137,6 +137,21 @@ describe('value effects', () => {
     expect(person(r.state, 'e1').wantServedWeek).toBe(12);
   });
 
+  // @spec SIM-EFFECT-025
+  it('settles a restless person whose want the player serves, and not on a rule’s effect or another want', () => {
+    const restless = patch(fresh(), (st) => {
+      st.week = 12;
+      st.people.e1!.restlessSince = 10;
+    });
+    const want = person(restless, 'e1').want;
+    const other = (['growth', 'recognition', 'stability', 'autonomy'] as const).find((w) => w !== want)!;
+    const served = (serves: string, cause: Cause = SITUATION) => person(expectOk(applyEffects(restless, [{ type: 'value', target: { kind: 'person', id: 'e1' }, field: 'motivation', amount: 2, cause, wantTags: { serves: [serves] } } as never])).state, 'e1');
+    expect(served(want).restlessSince).toBeNull();
+    expect(served(want, ACTION).restlessSince).toBeNull();
+    expect(served(want, RULE).restlessSince).toBe(10);
+    expect(served(other).restlessSince).toBe(10);
+  });
+
   // @spec SIM-EFFECT-024
   it('ignores want tags on effects aimed at anything other than a person', () => {
     const r = expectOk(

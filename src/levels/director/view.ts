@@ -13,6 +13,8 @@ export interface SeniorManagerView {
   personality: string | null;
   groupId: string;
   performance: Rating | 'unrated';
+  /** Whether they are restless: a quit is coming unless their want is served. */
+  restless: boolean;
   motivation: number;
   stress: number;
   /** Management skill, as a band. */
@@ -84,7 +86,7 @@ export interface DirectorView {
 
 
 /** The player's view: senior managers as people, groups as last surveyed, and the room above. */
-// @spec DIR-VIS-001, DIR-VIS-002, DIR-VIS-003, DIR-VIS-004, DIR-VIS-006, DIR-ORG-003
+// @spec DIR-VIS-001, DIR-VIS-002, DIR-VIS-003, DIR-VIS-004, DIR-VIS-006, DIR-VIS-007, DIR-ORG-003
 export function directorView(level: DirectorState, sim: SimState): DirectorView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
@@ -99,7 +101,7 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
     const lead = leaderOf(sim, g);
     if (lead) {
       const p = sim.people[lead]!;
-      seniorManagers.push({ id: p.id, name: p.name, personality: p.personality ?? null, groupId: g, performance: p.performance, motivation: band(p.motivation), stress: band(p.stress), skill: band(p.skill), want: want(p.id), memory: memoryOf(p.history) });
+      seniorManagers.push({ id: p.id, name: p.name, personality: p.personality ?? null, groupId: g, restless: p.restlessSince !== null, performance: p.performance, motivation: band(p.motivation), stress: band(p.stress), skill: band(p.skill), want: want(p.id), memory: memoryOf(p.history) });
     }
     const toured = level.visited?.groupId === g && level.visited.quarter === quarter;
     const mood = toured ? team.aggregate : (level.survey.groups[g] ?? team.aggregate);

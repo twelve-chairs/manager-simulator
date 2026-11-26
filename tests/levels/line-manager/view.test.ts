@@ -33,6 +33,16 @@ describe('the player view', () => {
     ]);
   });
 
+  // @spec LINE-VIS-016
+  it('marks the engineer who is restless, and no one else', () => {
+    const { level, sim } = run(2);
+    const id = view(level, sim).people[0]!.id;
+    const marked = structuredClone(sim);
+    marked.people[id]!.restlessSince = sim.week;
+    const v = view(level, marked);
+    expect(v.people.map((p) => p.restless)).toEqual(v.people.map((p) => p.id === id));
+  });
+
   // @spec LINE-VIS-001
   it('shows each active engineer with name, role, tenure, personality and performance level', () => {
     let { level, sim } = run(2);

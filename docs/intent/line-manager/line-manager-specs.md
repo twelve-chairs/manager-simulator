@@ -28,6 +28,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-VIS-013**: The line manager level shall show each moment's choices without those that name an engineer who is no longer active on the team.
 - [x] **LINE-VIS-014**: The line manager level shall show a career summary: the number of the team's projects completed by their deadline over the run, each engineer who joined the team after it started, and each engineer who left it with whether they quit, were let go or moved.
 - [x] **LINE-VIS-015**: The line manager level shall show whether the player's stress is at or above the burnout threshold, the number of consecutive weeks they have ended at or above it, and how many such weeks end the run.
+- [x] **LINE-VIS-016**: When the player's view is requested, the line manager level shall mark each engineer on the team who is restless.
 
 ## Habits
 
