@@ -220,7 +220,7 @@ function debriefLesson(d: { status: string; situationId: string; debrief?: strin
 
 const ENDINGS = {
   managedOut: 'You were managed out after failing your improvement plan.',
-  completed: 'You were promoted past the top of the ladder the game has so far. You won.',
+  completed: 'You were promoted past the top of the ladder. You won.',
 } as const;
 
 /** How the run ended, in a sentence: staying at the level, burning out after so many turns at the edge, or the other endings. */

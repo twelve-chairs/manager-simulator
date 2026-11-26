@@ -47,6 +47,17 @@ A run promoted from the senior manager goes on at the director, and every script
 
 The playtests check the director's screens as they check the senior manager's, with the quarter's wording: thirteen weeks a turn, a moment's place as its week of the quarter and day.
 
+### At the VP
+
+A run promoted from the director goes on at the VP, and every scripted player plays it too:
+
+- **The handover** follows the same rule, among the player's senior managers.
+- **Sound practice** plays the balance design's VP sound practice through the page: it puts the leadership team first and sets direction for its directors, answers each situation from the better-choice table, and on each of the level's own moments: asks for what the plan needs; puts the division calmest as last surveyed on the company priority; brokers a trade with a peer whose card shows *trusting* or better and settles a dispute for the company otherwise; has directors at odds settle it together; cuts once; tells the all-hands what is hard; promotes a new director from the division; and lets a director on a failed plan go.
+- **The first-timer** plays sound practice with its random choices and waits.
+- **The naive players** keep their character: the hero asks for more, puts the first division on the priority, sides with the function, decides for directors at odds, cuts across and celebrates; the delegator asks for the plan, spreads the priority and keeps the all-hands short; the decliner pushes back on the priority and keeps the all-hands short; the waiter lets half the situations wait.
+
+The playtests check the VP's screens as they check the director's.
+
 ## The Session Clock
 
 The **estimated session time** at any point of a run is the sum of:

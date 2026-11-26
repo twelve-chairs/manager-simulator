@@ -43,7 +43,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 
 ## Status
 
-**Early development, and playable from start to finish.** Three career levels run in the browser.
+**Early development, and playable from start to finish.** Four career levels run in the browser, the whole ladder from line manager to VP.
 
 **Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
@@ -65,9 +65,18 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 - headcount to place each quarter, strategy bets to fund, groups to split or merge, and a quarterly review where you choose how honestly to tell it;
 - written situations about running an organization: a peer taking credit, the executive's pet project, a specialty group asking for time, a leak from your staff meeting.
 
+**VP**, at the top: you choose who leads your old organization, then run three divisions through their directors, a quarter at a time, from a seat on the leadership team:
+
+- directors as people, and divisions you see through the twice-yearly survey;
+- your CEO and two peer VPs, and a habit that asks which team you put first, your function or the leadership team;
+- annual planning against your peers for one company budget, the company's priority each half, disputes at the leadership table, and one round of cuts to make well or badly;
+- an all-hands each quarter, where you tell the whole function how things stand.
+
+A promotion at the VP completes the run. The VP has no written situations of its own yet.
+
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** a round of human playtests through both promotions, then the levels above the director.
+**Next up:** written situations for the VP, then a round of human playtests through all three promotions.
 
 ## Fiction, not advice
 
@@ -116,7 +125,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/levels/line-manager/` | Line manager career level |
 | `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews |
 | `src/levels/director/` | Director career level: the handover from a promoted senior manager, groups and senior managers, the executive and peers, headcount, strategy bets, the quarterly review, goals, recaps and reviews |
-| `src/levels/vp/` | VP career level, built but not yet in the game (it has no renderer yet): the handover from a promoted director, divisions and directors, the CEO and peer VPs, annual planning, the company priority, leadership disputes, cuts, the all-hands, goals, recaps and reviews |
+| `src/levels/vp/` | VP career level, the top of the ladder: the handover from a promoted director, divisions and directors, the CEO and peer VPs, annual planning, the company priority, leadership disputes, cuts, the all-hands, goals, recaps and reviews |
 | `src/levels/org/` | Mechanics shared by the levels that run an organization of aggregate units: generating leaders and outsiders, folding units at a handover, the engagement survey, drift, calibration, rating leaders and regretted attrition |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |

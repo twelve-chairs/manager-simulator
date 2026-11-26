@@ -1,7 +1,7 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
 import { realContent } from '../tests/balance/harness';
 import { BETTER_CHOICES } from '../tests/balance/strategies';
-import { DIRECTOR_TITLES, LINE_TITLES, SENIOR_TITLES, type Level, type Look, type PlayEvent } from './metrics';
+import { DIRECTOR_TITLES, LINE_TITLES, SENIOR_TITLES, VP_TITLES, type Level, type Look, type PlayEvent } from './metrics';
 
 /** The save the game keeps in the browser's storage, and its format, as the save component writes them. */
 const SAVE_KEY = 'manager-simulator.save';
@@ -41,7 +41,7 @@ export async function startSeeded(page: Page, seed: number) {
 }
 
 export type Strategy = 'sound' | 'delegate' | 'hero' | 'decline' | 'waiter' | 'mixed' | 'heavyThenEase';
-export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning' | 'seniorHandover' | 'directorHandover';
+export type Until = 'end' | 'finalEvaluation' | 'letGoWarning' | 'review' | 'edgeWarning' | 'seniorHandover' | 'directorHandover' | 'vpHandover';
 
 export interface PlayOptions {
   strategy: Strategy;
@@ -76,6 +76,9 @@ export interface PlaySummary {
     directorHandover: { choice: string; options: { id: string; trust: string; want: string | null }[] } | null;
     /** Each director moment: the choices offered and the one taken ('fund-bets' for bets funded through their scene, null for waiting). */
     directorChoices: { title: string; offered: string[]; chosen: string | null }[];
+    /** The VP's handover and moments, kept as the director's are. */
+    vpHandover: { choice: string; options: { id: string; trust: string; want: string | null }[] } | null;
+    vpChoices: { title: string; offered: string[]; chosen: string | null }[];
   };
   energyTrail: string[];
   /** What the player read, clicked and saw, in order, for the success-metric scorecard (playtest/metrics.ts). */
@@ -90,7 +93,7 @@ export function play(page: Page, options: PlayOptions): Promise<PlaySummary> {
     until: options.until ?? 'end',
     maxWeeks: options.maxWeeks ?? 400,
     // the page cannot import the title table, so it gets the patterns as text
-    titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source), director: DIRECTOR_TITLES.map(([, re]) => re.source) },
+    titles: { line: LINE_TITLES.source, senior: SENIOR_TITLES.map(([, re]) => re.source), director: DIRECTOR_TITLES.map(([, re]) => re.source), vp: VP_TITLES.map(([, re]) => re.source) },
     better: betterByTitle(),
   };
   return page.evaluate(playInPage, args);
@@ -118,7 +121,7 @@ export async function attachSummary(testInfo: TestInfo, name: string, summary: P
  * selects, and every screen is checked as it goes. It is self-contained, because Playwright sends it to the page
  * as source.
  */
-type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[]; director: string[] }; better: Record<string, string> };
+type InPage = Required<PlayOptions> & { titles: { line: string; senior: string[]; director: string[]; vp: string[] }; better: Record<string, string> };
 
 /** The balance harness's better choice for each situation, by the title the page shows it under. */
 export function betterByTitle(): Record<string, string> {
@@ -150,6 +153,7 @@ function playInPage(options: InPage): PlaySummary {
   const LINE_TITLES = new RegExp(options.titles.line, 'i');
   const SENIOR_TITLES = options.titles.senior.map((source) => new RegExp(source));
   const DIRECTOR_TITLES = options.titles.director.map((source) => new RegExp(source));
+  const VP_TITLES = options.titles.vp.map((source) => new RegExp(source));
 
   const violations = new Set<string>();
   const flag = (where: string, what: string) => violations.add(`${where}: ${what}`);
@@ -160,7 +164,7 @@ function playInPage(options: InPage): PlaySummary {
     reviews: [],
     career: [],
     violations: [],
-    seen: { finalEvaluations: [], letGoWarnings: [], assigned: [], held: [], edgeWarnings: [], waitedLessons: 0, waitedWithoutLesson: [], endings: [], handover: null, seniorChoices: [], directorHandover: null, directorChoices: [] },
+    seen: { finalEvaluations: [], letGoWarnings: [], assigned: [], held: [], edgeWarnings: [], waitedLessons: 0, waitedWithoutLesson: [], endings: [], handover: null, seniorChoices: [], directorHandover: null, directorChoices: [], vpHandover: null, vpChoices: [] },
     energyTrail: [],
     events: [],
   };
@@ -169,22 +173,25 @@ function playInPage(options: InPage): PlaySummary {
   const senior = () => q('[data-panel=managers]') !== null;
   /** Whether the page shows the director: senior managers and their groups. */
   const director = () => q('[data-panel=senior-managers]') !== null;
+  /** Whether the page shows the VP: directors and their divisions. */
+  const vp = () => q('[data-panel=directors]') !== null;
   const levelOn = (): Level => {
+    if (vp()) return 'vp';
     if (director()) return 'director';
     return senior() ? 'senior' : 'line';
   };
   /** The value for the career level on screen. */
   const atLevel = <T,>(values: Record<Level, T>): T => values[levelOn()];
   /** Whether a moment is the career level's own rather than a situation, by its title at the level on screen. */
-  const isLevelMoment = (title: string) => atLevel({ director: DIRECTOR_TITLES, senior: SENIOR_TITLES, line: [LINE_TITLES] }).some((re) => re.test(title));
-  /** The game week the senior manager and director levels began, as the player counts weeks: the last review before each. */
+  const isLevelMoment = (title: string) => atLevel({ vp: VP_TITLES, director: DIRECTOR_TITLES, senior: SENIOR_TITLES, line: [LINE_TITLES] }).some((re) => re.test(title));
+  /** The game week the senior manager level, and the quarterly level on screen (director, then VP), began, as the player counts weeks: the last review before each. */
   let seniorBase = 0;
-  let directorBase = 0;
+  let quarterBase = 0;
   let lastReviewWeek = 0;
   /** The week of the run a screen is about, counting from 1: the header's week, or at a higher level its turn's first week. */
   const runWeek = () => {
     const n = Number(text('[data-field=week]'));
-    return atLevel({ director: directorBase + (n - 1) * 13 + 1, senior: seniorBase + (n - 1) * 4 + 1, line: n });
+    return atLevel({ vp: quarterBase + (n - 1) * 13 + 1, director: quarterBase + (n - 1) * 13 + 1, senior: seniorBase + (n - 1) * 4 + 1, line: n });
   };
 
   /** The event log (PLAY-RUN-002): only what the page shows, as the player would see it. */
@@ -268,7 +275,7 @@ function playInPage(options: InPage): PlaySummary {
   /** The week screen's own rules: the header, the team cards and the scene. */
   function checkWeek(sc: string, lastSlot: { week: string; slot: number }) {
     const week = text('[data-field=week]');
-    const turn = atLevel({ director: 'quarter', senior: 'month', line: 'week' });
+    const turn = atLevel({ vp: 'quarter', director: 'quarter', senior: 'month', line: 'week' });
     checkHeader();
     checkMemories();
     if (sc === 'recap') checkRecap(turn, week);
@@ -450,6 +457,8 @@ function playInPage(options: InPage): PlaySummary {
   // @spec PLAY-RUN-007
   let habitsWeek = '';
   function soundHabits() {
+    // @spec PLAY-RUN-010
+    if (levelOn() === 'vp' && ['sound', 'mixed'].includes(options.strategy)) setHabit('firstTeam', /leadership/i);
     if (levelOn() !== 'line' || !['sound', 'mixed'].includes(options.strategy)) return;
     const week = text('[data-field=week]');
     if (week === habitsWeek) return;
@@ -474,6 +483,7 @@ function playInPage(options: InPage): PlaySummary {
     // @spec PLAY-RUN-007
     const sound = () => lineSound(choices, by);
     if (senior()) return seniorChoice(choices, by);
+    if (vp()) return vpChoice(choices, by);
     if (director()) return directorChoice(choices, by);
     const delegate = () => by((id) => id === 'leave') ?? by((id) => id.startsWith('give:') || id.startsWith('ask:')) ?? by((id) => id === 'take' || id === 'pushOn') ?? choices.at(-1) ?? null;
     const hero = () => by((id) => ['self', 'takeOver', 'replan', 'take'].includes(id)) ?? choices[0] ?? null;
@@ -522,6 +532,51 @@ function playInPage(options: InPage): PlaySummary {
     }
     return null;
   };
+
+  /** Sound practice at the VP, in order of preference among the choices a moment offers (PLAY-RUN-010). */
+  const VP_SOUND = ['plan', 'together', 'once', 'truth', 'promote', 'letGo'];
+  // @spec PLAY-RUN-010
+  function vpChoice(choices: HTMLElement[], by: (pred: (id: string) => boolean) => HTMLElement | null): HTMLElement | null {
+    const prefer = (order: string[]) => preferIn(by, order);
+    const title = text('[data-scene] [data-part=heading]');
+    const situation = !isLevelMoment(title);
+    const better = situation ? options.better[title] : undefined;
+    /** The division calmest as last surveyed, among those the priority's choices name. */
+    const calmest = () => {
+      const named = choices.filter((c) => (c.dataset.choice ?? '').startsWith('one:')).map((c) => c.dataset.choice!.slice('one:'.length));
+      const stress = (id: string) => bandOf('stress', text(`[data-panel=directors] [data-division="${id}"] [data-field=stress]`));
+      const id = [...named].sort((a, b) => stress(a) - stress(b) || (a < b ? -1 : 1))[0];
+      return id ? by((x) => x === `one:${id}`) : prefer(['spread']);
+    };
+    /** A dispute: a trade with a peer whose card shows trusting or better, the company's answer otherwise. */
+    const dispute = () => {
+      const name = /^(.+) disagrees$/.exec(title)?.[1] ?? '';
+      const card = qa('[data-panel=leadership] [data-outsider]').find((c) => text('[data-field=name]', c) === name);
+      const trust = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'].indexOf(card ? text('[data-field=trust]', card) : '');
+      return by((x) => x === (trust >= 3 ? 'trade' : 'company'));
+    };
+    const sound = (): HTMLElement | null => {
+      if (situation) return (better ? by((x) => x === better) : null) ?? choices[0] ?? null;
+      if (title === 'The company priority') return calmest();
+      if (title.endsWith(' disagrees')) return dispute();
+      return prefer(VP_SOUND) ?? choices[0] ?? null;
+    };
+    switch (options.strategy) {
+      case 'hero':
+      case 'heavyThenEase':
+        return by((x) => x.startsWith('one:')) ?? prefer(['more', 'function', 'decide', 'across', 'celebrate', 'hire', 'oneMore']) ?? choices[0] ?? null;
+      case 'delegate':
+        return prefer(['plan', 'spread', 'company', 'together', 'across', 'short', 'promote', 'oneMore']) ?? choices.at(-1) ?? null;
+      case 'decline':
+        return prefer(['push', 'short']) ?? sound();
+      case 'waiter':
+        return situation && random() < 0.5 ? null : sound();
+      case 'mixed':
+        return firstTimer(choices, sound);
+      default:
+        return sound();
+    }
+  }
 
   /** Sound practice at the director, in order of preference among the choices a moment offers (PLAY-RUN-009). */
   const DIRECTOR_SOUND = ['spread', 'coach', 'promote', 'letGo', 'splitPromote', 'merge', 'straight'];
@@ -653,7 +708,7 @@ function playInPage(options: InPage): PlaySummary {
       read(`review|${heading}`, q('[data-screen]'));
       const turn = Number(/\d+/.exec(heading)?.[0] ?? 0);
       let reviewWeek = turn;
-      if (heading.startsWith('Quarter')) reviewWeek = directorBase + turn * 13;
+      if (heading.startsWith('Quarter')) reviewWeek = quarterBase + turn * 13;
       else if (heading.startsWith('Month')) reviewWeek = seniorBase + turn * 4;
       lastReviewWeek = reviewWeek;
       log.push({ kind: 'review', week: reviewWeek, rating: text('[data-field=rating]'), promoted: text('[data-field=outcome]') === 'You are being promoted.' });
@@ -663,7 +718,7 @@ function playInPage(options: InPage): PlaySummary {
     return 'next';
   }
 
-  // @spec PLAY-RUN-005, PLAY-RUN-009
+  // @spec PLAY-RUN-005, PLAY-RUN-009, PLAY-RUN-010
   function handoverStep(): Next {
     checkText('handover');
     const TRUST = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'];
@@ -671,9 +726,13 @@ function playInPage(options: InPage): PlaySummary {
     const growers = offered.filter((o) => o.want === 'growth' && TRUST.indexOf(o.trust) >= 3).sort((a, b) => TRUST.indexOf(b.trust) - TRUST.indexOf(a.trust));
     const choice = growers[0]?.id ?? 'hire';
     const seen = { choice, options: offered.filter((o) => o.id !== 'hire') };
-    if (/promoted to director/i.test(text('[data-part=heading]'))) {
+    if (/promoted to VP/.test(text('[data-part=heading]'))) {
+      summary.seen.vpHandover = seen;
+      quarterBase = lastReviewWeek;
+      if (options.until === 'vpHandover') return stopAt('VP handover');
+    } else if (/promoted to director/i.test(text('[data-part=heading]'))) {
       summary.seen.directorHandover = seen;
-      directorBase = lastReviewWeek;
+      quarterBase = lastReviewWeek;
       // left on the handover screen, for a player that takes over from here
       if (options.until === 'directorHandover') return stopAt('director handover');
     } else {
@@ -714,7 +773,7 @@ function playInPage(options: InPage): PlaySummary {
 
   /** At the senior manager and director the header counts months or quarters from the level's start; the run counts weeks. */
   const runWeeks = (week: string) => {
-    if (director()) return directorBase + Number(week) * 13;
+    if (vp() || director()) return quarterBase + Number(week) * 13;
     return senior() ? seniorBase + Number(week) * 4 : Number(week);
   };
 
@@ -781,6 +840,7 @@ function playInPage(options: InPage): PlaySummary {
     const choice = choose();
     if (senior()) summary.seen.seniorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? null });
     if (director()) summary.seen.directorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? choice?.dataset.action ?? null });
+    if (vp()) summary.seen.vpChoices.push({ title, offered, chosen: choice?.dataset.choice ?? null });
     const week = runWeek();
     if (choice) answer(title, choice, week);
     else waitIt(week);

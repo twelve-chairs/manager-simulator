@@ -21,7 +21,8 @@ const ENDINGS = {
   stayedSenior: 'You stayed a senior manager. Three years went by without the promotion.',
   burnoutDirector: 'You burned out. Two quarters at the edge was too long.',
   stayedDirector: 'You stayed a director. Three years went by without the promotion.',
-  completed: 'You were promoted past the top of the ladder the game has so far. You won.',
+  stayedVp: 'You stayed a VP. Three years went by without the promotion.',
+  completed: 'You were promoted past the top of the ladder. You won.',
 };
 
 for (const { strategy, seed } of RUNS) {
@@ -62,9 +63,15 @@ for (const { strategy, seed } of RUNS) {
     const atDirector = [ENDINGS.burnoutDirector, ENDINGS.stayedDirector].includes(summary.ending!) || summary.seen.directorHandover !== null;
     expect(summary.seen.directorHandover !== null).toBe(atDirector);
     if (atDirector) expect(summary.seen.handover).not.toBeNull();
-    // Two years at most at the line manager, then three at the senior manager, then three at the director.
+    // A run that reached the VP was handed over three times; the burnout line is the director's, a quarter's.
+    const atVp = summary.ending === ENDINGS.stayedVp || summary.seen.vpHandover !== null;
+    expect(summary.seen.vpHandover !== null).toBe(atVp);
+    if (atVp) expect(summary.seen.directorHandover).not.toBeNull();
+    if (summary.ending === ENDINGS.stayedVp) expect(last?.outcome).toMatch(/last review as a VP/);
+    // Two years at most at the line manager, then three at the senior manager, three at the director and three at the VP.
     let mostWeeks = 104;
-    if (atDirector) mostWeeks = 104 + 144 + 156;
+    if (atVp) mostWeeks = 104 + 144 + 156 + 156;
+    else if (atDirector) mostWeeks = 104 + 144 + 156;
     else if (atSenior) mostWeeks = 104 + 144;
     expect(summary.weeks).toBeLessThanOrEqual(mostWeeks);
   });

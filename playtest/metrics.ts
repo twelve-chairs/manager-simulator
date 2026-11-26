@@ -53,15 +53,27 @@ export const DIRECTOR_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Quarterly review', /^The quarterly review$/],
 ];
 
+export const VP_TITLES: readonly (readonly [string, RegExp])[] = [
+  ['Final evaluation', /^Final evaluation: /],
+  ['New director', / needs a director$/],
+  ['Annual planning', /^Annual planning$/],
+  ['Company priority', /^The company priority$/],
+  ['Cuts', /^The company asks for cuts$/],
+  ['Leadership dispute', / disagrees$/],
+  ['Directors at odds', /^Two directors at odds$/],
+  ['All-hands', /^The all-hands$/],
+];
+
 /** The career level a screen belongs to, as the playtests tell them apart. */
-export type Level = 'line' | 'senior' | 'director';
-export const LEVEL_NAMES: Record<Level, string> = { line: 'line manager', senior: 'senior manager', director: 'director' };
+export type Level = 'line' | 'senior' | 'director' | 'vp';
+export const LEVEL_NAMES: Record<Level, string> = { line: 'line manager', senior: 'senior manager', director: 'director', vp: 'VP' };
 
 /** A moment's kind, if it is one of the career level's own moments, or null for a situation. */
 // @spec PLAY-SHAPE-002
 export function momentKind(title: string, level: Level): string | null {
   if (level === 'senior') return SENIOR_TITLES.find(([, re]) => re.test(title))?.[0] ?? null;
   if (level === 'director') return DIRECTOR_TITLES.find(([, re]) => re.test(title))?.[0] ?? null;
+  if (level === 'vp') return VP_TITLES.find(([, re]) => re.test(title))?.[0] ?? null;
   return LINE_TITLES.test(title) ? title.split(':')[0]! : null;
 }
 
@@ -153,7 +165,7 @@ const uncounted = (line: string) => line.replace(/, (twice|\d+ times)$/, '');
 const kindOf = (m: { title: string; level: Level }) => momentKind(m.title, m.level) ?? `situation:${m.title}`;
 const isSituation = (m: { title: string; level: Level }) => momentKind(m.title, m.level) === null;
 const PARTS = ['panels', 'habits', 'moments'] as const;
-const PROMOTIONS: [Level, Level][] = [['line', 'senior'], ['senior', 'director']];
+const PROMOTIONS: [Level, Level][] = [['line', 'senior'], ['senior', 'director'], ['director', 'vp']];
 const byCodeUnits = (a: string, b: string) => {
   if (a < b) return -1;
   return a > b ? 1 : 0;
