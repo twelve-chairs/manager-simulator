@@ -1,5 +1,5 @@
 # Plays whole runs of the game weekly with scripted players and checks every screen (npm run playtest), against the
-# production build. It neither blocks nor publishes anything: a failure shows on the Actions tab.
+# production build, and runs the balance checks at 200 seeds (npm run balance). It neither blocks nor publishes anything: a failure shows on the Actions tab.
 # Actions are pinned to commit SHAs (tags noted beside them), and the job only reads the repository.
 name: Playtest
 
@@ -30,3 +30,6 @@ jobs:
       # Through the locked Playwright in node_modules: npx could fetch and run an unpinned package.
       - run: npm run playwright:install
       - run: npm run playtest
+      # The balance checks at 200 seeds: a share drifting across a threshold by less than the test suite's 40 seeds resolve
+      # shows here within a week.
+      - run: npm run balance
