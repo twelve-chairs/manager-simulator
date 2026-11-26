@@ -81,6 +81,29 @@ export function shippedLastMonth(level: SeniorState, sim: SimState): { projectId
     .sort((a, b) => (a.projectId < b.projectId ? -1 : a.projectId > b.projectId ? 1 : 0));
 }
 
+/**
+ * Records a team's heads lost this month and returns how many of them were regretted.
+ * Only attrition changes rating counts while the simulation advances, so a fall in the counts at meets or above is regretted.
+ */
+function recordHeadsLost(s: SeniorState, sim: SimState, t: string, played: number): number {
+  const was = s.knownRatings[t];
+  const now = sim.teams[t]?.aggregate?.ratings;
+  let kept = 0;
+  if (was && now) for (const r of REGRETTED) kept += Math.max(0, was[r] - now[r]);
+  const lost = (s.knownHeadcount[t] ?? 0) - (sim.teams[t]?.aggregate?.headcount ?? 0);
+  if (lost > 0 && s.knownHeadcount[t] !== undefined) s.headsLost.push({ week: played, teamId: t, count: lost, regretted: Math.min(kept, lost) });
+  return kept;
+}
+
+/** Opens a backfill for each head a team lost, and remembers its headcount and ratings as they are now. */
+function noticeTeam(s: SeniorState, sim: SimState, t: string) {
+  const a = sim.teams[t]?.aggregate;
+  if (!a) return;
+  for (let lost = (s.knownHeadcount[t] ?? a.headcount) - a.headcount; lost > 0; lost--) s.backfills.push({ teamId: t, since: sim.week, months: 0 });
+  s.knownHeadcount[t] = a.headcount;
+  s.knownRatings[t] = { ...a.ratings };
+}
+
 /** Records completions and heads lost to attrition, and tracks burnout, after the simulation advances a month. */
 // @spec SENIOR-END-006
 export function afterAdvanceSenior(level: SeniorState, sim: SimState): { level: SeniorState; burnedOut: boolean } {
@@ -89,26 +112,11 @@ export function afterAdvanceSenior(level: SeniorState, sim: SimState): { level: 
   for (const p of Object.values(sim.projects)) {
     if (s.teamIds.includes(p.teamId) && p.status === 'completed' && !Object.hasOwn(s.completions, p.id)) s.completions[p.id] = played;
   }
-  // Only attrition changes rating counts while the simulation advances, so a fall in the counts at meets or above is regretted.
   let regretted = 0;
-  for (const t of s.teamIds) {
-    const was = s.knownRatings[t];
-    const now = sim.teams[t]?.aggregate?.ratings;
-    let kept = 0;
-    if (was && now) for (const r of REGRETTED) kept += Math.max(0, was[r] - now[r]);
-    regretted += kept;
-    const lost = (s.knownHeadcount[t] ?? 0) - (sim.teams[t]?.aggregate?.headcount ?? 0);
-    if (lost > 0 && s.knownHeadcount[t] !== undefined) s.headsLost.push({ week: played, teamId: t, count: lost, regretted: Math.min(kept, lost) });
-  }
+  for (const t of s.teamIds) regretted += recordHeadsLost(s, sim, t, played);
   if (regretted > 0) s.regretted.push({ week: played, count: regretted });
   // Heads lost to attrition are noticed now, before any of the month's choices remembers the teams as they are.
-  for (const t of s.teamIds) {
-    const a = sim.teams[t]?.aggregate;
-    if (!a) continue;
-    for (let lost = (s.knownHeadcount[t] ?? a.headcount) - a.headcount; lost > 0; lost--) s.backfills.push({ teamId: t, since: sim.week, months: 0 });
-    s.knownHeadcount[t] = a.headcount;
-    s.knownRatings[t] = { ...a.ratings };
-  }
+  for (const t of s.teamIds) noticeTeam(s, sim, t);
   s.burnoutMonths = sim.player.stress >= LINE_TUNING.burnoutThreshold ? s.burnoutMonths + 1 : 0;
   return { level: s, burnedOut: s.burnoutMonths >= LINE_TUNING.burnoutWeeks };
 }

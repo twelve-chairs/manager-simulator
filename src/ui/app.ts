@@ -531,6 +531,16 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       } }, 'Start a new game');
   }
 
+  /** The day the strip marks as now: the moment's or the reaction's day, past Friday once the turn is done, before Monday otherwise. */
+  function stripDay(run: Run, kind: ReturnType<typeof sceneKind>, turn: LevelRenderer['turn']): number {
+    if (kind === 'done') return 5;
+    let day = -1;
+    if (kind === 'moment') day = currentMoment(run)!.day;
+    else if (kind === 'reaction') day = run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1;
+    // A month's or a quarter's strip shows the current week's five days.
+    return turn !== 'week' && day >= 0 ? day % 5 : day;
+  }
+
   /** The header: the week, the review, the days, energy, reputation and goals. */
   // @spec UI-WEEK-001, UI-WEEK-003, UI-WEEK-011, UI-WEEK-012, UI-WEEK-013, UI-WEEK-014
   function weekScreen(ctx: ScreenContext, renderer: LevelRenderer) {
@@ -540,9 +550,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const step = STEP[renderer.turn];
     // While the recap shows, the header is about the turn it recaps, the one before the run's.
     const turnNumber = turnOf(run, renderer, kind === 'recap' ? run.sim.week - step : run.sim.week);
-    const day = kind === 'moment' ? currentMoment(run)!.day : kind === 'reaction' ? (run.week.find((m) => m.id === reaction!.momentId)?.day ?? -1) : kind === 'done' ? 5 : -1;
-    // A month's or a quarter's strip shows the current week's five days.
-    const now = kind === 'done' ? 5 : renderer.turn !== 'week' && day >= 0 ? day % 5 : day;
+    const now = stripDay(run, kind, renderer.turn);
     const toReview = weeksToReview(run, options.deps);
     return h(
       'section',
@@ -551,14 +559,10 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         'header',
         { class: 'status' },
         h('div', { class: 'week-number' }, `${capital(renderer.turn)} `, h('strong', { 'data-field': 'week' }, turnNumber), ' · review in ', h('strong', { 'data-field': 'weeks-to-review' }, toReview === undefined ? '?' : toReview / step), ` ${renderer.turn}s`),
-        h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': i < now ? 'past' : i === now ? 'now' : 'ahead' }, d.slice(0, 3)))),
+        h('ol', { 'data-panel': 'days', class: 'days' }, DAYS.map((d, i) => h('li', { 'data-day': i, 'data-state': dayState(i, now) }, d.slice(0, 3)))),
         h('div', { class: 'energy' }, 'Energy ', meter(status.energy, 4), ' ', h('strong', { 'data-field': 'energy' }, status.edge?.at ? 'at the edge' : bandWord('energy', status.energy)),
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
-        status.edge && status.edge.weeks > 0
-          ? h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${status.edge.weeks} ${status.edge.weeks === 1 ? renderer.turn : `${renderer.turn}s`} at the edge. ${status.edge.limit} in a row and you burn out.`)
-          : status.edge && status.energy === 0
-            ? h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.")
-            : null,
+        edgeWarning(status, renderer.turn),
         // @spec UI-WEEK-017: the rule toward the player's own promotion stays in view between reviews
         ((line) => (line ? h('p', { class: 'promotion', 'data-field': 'promotion' }, line) : null))(run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review, then takes two reviews in a row rated exceeds or better.'),
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
@@ -872,26 +876,26 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     );
   }
 
+  /** The screen for a run's phase, or the unavailable screen for a level the game does not have. */
+  function runScreen(run: Run): HTMLElement {
+    const found = levelOf(run);
+    if (!found) return unavailableScreen(run);
+    const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts, refresh: render };
+    switch (run.phase) {
+      case 'week':
+        return weekScreen(ctx, found.renderer);
+      case 'review':
+        return reviewScreen(ctx, found.renderer);
+      case 'handover':
+        return handoverScreen(ctx);
+      default:
+        return endedScreen(run, found.renderer, ctx.view);
+    }
+  }
+
   function render() {
     const focus = focusKey(root);
-    let screen: Child;
-    if (state.screen === 'start') screen = startScreen(state.seed);
-    else {
-      const run = state.run;
-      const found = levelOf(run);
-      if (!found) screen = unavailableScreen(run);
-      else {
-        const ctx: ScreenContext = { run, deps: options.deps, view: found.level.view(run.level, run.sim), send, errorFor, drafts, refresh: render };
-        screen =
-          run.phase === 'week'
-            ? weekScreen(ctx, found.renderer)
-            : run.phase === 'review'
-              ? reviewScreen(ctx, found.renderer)
-              : run.phase === 'handover'
-                ? handoverScreen(ctx)
-                : endedScreen(run, found.renderer, ctx.view);
-      }
-    }
+    const screen = state.screen === 'start' ? startScreen(state.seed) : runScreen(state.run);
     root.replaceChildren();
     const errors = contentErrors();
     if (errors) root.append(errors as Node);
@@ -906,6 +910,19 @@ export function createApp(root: HTMLElement, options: AppOptions) {
 
   render();
   return { state: (): AppState => structuredClone(state) };
+}
+
+const dayState = (i: number, now: number) => {
+  if (i < now) return 'past';
+  return i === now ? 'now' : 'ahead';
+};
+
+/** The burnout warning: how many turns the player has ended at the edge, or that they are close to it. */
+function edgeWarning(status: ReturnType<LevelRenderer['status']>, turn: LevelRenderer['turn']): HTMLElement | null {
+  const edge = status.edge;
+  if (edge && edge.weeks > 0) return h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${edge.weeks} ${edge.weeks === 1 ? turn : `${turn}s`} at the edge. ${edge.limit} in a row and you burn out.`);
+  if (edge && status.energy === 0) return h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.");
+  return null;
 }
 
 /** A meter from 0 to `max`; its range is set as properties, which every DOM honours, before its value. */

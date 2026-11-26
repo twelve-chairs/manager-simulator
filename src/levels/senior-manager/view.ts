@@ -1,5 +1,5 @@
 import { band } from '../line-manager';
-import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Rating, type SimState } from '../../sim';
+import { behindScheduleProjects, overdueProjects, type HistoryEntry, type Person, type Rating, type SimState } from '../../sim';
 import { leadOf } from './core';
 import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
@@ -67,6 +67,35 @@ const memoryOf = (history: HistoryEntry[]) =>
 
 const better = { up: (b: number) => Math.min(4, b + 1), down: (b: number) => Math.max(0, b - 1) };
 
+/** A manager as the player knows them: bands, and their want only once the player has learned it. */
+function managerView(level: SeniorState, person: Person, teamId: string): ManagerView {
+  return {
+    id: person.id,
+    name: person.name,
+    personality: person.personality ?? null,
+    teamId,
+    performance: person.performance,
+    motivation: band(person.motivation),
+    stress: band(person.stress),
+    skill: band(person.skill),
+    want: level.learnedWants[person.id] ? person.want : 'unknown',
+    memory: memoryOf(person.history),
+  };
+}
+
+const scheduleOf = (id: string, overdue: ReadonlySet<string>, behind: ReadonlySet<string>) => {
+  if (overdue.has(id)) return 'overdue';
+  return behind.has(id) ? 'behind' : 'onSchedule';
+};
+
+/** A team's active projects in id order, each with its schedule. */
+function projectsView(sim: SimState, teamId: string, overdue: ReadonlySet<string>, behind: ReadonlySet<string>): TeamView['projects'] {
+  return Object.values(sim.projects)
+    .filter((p) => p.teamId === teamId && p.status === 'active')
+    .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+    .map((p) => ({ id: p.id, name: p.name, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: scheduleOf(p.id, overdue, behind) }));
+}
+
 /** The player's view: managers as people, teams as their managers report them unless the player has seen for themselves. */
 // @spec SENIOR-VIS-001, SENIOR-VIS-002, SENIOR-VIS-003, SENIOR-VIS-004, SENIOR-VIS-005, SENIOR-VIS-006, SENIOR-ORG-002
 export function seniorView(level: SeniorState, sim: SimState): SeniorView {
@@ -79,20 +108,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
     const a = team.aggregate!;
     const m = leadOf(level, sim, teamId);
     const person = m ? sim.people[m]! : null;
-    if (person) {
-      managers.push({
-        id: person.id,
-        name: person.name,
-        personality: person.personality ?? null,
-        teamId,
-        performance: person.performance,
-        motivation: band(person.motivation),
-        stress: band(person.stress),
-        skill: band(person.skill),
-        want: level.learnedWants[person.id] ? person.want : 'unknown',
-        memory: memoryOf(person.history),
-      });
-    }
+    if (person) managers.push(managerView(level, person, teamId));
     const truth = (m !== null && level.habits.oversight[m] === 'close') || level.listenedTo.includes(teamId);
     // A struggling or distrustful manager tells the player their team is doing a little better than it is.
     const rosy = !truth && person !== null && (band(person.skill) < 2 || person.trust < SENIOR_TUNING.candidTrust);
@@ -105,10 +121,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
       stress: rosy ? better.down(band(a.stress)) : band(a.stress),
       attritionRisk: rosy ? better.down(band(a.attritionRisk)) : band(a.attritionRisk),
       truth,
-      projects: Object.values(sim.projects)
-        .filter((p) => p.teamId === teamId && p.status === 'active')
-        .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
-        .map((p) => ({ id: p.id, name: p.name, progress: p.progress, scope: p.scope, deadlineWeek: p.deadlineWeek, schedule: overdue.has(p.id) ? 'overdue' : behind.has(p.id) ? 'behind' : 'onSchedule' })),
+      projects: projectsView(sim, teamId, overdue, behind),
     });
   }
   // @spec SENIOR-GOAL-002

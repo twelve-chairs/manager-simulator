@@ -1,5 +1,5 @@
 import { compareCodeUnits } from '../sim';
-import type { SimState } from '../sim';
+import type { HistoryEntry, SimState } from '../sim';
 import { propertyValue, ratingRank, type Value } from './properties';
 import type { Condition, EngineState, Operand, Operator, RoleKind } from './types';
 
@@ -109,8 +109,6 @@ function candidates(sim: SimState, kind: RoleKind): string[] {
 
 /** Active people, existing teams or active projects of a kind, in id order. */
 export const candidatesOf = (sim: SimState, kind: RoleKind) => candidates(sim, kind).sort(compareCodeUnits);
-
-type HistoryEntry = SimState['people'][string]['history'][number];
 
 /** Whether a history entry matches every filter a history condition names: situation, choice, action, note, rating and window. */
 function historyMatches(h: HistoryEntry, c: Record<string, unknown>, ctx: EvalContext): boolean {
