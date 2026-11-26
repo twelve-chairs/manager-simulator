@@ -58,6 +58,36 @@ describe('the watch line', () => {
   });
 
   // @spec LINE-RECAP-007
+  it('then the restless engineer with the fewest weeks left, before anyone over a line, but after the player at the edge', () => {
+    const { level, sim } = calm();
+    const [a, b, c] = engineers(sim);
+    const restless = (s: SimState) => {
+      s.people[a!]!.restlessSince = s.week - 1; // four weeks left
+      s.people[b!]!.restlessSince = s.week - 3; // two weeks left
+      over(s, c!, 9);
+    };
+    expect(played(level, sim, restless).watch).toMatchObject({ kind: 'restless', subject: b, weeksLeft: 2 });
+    const edge = played({ ...level, burnoutWeeks: 1 }, sim, (s) => {
+      restless(s);
+      s.player.stress = LINE_TUNING.burnoutThreshold;
+    }).watch;
+    expect(edge?.kind).toBe('edge');
+  });
+
+  // @spec LINE-RECAP-010
+  it('says a restless engineer may leave within the weeks left, and what they want or that you don’t know it', () => {
+    const { level, sim } = calm();
+    const [a] = engineers(sim);
+    const p = sim.people[a!]!;
+    const unknown = played(level, sim, (s) => (s.people[a!]!.restlessSince = s.week - 1)).watch!;
+    expect(unknown.text).toBe(`${p.name} is restless and may leave within 4 weeks, and you don't know what they want.`);
+    const known = { ...level, learnedWants: { ...level.learnedWants, [a!]: { want: p.want, week: 0 } } };
+    const words = { growth: 'a chance to grow', recognition: 'recognition for their work', stability: 'a steady week', autonomy: 'room to work their own way' }[p.want];
+    const last = played(known, sim, (s) => (s.people[a!]!.restlessSince = s.week - 4)).watch!;
+    expect(last.text).toBe(`${p.name} is restless and may leave within 1 week, unless they get ${words}.`);
+  });
+
+  // @spec LINE-RECAP-007
   it('then the engineer longest over a departure line, of either kind', () => {
     const { level, sim } = calm();
     const [a, b, c] = engineers(sim);

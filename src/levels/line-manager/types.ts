@@ -163,7 +163,7 @@ export interface LineState {
 }
 
 /** The kinds of watch line, most pressing first. */
-export const WATCH_KINDS = ['edge', 'over', 'nearing', 'project'] as const;
+export const WATCH_KINDS = ['edge', 'restless', 'over', 'nearing', 'project'] as const;
 export type WatchKind = (typeof WATCH_KINDS)[number];
 
 /** Why an engineer is over or nearing a line, when the level can name it. */
@@ -178,7 +178,7 @@ export interface Watch {
   line?: 'stress' | 'motivation';
   /** Weeks over the line, or at the edge. */
   weeks?: number;
-  /** For the player: weeks at the edge left before burnout. */
+  /** For the player: weeks at the edge left before burnout; for a restless engineer: weeks left before their notice runs out. */
   weeksLeft?: number;
   cause?: WatchCause;
   text: string;

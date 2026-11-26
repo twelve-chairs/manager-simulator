@@ -50,6 +50,17 @@ function edgeCandidates(level: LineState, sim: SimState): Candidate[] {
   return [{ kind: 'edge', subject: 'player', weeks: level.burnoutWeeks, weeksLeft: LINE_TUNING.burnoutWeeks - level.burnoutWeeks }];
 }
 
+/** Weeks a restless engineer has left, counting the coming week as the first: they quit at the advance their notice runs out. */
+const restlessWeeksLeft = (sim: SimState, since: number) => since + TUNING.restlessNoticeWeeks - sim.week + 1;
+
+/** Restless engineers, fewest weeks left first. */
+function restlessCandidates(sim: SimState, people: string[]): Candidate[] {
+  return people
+    .filter((id) => sim.people[id]!.restlessSince !== null)
+    .map((id) => ({ kind: 'restless' as const, subject: id, weeksLeft: restlessWeeksLeft(sim, sim.people[id]!.restlessSince!) }))
+    .sort((a, b) => a.weeksLeft - b.weeksLeft || compareCodeUnits(a.subject, b.subject));
+}
+
 /** Engineers over a departure line, longest over first. */
 function overCandidates(level: LineState, sim: SimState, people: string[]): Candidate[] {
   const overs: { id: string; line: 'stress' | 'motivation'; weeks: number }[] = [];
@@ -108,7 +119,7 @@ function projectCandidates(level: LineState, sim: SimState): Candidate[] {
 /** Every warning that holds, in the order the watch line weighs them. */
 function candidates(level: LineState, sim: SimState): Candidate[] {
   const people = teamEngineers(level, sim);
-  return [...edgeCandidates(level, sim), ...overCandidates(level, sim, people), ...nearingCandidates(level, sim, people), ...projectCandidates(level, sim)];
+  return [...edgeCandidates(level, sim), ...restlessCandidates(sim, people), ...overCandidates(level, sim, people), ...nearingCandidates(level, sim, people), ...projectCandidates(level, sim)];
 }
 
 const withCause = (cause: WatchCause | undefined) => (cause ? { cause } : {});
@@ -167,11 +178,20 @@ function habitSentence(level: LineState, subject: string, cause: WatchCause | un
   return ` The ${habit} habit has added to their load in ${weeks} of the last ${LINE_TUNING.watchWeeks} weeks.`;
 }
 
+/** A restless engineer in words: how soon they may leave, and what would keep them, or that the player doesn't know. */
+// @spec LINE-RECAP-010
+function restlessText(level: LineState, sim: SimState, w: Candidate, name: string): string {
+  const p = sim.people[w.subject]!;
+  const keep = level.learnedWants[w.subject]?.want === p.want ? `, unless they get ${WANT_WORDS[p.want]}.` : `, and you don't know what they want.`;
+  return `${name} is restless and may leave within ${weeksWord(w.weeksLeft!)}${keep}`;
+}
+
 /** The watch line in words: who, what is close, and the lever where the level knows it. */
 function textOf(level: LineState, sim: SimState, w: Candidate): string {
   if (w.kind === 'edge') return edgeText(w);
   if (w.kind === 'project') return projectText(sim, w);
   const name = sim.people[w.subject]!.name;
+  if (w.kind === 'restless') return restlessText(level, sim, w, name);
   const because = causeClause(w.cause);
   const habitLine = habitSentence(level, w.subject, w.cause);
   if (w.kind === 'over') {
