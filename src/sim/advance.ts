@@ -16,7 +16,7 @@ import {
   type Ctx,
 } from './core';
 import { TUNING } from './tuning';
-import type { Cause, OperationResult, SimState } from './types';
+import type { Cause, OperationResult, Person, SimState, Team } from './types';
 
 const rule = (ruleId: string): Cause => ({ kind: 'rule', ruleId });
 
@@ -80,34 +80,39 @@ function wantDrift(ctx: Ctx, weeks: number) {
   }
 }
 
+/** Counts a person's weeks of low motivation and high stress, then rolls whether they quit this step. */
+function mayQuit(ctx: Ctx, p: Person, weeks: number, cause: Cause) {
+  const target = { kind: 'person', id: p.id } as const;
+  const low = p.motivation < TUNING.lowMotivationLine ? p.lowMotivationWeeks + weeks : 0;
+  record(ctx, cause, target, 'lowMotivationWeeks', p.lowMotivationWeeks, low);
+  p.lowMotivationWeeks = low;
+  const high = p.stress > TUNING.highStressLine ? p.highStressWeeks + weeks : 0;
+  record(ctx, cause, target, 'highStressWeeks', p.highStressWeeks, high);
+  p.highStressWeeks = high;
+
+  const weekly =
+    (TUNING.baseQuitChancePerWeek +
+      (low / 52) * TUNING.lowMotivationQuitChancePerYear +
+      (high / 52) * TUNING.highStressQuitChancePerYear) *
+    (1.5 - p.trust / 100);
+  if (random(ctx) < chanceOver(weekly, weeks)) depart(ctx, p, 'quit', cause);
+}
+
+/** An aggregate team loses heads one roll at a time, each at its attrition risk. */
+function aggregateAttrition(ctx: Ctx, team: Team, weeks: number, cause: Cause) {
+  const agg = team.form === 'aggregate' ? team.aggregate : undefined;
+  if (!agg) return;
+  const perHead = chanceOver((agg.attritionRisk / 100) * TUNING.aggregateAttritionPerWeek, weeks);
+  let lost = 0;
+  for (let i = 0; i < agg.headcount; i++) if (random(ctx) < perHead) lost++;
+  if (lost > 0) loseHeads(ctx, team, lost, cause);
+}
+
 function departure(ctx: Ctx, weeks: number) {
   const cause = rule('rule.departure');
-  for (const p of activePeople(ctx.s)) {
-    // People outside the organization never quit (SIM-OUT-003).
-    if (p.teamId === null) continue;
-    const target = { kind: 'person', id: p.id } as const;
-    const low = p.motivation < TUNING.lowMotivationLine ? p.lowMotivationWeeks + weeks : 0;
-    record(ctx, cause, target, 'lowMotivationWeeks', p.lowMotivationWeeks, low);
-    p.lowMotivationWeeks = low;
-    const high = p.stress > TUNING.highStressLine ? p.highStressWeeks + weeks : 0;
-    record(ctx, cause, target, 'highStressWeeks', p.highStressWeeks, high);
-    p.highStressWeeks = high;
-
-    const weekly =
-      (TUNING.baseQuitChancePerWeek +
-        (low / 52) * TUNING.lowMotivationQuitChancePerYear +
-        (high / 52) * TUNING.highStressQuitChancePerYear) *
-      (1.5 - p.trust / 100);
-    if (random(ctx) < chanceOver(weekly, weeks)) depart(ctx, p, 'quit', cause);
-  }
-  for (const team of teams(ctx.s)) {
-    const agg = team.form === 'aggregate' ? team.aggregate : undefined;
-    if (!agg) continue;
-    const perHead = chanceOver((agg.attritionRisk / 100) * TUNING.aggregateAttritionPerWeek, weeks);
-    let lost = 0;
-    for (let i = 0; i < agg.headcount; i++) if (random(ctx) < perHead) lost++;
-    if (lost > 0) loseHeads(ctx, team, lost, cause);
-  }
+  // People outside the organization never quit (SIM-OUT-003).
+  for (const p of activePeople(ctx.s)) if (p.teamId !== null) mayQuit(ctx, p, weeks, cause);
+  for (const team of teams(ctx.s)) aggregateAttrition(ctx, team, weeks, cause);
 }
 
 function playerStanding(ctx: Ctx, weeks: number) {

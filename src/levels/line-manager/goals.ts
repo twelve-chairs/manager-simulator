@@ -1,7 +1,7 @@
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
 import { isEngineer, nameOf, pick, random, teamEngineers, teamProjects } from './core';
 import { LINE_TUNING } from './tuning';
-import type { Goal, LineState } from './types';
+import type { Goal, GoalKind, LineState } from './types';
 
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
@@ -57,47 +57,61 @@ export interface GoalStatus {
   dropped: boolean;
 }
 
+type StatusOf = (goal: Goal, level: LineState, sim: SimState) => GoalStatus;
+
+function shipOnTime(goal: Goal, level: LineState, sim: SimState): GoalStatus {
+  const p = sim.projects[goal.projectId!];
+  const name = p?.name ?? goal.projectId!;
+  const done = level.completions[goal.projectId!];
+  const deadline = goal.startValue ?? p?.deadlineWeek ?? 0;
+  const achieved = p !== undefined && done !== undefined && done <= deadline;
+  let progress = 'Gone';
+  if (achieved) progress = 'Shipped on time';
+  else if (p) progress = `${Math.round((100 * p.progress) / p.scope)}% done, due week ${deadline + 1}`;
+  return { text: `Ship ${name} by its deadline`, progress, achieved, dropped: false };
+}
+
+function onSchedule(_goal: Goal, level: LineState, sim: SimState): GoalStatus {
+  const active = teamProjects(level, sim);
+  const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
+  const fine = active.filter((id) => !troubled.has(id)).length;
+  // @spec LINE-GOAL-004
+  // With nothing running, the goal holds only if the team was not idle for most of the quarter.
+  const achieved = active.length ? fine === active.length : level.idleWeeks <= LINE_TUNING.idleQuarterWeeks;
+  return { text: 'Keep every project on schedule', progress: active.length ? `${fine} of ${active.length} on schedule` : 'No projects running', achieved, dropped: false };
+}
+
+function keepEveryone(goal: Goal, level: LineState, sim: SimState): GoalStatus {
+  const quits = Object.values(sim.people).filter((p) => p.teamId === level.teamId && p.departure?.reason === 'quit' && p.departure.week >= goal.periodStart);
+  const progress = quits.length ? `${quits.map((p) => p.name).join(', ')} quit` : 'Nobody has quit';
+  return { text: 'Keep everyone on the team', progress, achieved: quits.length === 0, dropped: false };
+}
+
+/** Skill shows only as a band, so growth is told in words rather than points. */
+function growthWords(gained: number, target: number): string {
+  if (gained >= target) return 'There';
+  if (gained >= target / 2) return 'Halfway there';
+  return gained > 0 ? 'Started' : 'Not yet';
+}
+
+function growSomeone(goal: Goal, level: LineState, sim: SimState): GoalStatus {
+  const id = goal.personId!;
+  const name = nameOf(sim, id);
+  if (!isEngineer(level, sim, id)) return { text: `Help ${name} grow`, progress: `${name} left, so this goal no longer counts`, achieved: false, dropped: true };
+  const gained = sim.people[id]!.skill - goal.startValue!;
+  return { text: `Help ${name} grow`, progress: growthWords(gained, goal.target!), achieved: gained >= goal.target!, dropped: false };
+}
+
+function lowerStress(goal: Goal, level: LineState, sim: SimState): GoalStatus {
+  const stress = average(teamEngineers(level, sim).map((id) => sim.people[id]!.stress));
+  const achieved = stress <= goal.target!;
+  return { text: 'Bring the team’s stress down', progress: achieved ? 'The team is calmer' : 'Still stretched', achieved, dropped: false };
+}
+
+const STATUS_OF: Record<GoalKind, StatusOf> = { shipOnTime, onSchedule, keepEveryone, growSomeone, lowerStress };
+
 /** What a goal asks for, how it is going, and whether it is met as of now. */
 // @spec LINE-GOAL-002
 export function goalStatus(goal: Goal, level: LineState, sim: SimState): GoalStatus {
-  switch (goal.kind) {
-    case 'shipOnTime': {
-      const p = sim.projects[goal.projectId!];
-      const name = p?.name ?? goal.projectId!;
-      const done = level.completions[goal.projectId!];
-      const deadline = goal.startValue ?? p?.deadlineWeek ?? 0;
-      const achieved = p !== undefined && done !== undefined && done <= deadline;
-      const progress = achieved ? 'Shipped on time' : p ? `${Math.round((100 * p.progress) / p.scope)}% done, due week ${deadline + 1}` : 'Gone';
-      return { text: `Ship ${name} by its deadline`, progress, achieved, dropped: false };
-    }
-    case 'onSchedule': {
-      const active = teamProjects(level, sim);
-      const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
-      const fine = active.filter((id) => !troubled.has(id)).length;
-      // @spec LINE-GOAL-004
-      // With nothing running, the goal holds only if the team was not idle for most of the quarter.
-      const achieved = active.length ? fine === active.length : level.idleWeeks <= LINE_TUNING.idleQuarterWeeks;
-      return { text: 'Keep every project on schedule', progress: active.length ? `${fine} of ${active.length} on schedule` : 'No projects running', achieved, dropped: false };
-    }
-    case 'keepEveryone': {
-      const quits = Object.values(sim.people).filter((p) => p.teamId === level.teamId && p.departure?.reason === 'quit' && p.departure.week >= goal.periodStart);
-      const progress = quits.length ? `${quits.map((p) => p.name).join(', ')} quit` : 'Nobody has quit';
-      return { text: 'Keep everyone on the team', progress, achieved: quits.length === 0, dropped: false };
-    }
-    case 'growSomeone': {
-      const id = goal.personId!;
-      const name = nameOf(sim, id);
-      if (!isEngineer(level, sim, id)) return { text: `Help ${name} grow`, progress: `${name} left, so this goal no longer counts`, achieved: false, dropped: true };
-      const gained = sim.people[id]!.skill - goal.startValue!;
-      const target = goal.target!;
-      // Skill shows only as a band, so progress is told in words rather than points.
-      const progress = gained >= target ? 'There' : gained >= target / 2 ? 'Halfway there' : gained > 0 ? 'Started' : 'Not yet';
-      return { text: `Help ${name} grow`, progress, achieved: gained >= target, dropped: false };
-    }
-    case 'lowerStress': {
-      const stress = average(teamEngineers(level, sim).map((id) => sim.people[id]!.stress));
-      const achieved = stress <= goal.target!;
-      return { text: 'Bring the team’s stress down', progress: achieved ? 'The team is calmer' : 'Still stretched', achieved, dropped: false };
-    }
-  }
+  return STATUS_OF[goal.kind](goal, level, sim);
 }

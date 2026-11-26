@@ -164,29 +164,39 @@ function handOver(run: Run, level: AnyLevel, content: Situation[], deps: Depende
   return { ok: true };
 }
 
+type Current = NonNullable<ReturnType<typeof currentMoment>>;
+
+/** A level moment is answered by the level; one the level still reports open has a further step (calibration over the curve) and stays current. */
+function answerLevel(run: Run, level: AnyLevel, m: Current, choiceId: string): Outcome {
+  const chosen = level.choose(run.level, run.sim, m.id, choiceId);
+  if (!chosen.ok) return chosen;
+  run.level = chosen.level;
+  run.sim = chosen.sim;
+  const further = level.moments(run.level, run.sim).some((x) => x.id === m.id && x.open);
+  m.status = further ? 'open' : 'answered';
+  m.text = chosen.reaction;
+  return { ok: true };
+}
+
+/** A situation is answered by the situation engine, which may find it no longer applies and expire it. */
+function answerSituation(run: Run, level: AnyLevel, content: Situation[], m: Current, choiceId: string): Outcome {
+  const result = resolveChoice(run.engine, run.sim, content, m.id, choiceId, timingOf(run, level));
+  if (result.kind === 'error') return { ok: false, error: result.message };
+  run.engine = result.engine;
+  run.sim = result.sim;
+  m.status = result.kind === 'resolved' ? 'answered' : 'expired';
+  if (result.kind === 'resolved') m.text = result.aftermath;
+  return { ok: true };
+}
+
 /** Answers the current moment through its owner, then expires level moments the answer left impossible to answer. */
 function answer(run: Run, level: AnyLevel, content: Situation[], momentId: unknown, choiceId: unknown): Outcome {
   const m = currentMoment(run);
   if (!m) return { ok: false, error: 'no moment of the week is still open' };
   if (m.id !== momentId) return { ok: false, error: `${String(momentId)} is not the current moment; ${m.id} is` };
   if (typeof choiceId !== 'string') return { ok: false, error: 'an answer names a choice' };
-  if (m.source === 'level') {
-    const chosen = level.choose(run.level, run.sim, m.id, choiceId);
-    if (!chosen.ok) return chosen;
-    run.level = chosen.level;
-    run.sim = chosen.sim;
-    // A moment the level still reports open has a further step (calibration over the curve): it stays current.
-    const further = level.moments(run.level, run.sim).some((x) => x.id === m.id && x.open);
-    m.status = further ? 'open' : 'answered';
-    m.text = chosen.reaction;
-  } else {
-    const result = resolveChoice(run.engine, run.sim, content, m.id, choiceId, timingOf(run, level));
-    if (result.kind === 'error') return { ok: false, error: result.message };
-    run.engine = result.engine;
-    run.sim = result.sim;
-    m.status = result.kind === 'resolved' ? 'answered' : 'expired';
-    if (result.kind === 'resolved') m.text = result.aftermath;
-  }
+  const answered = m.source === 'level' ? answerLevel(run, level, m, choiceId) : answerSituation(run, level, content, m, choiceId);
+  if (!answered.ok) return answered;
   const stillOpen = new Set(level.moments(run.level, run.sim).filter((x) => x.open).map((x) => x.id));
   for (const x of run.week) if (x.source === 'level' && x.status === 'open' && !stillOpen.has(x.id)) x.status = 'expired';
   return { ok: true };
