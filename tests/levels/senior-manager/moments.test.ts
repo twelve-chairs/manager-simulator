@@ -365,3 +365,60 @@ describe('a month’s moments', () => {
     for (const m of r.level.moments) expect(m.status).toBe('waited');
   });
 });
+
+describe('skip-level problems that stay settled', () => {
+  /** The month after a skip-level with team `t`, with the level's record of settled and unsettled problems given. */
+  const surfacedFor = (level: SeniorState, sim: SimState, t: string) => beginMonth({ ...level, surfaced: [{ teamId: t, week: sim.week - 4 }] }, sim).moments.find((m) => m.kind === 'surfaced');
+
+  // @spec SENIOR-HABIT-008, SENIOR-HABIT-011
+  it('does not raise a settled friction again for half a year, and has nothing to raise once all are settled', () => {
+    const { level, sim } = calm(4);
+    const t = level.teamIds[1]!;
+    const first = surfacedFor(level, sim, t)!;
+    expect(first.issue).toMatch(/^everyday:/);
+    // settled by stepping in
+    const answered = chooseSenior(beginMonth({ ...level, surfaced: [{ teamId: t, week: sim.week - 4 }] }, sim), sim, first.id, 'stepIn');
+    if (!answered.ok) throw new Error(answered.error);
+    expect(answered.level.issues[t]![first.issue!]).toMatchObject({ settled: true, answer: 'stepIn' });
+    // the same month's draw again: another friction, not the settled one
+    const next = surfacedFor(answered.level, sim, t)!;
+    expect(next.issue).not.toBe(first.issue);
+    // every friction settled lately: nothing new to raise
+    const all = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`everyday:${i}`, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
+    expect(surfacedFor({ ...level, issues: { [t]: all } }, sim, t)).toBeUndefined();
+    // half a year on, a settled friction can come back
+    const later = edit(sim, (s) => (s.week += T.issueSettledWeeks + 1));
+    expect(surfacedFor({ ...level, issues: { [t]: all } }, later, t)).toBeDefined();
+  });
+
+  // @spec SENIOR-HABIT-011
+  it('settles a problem only by an answer that fixed it, and brings an unsettled one back saying how it was answered', () => {
+    const { level, sim } = calm(4);
+    const t = level.teamIds[1]!;
+    const m = (sim.teams[t]!.leader as { id: string }).id;
+    const settles = (skill: number, choice: string) => {
+      const state = edit(sim, (s) => (s.people[m]!.skill = skill));
+      const begun = beginMonth({ ...level, surfaced: [{ teamId: t, week: state.week - 4 }] }, state);
+      const moment = begun.moments.find((x) => x.kind === 'surfaced')!;
+      const r = chooseSenior(begun, state, moment.id, choice);
+      if (!r.ok) throw new Error(r.error);
+      return { r, issue: moment.issue!, state };
+    };
+    expect(Object.values(settles(25, 'coach').r.level.issues[t]!)[0]!.settled).toBe(true);
+    expect(Object.values(settles(10, 'coach').r.level.issues[t]!)[0]!.settled).toBe(false);
+    expect(Object.values(settles(45, 'letThem').r.level.issues[t]!)[0]!.settled).toBe(true);
+    expect(Object.values(settles(25, 'letThem').r.level.issues[t]!)[0]!.settled).toBe(false);
+    // left unsettled, it comes back as itself, saying so
+    const { r, issue, state } = settles(10, 'letThem');
+    // four months on, the projects' plans moved with the clock so that nothing is behind
+    const later = edit(state, (s) => {
+      s.week += 16;
+      for (const p of Object.values(s.projects)) Object.assign(p, { startWeek: p.startWeek + 16, deadlineWeek: p.deadlineWeek + 16 });
+    });
+    const again = surfacedFor(r.level, later, t)!;
+    expect(again.issue).toBe(issue);
+    expect(again.title).toMatch(/again/);
+    expect(again.text).toMatch(/again/);
+    expect(again.text).toContain(`Last time you left it with ${r.sim.people[m]!.name}`);
+  });
+});

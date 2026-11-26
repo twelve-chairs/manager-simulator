@@ -88,6 +88,8 @@ export interface SeniorMoment {
   detail?: 'promote' | 'letGo';
   /** For a final evaluation: the manager. */
   managerId?: string;
+  /** For a surfaced problem: which problem it is, so the answer can be recorded against it. */
+  issue?: string;
   /** For calibration: each team's proposal. */
   calibration?: CalibrationEntry[];
   /** For calibration: the most top ratings the group may hold. */
@@ -118,6 +120,8 @@ export interface SeniorState {
   skipRotation: number;
   /** Problems skip-level listening surfaced, to become moments next month. */
   surfaced: { teamId: string; week: number }[];
+  /** Each team's surfaced problems the player has answered, by problem: when, how, and whether the answer settled it. */
+  issues: Record<string, Record<string, { week: number; settled: boolean; answer: 'coach' | 'stepIn' | 'letThem' }>>;
   /** Months in a row the player has ended at the edge. */
   burnoutMonths: number;
   /** Each team's headcount as the level last saw it, so a lost head can be noticed. */

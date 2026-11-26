@@ -67,18 +67,34 @@ const activeProjects = (sim: SimState, teamId: string) =>
     .filter((p) => p.teamId === teamId && p.status === 'active')
     .sort((a, b) => b.risk - a.risk || (a.id < b.id ? -1 : 1));
 
-/** What a team's engineers raise at a skip-level, from the team as it really is: the most pressing of its troubles. */
+/**
+ * What a team's engineers raise at a skip-level, from the team as it really is: the most pressing of its troubles, else
+ * an everyday friction: one raised before and left unsettled, else the first in turn not settled lately; none when every
+ * friction has been settled lately.
+ */
 // @spec SENIOR-HABIT-008
-function surfacedIssue(sim: SimState, teamId: string, behind: ReadonlySet<string>): string {
+function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind: ReadonlySet<string>): { key: string; text: string } | undefined {
   const slipping = activeProjects(sim, teamId).find((p) => behind.has(p.id));
-  if (slipping) return `${slipping.name} has been slipping for weeks, and nobody upstream seems to know`;
+  if (slipping) return { key: `slipping:${slipping.id}`, text: `${slipping.name} has been slipping for weeks, and nobody upstream seems to know` };
   const a = sim.teams[teamId]!.aggregate!;
-  if (band(a.stress) >= T.strainedBand) return 'on-call and late nights are wearing everyone down';
-  if (band(a.attritionRisk) >= 2) return 'a couple of people have started looking around';
-  if (band(a.motivation) <= 1) return 'nobody can say any more why the work matters';
-  // Nothing badly wrong: one of the everyday frictions, a different one month to month and team to team.
-  return EVERYDAY_ISSUES[(Math.floor(sim.week / T.weeksPerMonth) + Number(teamId.replace(/\D/g, '') || 0)) % EVERYDAY_ISSUES.length]!;
+  if (band(a.stress) >= T.strainedBand) return { key: 'stress', text: 'on-call and late nights are wearing everyone down' };
+  if (band(a.attritionRisk) >= 2) return { key: 'attrition', text: 'a couple of people have started looking around' };
+  if (band(a.motivation) <= 1) return { key: 'motivation', text: 'nobody can say any more why the work matters' };
+  const record = level.issues[teamId] ?? {};
+  const keys = EVERYDAY_ISSUES.map((_, i) => `everyday:${i}`);
+  const unsettled = keys.find((k) => record[k] && !record[k]!.settled);
+  const start = (Math.floor(sim.week / T.weeksPerMonth) + Number(teamId.replace(/\D/g, '') || 0)) % EVERYDAY_ISSUES.length;
+  const fresh = keys.map((_, i) => keys[(start + i) % keys.length]!).find((k) => !(record[k]?.settled && sim.week - record[k]!.week < T.issueSettledWeeks));
+  const key = unsettled ?? fresh;
+  return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]! };
 }
+
+/** How the player answered a problem last time, as the engineers' second telling puts it. */
+const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem', (manager: string) => string> = {
+  coach: (manager) => `coached ${manager} through it`,
+  stepIn: () => 'fixed it yourself',
+  letThem: (manager) => `left it with ${manager}`,
+};
 
 /** What engineers raise at a skip-level when nothing is badly wrong. */
 const EVERYDAY_ISSUES = [
@@ -119,7 +135,23 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   // Problems skip-level listening surfaced last month.
   const surfaced = new Set(s.surfaced.map((x) => x.teamId));
   for (const t of surfaced) {
-    drafts.push({ kind: 'surfaced', teamId: t, title: `What ${name(sim, t)} told you`, text: `At last month's skip-level, ${name(sim, t)}'s engineers told you ${surfacedIssue(sim, t, behind)}. ${managerName(s, sim, t)} hasn't mentioned it to you.`, choices: CHOICES.surfaced });
+    const issue = surfacedIssue(s, sim, t, behind);
+    // A healthy team whose frictions are all settled has nothing new to raise.
+    if (!issue) continue;
+    // @spec SENIOR-HABIT-011
+    const before = s.issues[t]?.[issue.key];
+    const again = before !== undefined && !before.settled;
+    const manager = managerName(s, sim, t);
+    drafts.push({
+      kind: 'surfaced',
+      teamId: t,
+      issue: issue.key,
+      title: again ? `What ${name(sim, t)} told you again` : `What ${name(sim, t)} told you`,
+      text: again
+        ? `At last month's skip-level, ${name(sim, t)}'s engineers told you again that ${issue.text.replace(/^that /, '')}. Last time you ${LAST_TIME[before.answer](manager)}, and it didn't hold.`
+        : `At last month's skip-level, ${name(sim, t)}'s engineers told you ${issue.text}. ${manager} hasn't mentioned it to you.`,
+      choices: CHOICES.surfaced,
+    });
   }
   // Escalations from teams under strain, at risk of losing people, or with a project behind.
   for (const t of s.teamIds) {
@@ -281,6 +313,13 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
     case 'surfaced':
     case 'escalation': {
       const skill = m ? band(sim.people[m]!.skill) : 0;
+      // @spec SENIOR-HABIT-011
+      // A surfaced problem is settled when the answer fixed it, and remembered either way.
+      if (moment.kind === 'surfaced' && moment.issue) {
+        const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
+        const settled = answer === 'stepIn' || (answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2);
+        (s.issues[t] ??= {})[moment.issue] = { week: sim.week, settled, answer };
+      }
       if (choiceId === 'stepIn') {
         effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
         reaction = `You sort it out yourself. ${who} watches, and next time will come to you again.`;
