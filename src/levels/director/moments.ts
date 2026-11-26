@@ -297,6 +297,140 @@ function split(s: DirectorState, sim0: SimState, groupId: string, promote: boole
   return { sim, groupId: id };
 }
 
+/** What a choice handler works on: the level's copy, the simulation before the choice, the moment, and the log to add to. */
+type Ctx = { s: DirectorState; sim0: SimState; m: DirectorMoment; choiceId: string; log: ChangeLogEntry[] };
+type Handled = Result<{ sim: SimState; reaction: string }>;
+
+function chooseFinalEvaluation({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  const lead = m.personId!;
+  s.heldEvaluations = s.heldEvaluations.filter((id) => id !== lead);
+  if (choiceId !== 'letGo') return { ok: true, sim: sim0, reaction: `${name(sim0, lead)} has one more period to turn it around.` };
+  const sim = apply(sim0, [{ type: 'remove', personId: lead, reason: 'fired', cause: { kind: 'action', actionId: 'director.finalEvaluation' } }], log);
+  s.letGo.push(lead);
+  return { ok: true, sim, reaction: `${name(sim0, lead)} leaves. Their group needs a new senior manager.` };
+}
+
+function chooseNewSenior({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  const g = m.groupId!;
+  if (choiceId !== 'promote') {
+    s.arriving[g] = sim0.week;
+    return { ok: true, sim: sim0, reaction: `You start a search. ${groupName(sim0, g)} waits a quarter for its new senior manager.` };
+  }
+  const promoted = generateSeniorManager(s, sim0, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
+  const sim = apply(sim0, [{ type: 'hire', teamId: g, person: promoted, cause: { kind: 'action', actionId: 'director.newSenior' } }, value('team', g, 'skill', -T.newSenior.promoteSkill, 'director.newSenior')], log);
+  s.leniency[promoted.id] = randomInt(s, [0, 2]);
+  s.joined.push(promoted.id);
+  return { ok: true, sim, reaction: `${promoted.name}, one of ${groupName(sim, g)}'s managers, steps up to lead it.` };
+}
+
+/** The placement a headcount choice stands for: the player's own, spread evenly, all to the most stressed group, or none. */
+function headcountPlan(s: DirectorState, sim: SimState, given: number, choiceId: string): Record<string, unknown> | null {
+  const groups = s.groupIds.filter((g) => sim.teams[g]);
+  if (choiceId.startsWith('place:')) return parse(choiceId.slice('place:'.length));
+  if (choiceId === 'spread') {
+    const plan: Record<string, number> = Object.fromEntries(groups.map((g) => [g, 0]));
+    for (let i = 0; i < given; i++) plan[groups[i % groups.length]!]! += 1;
+    return plan;
+  }
+  if (choiceId === 'neediest') {
+    const g = [...groups].sort((x, y) => sim.teams[y]!.aggregate!.stress - sim.teams[x]!.aggregate!.stress)[0]!;
+    return { [g]: given };
+  }
+  return {};
+}
+
+function chooseHeadcount({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  const plan = headcountPlan(s, sim0, m.heads ?? 0, choiceId);
+  if (!plan) return { ok: false, error: 'a placement must be JSON naming groups or bets' };
+  const r = place(s, sim0, m, plan, log);
+  if (!r.ok) return r;
+  return { ok: true, sim: r.sim, reaction: choiceId === 'hold' ? 'You hold the heads back. Your executive notices.' : 'The new heads start next week.' };
+}
+
+function chooseBets({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  if (choiceId === 'none') return { ok: true, sim: sim0, reaction: 'You fund none of them this time.' };
+  const plan = parse(choiceId.slice('fund:'.length));
+  if (!plan) return { ok: false, error: 'a funding must be JSON naming bets and groups' };
+  const r = fund(s, sim0, m, plan, log);
+  if (!r.ok) return r;
+  return { ok: true, sim: r.sim, reaction: 'The bets are on. Your executive will be watching them.' };
+}
+
+function chooseTrouble({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  const g = m.groupId!;
+  const lead = m.personId!;
+  const t = T.trouble;
+  if (choiceId === 'coach') {
+    const grows = band(sim0.people[lead]!.skill) >= 1;
+    const sim = apply(sim0, [value('team', g, 'stress', -t.coachFix, 'director.trouble'), ...(grows ? [value('person', lead, 'skill', t.coachGrowth, 'director.trouble')] : [])], log);
+    return { ok: true, sim, reaction: `${name(sim0, lead)} works it through with you, and owns the plan.` };
+  }
+  if (choiceId === 'decide') {
+    const sim = apply(sim0, [value('team', g, 'stress', -t.decideFix, 'director.trouble'), value('person', lead, 'trust', -t.decideTrust, 'director.trouble'), player('stress', t.decideEnergy, 'director.trouble')], log);
+    return { ok: true, sim, reaction: `You make the call. It works, and ${name(sim0, lead)} learns nothing from it.` };
+  }
+  const sim = apply(sim0, [{ type: 'remove', personId: lead, reason: 'fired', cause: { kind: 'action', actionId: 'director.trouble' } }], log);
+  s.letGo.push(lead);
+  return { ok: true, sim, reaction: `${name(sim0, lead)} goes. ${groupName(sim, g)} has no senior manager for now.` };
+}
+
+function choosePeerAsk({ sim0, m, choiceId, log }: Ctx): Handled {
+  const peer = m.personId!;
+  const p = T.peer;
+  if (choiceId === 'agree') {
+    const sim = apply(sim0, [value('team', m.groupId!, 'stress', p.askStress, 'director.peer'), value('person', peer, 'trust', p.agreeTrust, 'director.peer')], log);
+    return { ok: true, sim, reaction: `${name(sim0, peer)} is grateful. ${groupName(sim, m.groupId!)} is busier.` };
+  }
+  if (choiceId === 'negotiate') {
+    const sim = apply(sim0, [value('person', peer, 'trust', sim0.people[peer]!.trust >= p.negotiateAt ? p.negotiateTrust : -p.negotiateTrust, 'director.peer')], log);
+    return { ok: true, sim, reaction: `You trade what each of you can give.` };
+  }
+  const sim = apply(sim0, [value('person', peer, 'trust', -p.refuseTrust, 'director.peer')], log);
+  return { ok: true, sim, reaction: choiceId === 'refuse' ? `${name(sim0, peer)} takes the no, and remembers it.` : `You trade what each of you can give.` };
+}
+
+function chooseOrgDesign({ s, sim0, m, choiceId, log }: Ctx): Handled {
+  const g = m.groupId!;
+  if (choiceId === 'splitPromote' || choiceId === 'splitHire') {
+    const added = split(s, sim0, g, choiceId === 'splitPromote', log);
+    return { ok: true, sim: added.sim, reaction: `${groupName(sim0, g)} becomes two groups: ${groupName(added.sim, added.groupId)} is the new one.` };
+  }
+  if (choiceId === 'merge') return { ok: true, sim: merge(s, sim0, g, log), reaction: `${groupName(sim0, g)} joins another group.` };
+  return { ok: true, sim: sim0, reaction: `${groupName(sim0, g)} stays as it is.` };
+}
+
+function chooseReview({ s, sim0, choiceId, log }: Ctx): Handled {
+  const r = T.review;
+  const troubled = quarterHeld(s, sim0).troubled.map((p) => p.id);
+  if (choiceId === 'straight') {
+    const sim = apply(sim0, [value('person', s.executiveId, 'trust', r.straightTrust, 'director.review'), player('reputation', -troubled.length * r.troubleReputation, 'director.review')], log);
+    return { ok: true, sim, reaction: 'Your executive appreciates hearing it plainly.' };
+  }
+  if (choiceId === 'wins') {
+    const sim = apply(sim0, [player('reputation', r.winsReputation, 'director.review')], log);
+    s.leftOut.push(...troubled.map((id) => ({ id, week: sim.week })));
+    return { ok: true, sim, reaction: 'The room likes the quarter you describe.' };
+  }
+  const sim = apply(sim0, [player('reputation', r.promiseReputation, 'director.review')], log);
+  for (const b of s.bets) {
+    b.landing = Math.round(b.landing * T.bets.promiseFactor);
+    b.failing = Math.round(b.failing * T.bets.promiseFactor);
+  }
+  return { ok: true, sim, reaction: 'Your executive writes the new numbers down.' };
+}
+
+const HANDLERS: Record<DirectorMoment['kind'], (ctx: Ctx) => Handled> = {
+  finalEvaluation: chooseFinalEvaluation,
+  newSenior: chooseNewSenior,
+  headcount: chooseHeadcount,
+  bets: chooseBets,
+  surfaced: chooseTrouble,
+  trouble: chooseTrouble,
+  peerAsk: choosePeerAsk,
+  orgDesign: chooseOrgDesign,
+  review: chooseReview,
+};
+
 /** Applies the player's choice for one of the quarter's open moments. */
 // @spec DIR-MOMENT-005, DIR-MOMENT-003, DIR-PLAN-003, DIR-QBR-002, DIR-QBR-003, DIR-QBR-004, DIR-PEER-001
 export function chooseDirector(level: DirectorState, sim0: SimState, momentId: string, choiceId: string): Choose {
@@ -306,121 +440,9 @@ export function chooseDirector(level: DirectorState, sim0: SimState, momentId: s
   const structured = (m.kind === 'headcount' && choiceId.startsWith('place:')) || (m.kind === 'bets' && choiceId.startsWith('fund:'));
   if (!structured && !m.choices.some((c) => c.id === choiceId)) return { ok: false, error: `${choiceId} is not a choice in ${m.title}` };
   const log: ChangeLogEntry[] = [];
-  let sim = sim0;
-  let reaction = '';
-  const lead = m.personId;
-  switch (m.kind) {
-    case 'finalEvaluation':
-      s.heldEvaluations = s.heldEvaluations.filter((id) => id !== lead);
-      if (choiceId === 'letGo') {
-        sim = apply(sim, [{ type: 'remove', personId: lead!, reason: 'fired', cause: { kind: 'action', actionId: 'director.finalEvaluation' } }], log);
-        s.letGo.push(lead!);
-        reaction = `${name(sim0, lead!)} leaves. Their group needs a new senior manager.`;
-      } else reaction = `${name(sim0, lead!)} has one more period to turn it around.`;
-      break;
-    case 'newSenior': {
-      const g = m.groupId!;
-      if (choiceId === 'promote') {
-        const promoted = generateSeniorManager(s, sim, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
-        sim = apply(sim, [{ type: 'hire', teamId: g, person: promoted, cause: { kind: 'action', actionId: 'director.newSenior' } }, value('team', g, 'skill', -T.newSenior.promoteSkill, 'director.newSenior')], log);
-        s.leniency[promoted.id] = randomInt(s, [0, 2]);
-        s.joined.push(promoted.id);
-        reaction = `${promoted.name}, one of ${groupName(sim, g)}'s managers, steps up to lead it.`;
-      } else {
-        s.arriving[g] = sim.week;
-        reaction = `You start a search. ${groupName(sim, g)} waits a quarter for its new senior manager.`;
-      }
-      break;
-    }
-    case 'headcount': {
-      const given = m.heads ?? 0;
-      const groups = s.groupIds.filter((g) => sim.teams[g]);
-      let plan: Record<string, unknown> | null;
-      if (choiceId.startsWith('place:')) plan = parse(choiceId.slice('place:'.length));
-      else if (choiceId === 'spread') {
-        plan = Object.fromEntries(groups.map((g) => [g, 0]));
-        for (let i = 0; i < given; i++) (plan[groups[i % groups.length]!] as number) += 1;
-        plan = Object.fromEntries(Object.entries(plan).map(([g, n]) => [g, n as number]));
-      } else if (choiceId === 'neediest') {
-        const g = [...groups].sort((x, y) => sim.teams[y]!.aggregate!.stress - sim.teams[x]!.aggregate!.stress)[0]!;
-        plan = { [g]: given };
-      } else plan = {};
-      if (!plan) return { ok: false, error: 'a placement must be JSON naming groups or bets' };
-      const r = place(s, sim, m, plan, log);
-      if (!r.ok) return r;
-      sim = r.sim;
-      reaction = choiceId === 'hold' ? 'You hold the heads back. Your executive notices.' : 'The new heads start next week.';
-      break;
-    }
-    case 'bets': {
-      if (choiceId === 'none') {
-        reaction = 'You fund none of them this time.';
-        break;
-      }
-      const plan = parse(choiceId.slice('fund:'.length));
-      if (!plan) return { ok: false, error: 'a funding must be JSON naming bets and groups' };
-      const r = fund(s, sim, m, plan, log);
-      if (!r.ok) return r;
-      sim = r.sim;
-      reaction = 'The bets are on. Your executive will be watching them.';
-      break;
-    }
-    case 'surfaced':
-    case 'trouble': {
-      const g = m.groupId!;
-      const t = T.trouble;
-      if (choiceId === 'coach') {
-        const grows = band(sim.people[lead!]!.skill) >= 1;
-        sim = apply(sim, [value('team', g, 'stress', -t.coachFix, 'director.trouble'), ...(grows ? [value('person', lead!, 'skill', t.coachGrowth, 'director.trouble')] : [])], log);
-        reaction = `${name(sim0, lead!)} works it through with you, and owns the plan.`;
-      } else if (choiceId === 'decide') {
-        sim = apply(sim, [value('team', g, 'stress', -t.decideFix, 'director.trouble'), value('person', lead!, 'trust', -t.decideTrust, 'director.trouble'), player('stress', t.decideEnergy, 'director.trouble')], log);
-        reaction = `You make the call. It works, and ${name(sim0, lead!)} learns nothing from it.`;
-      } else {
-        sim = apply(sim, [{ type: 'remove', personId: lead!, reason: 'fired', cause: { kind: 'action', actionId: 'director.trouble' } }], log);
-        s.letGo.push(lead!);
-        reaction = `${name(sim0, lead!)} goes. ${groupName(sim, g)} has no senior manager for now.`;
-      }
-      break;
-    }
-    case 'peerAsk': {
-      const peer = lead!;
-      const p = T.peer;
-      if (choiceId === 'agree') sim = apply(sim, [value('team', m.groupId!, 'stress', p.askStress, 'director.peer'), value('person', peer, 'trust', p.agreeTrust, 'director.peer')], log);
-      else if (choiceId === 'negotiate') sim = apply(sim, [value('person', peer, 'trust', sim.people[peer]!.trust >= p.negotiateAt ? p.negotiateTrust : -p.negotiateTrust, 'director.peer')], log);
-      else sim = apply(sim, [value('person', peer, 'trust', -p.refuseTrust, 'director.peer')], log);
-      reaction = choiceId === 'agree' ? `${name(sim0, peer)} is grateful. ${groupName(sim, m.groupId!)} is busier.` : choiceId === 'refuse' ? `${name(sim0, peer)} takes the no, and remembers it.` : `You trade what each of you can give.`;
-      break;
-    }
-    case 'orgDesign':
-      if (choiceId === 'splitPromote' || choiceId === 'splitHire') {
-        const added = split(s, sim, m.groupId!, choiceId === 'splitPromote', log);
-        sim = added.sim;
-        reaction = `${groupName(sim0, m.groupId!)} becomes two groups: ${groupName(sim, added.groupId)} is the new one.`;
-      } else if (choiceId === 'merge') {
-        sim = merge(s, sim, m.groupId!, log);
-        reaction = `${groupName(sim0, m.groupId!)} joins another group.`;
-      } else reaction = `${groupName(sim0, m.groupId!)} stays as it is.`;
-      break;
-    case 'review': {
-      const r = T.review;
-      const held = quarterHeld(s, sim);
-      const troubled = held.troubled.map((p) => p.id);
-      if (choiceId === 'straight') sim = apply(sim, [value('person', s.executiveId, 'trust', r.straightTrust, 'director.review'), player('reputation', -troubled.length * r.troubleReputation, 'director.review')], log);
-      else if (choiceId === 'wins') {
-        sim = apply(sim, [player('reputation', r.winsReputation, 'director.review')], log);
-        s.leftOut.push(...troubled.map((id) => ({ id, week: sim.week })));
-      } else {
-        sim = apply(sim, [player('reputation', r.promiseReputation, 'director.review')], log);
-        for (const b of s.bets) {
-          b.landing = Math.round(b.landing * T.bets.promiseFactor);
-          b.failing = Math.round(b.failing * T.bets.promiseFactor);
-        }
-      }
-      reaction = choiceId === 'straight' ? 'Your executive appreciates hearing it plainly.' : choiceId === 'wins' ? 'The room likes the quarter you describe.' : 'Your executive writes the new numbers down.';
-      break;
-    }
-  }
+  const handled = HANDLERS[m.kind]({ s, sim0, m, choiceId, log });
+  if (!handled.ok) return handled;
+  const { sim, reaction } = handled;
   m.status = 'answered';
   // Heads moved or added by a choice are not lost to attrition: remember the groups as they are now.
   remember(s, sim);
