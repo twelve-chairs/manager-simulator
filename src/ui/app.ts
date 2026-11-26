@@ -140,6 +140,8 @@ const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRe
 
 /** What the handover screen calls the level a promotion leads to. */
 const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager', director: 'director', vp: 'VP' };
+/** The run's current level by name. */
+const levelName = (run: Run) => LEVEL_NAMES[run.levelId] ?? run.levelId;
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 /** Where in the turn a moment falls: its day and time, and in a month or a quarter its week (UI-WEEK-016). */
@@ -350,7 +352,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     h(
       'section',
       { 'data-part': 'other-tab', 'data-screen': 'other-tab', class: 'start' },
-      h('h2', { 'data-part': 'heading', tabindex: '-1' }, 'Playing in another tab'),
+      h('h1', { 'data-part': 'heading', tabindex: '-1' }, 'Playing in another tab'),
       h('p', { role: 'status' }, 'This run was played on in another tab, so this tab stopped saving to keep from overwriting it.'),
       h('button', { 'data-action': 'continue-here', class: 'primary', onClick: continueHere }, 'Continue here'),
     );
@@ -616,6 +618,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     return h(
       'section',
       { 'data-screen': 'week', class: 'week' },
+      // @spec UI-A11Y-001: the header shows the level and turn visually; the screen's top heading says them for screen readers
+      h('h1', { class: 'visually-hidden' }, `${capital(levelName(ctx.run))}, ${renderer.turn} ${turnNumber}`),
       h(
         'header',
         { class: 'status' },
@@ -631,7 +635,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h(
         'div',
         { class: 'layout' },
-        h('main', { class: 'stage' },
+        h('div', { class: 'stage' },
           scene(ctx, renderer, kind),
           kind === 'moment' || kind === 'reaction'
             ? h('div', { class: 'end-week' }, h('button', { 'data-action': 'end-week', onClick: () => ctx.send({ kind: 'endWeek' }, 'end-week') }, 'End the week'), errorFor('end-week'))

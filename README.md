@@ -136,7 +136,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/personalities.ts` | Personality catalogue: the traits career levels give people, which situation content is checked against |
 | `content/situations/` | Authored situations: Markdown with YAML front matter, one per file |
 | `tests/` | Tests for each component, beside the folders above (`tests/sim/`, `tests/levels/`, and so on) |
-| `e2e/` | End-to-end tests: the production build played in Chromium with Playwright |
+| `e2e/` | End-to-end tests: the production build played in Chromium with Playwright, and an automated accessibility check (axe-core) on its screens |
 | `playtest/` | Playtests: scripted players of different styles play whole runs from fixed seeds, with every screen checked, and a scorecard of proxies for the HLD's success metrics |
 | `playtest/HUMAN.md` | The script for a human playtest session, under the same success-metric headings as the scorecard |
 | `playtest/ai/` | The AI playtester: Claude plays the real page as a newcomer, decision by decision, and writes a report to `playtest-results/` |

@@ -607,6 +607,14 @@ describe('line manager panels', () => {
     expect(cards.map((c) => c.querySelector('[data-field=restless]')?.textContent ?? null)).toEqual(cards.map((c) => (c.dataset.person === first ? 'Restless: may leave within weeks unless they get what they want.' : null)));
   });
 
+  // @spec UI-A11Y-001
+  it('gives the week screen one level-one heading, for screen readers, naming the level and the turn', () => {
+    const { root } = makeApp({ run: playing() });
+    const headings = $$(root, 'h1');
+    expect(headings.map((x) => x.textContent)).toEqual([`Line manager, week ${text(root, '[data-field=week]')}`]);
+    expect(headings[0]!.classList.contains('visually-hidden')).toBe(true);
+  });
+
   // @spec UI-LINE-001, UI-BAND-001
   it('shows each engineer as a card with band words, personality, want and memory', () => {
     const r = structuredClone(playing());

@@ -14,6 +14,11 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-SHELL-009**: When the start screen is shown, the UI shall show the line "Every promotion is a new job.", the pitch the UI design sets, a **Start a new game** button that begins a run, and a **Load a saved game** button that opens the file picker for a save to import.
 - [x] **UI-SAVE-009**: When a run screen is shown, the UI shall offer the import of UI-SAVE-007 as a **Load a saved game** button that opens the file picker, beside **Export save** and **Discard and start over**.
 - [x] **UI-SAVE-010**: When another tab writes or removes the stored save, the UI shall stop saving and stop play in this tab, and show "This run was played on in another tab, so this tab stopped saving to keep from overwriting it." with a **Continue here** button that loads the stored save as UI-SAVE-001 does, or shows the start screen when there is none.
+
+## Accessibility
+
+- [x] **UI-A11Y-001**: The UI shall hold the game in the page's one main landmark, and give every screen one level-one heading; on the week screen, one for screen readers only that names the level and the turn, as "{Level}, {turn} {n}".
+- [x] **UI-A11Y-002**: When the end-to-end tests show the start screen, a turn's opening scene, a moment and the recap, in light and dark mode, an automated WCAG 2.2 AA check with best practices shall find no violation.
 - [x] **UI-SHELL-010**: When the start screen is shown, the UI shall show the career ladder as an ordered list from line manager to director and above, each rung with its level name, "You manage" followed by who the player manages, and "Each turn is" followed by the length of a turn, as the UI design's table sets them.
 - [x] **UI-SHELL-013**: The UI shall start the game with the line manager and senior manager levels, in that order, so a promoted line manager is handed over to the senior manager.
 - [x] **UI-SHELL-011**: When the start screen shows the career ladder, the UI shall mark a rung **Playable now** when the game was started with any of the level modules the UI design assigns to that rung, and **Coming later** otherwise.

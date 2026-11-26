@@ -86,6 +86,10 @@ The scene, header and recap are a shell shared by every level; the team panel, h
 
 The page sits on a faint circuit-board pattern: traces, pads, vias and a chip, tiled across the background. It is drawn as a mask over a theme colour, so one image follows light and dark mode, and it stays faint behind the scene and the cards, which are opaque, so text keeps its contrast. The pattern ships as its own image file: the build never inlines an image into the stylesheet as a `data:` URL, which the page's Content-Security-Policy (`img-src 'self'`) would block.
 
+## Accessibility
+
+The game sits in the page's one main landmark, and every screen has one level-one heading, so a screen reader can jump to the game and to the screen's top. The week screen's header shows the level and turn visually, so its heading, which names them ("Line manager, week 3"), is for screen readers only. Beyond semantic HTML, labels and keyboard-operable controls, an automated WCAG 2.2 AA check (axe-core, with its best practices) runs in the end-to-end tests on the start screen, a turn's opening scene, a moment and the recap, in light and dark mode, and fails on any violation.
+
 ## Turns and Their Numbers
 
 A turn is a week at the line manager, a month at the senior manager and a quarter at the director, and the shell names it in the level's word: the header, the recap's heading ("How month 3 went"), its button ("Start month 4"), the review's heading ("Month 6 review") and the ended screen. Months count from 1 from the start of the senior manager level, and quarters from the start of the director level, as weeks count from 1 from the start of the run. Within a month or a quarter, a moment says which week of it and which day it falls on ("Week 2, Tuesday morning"), and the header's strip shows that week's five days. The weeks to the next review are shown in the level's turns ("3 months to your review").
@@ -360,7 +364,7 @@ The page tells link previews and search engines what the game is, in its static 
 ### Deferred
 1. Undo within a week.
 2. Visual design beyond a clean, readable default: faces, animation.
-3. Accessibility beyond semantic HTML, labels and keyboard-operable controls.
+3. Accessibility beyond what semantic HTML and the automated check find: a walkthrough with a screen reader.
 
 ## References
 
