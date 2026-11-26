@@ -88,6 +88,8 @@ export interface SeniorMoment {
   detail?: 'promote' | 'letGo';
   /** For a final evaluation: the manager. */
   managerId?: string;
+  /** For new work for the group: what kind of offer it is. */
+  offer?: 'launch' | 'handover' | 'own';
   /** For a surfaced problem: which problem it is, so the answer can be recorded against it. */
   issue?: string;
   /** For calibration: each team's proposal. */

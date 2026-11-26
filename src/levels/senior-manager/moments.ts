@@ -207,11 +207,20 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0 && (s.habits.newWork === 'ask' || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand));
   if (idle) {
     const team = name(sim, idle);
+    // @spec SENIOR-MOMENT-015
+    // A different kind of offer month to month, so which to take is a decision and not a reflex.
+    const offer = (['launch', 'handover', 'own'] as const)[monthOf(s, sim) % 3]!;
+    const OFFER_TEXT = {
+      launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
+      handover: { title: 'New work for the group: a handover', text: `Another group wants to hand yours a system it can no longer keep up, old code and heavy tech debt. ${team} has nothing on. Nobody will mind much if you say no.` },
+      own: { title: `New work for the group: ${team}'s own project`, text: `${managerName(s, sim, idle)} has been pushing for a project of ${team}'s own, and your manager has finally offered it. ${team} has nothing on. Saying no is saying no to them.` },
+    } as const;
     drafts.push({
       kind: 'newWork',
       teamId: idle,
-      title: 'New work for the group',
-      text: `Your manager has a new project for the group. ${team} has nothing on.`,
+      offer,
+      title: OFFER_TEXT[offer].title,
+      text: OFFER_TEXT[offer].text,
       choices: [
         { id: 'give', label: `Give it to ${team}` },
         { id: 'giveAlways', label: `Give it to ${team}, and from now on let your manager give new work straight to a team with room (you still decide when that team is strained)` },
@@ -392,14 +401,21 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       break;
     }
     case 'newWork': {
-      if (choiceId === 'decline') effects.push(player('reputation', -T.declineWork, 'senior.newWork'));
-      else {
+      // @spec SENIOR-MOMENT-016
+      const offer = moment.offer ?? 'launch';
+      if (choiceId === 'decline') {
+        effects.push(player('reputation', -(offer === 'launch' ? T.launchDecline : offer === 'handover' ? T.handoverDecline : T.declineWork), 'senior.newWork'));
+        if (offer === 'own') effects.push(team(t, 'motivation', -T.ownProjectDeclineMotivation, 'senior.newWork'));
+      } else {
         const pr = nextId(s, 'project', 'pr', sim.projects);
+        const techDebt = randomInt(s, 10, 40);
         effects.push({
           type: 'startProject',
-          project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: randomInt(s, 10, 40), deadlineWeek: sim.week + randomInt(s, 20, 32) },
+          project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: offer === 'handover' ? T.handoverTechDebt : techDebt, deadlineWeek: sim.week + randomInt(s, 20, 32) },
           cause: { kind: 'action', actionId: 'senior.newWork' },
         });
+        if (offer === 'launch') effects.push(player('reputation', T.launchReputation, 'senior.newWork'));
+        if (offer === 'own') effects.push(team(t, 'motivation', T.ownProjectMotivation, 'senior.newWork'));
         if (choiceId === 'spread') for (const id of s.teamIds) effects.push(team(id, 'stress', T.spreadStress, 'senior.newWork'));
         if (choiceId === 'giveAlways') s.habits.newWork = 'assign';
       }

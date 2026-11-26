@@ -262,7 +262,49 @@ describe('a month’s moments', () => {
     expect(Object.values(given.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(1);
     const spread = answer(l, idle, w, 'spread').sim;
     for (const id of level.teamIds) expect(spread.teams[id]!.aggregate!.stress).toBe(idle.teams[id]!.aggregate!.stress + T.spreadStress);
-    expect(answer(l, idle, w, 'decline').sim.player.reputation).toBe(idle.player.reputation - T.declineWork);
+    // declining costs reputation, by how much depending on the kind of offer (SENIOR-MOMENT-016)
+    expect(answer(l, idle, w, 'decline').sim.player.reputation).toBeLessThan(idle.player.reputation);
+  });
+
+  // @spec SENIOR-MOMENT-015, SENIOR-MOMENT-016
+  it('makes each month’s offer a launch, a handover or the idle team’s own project, each taken and declined at its own cost', () => {
+    const { level, sim } = calm(6);
+    const t = level.teamIds[2]!;
+    const idleAt = (months: number) =>
+      edit(sim, (s) => {
+        s.week = level.startWeek + months * T.weeksPerMonth;
+        for (const p of Object.values(s.projects)) {
+          if (p.teamId === t) p.status = 'cancelled';
+          else Object.assign(p, { startWeek: s.week - 4, deadlineWeek: s.week + 40, progress: p.scope / 2 });
+        }
+      });
+    const offers = [3, 4, 5].map((months) => {
+      const state = idleAt(months);
+      const l = beginMonth(level, state);
+      return { state, l, w: find(l, 'newWork') };
+    });
+    const titles = offers.map((o) => o.w.title);
+    expect(new Set(titles).size).toBe(3);
+    const of = (kind: string) => offers.find((o) => o.w.offer === kind)!;
+    expect(of('launch').w.title).toMatch(/launch/);
+    expect(of('handover').w.title).toMatch(/handover/);
+    expect(of('own').w.text).toContain(sim.teams[t]!.name);
+    // taken
+    const launch = of('launch');
+    expect(answer(launch.l, launch.state, launch.w, 'give').sim.player.reputation).toBe(launch.state.player.reputation + T.launchReputation);
+    const handover = of('handover');
+    const taken = answer(handover.l, handover.state, handover.w, 'give').sim;
+    expect(Object.values(taken.projects).find((p) => p.teamId === t && p.status === 'active')!.techDebt).toBe(T.handoverTechDebt);
+    const own = of('own');
+    expect(answer(own.l, own.state, own.w, 'give').sim.teams[t]!.aggregate!.motivation).toBe(own.state.teams[t]!.aggregate!.motivation + T.ownProjectMotivation);
+    // declined
+    expect(answer(launch.l, launch.state, launch.w, 'decline').sim.player.reputation).toBe(launch.state.player.reputation - T.launchDecline);
+    expect(answer(handover.l, handover.state, handover.w, 'decline').sim.player.reputation).toBe(handover.state.player.reputation - T.handoverDecline);
+    const turned = answer(own.l, own.state, own.w, 'decline').sim;
+    expect(turned.player.reputation).toBe(own.state.player.reputation - T.declineWork);
+    expect(turned.teams[t]!.aggregate!.motivation).toBe(own.state.teams[t]!.aggregate!.motivation - T.ownProjectDeclineMotivation);
+    expect(T.launchDecline).toBeGreaterThan(T.declineWork);
+    expect(T.handoverDecline).toBeLessThan(T.declineWork);
   });
 
   // @spec SENIOR-MOMENT-008

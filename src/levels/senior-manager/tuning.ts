@@ -71,6 +71,13 @@ export const SENIOR_TUNING = {
   /** New work: the stress spreading it adds to every team, and the reputation declining it costs. */
   spreadStress: 6,
   declineWork: 8,
+  /** New work that differs: a launch's reputation taken and declined; a handover's tech debt and decline; the idle team's own project's motivation, taken and declined. */
+  launchReputation: 3,
+  launchDecline: 10,
+  handoverTechDebt: 60,
+  handoverDecline: 3,
+  ownProjectMotivation: 8,
+  ownProjectDeclineMotivation: 5,
   /** Approvals: the motivation an unearned promotion costs the team, the trust asking for evidence and refusing cost, and the weeks between a team's proposals. */
   approvalDip: 5,
   evidenceTrust: 2,

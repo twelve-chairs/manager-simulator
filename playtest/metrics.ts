@@ -33,7 +33,7 @@ export const SENIOR_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Staffing request', /^A staffing request$/],
   ['Dispute', / disagree$/],
   ['Approval', / asks for an approval$/],
-  ['New work', /^New work for the group$/],
+  ['New work', /^New work for the group/],
   ['A fourth team', /^A fourth team$/],
   ['Replacing a manager', / needs a manager$/],
   ['Calibration', /^Calibration$/],
