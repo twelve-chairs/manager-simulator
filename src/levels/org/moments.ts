@@ -68,11 +68,10 @@ export function newLeader(
   sim0: SimState,
   unitId: string,
   choiceId: string,
-  promote: (sim: SimState) => NewPerson,
-  promoteSkill: number,
-  actionId: string,
+  how: { promote: (sim: SimState) => NewPerson; promoteSkill: number; actionId: string },
   log: ChangeLogEntry[],
 ): Handled & { promoted: NewPerson | null } {
+  const { promote, promoteSkill, actionId } = how;
   if (choiceId !== 'promote') {
     s.arriving[unitId] = sim0.week;
     return { ok: true, sim: sim0, reaction: '', promoted: null };

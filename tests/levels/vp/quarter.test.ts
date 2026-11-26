@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { band, LINE_TUNING, lineManagerLevel } from '../../../src/levels/line-manager';
 import { seniorManagerLevel } from '../../../src/levels/senior-manager';
 import { directorLevel } from '../../../src/levels/director';
-import { leaderOf } from '../../../src/levels/org';
+import { leaderOf, sustained } from '../../../src/levels/org';
 import {
   VP_LEVEL,
   VP_TUNING as T,
@@ -23,7 +23,7 @@ import {
 } from '../../../src/levels/vp';
 import { apply as applyCommand, newRun, type Dependencies, type Run } from '../../../src/loop';
 import { conductReview } from '../../../src/review';
-import { applyEffects, type SimState } from '../../../src/sim';
+import { applyEffects, attritionRiskOf, type SimState } from '../../../src/sim';
 import { CONTENT } from '../../loop/fixtures';
 import { vp } from './fixtures';
 
@@ -377,15 +377,21 @@ describe('the quarter’s end', () => {
   });
 
   // @spec VP-DRIFT-001, VP-DRIFT-002
-  it('moves each division toward what its director sustains, and sets its attrition risk', () => {
+  it('moves each division a share of the way toward what its director sustains, sets its attrition risk, and moves each director toward their division', () => {
     const { level, sim } = vp(9);
     const r = ok(endQuarter(level, sim));
+    const clamp = (x: number) => Math.max(0, Math.min(100, x));
     for (const g of level.divisionIds) {
-      const a = r.sim.teams[g]!.aggregate!;
-      expect(a.attritionRisk).toBeGreaterThanOrEqual(0);
-      expect(a.motivation).not.toBeNaN();
+      const was = sim.teams[g]!.aggregate!;
+      const target = sustained(sim.people[leaderOf(sim, g)!]!.skill, T.drift);
+      const now = r.sim.teams[g]!.aggregate!;
+      expect(now.motivation).toBe(clamp(was.motivation + Math.round((target.motivation - was.motivation) * T.drift.driftShare)));
+      expect(now.stress).toBe(clamp(was.stress + Math.round((target.stress - was.stress) * T.drift.driftShare)));
+      expect(now.attritionRisk).toBe(attritionRiskOf(now.motivation, now.stress));
+      const lead = leaderOf(sim, g)!;
+      const m = sim.people[lead]!;
+      expect(r.sim.people[lead]!.stress).toBe(clamp(m.stress + Math.round((was.stress - m.stress) * T.drift.leaderStressShare)));
     }
-    for (const id of leads(level, sim)) expect(r.sim.people[id]!.stress).not.toBe(Number.NaN);
   });
 
   // @spec VP-DRIFT-003, VP-DRIFT-004, VP-PLAN-001

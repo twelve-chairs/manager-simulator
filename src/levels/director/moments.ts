@@ -305,7 +305,7 @@ function chooseFinalEvaluation({ s, sim0, m, choiceId, log }: Ctx): Handled {
 function chooseNewSenior({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const g = m.groupId!;
   const promote = (now: SimState) => generateSeniorManager(s, now, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
-  const r = newLeader(s, sim0, g, choiceId, promote, T.newSenior.promoteSkill, 'director.newSenior', log);
+  const r = newLeader(s, sim0, g, choiceId, { promote, promoteSkill: T.newSenior.promoteSkill, actionId: 'director.newSenior' }, log);
   const reaction = r.promoted ? `${r.promoted.name}, one of ${groupName(r.sim, g)}'s managers, steps up to lead it.` : `You start a search. ${groupName(sim0, g)} waits a quarter for its new senior manager.`;
   return { ok: true, sim: r.sim, reaction };
 }

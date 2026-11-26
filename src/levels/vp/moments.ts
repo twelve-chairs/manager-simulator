@@ -52,7 +52,8 @@ function firstDrafts(s: VpState, sim: SimState): Draft[] {
   if (opensYear(s, sim)) {
     const planned = plannedHeads(s, sim);
     const peer = s.peerIds.find((id) => sim.people[id]?.status === 'active');
-    first.push({ kind: 'planning', planned, ...(peer && { personId: peer }), title: 'Annual planning', text: `The leadership team divides next year's budget. Your plan needs ${plural(planned, 'new head', 'new heads')}${peer ? `, and ${name(sim, peer)} has a priority that needs people too` : ''}.`, choices: CHOICES.planning });
+    const theirs = peer ? `, and ${name(sim, peer)} has a priority that needs people too` : '';
+    first.push({ kind: 'planning', planned, ...(peer && { personId: peer }), title: 'Annual planning', text: `The leadership team divides next year's budget. Your plan needs ${plural(planned, 'new head', 'new heads')}${theirs}.`, choices: CHOICES.planning });
   }
   return first;
 }
@@ -136,7 +137,7 @@ function chooseFinalEvaluation({ s, sim0, m, choiceId, log }: Ctx): Handled {
 function chooseNewDirector({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const g = m.divisionId!;
   const promote = (now: SimState) => generateDirector(s, now, { skill: randomInt(s, T.newDirector.promotedSkill), trust: T.newDirector.promotedTrust });
-  const r = newLeader(s, sim0, g, choiceId, promote, T.newDirector.promoteSkill, 'vp.newDirector', log);
+  const r = newLeader(s, sim0, g, choiceId, { promote, promoteSkill: T.newDirector.promoteSkill, actionId: 'vp.newDirector' }, log);
   const reaction = r.promoted ? `${r.promoted.name}, one of ${divisionName(r.sim, g)}'s senior managers, steps up to lead it.` : `You start a search. ${divisionName(sim0, g)} waits a quarter for its new director.`;
   return { ok: true, sim: r.sim, reaction };
 }
@@ -285,8 +286,8 @@ function chooseOdds({ sim0, m, choiceId, log }: Ctx): Handled {
     return { ok: true, sim: apply(sim0, grow ? [value('person', a, 'skill', o.growth, 'vp.odds'), value('person', b, 'skill', o.growth, 'vp.odds')] : [], log), reaction: grow ? 'They work it out between them, and both come out sharper.' : 'They try. It takes longer than it should.' };
   }
   if (choiceId === 'decide') return { ok: true, sim: apply(sim0, [value('person', b, 'trust', -o.trust, 'vp.odds')], log), reaction: `You decide. ${name(sim0, b)} takes it badly.` };
-  const both = [sim0.people[a]?.teamId, sim0.people[b]?.teamId];
-  const effects = Object.values(sim0.projects).filter((p) => p.status === 'active' && both.includes(p.teamId)).map((p) => value('project', p.id, 'progress', -Math.min(p.progress, Math.round(p.scope * o.slow)), 'vp.odds'));
+  const both = new Set([sim0.people[a]?.teamId, sim0.people[b]?.teamId]);
+  const effects = Object.values(sim0.projects).filter((p) => p.status === 'active' && both.has(p.teamId)).map((p) => value('project', p.id, 'progress', -Math.min(p.progress, Math.round(p.scope * o.slow)), 'vp.odds'));
   return { ok: true, sim: apply(sim0, effects, log), reaction: 'Nobody carries the shared work, and both divisions slow.' };
 }
 
