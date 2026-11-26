@@ -99,68 +99,102 @@ export function handlesOf(screen: Screen) {
 
 const listed = (xs: { handle: string }[]) => xs.map((x) => x.handle).join(', ') || 'none';
 
-/** Checks a reply against what the screen offers, returning the action and habit changes to make, or why not. */
-// @spec PLAY-AI-003
-export function checkReply(screen: Screen, reply: Reply): { ok: true; action: Action; habits: { habit: string; value: string }[] } | { ok: false; reason: string } {
-  const h = handlesOf(screen);
-  // Replies name what they pick by the screen's handles; the action returned uses the game's ids.
-  const habits: { habit: string; value: string }[] = [];
-  for (const change of reply.habits) {
+type Handles = ReturnType<typeof handlesOf>;
+type HabitChange = { habit: string; value: string };
+type Checked<X> = { ok: true; value: X } | { ok: false; reason: string };
+type ReplyAction = Reply['action'];
+const refuse = (reason: string): { ok: false; reason: string } => ({ ok: false, reason });
+
+/** The habit changes a reply names, by the game's ids. */
+function checkHabits(h: Handles, changes: Reply['habits']): Checked<HabitChange[]> {
+  const habits: HabitChange[] = [];
+  for (const change of changes) {
     const habit = h.habits.find((x) => x.handle === change.habit);
-    if (!habit) return { ok: false, reason: `There is no habit "${change.habit}" on this screen. The habits are: ${listed(h.habits)}.` };
+    if (!habit) return refuse(`There is no habit "${change.habit}" on this screen. The habits are: ${listed(h.habits)}.`);
     const setting = habit.settings.find((x) => x.handle === change.value);
-    if (!setting) return { ok: false, reason: `"${change.value}" is not a setting for ${habit.item.label}. Its settings are: ${listed(habit.settings)}.` };
+    if (!setting) return refuse(`"${change.value}" is not a setting for ${habit.item.label}. Its settings are: ${listed(habit.settings)}.`);
     habits.push({ habit: habit.item.id, value: setting.item.value });
   }
-  const a = reply.action;
-  switch (a.kind) {
-    case 'choose': {
-      const choice = h.choices.find((x) => x.handle === a.choice);
-      if (!choice) return { ok: false, reason: `There is no choice "${a.choice}". The choices are: ${listed(h.choices)}.` };
-      return { ok: true, action: { kind: 'choose', choiceId: choice.item.id }, habits };
-    }
-    case 'wait':
-      if (!screen.canWait) return { ok: false, reason: 'This screen cannot be let wait: pick one of its choices.' };
-      return { ok: true, action: { kind: 'wait' }, habits };
-    case 'place': {
-      if (!screen.placement) return { ok: false, reason: 'There are no heads to place on this screen.' };
-      const place: Record<string, number> = {};
-      let total = 0;
-      for (const p of a.place) {
-        const target = h.targets.find((x) => x.handle === p.target);
-        if (!target) return { ok: false, reason: `"${p.target}" is not somewhere a head can go. The targets are: ${listed(h.targets)}.` };
-        if (p.count < 0) return { ok: false, reason: 'A count cannot be negative.' };
-        place[target.item.id] = (place[target.item.id] ?? 0) + p.count;
-        total += p.count;
-      }
-      if (total > screen.placement.heads) return { ok: false, reason: `Only ${screen.placement.heads} heads were given, not ${total}.` };
-      return { ok: true, action: { kind: 'place', place }, habits };
-    }
-    case 'fund': {
-      if (!screen.funding) return { ok: false, reason: 'There are no bets to fund on this screen.' };
-      const fund: Record<string, string> = {};
-      for (const f of a.fund) {
-        const bet = h.bets.find((x) => x.handle === f.bet);
-        if (!bet) return { ok: false, reason: `"${f.bet}" is not a bet on offer. The bets are: ${listed(h.bets)}.` };
-        const group = h.groups.find((x) => x.handle === f.group);
-        if (!group) return { ok: false, reason: `"${f.group}" is not one of your groups. The groups are: ${listed(h.groups)}.` };
-        fund[bet.item.id] = group.item.id;
-      }
-      if (Object.keys(fund).length > 2) return { ok: false, reason: 'At most two bets can be funded.' };
-      return { ok: true, action: { kind: 'fund', fund }, habits };
-    }
-    case 'calibrate': {
-      if (!screen.calibration) return { ok: false, reason: 'There is no calibration on this screen.' };
-      const calibrate: Record<string, number> = {};
-      for (const m of a.calibrate) {
-        const move = h.moves.find((x) => x.handle === m.move);
-        if (!move) return { ok: false, reason: `"${m.move}" is not a move on offer. The moves are: ${listed(h.moves)}.` };
-        if (m.count < 1) return { ok: false, reason: 'Move at least one head, or leave the move out.' };
-        calibrate[move.item.id] = (calibrate[move.item.id] ?? 0) + m.count;
-      }
-      return { ok: true, action: { kind: 'calibrate', calibrate }, habits };
-    }
+  return { ok: true, value: habits };
+}
+
+function checkChoose(_screen: Screen, h: Handles, a: ReplyAction): Checked<Action> {
+  const choice = h.choices.find((x) => x.handle === a.choice);
+  if (!choice) return refuse(`There is no choice "${a.choice}". The choices are: ${listed(h.choices)}.`);
+  return { ok: true, value: { kind: 'choose', choiceId: choice.item.id } };
+}
+
+function checkWait(screen: Screen): Checked<Action> {
+  if (!screen.canWait) return refuse('This screen cannot be let wait: pick one of its choices.');
+  return { ok: true, value: { kind: 'wait' } };
+}
+
+function checkPlace(screen: Screen, h: Handles, a: ReplyAction): Checked<Action> {
+  if (!screen.placement) return refuse('There are no heads to place on this screen.');
+  const place: Record<string, number> = {};
+  let total = 0;
+  for (const p of a.place) {
+    const target = h.targets.find((x) => x.handle === p.target);
+    if (!target) return refuse(`"${p.target}" is not somewhere a head can go. The targets are: ${listed(h.targets)}.`);
+    if (p.count < 0) return refuse('A count cannot be negative.');
+    place[target.item.id] = (place[target.item.id] ?? 0) + p.count;
+    total += p.count;
   }
+  if (total > screen.placement.heads) return refuse(`Only ${screen.placement.heads} heads were given, not ${total}.`);
+  return { ok: true, value: { kind: 'place', place } };
+}
+
+function checkFund(screen: Screen, h: Handles, a: ReplyAction): Checked<Action> {
+  if (!screen.funding) return refuse('There are no bets to fund on this screen.');
+  const fund: Record<string, string> = {};
+  for (const f of a.fund) {
+    const bet = h.bets.find((x) => x.handle === f.bet);
+    if (!bet) return refuse(`"${f.bet}" is not a bet on offer. The bets are: ${listed(h.bets)}.`);
+    const group = h.groups.find((x) => x.handle === f.group);
+    if (!group) return refuse(`"${f.group}" is not one of your groups. The groups are: ${listed(h.groups)}.`);
+    fund[bet.item.id] = group.item.id;
+  }
+  if (Object.keys(fund).length > 2) return refuse('At most two bets can be funded.');
+  return { ok: true, value: { kind: 'fund', fund } };
+}
+
+function checkCalibrate(screen: Screen, h: Handles, a: ReplyAction): Checked<Action> {
+  if (!screen.calibration) return refuse('There is no calibration on this screen.');
+  const calibrate: Record<string, number> = {};
+  for (const m of a.calibrate) {
+    const move = h.moves.find((x) => x.handle === m.move);
+    if (!move) return refuse(`"${m.move}" is not a move on offer. The moves are: ${listed(h.moves)}.`);
+    if (m.count < 1) return refuse('Move at least one head, or leave the move out.');
+    calibrate[move.item.id] = (calibrate[move.item.id] ?? 0) + m.count;
+  }
+  return { ok: true, value: { kind: 'calibrate', calibrate } };
+}
+
+function checkAction(screen: Screen, h: Handles, a: ReplyAction): Checked<Action> {
+  switch (a.kind) {
+    case 'choose':
+      return checkChoose(screen, h, a);
+    case 'wait':
+      return checkWait(screen);
+    case 'place':
+      return checkPlace(screen, h, a);
+    case 'fund':
+      return checkFund(screen, h, a);
+    case 'calibrate':
+      return checkCalibrate(screen, h, a);
+  }
+}
+
+/** Checks a reply against what the screen offers, returning the action and habit changes to make, or why not. */
+// @spec PLAY-AI-003
+export function checkReply(screen: Screen, reply: Reply): { ok: true; action: Action; habits: HabitChange[] } | { ok: false; reason: string } {
+  const h = handlesOf(screen);
+  // Replies name what they pick by the screen's handles; the action returned uses the game's ids.
+  const habits = checkHabits(h, reply.habits);
+  if (!habits.ok) return habits;
+  const action = checkAction(screen, h, reply.action);
+  if (!action.ok) return action;
+  return { ok: true, action: action.value, habits: habits.value };
 }
 
 /** The notebook, kept to its longest length in words. */

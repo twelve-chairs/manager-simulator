@@ -34,6 +34,29 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
     interviews.push({ when, interview: answers ?? { answers: [{ heading: '(no answer)', answer: 'The interview reply could not be read.' }] } });
   };
   const ORDINAL = ['first', 'second', 'third'];
+  /** A promotion's handover: remembered for the interviews, and how far the run got. */
+  const promoted = (screen: { title: string; text: string }) => {
+    promotions.push({ title: screen.title, text: screen.text, turns: [], interviewed: false });
+    reached = /director/i.test(screen.title) ? 'promoted to director' : 'promoted to senior manager';
+  };
+  /** Holds the interview once the latest promotion's first turns are played; true when that is where the run was asked to stop. */
+  const interviewAfterPromotion = async (turn: string): Promise<boolean> => {
+    const latest = promotions.at(-1);
+    if (!latest || !interviewDue(latest, turn)) return false;
+    latest.interviewed = true;
+    await interview(`after the ${ORDINAL[promotions.length - 1] ?? 'last'} promotion and ${AI_TUNING.turnsAfterPromotion} turns at the new level`);
+    if (options.until === 'promotion') return promotions.length >= 1;
+    return options.until === 'director' && /director/i.test(latest.title);
+  };
+  /** One decision: asks the model, records the step, and acts on the page. */
+  const decideAndAct = async (screen: NonNullable<Awaited<ReturnType<typeof readPage>>['decision']>) => {
+    const read = lastRead;
+    const d = await decide(client, system, screen, notebook, read, options.decisionModel ?? AI_TUNING.model);
+    lastRead = '';
+    notebook = d.notebook;
+    steps.push({ n: steps.length + 1, turn: screen.turn, title: screen.title, screen: screen.text, ...(read && { read }), reply: d.reply, action: d.action, ...(better[screen.title] && { better: better[screen.title] }), ...(d.note && { note: d.note }) });
+    await act(page, screen, d.action, d.habits);
+  };
 
   let stopped = '';
   try {
@@ -50,31 +73,17 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
         if (!(await moveOn(page, state))) throw new Error(`stuck on screen "${state.screen}", scene "${state.scene}"`);
         continue;
       }
-      if (screen.kind === 'handover') {
-        promotions.push({ title: screen.title, text: screen.text, turns: [], interviewed: false });
-        reached = /director/i.test(screen.title) ? 'promoted to director' : 'promoted to senior manager';
-      } else {
-        const latest = promotions.at(-1);
-        if (interviewDue(latest, screen.turn) && latest) {
-          latest.interviewed = true;
-          await interview(`after the ${ORDINAL[promotions.length - 1] ?? 'last'} promotion and ${AI_TUNING.turnsAfterPromotion} turns at the new level`);
-          if ((options.until === 'promotion' && promotions.length >= 1) || (options.until === 'director' && /director/i.test(latest.title))) {
-            stopped = 'reached';
-            break;
-          }
-        }
+      if (screen.kind === 'handover') promoted(screen);
+      else if (await interviewAfterPromotion(screen.turn)) {
+        stopped = 'reached';
+        break;
       }
       if (steps.length >= options.maxDecisions) {
         reached += ` (stopped at the limit of ${options.maxDecisions} decisions)`;
         stopped = 'limit';
         break;
       }
-      const read = lastRead;
-      const d = await decide(client, system, screen, notebook, read, options.decisionModel ?? AI_TUNING.model);
-      lastRead = '';
-      notebook = d.notebook;
-      steps.push({ n: steps.length + 1, turn: screen.turn, title: screen.title, screen: screen.text, ...(read && { read }), reply: d.reply, action: d.action, ...(better[screen.title] && { better: better[screen.title] }), ...(d.note && { note: d.note }) });
-      await act(page, screen, d.action, d.habits);
+      await decideAndAct(screen);
     }
   } catch (e) {
     // What was played was paid for: return it for the report, with no interview, since that would be one more request.

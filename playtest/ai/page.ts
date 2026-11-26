@@ -103,42 +103,56 @@ export function readPage(page: Page): Promise<PageState> {
   });
 }
 
+/** Picks a choice: a handover's, the start of the week before Monday, or one in the scene. */
+async function choose(page: Page, screen: Screen, choiceId: string) {
+  if (screen.kind === 'handover') await page.locator(`[data-handover="${choiceId}"]`).click();
+  else if (screen.kind === 'before-monday') await page.locator('[data-action=start-week]').click();
+  else await page.locator(`[data-scene] [data-choice="${choiceId}"]`).click();
+}
+
+async function place(page: Page, heads: Record<string, number>) {
+  for (const [target, count] of Object.entries(heads)) for (let i = 0; i < count; i++) await page.locator(`[data-step-up="${target}"]`).click();
+  await page.locator('[data-action=place-heads]').click();
+}
+
+async function fund(page: Page, bets: Record<string, string>) {
+  for (const [offer, group] of Object.entries(bets)) await page.locator(`[data-offer="${offer}"] select`).selectOption(group);
+  await page.locator('[data-action=fund-bets]').click();
+}
+
+/** Clicks a move once per head, stopping when its row has emptied and the move disappears. */
+async function moveHeads(page: Page, move: string, count: number) {
+  for (let i = 0; i < count; i++) {
+    const button = page.locator(`[data-move="${move}"]`);
+    if ((await button.count()) === 0) return;
+    await button.first().click();
+  }
+}
+
+/**
+ * Setting a team to what it delivered replaces its moves, so those go first; then each move's clicks, then settling.
+ */
+async function calibrate(page: Page, moves: Record<string, number>) {
+  const delivered = (move: string) => move.endsWith(':delivered');
+  for (const move of Object.keys(moves).filter(delivered)) await page.locator(`[data-set-delivered="${move.slice(0, -':delivered'.length)}"]`).click();
+  for (const [move, count] of Object.entries(moves)) if (!delivered(move)) await moveHeads(page, move, count);
+  await page.locator('[data-action=settle]').click();
+}
+
 /** Sets habits, then takes an action on the page, as the playtester asked. */
 export async function act(page: Page, screen: Screen, action: Action, habits: { habit: string; value: string }[]): Promise<void> {
   for (const h of habits) await page.locator(`select[data-habit="${h.habit}"]`).first().selectOption(h.value);
   switch (action.kind) {
     case 'choose':
-      if (screen.kind === 'handover') await page.locator(`[data-handover="${action.choiceId}"]`).click();
-      else if (screen.kind === 'before-monday') await page.locator('[data-action=start-week]').click();
-      else await page.locator(`[data-scene] [data-choice="${action.choiceId}"]`).click();
-      return;
+      return choose(page, screen, action.choiceId);
     case 'wait':
-      await page.locator('[data-action=wait]').click();
-      return;
+      return page.locator('[data-action=wait]').click();
     case 'place':
-      for (const [target, count] of Object.entries(action.place)) for (let i = 0; i < count; i++) await page.locator(`[data-step-up="${target}"]`).click();
-      await page.locator('[data-action=place-heads]').click();
-      return;
+      return place(page, action.place);
     case 'fund':
-      for (const [offer, group] of Object.entries(action.fund)) await page.locator(`[data-offer="${offer}"] select`).selectOption(group);
-      await page.locator('[data-action=fund-bets]').click();
-      return;
+      return fund(page, action.fund);
     case 'calibrate':
-      // Setting a team to what it delivered replaces its moves, so those go first; then each click moves one head, and a
-      // move whose row has emptied disappears, so the clicks stop there.
-      for (const move of Object.keys(action.calibrate).filter((m) => m.endsWith(':delivered'))) {
-        await page.locator(`[data-set-delivered="${move.slice(0, -':delivered'.length)}"]`).click();
-      }
-      for (const [move, count] of Object.entries(action.calibrate)) {
-        if (move.endsWith(':delivered')) continue;
-        for (let i = 0; i < count; i++) {
-          const button = page.locator(`[data-move="${move}"]`);
-          if ((await button.count()) === 0) break;
-          await button.first().click();
-        }
-      }
-      await page.locator('[data-action=settle]').click();
-      return;
+      return calibrate(page, action.calibrate);
   }
 }
 
