@@ -1,5 +1,5 @@
-# Typechecks, lints, tests (unit and end-to-end) and builds the game on every push and pull request to main, and publishes it to GitHub Pages on a
-# push to main only.
+# Typechecks, lints, tests (unit and end-to-end) and builds the game on every push and pull request to main, and on a push
+# to main only publishes it to www.manager-simulator.io (S3 and CloudFront, infra/site.yml) and to the GitHub Pages copy.
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
 name: Deploy to GitHub Pages
 
@@ -63,3 +63,37 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # The game's own address: built for the domain's root and uploaded to the site's bucket as a role trusted only for
+  # this repository's main branch (UI-HOST-006). The role, bucket and distribution come from secrets, so no account
+  # details are in the repository.
+  site:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+      # Hashed assets are cached for a year; the page is never cached, so a deploy reaches players at once.
+      - run: |
+          aws s3 sync dist "s3://$SITE_BUCKET" --delete --exclude index.html --cache-control "public, max-age=31536000, immutable"
+          aws s3 cp dist/index.html "s3://$SITE_BUCKET/index.html" --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "$SITE_DISTRIBUTION_ID" --paths /index.html /
+        env:
+          SITE_BUCKET: ${{ secrets.SITE_BUCKET }}
+          SITE_DISTRIBUTION_ID: ${{ secrets.SITE_DISTRIBUTION_ID }}

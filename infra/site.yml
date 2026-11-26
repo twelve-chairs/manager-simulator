@@ -1,0 +1,264 @@
+# The game's hosting: a private S3 bucket served by one CloudFront distribution at www.manager-simulator.io, with the
+# security headers, a redirect from the bare domain, the certificate, the DNS records, and the role the deploy assumes.
+# See docs/decisions/hosting.md and the UI design's Hosting section. Deployed in us-east-1, where CloudFront's
+# certificates live:
+#   aws cloudformation deploy --region us-east-1 --stack-name manager-simulator-site --template-file infra/site.yml \
+#     --capabilities CAPABILITY_NAMED_IAM --parameter-overrides HostedZoneId=<the domain's hosted zone id>
+# Long-form intrinsic functions throughout, so the template is plain YAML its tests can read.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Manager Simulator, served at www.manager-simulator.io
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: manager-simulator.io
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+  Repository:
+    Type: String
+    Default: twelve-chairs/manager-simulator
+  ContentSecurityPolicy:
+    Type: String
+    Description: The UI design's policy (vite.config.ts), with frame-ancestors added; a test keeps the two in step.
+    Default: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+
+Resources:
+  # @spec UI-HOST-001
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: { Ref: SiteBucket }
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CloudFrontReadsOnly
+            Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: { 'Fn::Sub': '${SiteBucket.Arn}/*' }
+            Condition:
+              StringEquals:
+                'AWS:SourceArn': { 'Fn::Sub': 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}' }
+          - Sid: TlsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - { 'Fn::GetAtt': [SiteBucket, Arn] }
+              - { 'Fn::Sub': '${SiteBucket.Arn}/*' }
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: { 'Fn::Sub': '${AWS::StackName}-oac' }
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: { 'Fn::Sub': 'www.${DomainName}' }
+      SubjectAlternativeNames:
+        - { Ref: DomainName }
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: { 'Fn::Sub': 'www.${DomainName}' }
+          HostedZoneId: { Ref: HostedZoneId }
+        - DomainName: { Ref: DomainName }
+          HostedZoneId: { Ref: HostedZoneId }
+
+  # @spec UI-HOST-003
+  ApexRedirect:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: { 'Fn::Sub': '${AWS::StackName}-apex-redirect' }
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Redirects the bare domain to www, keeping the path and query
+        Runtime: cloudfront-js-2.0
+      FunctionCode:
+        'Fn::Sub': |
+          function handler(event) {
+            var request = event.request;
+            if (request.headers.host.value !== '${DomainName}') return request;
+            var query = Object.keys(request.querystring).map(function (key) {
+              var q = request.querystring[key];
+              return q.value === '' ? key : key + '=' + q.value;
+            }).join('&');
+            var location = 'https://www.${DomainName}' + request.uri + (query ? '?' + query : '');
+            return { statusCode: 301, statusDescription: 'Moved Permanently', headers: { location: { value: location } } };
+          }
+
+  # @spec UI-HOST-002
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: { 'Fn::Sub': '${AWS::StackName}-security-headers' }
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: { Ref: ContentSecurityPolicy }
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: no-referrer
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Override: true
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Manager Simulator
+        Aliases:
+          - { 'Fn::Sub': 'www.${DomainName}' }
+          - { Ref: DomainName }
+        ViewerCertificate:
+          AcmCertificateArn: { Ref: Certificate }
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site
+            DomainName: { 'Fn::GetAtt': [SiteBucket, RegionalDomainName] }
+            OriginAccessControlId: { 'Fn::GetAtt': [OriginAccessControl, Id] }
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          Compress: true
+          # The managed CachingOptimized policy: it honours each object's own Cache-Control.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: { Ref: SecurityHeaders }
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: { 'Fn::GetAtt': [ApexRedirect, FunctionMetadata.FunctionARN] }
+
+  WwwAlias:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      RecordSets:
+        - Name: { 'Fn::Sub': 'www.${DomainName}' }
+          Type: A
+          AliasTarget: { DNSName: { 'Fn::GetAtt': [Distribution, DomainName] }, HostedZoneId: Z2FDTNDATAQYW2 }
+        - Name: { 'Fn::Sub': 'www.${DomainName}' }
+          Type: AAAA
+          AliasTarget: { DNSName: { 'Fn::GetAtt': [Distribution, DomainName] }, HostedZoneId: Z2FDTNDATAQYW2 }
+        - Name: { Ref: DomainName }
+          Type: A
+          AliasTarget: { DNSName: { 'Fn::GetAtt': [Distribution, DomainName] }, HostedZoneId: Z2FDTNDATAQYW2 }
+        - Name: { Ref: DomainName }
+          Type: AAAA
+          AliasTarget: { DNSName: { 'Fn::GetAtt': [Distribution, DomainName] }, HostedZoneId: Z2FDTNDATAQYW2 }
+
+  # @spec UI-HOST-005
+  NoMailAndCaa:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: { Ref: HostedZoneId }
+      RecordSets:
+        - Name: { Ref: DomainName }
+          Type: MX
+          TTL: '3600'
+          ResourceRecords: ['0 .']
+        - Name: { Ref: DomainName }
+          Type: TXT
+          TTL: '3600'
+          ResourceRecords: ['"v=spf1 -all"']
+        - Name: { 'Fn::Sub': 'www.${DomainName}' }
+          Type: TXT
+          TTL: '3600'
+          ResourceRecords: ['"v=spf1 -all"']
+        - Name: { 'Fn::Sub': '_dmarc.${DomainName}' }
+          Type: TXT
+          TTL: '3600'
+          ResourceRecords: ['"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s"']
+        - Name: { Ref: DomainName }
+          Type: CAA
+          TTL: '3600'
+          ResourceRecords: ['0 issue "amazon.com"', '0 issuewild ";"']
+
+  GitHubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  # @spec UI-HOST-004
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: { 'Fn::Sub': '${AWS::StackName}-deploy' }
+      Description: Lets GitHub Actions on main publish the game, and nothing else
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: { Ref: GitHubOidc } }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': sts.amazonaws.com
+                'token.actions.githubusercontent.com:sub': { 'Fn::Sub': 'repo:${Repository}:ref:refs/heads/main' }
+      Policies:
+        - PolicyName: publish-site
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: { 'Fn::GetAtt': [SiteBucket, Arn] }
+              - Effect: Allow
+                Action: [s3:PutObject, s3:DeleteObject]
+                Resource: { 'Fn::Sub': '${SiteBucket.Arn}/*' }
+              - Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: { 'Fn::Sub': 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}' }
+
+Outputs:
+  BucketName:
+    Value: { Ref: SiteBucket }
+  DistributionId:
+    Value: { Ref: Distribution }
+  DistributionDomain:
+    Value: { 'Fn::GetAtt': [Distribution, DomainName] }
+  DeployRoleArn:
+    Value: { 'Fn::GetAtt': [DeployRole, Arn] }

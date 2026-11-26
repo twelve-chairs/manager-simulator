@@ -74,18 +74,35 @@ Treat as untrusted anything the game did not just compute itself:
 - When the game is deployed, it is served with a Content-Security-Policy that
   disallows inline script and `unsafe-eval`, plus `X-Content-Type-Options:
   nosniff` and `frame-ancestors` set.
-- **Exception, GitHub Pages for playtesting.** GitHub Pages cannot send
-  headers, so while the game is hosted there for playtests:
-  - the policy is carried in a `<meta>` tag the production build adds
-    (UI-BUILD-002), which covers everything but `frame-ancestors`;
-  - `frame-ancestors` and `nosniff` are not set. The accepted risk is small:
-    the game has no accounts, payments or server, the worst a framing site
-    could trick a player into is discarding a run (which asks for
-    confirmation), and the site serves only its own static files;
-  - "Enforce HTTPS" is on in the Pages settings; `github.io` is HSTS-preloaded.
+- The game's address is `https://www.manager-simulator.io`, served by
+  CloudFront from a private S3 bucket (`infra/site.yml`, see
+  `docs/decisions/hosting.md`). CloudFront sends the Content-Security-Policy
+  with `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Strict-Transport-Security` and
+  `Referrer-Policy: no-referrer`; the bare domain redirects to `www`. The
+  production build also carries the policy in a `<meta>` tag (UI-BUILD-002),
+  so a copy served anywhere else is still held to it.
+- **Exception, the GitHub Pages copy.** The copy at `github.io` stays up while
+  players carry their saves over, and GitHub Pages cannot send headers:
+  `frame-ancestors` and `nosniff` are not set there. The accepted risk is
+  small: the game has no accounts, payments or server, the worst a framing
+  site could trick a player into is discarding a run (which asks for
+  confirmation), and the site serves only its own static files. Retire the
+  copy, and this exception, once players have moved.
 
-  Before a wider release, move to a host that can send these headers (for
-  example Cloudflare Pages with a `_headers` file) and remove this exception.
+## AWS
+
+- The deploy assumes a role through GitHub's OpenID Connect provider, trusted
+  only for this repository's `main` branch and allowed only to write the
+  site's bucket and invalidate its distribution. No AWS access keys live in
+  the repository, GitHub or the workflow.
+- Account ids, role ARNs, bucket names and distribution ids are not
+  committed; the workflow reads them from GitHub secrets.
+- The bucket blocks all public access and is readable only by its
+  distribution; access logging is off, since the game collects nothing about
+  its players.
+- Changes to the stack go through `infra/site.yml` and its tests, like any
+  other code, and are deployed with `aws cloudformation deploy`.
 
 ## Determinism is not a security control, but keep it
 

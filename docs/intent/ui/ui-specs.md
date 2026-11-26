@@ -114,6 +114,15 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-BUILD-006**: While the game is served by the development server, the UI shall use the version `development`.
 - [x] **UI-BUILD-001**: When the game is built, the build shall compile the situations in `content/situations/` into the bundle, fail on an invalid situation, and emit static files with no inline script.
 
+## Hosting
+
+- [x] **UI-HOST-001**: The site's CloudFormation template shall serve the game from a private S3 bucket, blocking all public access and readable only by the site's CloudFront distribution, over HTTPS only, under `www.manager-simulator.io` and `manager-simulator.io`, with a certificate for both.
+- [x] **UI-HOST-002**: The site's distribution shall send on every response the UI design's Content-Security-Policy with `frame-ancestors 'none'` added, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security` of at least a year, and `Referrer-Policy: no-referrer`.
+- [x] **UI-HOST-003**: When a request reaches the site under the bare domain, the site shall answer with a permanent redirect to the same path and query on `www.manager-simulator.io`.
+- [x] **UI-HOST-004**: The site's template shall give the deploy a role trusted only for the repository's `main` branch through GitHub's OpenID Connect provider, allowed only to list and write the site's bucket and invalidate its distribution.
+- [x] **UI-HOST-005**: The site's template shall publish DNS records saying the domain sends no mail (a null MX, SPF that allows no sender, and DMARC that rejects), and a CAA record allowing only Amazon to issue its certificates.
+- [x] **UI-HOST-006**: When a push to `main` passes its checks, the deploy shall build the game for the domain's root, upload it to the site's bucket with the page uncached and hashed assets cached for a year, removing files no longer built, and invalidate the page.
+
 ## The director's screens
 
 - [x] **UI-DIR-001**: When the week screen is shown for the director in the level's first quarter, until the player starts it, the UI shall show a scene before anything arrives with the director's habits, each with a line on what it does, and How to play, closed by a Start quarter 1 button.

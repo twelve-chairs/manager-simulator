@@ -4,7 +4,7 @@ This is the script for one playtest session: one player, one facilitator, 30 to 
 
 ## Setup
 
-- **The game:** the live site, https://twelve-chairs.github.io/manager-simulator/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a later session.
+- **The game:** the live site, https://www.manager-simulator.io/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a later session.
 - **The version:** write down the version from the bottom of the start screen ("Version v0.2.12 (c9462d8)") before the player starts.
 - **The player:** someone who hasn't played before. Note whether they manage people, have been managed, or neither; don't screen anyone out.
 - **Time:** let them play for up to 60 minutes. Stop earlier if they want to stop, and note when and why.
@@ -165,4 +165,4 @@ Later sessions, if any: for each, the date, minutes played and how the run was c
 
 ## Comparing with the scorecard
 
-Run `npm run playtest` on the same version (or `PLAYTEST_URL=https://twelve-chairs.github.io/manager-simulator/ npm run playtest` against the live site), open the report with `npx playwright show-report`, and read the first-timer's scorecard. Its headings match the ones above. Under *Promotion changes the job*, the scorecard lists, for each promotion, the panels, habits and kinds of moment that stopped and started appearing at it: set what players named beside it, and note what they named that it doesn't list, and what it lists that nobody noticed. Where the people disagree with the scorecard, for example a scorecard that shows every quit was flagged on the card but players who were surprised by quits, record it: that is how the scorecard's proxies are calibrated (see the design's *Open Questions*).
+Run `npm run playtest` on the same version (or `PLAYTEST_URL=https://www.manager-simulator.io/ npm run playtest` against the live site), open the report with `npx playwright show-report`, and read the first-timer's scorecard. Its headings match the ones above. Under *Promotion changes the job*, the scorecard lists, for each promotion, the panels, habits and kinds of moment that stopped and started appearing at it: set what players named beside it, and note what they named that it doesn't list, and what it lists that nobody noticed. Where the people disagree with the scorecard, for example a scorecard that shows every quit was flagged on the card but players who were surprised by quits, record it: that is how the scorecard's proxies are calibrated (see the design's *Open Questions*).
