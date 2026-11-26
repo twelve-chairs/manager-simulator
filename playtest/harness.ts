@@ -239,17 +239,20 @@ function playInPage(options: InPage): PlaySummary {
   const firstNotes = () => new Map(qa('[data-panel=team] [data-person]').map((card) => [text('[data-field=name]', card), q('[data-part=memory] li', card)?.textContent ?? '']));
   const uncounted = (line: string) => line.replace(COUNTED, '');
 
+  /** What text on a screen must not show, in the order it is checked. */
+  const TEXT_RULES: [RegExp, string][] = [
+    [/[{}]|\b(undefined|null|NaN|Infinity|\[object)\b/, 'broken text'],
+    [/\b[a-z]+[A-Z][a-z]/, 'code name in text'],
+    [/ {2,}| [.,;:!?](?!\d)|\.\.(?!\.)/, 'spacing'],
+    [/\b1 (weeks|interviews|engineers|projects|reviews|approvals|pages|times)\b/, 'plural'],
+    [/\b(\w{2,}) \1\b/i, 'repeated word'],
+  ];
   /** Text quality on every leaf of the screen: no placeholders, code names, broken spacing or plural slips. */
   function checkText(where: string) {
     for (const el of qa('[data-screen] p, [data-screen] li, [data-screen] td, [data-screen] h1, [data-screen] h2, [data-screen] h3, [data-screen] button, [data-screen] small, header.status p, header.status div')) {
       if (el.children.length && !['P', 'LI', 'BUTTON'].includes(el.tagName)) continue;
       const t = (el.innerText ?? '').trim();
-      if (!t) continue;
-      if (/[{}]|\b(undefined|null|NaN|Infinity|\[object)\b/.test(t)) flag(where, `broken text: ${t.slice(0, 120)}`);
-      if (/\b[a-z]+[A-Z][a-z]/.test(t)) flag(where, `code name in text: ${t.slice(0, 120)}`);
-      if (/ {2,}| [.,;:!?](?!\d)|\.\.(?!\.)/.test(t)) flag(where, `spacing: ${t.slice(0, 120)}`);
-      if (/\b1 (weeks|interviews|engineers|projects|reviews|approvals|pages|times)\b/.test(t)) flag(where, `plural: ${t.slice(0, 120)}`);
-      if (/\b(\w{2,}) \1\b/i.test(t)) flag(where, `repeated word: ${t.slice(0, 120)}`);
+      if (t) for (const [rule, problem] of TEXT_RULES) if (rule.test(t)) flag(where, `${problem}: ${t.slice(0, 120)}`);
     }
     if (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1) flag(where, `wider than the viewport (${document.documentElement.scrollWidth}px)`);
   }
@@ -262,6 +265,19 @@ function playInPage(options: InPage): PlaySummary {
     if (!ENERGY.includes(energy)) flag('header', `energy word "${energy}"`);
     const warning = q('[data-field=burnout]')?.textContent ?? null;
     if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?|quarters?) at the edge\. \d+ in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
+    checkMemories();
+    if (sc === 'recap') checkRecap(turn, week);
+    if (sc === 'done' && text('[data-scene] .where') !== 'The weekend') flag('done', 'not set at the weekend');
+    const besideEndWeek = q('.stage > .end-week') !== null;
+    if ((sc === 'moment' || sc === 'reaction') !== besideEndWeek) flag(sc, `End the week beside the scene: ${besideEndWeek}`);
+    if (sc === 'reaction') {
+      for (const chip of qa('[data-scene] [data-chip]')) if (COUNTED.test(chip.textContent ?? '')) flag('reaction', `a chip with a count: ${chip.textContent}`);
+    }
+    if (sc === 'moment') checkWhen(turn, week, lastSlot);
+  }
+
+  /** At most three memory lines on a card, no 1:1 notes, and no line twice in a row. */
+  function checkMemories() {
     for (const card of qa('[data-panel=team] [data-person]')) {
       const lines = qa('[data-part=memory] li', card).map((l) => l.textContent ?? '');
       if (lines.length > 3) flag('team', `more than three memory lines`);
@@ -270,32 +286,42 @@ function playInPage(options: InPage): PlaySummary {
         if (i > 0 && lines[i - 1] === l) flag('team', `the same memory line twice in a row: ${l}`);
       });
     }
-    if (sc === 'recap') {
-      const heading = text('[data-scene] [data-part=heading]');
-      if (heading !== `How ${turn} ${week} went`) flag('recap', `heading "${heading}" in ${turn} ${week}`);
-      const start = text('[data-action=close-recap]');
-      if (start !== `Start ${turn} ${Number(week) + 1}`) flag('recap', `button "${start}" after ${turn} ${week}`);
-      if (text('[data-scene] .where') !== 'The weekend') flag('recap', 'not set at the weekend');
-    }
-    if (sc === 'done' && text('[data-scene] .where') !== 'The weekend') flag('done', 'not set at the weekend');
-    const besideEndWeek = q('.stage > .end-week') !== null;
-    if ((sc === 'moment' || sc === 'reaction') !== besideEndWeek) flag(sc, `End the week beside the scene: ${besideEndWeek}`);
-    if (sc === 'reaction') {
-      for (const chip of qa('[data-scene] [data-chip]')) if (COUNTED.test(chip.textContent ?? '')) flag('reaction', `a chip with a count: ${chip.textContent}`);
-    }
-    if (sc === 'moment') {
-      // A month's or a quarter's moment says its week of the turn too: "Week 2, Tuesday morning".
-      const at = /^(?:Week ([1-9]|1[0-3]), )?(\w+) (\w+)$/.exec(text('[data-field=when]'));
-      if ((levelOn() !== 'line') !== Boolean(at?.[1])) flag('moment', `when "${text('[data-field=when]')}" at the ${turn} level`);
-      const [day, time] = [at?.[2], at?.[3]];
-      const slot = at ? (Number(at[1] ?? 1) - 1) * 15 + DAYS.indexOf(day!) * 3 + TIMES.indexOf(time!) : -1;
-      if (slot < 0) flag('moment', `when "${text('[data-field=when]')}"`);
-      if (lastSlot.week === week && slot < lastSlot.slot) flag('moment', `week ${week}: ${text('[data-field=when]')} after a later moment`);
-      lastSlot.week = week;
-      lastSlot.slot = slot;
-      const now = qa('[data-panel=days] [data-day]').findIndex((e) => e.dataset.state === 'now');
-      if (now !== DAYS.indexOf(day!)) flag('moment', `day strip marks day ${now} on ${day}`);
-    }
+  }
+
+  function checkRecap(turn: string, week: string) {
+    const heading = text('[data-scene] [data-part=heading]');
+    if (heading !== `How ${turn} ${week} went`) flag('recap', `heading "${heading}" in ${turn} ${week}`);
+    const start = text('[data-action=close-recap]');
+    if (start !== `Start ${turn} ${Number(week) + 1}`) flag('recap', `button "${start}" after ${turn} ${week}`);
+    if (text('[data-scene] .where') !== 'The weekend') flag('recap', 'not set at the weekend');
+  }
+
+  /** A moment's time: well formed, never before an earlier moment of the week, and the day strip on its day. */
+  function checkWhen(turn: string, week: string, lastSlot: { week: string; slot: number }) {
+    // A month's or a quarter's moment says its week of the turn too: "Week 2, Tuesday morning".
+    const when = text('[data-field=when]');
+    const at = /^(?:Week ([1-9]|1[0-3]), )?(\w+) (\w+)$/.exec(when);
+    if ((levelOn() !== 'line') !== Boolean(at?.[1])) flag('moment', `when "${when}" at the ${turn} level`);
+    const [day, time] = [at?.[2], at?.[3]];
+    const slot = at ? (Number(at[1] ?? 1) - 1) * 15 + DAYS.indexOf(day!) * 3 + TIMES.indexOf(time!) : -1;
+    if (slot < 0) flag('moment', `when "${when}"`);
+    if (lastSlot.week === week && slot < lastSlot.slot) flag('moment', `week ${week}: ${when} after a later moment`);
+    lastSlot.week = week;
+    lastSlot.slot = slot;
+    const now = qa('[data-panel=days] [data-day]').findIndex((e) => e.dataset.state === 'now');
+    if (now !== DAYS.indexOf(day!)) flag('moment', `day strip marks day ${now} on ${day}`);
+  }
+
+  /** A debrief's status, and a lesson for every situation dealt with; a lesson for one let wait is counted. */
+  function checkDebrief(d: HTMLElement) {
+    const status = text('[data-field=status]', d);
+    if (!STATUSES.includes(status)) flag('review', `debrief status "${status}"`);
+    const lesson = q('[data-field=text]', d)?.textContent;
+    const title = text('[data-field=title]', d);
+    if (status === 'You dealt with it' && !lesson) flag('review', `no lesson for ${title}`);
+    if (status !== 'You let it wait') return;
+    if (lesson) summary.seen.waitedLessons++;
+    else if (!title.startsWith('Onboarding')) summary.seen.waitedWithoutLesson.push(title);
   }
 
   function checkReview() {
@@ -307,16 +333,7 @@ function playInPage(options: InPage): PlaySummary {
       if (!VERDICTS.includes(text('[data-field=verdict]', m))) flag('review', `verdict "${text('[data-field=verdict]', m)}"`);
       if (!text('[data-field=numbers]', m)) flag('review', `no numbers for ${name}`);
     }
-    for (const d of qa('[data-debrief]')) {
-      const status = text('[data-field=status]', d);
-      if (!STATUSES.includes(status)) flag('review', `debrief status "${status}"`);
-      const lesson = q('[data-field=text]', d);
-      if (status === 'You dealt with it' && !lesson?.textContent) flag('review', `no lesson for ${text('[data-field=title]', d)}`);
-      if (status === 'You let it wait') {
-        if (lesson?.textContent) summary.seen.waitedLessons++;
-        else if (!text('[data-field=title]', d).startsWith('Onboarding')) summary.seen.waitedWithoutLesson.push(text('[data-field=title]', d));
-      }
-    }
+    for (const d of qa('[data-debrief]')) checkDebrief(d);
     const ceiling = q('[data-field=ceiling]')?.textContent ?? null;
     summary.reviews.push({ week, rating: text('[data-field=rating]'), ceiling, outcome: text('[data-field=outcome]') });
   }
@@ -363,30 +380,39 @@ function playInPage(options: InPage): PlaySummary {
       return (better ? has(better) : null) ?? choices[0] ?? null;
     }
     if (title.startsWith('Final evaluation')) return has('letGo');
-    const difficulty = q('[data-scene] [data-field=difficulty]') ? bandOf('skill', text('[data-scene] [data-field=difficulty]')) : undefined;
     // Only pages beyond the engineer on call reach a moment: back them up with energy to spare, or roll the change back.
     if (title === 'Night page') return rested ? has('backUp') : has('rollBack');
-    if (title.startsWith('Check-in: ')) {
-      const project = qa('[data-project]').find((p) => text('[data-field=name]', p) === title.slice('Check-in: '.length));
-      const schedule = project ? text('[data-field=schedule]', project) : 'on schedule';
-      if (schedule !== 'on schedule' && bandOf('reputation', text('[data-field=reputation]')) >= OKAY) return has('cutScope');
-      return rested ? has('replan') : has('pushOn');
-    }
-    // The engineers a choice offers, least stressed first, ties by id, as the harness orders them.
-    const offered = (prefix: string) =>
-      choices
-        .filter((c) => (c.dataset.choice ?? '').startsWith(prefix))
-        .map((c) => {
-          const [skill = '', stress = ''] = (q('[data-part=who]', c)?.textContent ?? '').split(', ');
-          return { el: c, id: c.dataset.choice!.slice(prefix.length), skill: bandOf('skill', skill), stress: bandOf('stress', stress) };
-        })
-        .sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
-    if (title === 'Interview') return rested ? has('self') : (offered('ask:')[0]?.el ?? has('skip'));
+    if (title.startsWith('Check-in: ')) return checkInSound(title.slice('Check-in: '.length), rested, has);
+    if (title === 'Interview') return rested ? has('self') : (offeredEngineers(choices, 'ask:')[0]?.el ?? has('skip'));
+    return workSound(choices, rested, has);
+  }
+
+  /** A check-in: cut scope on a slipping project while reputation allows, otherwise replan with energy or push on. */
+  function checkInSound(name: string, rested: boolean, has: (id: string) => HTMLElement | null): HTMLElement | null {
+    const project = qa('[data-project]').find((p) => text('[data-field=name]', p) === name);
+    const schedule = project ? text('[data-field=schedule]', project) : 'on schedule';
+    if (schedule !== 'on schedule' && bandOf('reputation', text('[data-field=reputation]')) >= OKAY) return has('cutScope');
+    return rested ? has('replan') : has('pushOn');
+  }
+
+  /** The engineers a choice offers, least stressed first, ties by id, as the harness orders them. */
+  const offeredEngineers = (choices: HTMLElement[], prefix: string) =>
+    choices
+      .filter((c) => (c.dataset.choice ?? '').startsWith(prefix))
+      .map((c) => {
+        const [skill = '', stress = ''] = (q('[data-part=who]', c)?.textContent ?? '').split(', ');
+        return { el: c, id: c.dataset.choice!.slice(prefix.length), skill: bandOf('skill', skill), stress: bandOf('stress', stress) };
+      })
+      .sort((a, b) => a.stress - b.stress || (a.id < b.id ? -1 : 1));
+
+  /** Work to hand out, as the balance harness's sound practice hands it out. */
+  function workSound(choices: HTMLElement[], rested: boolean, has: (id: string) => HTMLElement | null): HTMLElement | null {
     // New work is offered only while someone is strained: protecting the team is worth a little reputation.
     if (has('take')) return has('decline');
     // Debt the design review's text calls elevated or worse is worth slowing down for.
     if (has('payDown') && /tech debt is (elevated|high|severe)/.test(text('[data-scene] [data-part=text]'))) return has('payDown');
-    const givable = offered('give:');
+    const difficulty = q('[data-scene] [data-field=difficulty]') ? bandOf('skill', text('[data-scene] [data-field=difficulty]')) : undefined;
+    const givable = offeredEngineers(choices, 'give:');
     const able = givable.find((p) => (difficulty === undefined || p.skill >= difficulty) && p.stress <= OKAY);
     if (able) return able.el;
     if (rested) return has('self');
@@ -394,6 +420,17 @@ function playInPage(options: InPage): PlaySummary {
     if (has('smaller')) return has('smaller');
     // Tired, with no one able: a stretch for someone with room, or push back.
     return givable.find((p) => p.stress <= OKAY)?.el ?? has('pushBack');
+  }
+
+  /** Whoever a goal names, or who wants growth, or the least skilled, ties by id. */
+  function growthFocus() {
+    const goals = qa('[data-goal] [data-field=text]').map((g) => g.textContent ?? '');
+    const people = qa('[data-panel=team] [data-person]').map((c) => ({ id: c.dataset.person!, name: text('[data-field=name]', c), want: text('[data-field=want]', c), skill: bandOf('skill', text('[data-field=skill]', c)) }));
+    return (
+      people.find((p) => goals.includes(`Help ${p.name} grow`)) ??
+      people.find((p) => p.want === 'growth') ??
+      [...people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0]
+    );
   }
 
   /** Sound practice's habit: the growth focus on whoever a goal names, or who wants growth, or the least skilled. */
@@ -404,12 +441,7 @@ function playInPage(options: InPage): PlaySummary {
     const week = text('[data-field=week]');
     if (week === habitsWeek) return;
     habitsWeek = week;
-    const goals = qa('[data-goal] [data-field=text]').map((g) => g.textContent ?? '');
-    const people = qa('[data-panel=team] [data-person]').map((c) => ({ id: c.dataset.person!, name: text('[data-field=name]', c), want: text('[data-field=want]', c), skill: bandOf('skill', text('[data-field=skill]', c)) }));
-    const growth =
-      people.find((p) => goals.includes(`Help ${p.name} grow`)) ??
-      people.find((p) => p.want === 'growth') ??
-      [...people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0];
+    const growth = growthFocus();
     const select = q('[data-habit=growth]') as HTMLSelectElement | null;
     if (growth && select && select.value !== growth.id) {
       select.value = growth.id;
@@ -583,56 +615,63 @@ function playInPage(options: InPage): PlaySummary {
 
   const lastSlot = { week: '', slot: -1 };
   let lastRecapWeek = '';
-  for (let step = 0; step < 200_000; step++) {
-    const screen = q('[data-screen]')?.dataset.screen;
-    if (screen === 'review') {
-      checkText('review');
-      checkReview();
-      const heading = text('[data-part=heading]');
-      if (!readScreens.has(`review|${heading}`)) {
-        read(`review|${heading}`, q('[data-screen]'));
-        const turn = Number(/\d+/.exec(heading)?.[0] ?? 0);
-        const reviewWeek = heading.startsWith('Quarter') ? directorBase + turn * 13 : heading.startsWith('Month') ? seniorBase + turn * 4 : turn;
-        lastReviewWeek = reviewWeek;
-        log.push({ kind: 'review', week: reviewWeek, rating: text('[data-field=rating]'), promoted: text('[data-field=outcome]') === 'You are being promoted.' });
-      }
-      if (options.until === 'review') return { ...summary, stoppedAt: 'review', violations: [...violations] };
-      press(q('[data-action=acknowledge]'));
-      continue;
+  /** What a step leaves the loop to do: go on to the next screen, stop playing, or return the summary as it stands. */
+  type Next = 'next' | 'stop' | PlaySummary;
+  const stopAt = (stoppedAt: string): PlaySummary => ({ ...summary, stoppedAt, violations: [...violations] });
+
+  function reviewStep(): Next {
+    checkText('review');
+    checkReview();
+    const heading = text('[data-part=heading]');
+    if (!readScreens.has(`review|${heading}`)) {
+      read(`review|${heading}`, q('[data-screen]'));
+      const turn = Number(/\d+/.exec(heading)?.[0] ?? 0);
+      let reviewWeek = turn;
+      if (heading.startsWith('Quarter')) reviewWeek = directorBase + turn * 13;
+      else if (heading.startsWith('Month')) reviewWeek = seniorBase + turn * 4;
+      lastReviewWeek = reviewWeek;
+      log.push({ kind: 'review', week: reviewWeek, rating: text('[data-field=rating]'), promoted: text('[data-field=outcome]') === 'You are being promoted.' });
     }
-    if (screen === 'handover') {
-      checkText('handover');
-      // @spec PLAY-RUN-005
-      const TRUST = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'];
-      const offered = qa('[data-handover]').map((b) => ({ id: b.dataset.handover!, trust: text('[data-field=trust]', b), want: q('[data-field=want]', b)?.textContent ?? null }));
-      const growers = offered.filter((o) => o.want === 'growth' && TRUST.indexOf(o.trust) >= 3).sort((a, b) => TRUST.indexOf(b.trust) - TRUST.indexOf(a.trust));
-      const choice = growers[0]?.id ?? 'hire';
-      // @spec PLAY-RUN-009
-      const toDirector = /promoted to director/i.test(text('[data-part=heading]'));
-      if (toDirector) {
-        summary.seen.directorHandover = { choice, options: offered.filter((o) => o.id !== 'hire') };
-        directorBase = lastReviewWeek;
-        // left on the handover screen, for a player that takes over from here
-        if (options.until === 'directorHandover') return { ...summary, stoppedAt: 'director handover', violations: [...violations] };
-      } else {
-        summary.seen.handover = { choice, options: offered.filter((o) => o.id !== 'hire') };
-        seniorBase = lastReviewWeek;
-        if (options.until === 'seniorHandover') return { ...summary, stoppedAt: 'senior handover', violations: [...violations] };
-      }
-      read('handover', q('[data-screen]'));
-      press(q(`[data-handover="${choice}"]`));
-      continue;
+    if (options.until === 'review') return stopAt('review');
+    press(q('[data-action=acknowledge]'));
+    return 'next';
+  }
+
+  // @spec PLAY-RUN-005, PLAY-RUN-009
+  function handoverStep(): Next {
+    checkText('handover');
+    const TRUST = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'];
+    const offered = qa('[data-handover]').map((b) => ({ id: b.dataset.handover!, trust: text('[data-field=trust]', b), want: q('[data-field=want]', b)?.textContent ?? null }));
+    const growers = offered.filter((o) => o.want === 'growth' && TRUST.indexOf(o.trust) >= 3).sort((a, b) => TRUST.indexOf(b.trust) - TRUST.indexOf(a.trust));
+    const choice = growers[0]?.id ?? 'hire';
+    const seen = { choice, options: offered.filter((o) => o.id !== 'hire') };
+    if (/promoted to director/i.test(text('[data-part=heading]'))) {
+      summary.seen.directorHandover = seen;
+      directorBase = lastReviewWeek;
+      // left on the handover screen, for a player that takes over from here
+      if (options.until === 'directorHandover') return stopAt('director handover');
+    } else {
+      summary.seen.handover = seen;
+      seniorBase = lastReviewWeek;
+      if (options.until === 'seniorHandover') return stopAt('senior handover');
     }
-    if (screen !== 'week') {
-      checkText('ended');
-      checkEnded();
-      read('ended', q('[data-screen]'));
-      const leftText = text('[data-part=career] [data-field=left]');
-      const left = leftText === 'nobody' ? [] : leftText.split(', ').map((entry) => /^(.*) \((.*)\)$/.exec(entry)).filter((m) => m !== null).map((m) => ({ name: m[1]!, reason: m[2]! }));
-      log.push({ kind: 'ended', ending: summary.ending ?? '', left });
-      break;
-    }
-    const sc = q('[data-scene]')?.dataset.scene ?? '';
+    read('handover', q('[data-screen]'));
+    press(q(`[data-handover="${choice}"]`));
+    return 'next';
+  }
+
+  function endedStep(): Next {
+    checkText('ended');
+    checkEnded();
+    read('ended', q('[data-screen]'));
+    const leftText = text('[data-part=career] [data-field=left]');
+    const left = leftText === 'nobody' ? [] : leftText.split(', ').map((entry) => /^(.*) \((.*)\)$/.exec(entry)).filter((m) => m !== null).map((m) => ({ name: m[1]!, reason: m[2]! }));
+    log.push({ kind: 'ended', ending: summary.ending ?? '', left });
+    return 'stop';
+  }
+
+  /** Every scene: its checks, the look and layout, the habits, the moment and read events, and the edge warning. */
+  function sceneStep(sc: string): Next {
     checkText(sc);
     checkWeek(sc, lastSlot);
     look();
@@ -640,93 +679,125 @@ function playInPage(options: InPage): PlaySummary {
     // Habits change once a week, at its first scene, before any of its moments is answered, as the harness changes them.
     if (sc !== 'recap') soundHabits();
     const sceneKey = `${text('[data-field=week]')}|${sc}|${text('[data-scene] [data-part=heading]')}|${text('[data-field=when]')}`;
-    if (sc === 'moment' && !readScreens.has(sceneKey)) {
-      const heading = text('[data-scene] [data-part=heading]');
-      log.push({ kind: 'moment', week: runWeek(), title: heading, level: levelOn() });
-    }
+    if (sc === 'moment' && !readScreens.has(sceneKey)) log.push({ kind: 'moment', week: runWeek(), title: text('[data-scene] [data-part=heading]'), level: levelOn() });
     read(sceneKey, q('[data-scene]'));
     const warning = q('[data-field=burnout]')?.textContent;
     if (warning && !summary.seen.edgeWarnings.includes(warning)) summary.seen.edgeWarnings.push(warning);
-    if (options.until === 'edgeWarning' && warning) return { ...summary, stoppedAt: 'edgeWarning', violations: [...violations] };
-    if (sc === 'recap') {
-      const week = text('[data-field=week]');
-      if (week !== lastRecapWeek) {
-        lastRecapWeek = week;
-        // At the senior manager the header counts months from the level's start; the run counts weeks.
-        summary.weeks = director() ? directorBase + Number(week) * 13 : senior() ? seniorBase + Number(week) * 4 : Number(week);
-        summary.energyTrail.push(`${week}:${text('[data-field=energy]')}`);
-        summary.seen.assigned.push(...qa('[data-part=recap-assigned] li').map((l) => l.textContent ?? ''));
-        summary.seen.held.push(...qa('[data-part=recap-held] li').map((l) => l.textContent ?? ''));
-      }
-      if (summary.weeks >= options.maxWeeks) return { ...summary, stoppedAt: `week ${summary.weeks}`, violations: [...violations] };
-      press(q('[data-action=close-recap]'));
-      continue;
+    return options.until === 'edgeWarning' && warning ? stopAt('edgeWarning') : 'next';
+  }
+
+  /** At the senior manager and director the header counts months or quarters from the level's start; the run counts weeks. */
+  const runWeeks = (week: string) => {
+    if (director()) return directorBase + Number(week) * 13;
+    return senior() ? seniorBase + Number(week) * 4 : Number(week);
+  };
+
+  function recapStep(): Next {
+    const week = text('[data-field=week]');
+    if (week !== lastRecapWeek) {
+      lastRecapWeek = week;
+      summary.weeks = runWeeks(week);
+      summary.energyTrail.push(`${week}:${text('[data-field=energy]')}`);
+      summary.seen.assigned.push(...qa('[data-part=recap-assigned] li').map((l) => l.textContent ?? ''));
+      summary.seen.held.push(...qa('[data-part=recap-held] li').map((l) => l.textContent ?? ''));
     }
-    if (sc === 'done') {
-      press(q('[data-action=finish-week]'));
-      continue;
-    }
-    if (sc === 'before-monday') {
-      press(q('[data-action=start-week]'));
-      continue;
-    }
-    if (sc === 'reaction') {
-      press(q('[data-action=continue]'));
-      continue;
+    if (summary.weeks >= options.maxWeeks) return stopAt(`week ${summary.weeks}`);
+    press(q('[data-action=close-recap]'));
+    return 'next';
+  }
+
+  /** The buttons that move a scene on without a decision. */
+  const MOVE_ON: Record<string, string> = { done: 'finish-week', 'before-monday': 'start-week', reaction: 'continue' };
+
+  function weekStep(): Next {
+    const sc = q('[data-scene]')?.dataset.scene ?? '';
+    const seen = sceneStep(sc);
+    if (seen !== 'next') return seen;
+    if (sc === 'recap') return recapStep();
+    if (Object.hasOwn(MOVE_ON, sc)) {
+      press(q(`[data-action=${MOVE_ON[sc]}]`));
+      return 'next';
     }
     if (sc !== 'moment') {
       flag('week', `unexpected scene "${sc}"`);
-      break;
+      return 'stop';
     }
-    const title = text('[data-scene] [data-part=heading]');
+    return momentStep();
+  }
+
+  /** Final evaluations and the honest let-go warning are recorded as they are seen, and a run can stop at either. */
+  function milestones(title: string): PlaySummary | undefined {
     if (title.startsWith('Final evaluation')) {
       summary.seen.finalEvaluations.push({ title, choices: qa('[data-scene] [data-choice]').map((c) => c.childNodes[0]?.textContent ?? '') });
-      if (options.until === 'finalEvaluation') return { ...summary, stoppedAt: 'finalEvaluation', violations: [...violations] };
+      if (options.until === 'finalEvaluation') return stopAt('finalEvaluation');
     }
     const letGo = q('[data-scene] [data-choice=honest-let-go]');
-    if (letGo) {
-      summary.seen.letGoWarnings.push(letGo.textContent ?? '');
-      if (options.until === 'letGoWarning') return { ...summary, stoppedAt: 'letGoWarning', violations: [...violations] };
-    }
+    if (!letGo) return undefined;
+    summary.seen.letGoWarnings.push(letGo.textContent ?? '');
+    return options.until === 'letGoWarning' ? stopAt('letGoWarning') : undefined;
+  }
+
+  /** Calibration, settled on the evidence by every player who plays sound practice for it. */
+  const settlesOnEvidence = () => senior() && q('[data-scene] [data-calibration]') !== null && ['sound', 'mixed', 'waiter'].includes(options.strategy);
+
+  function momentStep(): Next {
+    const title = text('[data-scene] [data-part=heading]');
+    const stopped = milestones(title);
+    if (stopped) return stopped;
     const offered = qa('[data-scene] [data-choice]').map((c) => c.dataset.choice ?? '');
-    // Calibration, settled on the evidence by every player who plays sound practice for it.
-    if (senior() && q('[data-scene] [data-calibration]') && (options.strategy === 'sound' || options.strategy === 'mixed' || options.strategy === 'waiter')) {
+    if (settlesOnEvidence()) {
       summary.seen.seniorChoices.push({ title, offered, chosen: 'settle' });
       const week = runWeek();
       settleOnEvidence();
       log.push({ kind: 'answer', week, title, reaction: q('[data-scene] [data-part=reaction]')?.textContent ?? null, chips: qa('[data-scene] [data-chip]').map((c) => c.textContent ?? ''), notes: [] });
-      continue;
+      return 'next';
     }
     const choice = choose();
     if (senior()) summary.seen.seniorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? null });
     if (director()) summary.seen.directorChoices.push({ title, offered, chosen: choice?.dataset.choice ?? choice?.dataset.action ?? null });
     const week = runWeek();
-    if (choice) {
-      const before = firstNotes();
-      press(choice, true);
-      const reacted = q('[data-scene]')?.dataset.scene === 'reaction';
-      // A refused answer leaves the moment open: flag it and let it wait, rather than choose it again forever.
-      if (!reacted && q('[data-scene]')?.dataset.scene === 'moment' && q(`[data-scene][data-moment="${q('[data-scene]')!.dataset.moment}"] .error, [data-scene] [role=alert]`)) {
-        flag('moment', `"${title}" refused the answer ${choice.dataset.choice ?? ''}`);
-        press(q('[data-scene] [data-action=wait]'), true);
-        log.push({ kind: 'wait', week });
-        continue;
-      }
-      const notes = [...firstNotes()]
-        .filter(([name, note]) => note && note !== before.get(name))
-        .map(([name, note]) => ({ name, note: uncounted(note) }));
-      log.push({
-        kind: 'answer',
-        week,
-        title,
-        reaction: reacted ? (q('[data-scene] [data-part=reaction]')?.textContent ?? '') : null,
-        chips: reacted ? qa('[data-scene] [data-chip]').map((c) => c.textContent ?? '') : [],
-        notes,
-      });
-    } else {
-      press(q('[data-scene] [data-action=wait]'), true);
-      log.push({ kind: 'wait', week });
+    if (choice) answer(title, choice, week);
+    else waitIt(week);
+    return 'next';
+  }
+
+  const waitIt = (week: number) => {
+    press(q('[data-scene] [data-action=wait]'), true);
+    log.push({ kind: 'wait', week });
+  };
+
+  /** Answers the moment, logging the reaction, its chips and the notes it left on cards. */
+  function answer(title: string, choice: HTMLElement, week: number) {
+    const before = firstNotes();
+    press(choice, true);
+    const scene = () => q('[data-scene]');
+    const reacted = scene()?.dataset.scene === 'reaction';
+    // A refused answer leaves the moment open: flag it and let it wait, rather than choose it again forever.
+    if (!reacted && scene()?.dataset.scene === 'moment' && q(`[data-scene][data-moment="${scene()!.dataset.moment}"] .error, [data-scene] [role=alert]`)) {
+      flag('moment', `"${title}" refused the answer ${choice.dataset.choice ?? ''}`);
+      waitIt(week);
+      return;
     }
+    const notes = [...firstNotes()]
+      .filter(([name, note]) => note && note !== before.get(name))
+      .map(([name, note]) => ({ name, note: uncounted(note) }));
+    log.push({
+      kind: 'answer',
+      week,
+      title,
+      reaction: reacted ? (q('[data-scene] [data-part=reaction]')?.textContent ?? '') : null,
+      chips: reacted ? qa('[data-scene] [data-chip]').map((c) => c.textContent ?? '') : [],
+      notes,
+    });
+  }
+
+  const STEPS: Record<string, () => Next> = { review: reviewStep, handover: handoverStep, week: weekStep };
+  for (let step = 0; step < 200_000; step++) {
+    const screen = q('[data-screen]')?.dataset.screen ?? '';
+    // Any other screen is where the run ended.
+    const next = (Object.hasOwn(STEPS, screen) ? STEPS[screen]! : endedStep)();
+    if (next === 'stop') break;
+    if (next !== 'next') return next;
   }
   return { ...summary, violations: [...violations] };
 }
