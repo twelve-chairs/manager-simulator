@@ -168,7 +168,8 @@ const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | '
 };
 /** Where the player stands toward promotion, as the review screen and the header say it. */
 function towardPromotionLine(p: TowardPromotion): string | null {
-  return p.kind === 'notOpenYet' ? `Promotion opens in ${p.reviews} reviews, then takes two in a row rated exceeds or better.` : p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+  if (p.kind === 'notOpenYet') return `Promotion opens in ${p.reviews} reviews, then takes two in a row rated exceeds or better.`;
+  return p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
 }
 
 /** What each kind of handover choice costs the team the player leaves as a line manager. */
@@ -207,10 +208,26 @@ function standingLines(s: Standing, name: (id: string) => string): Child[] {
 /** What happened to a situation, in the words the recap uses. */
 const DEBRIEF_STATUS = { resolved: 'You dealt with it', ignored: 'You let it wait', expired: 'It passed before you got to it' } as const;
 
+/** What happened to a moment that was not answered, as the recap says it. */
+const MOMENT_OUTCOMES: Partial<Record<WeekMoment['status'], string>> = { waited: 'You let it wait.', expired: 'It passed.' };
+
+/** A debrief's lesson: the situation's own when it was dealt with, its lesson for waiting when it was let wait and has one. */
+function debriefLesson(d: { status: string; situationId: string; debrief?: string }, waitDebriefs: ReadonlyMap<string, string>): Child {
+  if (d.status === 'resolved') return h('p', { 'data-field': 'text' }, d.debrief ?? '');
+  return d.status === 'ignored' && waitDebriefs.has(d.situationId) ? h('p', { 'data-field': 'text' }, waitDebriefs.get(d.situationId)) : null;
+}
+
 const ENDINGS = {
   managedOut: 'You were managed out after failing your improvement plan.',
   completed: 'You were promoted past the top of the ladder the game has so far. You won.',
 } as const;
+
+/** How the run ended, in a sentence: staying at the level, burning out after so many turns at the edge, or the other endings. */
+function endingLine(run: Run, renderer: LevelRenderer, view: unknown): string {
+  if (run.ending === 'stayed') return renderer.stayed.ending;
+  if (run.ending === 'burnout') return `You burned out. ${capital(NUMBER_WORDS[renderer.status(view).edge?.limit ?? 4] ?? 'Too many')} ${renderer.turn}s at the edge was too long.`;
+  return run.ending ? ENDINGS[run.ending] : '';
+}
 
 /** Mounts the game in `root` and redraws it from the run after every command. */
 // @spec UI-SHELL-001, UI-SHELL-002, UI-SHELL-003, UI-SHELL-004, UI-CONTENT-001
@@ -375,8 +392,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       render();
     };
     // Discarding and importing over a run each destroy its only saved copy, so both ask first.
-    const confirmation = pendingImport
-      ? h(
+    const confirmation = (): Child => {
+      if (pendingImport) return h(
           'p',
           { class: 'confirm' },
           'Replace your current run with the imported file? ',
@@ -390,19 +407,19 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             pendingImport = null;
             render();
           } }, 'Cancel'),
-        )
-      : confirmingDiscard
-        ? h(
-            'p',
-            { class: 'confirm' },
-            'Discard this run? It cannot be recovered unless you exported it. ',
-            h('button', { 'data-action': 'confirm-discard', onClick: discard }, 'Yes, discard it'),
-            h('button', { 'data-action': 'cancel-discard', onClick: () => {
-              confirmingDiscard = false;
-              render();
-            } }, 'Cancel'),
-          )
-        : null;
+        );
+      if (!confirmingDiscard) return null;
+      return h(
+        'p',
+        { class: 'confirm' },
+        'Discard this run? It cannot be recovered unless you exported it. ',
+        h('button', { 'data-action': 'confirm-discard', onClick: discard }, 'Yes, discard it'),
+        h('button', { 'data-action': 'cancel-discard', onClick: () => {
+          confirmingDiscard = false;
+          render();
+        } }, 'Cancel'),
+      );
+    };
     return h(
       'section',
       { 'data-panel': 'save', class: 'save' },
@@ -413,7 +430,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         pendingImport = null;
         render();
       } }, 'Discard and start over'),
-      confirmation,
+      confirmation(),
     );
   }
 
@@ -471,7 +488,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-panel': 'content-errors', class: 'content-errors' },
       h('h2', {}, 'Content errors'),
-      h('ul', {}, options.contentErrors.map((e) => h('li', {}, `${e.situationId ?? `#${e.index ?? '?'}`}: ${e.message}`))),
+      h('ul', {}, options.contentErrors.map((e) => h('li', {}, `${e.situationId ?? '#' + String(e.index ?? '?')}: ${e.message}`))),
     );
   }
 
@@ -692,8 +709,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   // @spec UI-WEEK-004, UI-WEEK-015
   function recapView(run: Run, renderer: LevelRenderer, open: boolean): Child {
     if (!run.lastWeek) return null;
-    const outcome = (m: WeekMoment) =>
-      m.status === 'answered' ? (m.text ?? '') : m.status === 'waited' ? 'You let it wait.' : m.status === 'expired' ? 'It passed.' : '';
+    const outcome = (m: WeekMoment) => (m.status === 'answered' ? (m.text ?? '') : (MOMENT_OUTCOMES[m.status] ?? ''));
     const part = renderer.recap(run, run.lastWeek.recap);
     return h(
       'div',
@@ -771,11 +787,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
             h('strong', { 'data-field': 'title' }, titles.get(d.situationId) ?? d.situationId),
             ' — ',
             h('span', { 'data-field': 'status' }, DEBRIEF_STATUS[d.status]),
-            d.status === 'resolved'
-              ? h('p', { 'data-field': 'text' }, d.debrief ?? '')
-              : d.status === 'ignored' && waitDebriefs.has(d.situationId)
-                ? h('p', { 'data-field': 'text' }, waitDebriefs.get(d.situationId))
-                : null,
+            debriefLesson(d, waitDebriefs),
           ),
         ),
       ),
@@ -811,7 +823,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       'section',
       { 'data-screen': 'ended', class: 'ended' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, 'The end'),
-      h('p', { 'data-field': 'ending' }, run.ending === 'stayed' ? renderer.stayed.ending : run.ending === 'burnout' ? `You burned out. ${capital(NUMBER_WORDS[renderer.status(view).edge?.limit ?? 4] ?? 'Too many')} ${renderer.turn}s at the edge was too long.` : run.ending ? ENDINGS[run.ending] : ''),
+      h('p', { 'data-field': 'ending' }, endingLine(run, renderer, view)),
       careerSummary(run, view, renderer),
       // The final week's moments are what explain the ending, so The whole week is open here. A run that ended before
       // its level played a turn has only the level below's recap, which this level's renderer cannot tell.
@@ -920,7 +932,7 @@ const dayState = (i: number, now: number) => {
 /** The burnout warning: how many turns the player has ended at the edge, or that they are close to it. */
 function edgeWarning(status: ReturnType<LevelRenderer['status']>, turn: LevelRenderer['turn']): HTMLElement | null {
   const edge = status.edge;
-  if (edge && edge.weeks > 0) return h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${edge.weeks} ${edge.weeks === 1 ? turn : `${turn}s`} at the edge. ${edge.limit} in a row and you burn out.`);
+  if (edge && edge.weeks > 0) return h('p', { class: 'burnout', 'data-field': 'burnout' }, `You've ended ${edge.weeks} ${edge.weeks === 1 ? turn : turn + 's'} at the edge. ${edge.limit} in a row and you burn out.`);
   if (edge && status.energy === 0) return h('p', { class: 'burnout', 'data-field': 'burnout' }, "You're close to the edge. Take something off your plate.");
   return null;
 }

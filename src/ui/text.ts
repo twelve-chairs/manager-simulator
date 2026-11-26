@@ -25,17 +25,35 @@ export function emphasis(text: string): Node[] {
 }
 
 /** How a project shipped against its deadline: "on time", "1 week late", "3 weeks late". */
-export const lateness = (weeks: number): string => (weeks <= 0 ? 'on time' : `${weeks} ${weeks === 1 ? 'week' : 'weeks'} late`);
+export function lateness(weeks: number): string {
+  if (weeks <= 0) return 'on time';
+  return weeks === 1 ? '1 week late' : `${weeks} weeks late`;
+}
 
-/** A line for someone who quit: what led to it, clause by clause, and the last thing between you. */
-// @spec UI-QUIT-001
+/** A share in words: the word for all, "none", or a percentage that never rounds to 100% or 0% short of either. */
+export function shareWord(value: number, all: string): string {
+  if (value >= 1) return all;
+  if (value <= 0) return 'none';
+  return `${Math.min(99, Math.max(1, Math.round(value * 100)))}%`;
+}
+
+/** A team's change in heads over the turn: "Atlas: 2 joined." or "Atlas: 1 left." */
+export function headsChangeLine(x: { name: string; change: number }): string {
+  const change = x.change > 0 ? `${x.change} joined` : `${-x.change} left`;
+  return `${x.name}: ${change}.`;
+}
+
 /** A team that lost engineers in the month just played, and how many of them the player would have kept. */
 export function headsLostLine(x: { name: string; count: number; regretted: number }): string {
   const lost = `${x.name} lost ${x.count} engineer${x.count === 1 ? '' : 's'}`;
   if (x.regretted === 0) return `${lost}.`;
   if (x.count === 1) return `${lost}, one you'd have kept.`;
-  return `${lost}, ${x.regretted === 1 ? '1 of them one' : `${x.regretted} of them ones`} you'd have kept.`;
+  const kept = x.regretted === 1 ? '1 of them one' : `${x.regretted} of them ones`;
+  return `${lost}, ${kept} you'd have kept.`;
 }
+
+/** A line for someone who quit: what led to it, clause by clause, and the last thing between you. */
+// @spec UI-QUIT-001
 
 export function quitLine(q: { name: string; lowMotivationWeeks: number; highStressWeeks: number; lowTrust: boolean; lastMemory?: string }): string {
   const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;

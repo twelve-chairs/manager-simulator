@@ -5,7 +5,13 @@ import type { Run } from '../loop';
 import { RATINGS, type Rating } from '../sim';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { headsLostLine, lateness, quitLine } from './text';
+import { headsChangeLine, headsLostLine, lateness, quitLine, shareWord } from './text';
+
+/** Whose account of a team the card shows: the player's own look, its manager's report, or what the player hears. */
+function sourceOf(t: SeniorView['teams'][number], managers: ReadonlyMap<string, { name: string }>): string {
+  if (t.truth) return 'as you saw it';
+  return t.managerId ? `as ${managers.get(t.managerId)?.name ?? 'their manager'} tells it` : 'as you hear it';
+}
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The senior manager's How to play topics. */
@@ -76,7 +82,7 @@ function panels(ctx: ScreenContext): Child {
         ' · seem ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', t.motivation)),
         ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', t.stress)),
         ' · risk of losing people ', h('span', { 'data-field': 'attrition' }, bandWord('risk', t.attritionRisk))),
-      h('p', { class: 'source' }, h('small', { 'data-field': 'source' }, t.truth ? 'as you saw it' : t.managerId ? `as ${managers.get(t.managerId)?.name ?? 'their manager'} tells it` : 'as you hear it')),
+      h('p', { class: 'source' }, h('small', { 'data-field': 'source' }, sourceOf(t, managers))),
       t.projects.map((p) =>
         h('p', { 'data-project': p.id, class: 'project' },
           h('span', { 'data-field': 'name' }, p.name), ': ',
@@ -182,7 +188,9 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
     moment.calibration!.map((entry) => {
       const shown = shownOf(entry);
       const move = (from: Rating, to: Rating) => () => {
-        (moves[entry.teamId] ??= []).push({ from, to, count: 1 });
+        const teamMoves = moves[entry.teamId] ?? [];
+        teamMoves.push({ from, to, count: 1 });
+        moves[entry.teamId] = teamMoves;
         save();
       };
       return h(
@@ -282,7 +290,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
       part('recap-left', 'Who left', [...quits.map((q) => h('li', { 'data-manager': q.personId }, quitLine(q))), ...lost.map((x) => h('li', { 'data-team': x.teamId }, headsLostLine(x)))]),
       part('recap-managers', 'Your managers', c.managers.map((m) => h('li', { 'data-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
       part('recap-teams', 'Your teams', c.teams.map((t) => h('li', { 'data-team': t.id }, `${t.name}: ${t.changes.join(' and ')}.`))),
-      part('recap-heads', 'People', c.heads.map((x) => h('li', {}, `${x.name}: ${x.change > 0 ? `${x.change} joined` : `${-x.change} left`}.`))),
+      part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),
       part('recap-slipped', 'What slipped', c.slipped.map((line) => h('li', {}, `${line}.`))),
       part('recap-assigned', 'New work', c.assigned.map((x) => h('li', { 'data-team': x.teamId }, `Your manager gave ${x.project} to ${x.name}.`))),
     ],
@@ -305,7 +313,7 @@ const MEASURE_NAMES: Record<string, string> = {
 };
 
 function measureValue(_view: unknown, id: string, value: number): string | undefined {
-  const share = (all: string) => (value >= 1 ? all : value <= 0 ? 'none' : `${Math.min(99, Math.max(1, Math.round(value * 100)))}%`);
+  const share = (all: string) => shareWord(value, all);
   if (id.startsWith('goal:')) return value >= 1 ? 'met' : 'missed';
   switch (id) {
     case 'completedOnTime':
@@ -315,7 +323,8 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
     case 'healthHeld':
       return share('all');
     case 'calibrationQuality':
-      return value >= 0.95 ? 'fair' : value >= 0.7 ? 'mostly fair' : 'lenient';
+      if (value >= 0.95) return 'fair';
+      return value >= 0.7 ? 'mostly fair' : 'lenient';
     case 'managerGrowth':
       return value > 0 ? 'they grew' : 'no growth';
     case 'motivation':

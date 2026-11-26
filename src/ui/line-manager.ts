@@ -3,7 +3,7 @@ import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_TOPICS, PANEL_HELP } from './help';
-import { lateness, moveLine, quitLine } from './text';
+import { lateness, moveLine, quitLine, shareWord } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** Each habit's name, what it does, and its settings' labels; engineer-naming habits list the team after the first. */
@@ -147,7 +147,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
     text: m.text,
     detail: m.difficulty === undefined ? null : h('p', { class: 'difficulty' }, 'Difficulty: ', h('strong', { 'data-field': 'difficulty' }, bandWord('skill', m.difficulty))),
     choices: m.choices.map((c) => {
-      const id = c.id.startsWith('give:') ? c.id.slice('give:'.length) : c.id.startsWith('ask:') ? c.id.slice('ask:'.length) : undefined;
+      const id = engineerOf(c.id);
       const p = id ? people.get(id) : undefined;
       return { id: c.id, label: c.label, note: p ? `${bandWord('skill', p.skill)}, ${bandWord('stress', p.stress)}` : undefined };
     }),
@@ -217,11 +217,33 @@ const MEASURE_NAMES: Record<string, string> = {
   reputation: 'Your reputation',
 };
 
+/** The engineer a hand-off or interview choice names, if it names one. */
+function engineerOf(choiceId: string): string | undefined {
+  for (const prefix of ['give:', 'ask:']) if (choiceId.startsWith(prefix)) return choiceId.slice(prefix.length);
+  return undefined;
+}
+
+/** The recap's people: each one's changes and notes, then the memory a choice brought back; empty when there are neither. */
+function recapPeople(r: Recap): HTMLElement {
+  if (!r.people.length && !r.recalled) return h('div', { 'data-part': 'recap-people' });
+  const line = (p: Recap['people'][number]) => {
+    const head = p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`;
+    return h('li', { 'data-person': p.personId }, h('strong', {}, head), p.notes.length ? ` ${p.notes.join('. ')}.` : '');
+  };
+  return h(
+    'div',
+    { 'data-part': 'recap-people' },
+    h('h3', {}, 'Your people'),
+    r.people.length ? h('ul', {}, r.people.map(line)) : null,
+    r.recalled ? h('p', { 'data-recalled': r.recalled.personId, class: 'recalled' }, r.recalled.text) : null,
+  );
+}
+
 /** A line manager review measure's value in words: counts, shares, bands, and a goal met or missed. */
 // @spec UI-LINE-009
 function measureValue(_view: unknown, id: string, value: number): string | undefined {
   // A share short of all, or above none, never rounds to 100% or 0%.
-  const share = (all: string) => (value >= 1 ? all : value <= 0 ? 'none' : `${Math.min(99, Math.max(1, Math.round(value * 100)))}%`);
+  const share = (all: string) => shareWord(value, all);
   if (id.startsWith('goal:')) return value >= 1 ? 'met' : 'missed';
   switch (id) {
     case 'completedOnTime':
@@ -252,8 +274,10 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
   const moved = moves.filter((m) => !lostGround.includes(m));
   // The one look ahead, last, so it is what the player reads before the next week.
   const watch = watchLastWeek(run.level as LineState, run.sim);
-  const subject = ({ kind, id }: { kind: string; id: string }) =>
-    kind === 'person' ? (run.sim.people[id]?.name ?? id) : kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
+  const subject = ({ kind, id }: { kind: string; id: string }) => {
+    if (kind === 'person') return run.sim.people[id]?.name ?? id;
+    return kind === 'project' ? (run.sim.projects[id]?.name ?? id) : (run.sim.teams[id]?.name ?? id);
+  };
   const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
   const quiet = !(r.recalled || r.people.length || r.evaluations.length || r.habitChanges.length || r.expired.length || r.held.length || r.assigned.length || shipped.length || quits.length || lostGround.length);
   return {
@@ -261,15 +285,7 @@ function recap(run: Run, recapValue: unknown): { changes: Child; routine: Child 
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet week.') : null,
       part('recap-shipped', 'Shipped', shipped.map((p) => h('li', {}, `${p.name} shipped ${lateness(p.weeksLate)}.`))),
       part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-person': q.personId }, quitLine(q)))),
-      r.people.length || r.recalled
-        ? h(
-            'div',
-            { 'data-part': 'recap-people' },
-            h('h3', {}, 'Your people'),
-            r.people.length ? h('ul', {}, r.people.map((p) => h('li', { 'data-person': p.personId }, h('strong', {}, p.changes.length ? `${p.name}: ${p.changes.join(' and ')}.` : `${p.name}.`), p.notes.length ? ` ${p.notes.join('. ')}.` : ''))) : null,
-            r.recalled ? h('p', { 'data-recalled': r.recalled.personId, class: 'recalled' }, r.recalled.text) : null,
-          )
-        : h('div', { 'data-part': 'recap-people' }),
+      recapPeople(r),
       part('recap-evaluations', 'Evaluations', r.evaluations.map((e) => h('li', { 'data-person': e.personId }, `You rated ${e.name} ${RATING_WORDS[e.rating]} on what they delivered.`))),
       part('recap-habit-changes', 'Habits that changed', r.habitChanges.map((line) => h('li', {}, line))),
       part('recap-lost-ground', 'Projects that lost ground', lostGround.map((m) => h('li', { 'data-project': m.projectId }, moveLine(m)))),

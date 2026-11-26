@@ -4,7 +4,7 @@ import { quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorV
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { quitLine } from './text';
+import { headsChangeLine, quitLine, shareWord } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The director's How to play topics. */
@@ -285,7 +285,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
       part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-senior-manager': q.personId }, quitLine(q)))),
       part('recap-senior-managers', 'Your senior managers', c.seniorManagers.map((m) => h('li', { 'data-senior-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
       part('recap-survey', c.survey ? `The survey, quarter ${c.survey.quarter}` : 'The survey', (c.survey?.groups ?? []).map((g) => h('li', { 'data-group': g.id }, `${g.name}: ${bandWord('motivation', g.motivation)} and ${bandWord('stress', g.stress)}.`))),
-      part('recap-heads', 'People', c.heads.map((x) => h('li', {}, `${x.name}: ${x.change > 0 ? `${x.change} joined` : `${-x.change} left`}.`))),
+      part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),
       part('recap-moved', 'Reorganized', moved.map((m) => h('li', {}, m.kind === 'split' ? `${m.from} split: ${m.count} moved to ${m.to}.` : `${m.from} merged into ${m.to}: ${m.count} moved.`))),
       part('recap-bets', 'Bets', c.bets.map((line) => h('li', {}, `${line}.`))),
       part('recap-upward', 'Above and beside you', c.upward.map((u) => h('li', { 'data-outsider': u.id }, `${u.name} ${u.change}.`))),
@@ -311,7 +311,7 @@ function measureValue(_view: unknown, id: string, value: number): string | undef
   const band = Math.max(0, Math.min(4, Math.floor(value / 20)));
   switch (id) {
     case 'betsLanded':
-      return value >= 1 ? 'all' : value <= 0 ? 'none' : `${Math.min(99, Math.max(1, Math.round(value * 100)))}%`;
+      return shareWord(value, 'all');
     case 'projectsOnTime':
     case 'regrettedAttrition':
       return value === 0 ? 'none' : String(value);
