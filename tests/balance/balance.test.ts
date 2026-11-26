@@ -155,8 +155,11 @@ describe('measures', () => {
 
 // About 80 ms per run; the timeout grows with the seeds so the report command's larger runs fit.
 describe('balance', { timeout: Math.max(120_000, SEEDS.length * STRATEGIES.length * 1_000) }, () => {
-  it('reports the strategies', () => {
-    console.log(`\n${SEEDS.length} seeds per strategy, ${BALANCE_TUNING.weeks} weeks\n${table(measure())}\n`);
+  // @spec BAL-MEASURE-002
+  it('reports every strategy over every seed', () => {
+    const rows = measure();
+    console.log(`\n${SEEDS.length} seeds per strategy, ${BALANCE_TUNING.weeks} weeks\n${table(rows)}\n`);
+    expect(rows.map((r) => [r.strategy, r.runs])).toEqual(STRATEGIES.map((s) => [s.name, SEEDS.length]));
   });
 
   // @spec BAL-CHECK-001
