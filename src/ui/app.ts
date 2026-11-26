@@ -483,7 +483,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     error?.control === control ? h('p', { 'data-error': true, role: 'alert', class: 'error' }, error.message) : null;
 
   function contentErrors(): Child {
-    if (!options.showContentErrors || options.contentErrors.length === 0) return null;
+    // Checked at build time too, so the production bundle drops the panel rather than only switching it off.
+    if (!import.meta.env.DEV || !options.showContentErrors || options.contentErrors.length === 0) return null;
     return h(
       'section',
       { 'data-panel': 'content-errors', class: 'content-errors' },
