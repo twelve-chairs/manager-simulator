@@ -1,5 +1,5 @@
 import { draftObject } from './drafts';
-import { headsLostLastMonth, quitLastMonth, shippedLastMonth, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
+import { headsLostLastMonth, quitLastMonth, shippedLastMonth, type CalibrationEntry, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
 import type { Run } from '../loop';
 import { RATINGS, type Rating } from '../sim';
 import { bandWord } from './bands';
@@ -154,7 +154,7 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
     ctx.refresh();
   };
   const names = new Map(v.teams.map((t) => [t.id, t.name]));
-  const shownOf = (entry: (typeof moment.calibration & {})[number]) => {
+  const shownOf = (entry: CalibrationEntry) => {
     const shown = { ...entry.proposed };
     for (const m of moves[entry.teamId] ?? []) {
       shown[m.from] -= m.count;
