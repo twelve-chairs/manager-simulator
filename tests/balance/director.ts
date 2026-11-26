@@ -5,7 +5,7 @@ import { apply, newRun, type Command, type Dependencies, type Run } from '../../
 import { conductReview } from '../../src/review';
 import type { Rating } from '../../src/sim';
 import type { Situation } from '../../src/situations';
-import type { RunResult } from './harness';
+import { commandFor, endingOf, type RunResult } from './harness';
 
 /** The director's harness tuning: the whole level, six reviews, and the checks' thresholds. */
 export const DIRECTOR_BALANCE_TUNING = {
@@ -82,18 +82,17 @@ export function playDirectorRun(strategy: DirectorStrategy, seed: number, conten
     for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
       const seen = see();
       const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
-      step(choice === 'wait' ? { kind: 'wait' } : { kind: 'answer', momentId: current.id, choiceId: choice });
+      step(commandFor(choice, current.id));
     }
     step({ kind: 'endWeek' });
   }
   const level = run.level as DirectorState;
-  const ending = run.ending === 'completed' ? 'promoted' : run.ending === 'burnout' ? 'burnout' : run.ending === 'managedOut' ? 'managedOut' : null;
   return {
     strategy: strategy.name,
     seed,
     weeks: run.sim.week,
     quarters: Math.min(DIRECTOR_BALANCE_TUNING.quarters, Math.round((run.sim.week - run.levelStartWeek) / 13)),
-    ending,
+    ending: endingOf(run),
     ratings: reviews.map((r) => r.rating),
     regrettedQuits: (level.regretted ?? []).reduce((n, r) => n + r.count, 0),
   };

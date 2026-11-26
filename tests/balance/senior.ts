@@ -4,7 +4,7 @@ import { apply, newRun, type Command, type Dependencies, type Run } from '../../
 import { conductReview } from '../../src/review';
 import type { Rating } from '../../src/sim';
 import type { Situation } from '../../src/situations';
-import type { RunResult } from './harness';
+import { commandFor, endingOf, type RunResult } from './harness';
 
 /** The senior manager's harness tuning: the whole level, six reviews, and the checks' thresholds. */
 export const SENIOR_BALANCE_TUNING = {
@@ -77,18 +77,17 @@ export function playSeniorRun(strategy: SeniorStrategy, seed: number, content: S
     for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
       const seen = see();
       const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
-      step(choice === 'wait' ? { kind: 'wait' } : { kind: 'answer', momentId: current.id, choiceId: choice });
+      step(commandFor(choice, current.id));
     }
     step({ kind: 'endWeek' });
   }
   const level = run.level as SeniorState;
-  const ending = run.ending === 'completed' ? 'promoted' : run.ending === 'burnout' ? 'burnout' : run.ending === 'managedOut' ? 'managedOut' : null;
   return {
     strategy: strategy.name,
     seed,
     weeks: run.sim.week,
     months: Math.min(SENIOR_BALANCE_TUNING.months, Math.round((run.sim.week - run.levelStartWeek) / 4)),
-    ending,
+    ending: endingOf(run),
     ratings: reviews.map((r) => r.rating),
     regrettedQuits: (level.regretted ?? []).reduce((n, r) => n + r.count, 0),
   };

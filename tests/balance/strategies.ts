@@ -156,25 +156,28 @@ function soundHabitChanges(seen: Seen): Command[] {
   return commands;
 }
 
-/** What a careful line manager does with what they can see; the rules are described in the balance design doc. */
-function soundChoice(seen: Seen, m: Moment): string {
-  const { view } = seen;
-  const rested = view.player.energy >= OKAY;
-  if (m.source === 'situation') return has(m, BETTER_CHOICES[m.situationId!] ?? '') ? BETTER_CHOICES[m.situationId!]! : first(m);
+type SoundPick = (seen: Seen, m: Moment, rested: boolean) => string;
+
+/** How a careful line manager answers each of the level's own moments other than work to hand out. */
+const SOUND_BY_KIND: Record<string, SoundPick> = {
   // Someone still delivering poorly at the end of an improvement plan is weighing on the team.
-  if (m.kind === 'finalEvaluation') return 'letGo';
+  finalEvaluation: () => 'letGo',
   // Only pages beyond the engineer on call reach a moment: back them up with energy to spare, or roll the change back.
-  if (m.kind === 'onCall') return rested ? 'backUp' : 'rollBack';
-  if (m.kind === 'checkIn') {
+  onCall: (_seen, _m, rested) => (rested ? 'backUp' : 'rollBack'),
+  checkIn: ({ view }, m, rested) => {
     const p = view.projects.find((x) => x.id === m.projectId);
     if (p && p.schedule !== 'onSchedule' && view.player.reputation >= OKAY) return 'cutScope';
     return rested ? 'replan' : 'pushOn';
-  }
-  if (m.kind === 'interview') {
+  },
+  interview: (seen, m, rested) => {
     if (rested) return 'self';
     const asked = offered(seen, m, 'ask:')[0];
     return asked ? `ask:${asked.id}` : 'skip';
-  }
+  },
+};
+
+/** Work to hand out: decline new work, pay down elevated debt, give it to someone able, or do it while rested. */
+function soundWork(seen: Seen, m: Moment, rested: boolean): string {
   // New work is offered only while someone is strained: protecting the team is worth a little reputation.
   if (isIntake(m)) return 'decline';
   // Debt the design review's text calls elevated or worse is worth slowing down for; the text is what the player reads.
@@ -188,6 +191,14 @@ function soundChoice(seen: Seen, m: Moment): string {
   // Tired, with no one able: a stretch for someone with room lands part of the consequence; pushing back lands all of it.
   const stretch = givable.find((p) => p.stress <= OKAY);
   return stretch ? `give:${stretch.id}` : 'pushBack';
+}
+
+/** What a careful line manager does with what they can see; the rules are described in the balance design doc. */
+function soundChoice(seen: Seen, m: Moment): string {
+  if (m.source === 'situation') return has(m, BETTER_CHOICES[m.situationId!] ?? '') ? BETTER_CHOICES[m.situationId!]! : first(m);
+  const rested = seen.view.player.energy >= OKAY;
+  const byKind = m.kind !== undefined && Object.hasOwn(SOUND_BY_KIND, m.kind) ? SOUND_BY_KIND[m.kind]! : soundWork;
+  return byKind(seen, m, rested);
 }
 
 export const sound: Strategy = { name: 'sound', naive: false, habits: soundHabitChanges, choose: soundChoice };

@@ -106,22 +106,33 @@ export function playRun(strategy: Strategy, seed: number, content: Situation[], 
     for (const command of strategy.habits?.(see()) ?? []) step(command);
     if (run.levelId === lineManagerLevel.params.id) {
       lineWeeks += 1;
-      if (run.week.length === 0) quietWeeks += 1;
+      quietWeeks += run.week.length === 0 ? 1 : 0;
     }
     for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
       const seen = see();
       const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
-      step(choice === 'wait' ? { kind: 'wait' } : { kind: 'answer', momentId: current.id, choiceId: choice });
+      step(commandFor(choice, current.id));
     }
     step({ kind: 'endWeek' });
   }
+  return { strategy: strategy.name, seed, weeks: run.sim.week, ending: endingOf(run), ratings: reviews.map((r) => r.rating), regrettedQuits: regrettedQuitsOf(run), lineWeeks, quietWeeks };
+}
+
+/** The command for a strategy's choice: wait, or answer the moment with it. */
+export const commandFor = (choice: string, momentId: string): Command => (choice === 'wait' ? { kind: 'wait' } : { kind: 'answer', momentId, choiceId: choice });
+
+/** People who quit while rated meets or better. */
+function regrettedQuitsOf(run: Run): number {
   const meets = RATINGS.indexOf('meets');
-  const regrettedQuits = Object.values(run.sim.people).filter(
+  return Object.values(run.sim.people).filter(
     (p) => p.status === 'departed' && p.departure?.reason === 'quit' && p.performance !== 'unrated' && RATINGS.indexOf(p.performance) >= meets,
   ).length;
-  const ending = run.ending === 'completed' ? 'promoted' : run.ending === 'burnout' ? 'burnout' : run.ending === 'managedOut' ? 'managedOut' : null;
-  return { strategy: strategy.name, seed, weeks: run.sim.week, ending, ratings: reviews.map((r) => r.rating), regrettedQuits, lineWeeks, quietWeeks };
 }
+
+const ENDINGS: Partial<Record<NonNullable<Run['ending']>, RunResult['ending']>> = { completed: 'promoted', burnout: 'burnout', managedOut: 'managedOut' };
+
+/** How the run ended, as the harness counts it; null for a run still going, or one that ended any other way. */
+export const endingOf = (run: Run): RunResult['ending'] => (run.ending ? (ENDINGS[run.ending] ?? null) : null);
 
 /** The current moment as the scene shows it: the level's view of its own moments, or the presented situation. */
 function momentOf(run: Run, view: View, id: string): Moment {
