@@ -77,9 +77,15 @@ describe('the site’s hosting', () => {
     const records = props('NoMailAndCaa').RecordSets as Node[];
     const of = (type: string, name: unknown) => records.find((r) => r.Type === type && JSON.stringify(r.Name) === JSON.stringify(name))?.ResourceRecords;
     expect(of('MX', { Ref: 'DomainName' })).toEqual(['0 .']);
-    expect(of('TXT', { Ref: 'DomainName' })).toEqual(['"v=spf1 -all"']);
+    expect(of('TXT', { Ref: 'DomainName' })).toEqual({ 'Fn::If': ['VerifiesWithGoogle', ['"v=spf1 -all"', { 'Fn::Sub': '"${GoogleSiteVerification}"' }], ['"v=spf1 -all"']] });
     expect(of('TXT', { 'Fn::Sub': '_dmarc.${DomainName}' })?.[0]).toMatch(/^"v=DMARC1; p=reject;/);
     expect(of('CAA', { Ref: 'DomainName' })).toEqual(['0 issue "amazon.com"', '0 issuewild ";"']);
+  });
+
+  // @spec UI-HOST-008
+  it('publishes Google’s verification value beside the SPF record, and only SPF when none is given', () => {
+    expect(template.Parameters.GoogleSiteVerification.Default).toMatch(/^google-site-verification=[\w-]+$/);
+    expect(template.Conditions.VerifiesWithGoogle).toEqual({ 'Fn::Not': [{ 'Fn::Equals': [{ Ref: 'GoogleSiteVerification' }, ''] }] });
   });
 
   // @spec UI-HOST-006

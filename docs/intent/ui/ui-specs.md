@@ -123,6 +123,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-HOST-005**: The site's template shall publish DNS records saying the domain sends no mail (a null MX, SPF that allows no sender, and DMARC that rejects), and a CAA record allowing only Amazon to issue its certificates.
 - [x] **UI-HOST-006**: When a push to `main` passes its checks, the deploy shall build the game for the domain's root, upload it to the site's bucket with the page uncached as `text/html; charset=utf-8`, the hashed assets under `assets/` cached for a year, and every other file cached for an hour, removing files no longer built, and invalidate the page and those other files.
 - [x] **UI-HOST-007**: When a push to `main` passes its checks, the deploy shall publish to GitHub Pages only a page, as both its index and its not-found page, that holds no script, sends the browser to `https://www.manager-simulator.io/` at once and links there for a browser that does not follow it.
+- [x] **UI-HOST-008**: When the site's stack is given a Google Search Console verification value, its template shall publish it as a TXT record on the bare domain beside the SPF record, and publish only the SPF record when none is given.
 
 ## Sharing and search
 

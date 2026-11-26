@@ -19,10 +19,17 @@ Parameters:
     Type: String
     Description: The repository as GitHub's immutable OIDC subject names it, owner and repository each with its id.
     Default: twelve-chairs@56702533/manager-simulator@1454409896
+  GoogleSiteVerification:
+    Type: String
+    Default: google-site-verification=BC41UOYrf33Zme-8UbL0DtG-OK4DBr1dKrPktjvf6YE
+    Description: Google Search Console's domain verification value (google-site-verification=...), published beside the SPF record; empty for none. It is public in DNS, so it is no secret.
   ContentSecurityPolicy:
     Type: String
     Description: The UI design's policy (vite.config.ts), with frame-ancestors added; a test keeps the two in step.
     Default: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+
+Conditions:
+  VerifiesWithGoogle: { 'Fn::Not': [{ 'Fn::Equals': [{ Ref: GoogleSiteVerification }, ''] }] }
 
 Resources:
   # @spec UI-HOST-001
@@ -214,10 +221,15 @@ Resources:
           Type: MX
           TTL: '3600'
           ResourceRecords: ['0 .']
+        # @spec UI-HOST-008
         - Name: { Ref: DomainName }
           Type: TXT
           TTL: '3600'
-          ResourceRecords: ['"v=spf1 -all"']
+          ResourceRecords:
+            'Fn::If':
+              - VerifiesWithGoogle
+              - ['"v=spf1 -all"', { 'Fn::Sub': '"${GoogleSiteVerification}"' }]
+              - ['"v=spf1 -all"']
         - Name: { 'Fn::Sub': 'www.${DomainName}' }
           Type: TXT
           TTL: '3600'
