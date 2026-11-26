@@ -66,8 +66,8 @@ function oneOf<T extends string>(x: unknown, values: readonly T[], path: string,
 }
 
 const KINDS: readonly RoleKind[] = ['person', 'team', 'project'];
-const RESERVED = ['player', 'week', 'review', 'it'];
-const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_]*$/;
+const RESERVED: ReadonlySet<string> = new Set(['player', 'week', 'review', 'it']);
+const ROLE_NAME = /^[A-Za-z]\w*$/;
 
 /** The roles visible at a point in a situation, and the candidate inside a count. */
 interface Scope {
@@ -123,7 +123,7 @@ function checkLiteral(x: unknown, type: PropertyType, path: string, where: strin
   }
 }
 
-const ORDERING = ['below', 'atMost', 'above', 'atLeast'];
+const ORDERING: ReadonlySet<string> = new Set(['below', 'atMost', 'above', 'atLeast']);
 
 /** Finds the one operator among a condition's keys, rejecting unknown keys. */
 function operator(o: Obj, allowed: readonly string[], where: string) {
@@ -141,7 +141,7 @@ function checkComparison(o: Obj, scope: Scope, where: string) {
   const path = o.value as string;
   const left = pathType(path, scope, where);
   const operand = o[op];
-  if (ORDERING.includes(op) && left.kind !== 'number' && left.kind !== 'rating') fail(where, `${op} cannot compare ${path}, which is ${describe(left)}`);
+  if (ORDERING.has(op) && left.kind !== 'number' && left.kind !== 'rating') fail(where, `${op} cannot compare ${path}, which is ${describe(left)}`);
   if (op === 'in') {
     if (!Array.isArray(operand)) fail(where, `in needs a list, not ${JSON.stringify(operand)}`);
     for (const x of operand as unknown[]) checkLiteral(x, left, path, where);
@@ -166,7 +166,7 @@ function checkCountOperand(o: Obj, form: string, allowed: readonly string[], whe
 }
 
 function checkWindow(o: Obj, where: string) {
-  if (Object.hasOwn(o, 'withinWeeks') && !(finite(o, 'withinWeeks', where) > 0)) fail(at(where, 'withinWeeks'), 'must be above 0');
+  if (Object.hasOwn(o, 'withinWeeks') && finite(o, 'withinWeeks', where) <= 0) fail(at(where, 'withinWeeks'), 'must be above 0');
 }
 
 /** How deeply `all`, `any`, `not` and `count` may nest; a cap keeps a malformed bundle from exhausting the stack. */
@@ -271,7 +271,7 @@ function historyNote(o: Obj, path: string) {
 }
 
 const TEAM_FIELDS = [...new Set([...DETAILED_TEAM_FIELDS, ...AGGREGATE_TEAM_FIELDS])];
-const AGGREGATE_ONLY_FIELDS: readonly string[] = AGGREGATE_TEAM_FIELDS.filter((f) => !(DETAILED_TEAM_FIELDS as readonly string[]).includes(f));
+const AGGREGATE_ONLY_FIELDS: ReadonlySet<string> = new Set(AGGREGATE_TEAM_FIELDS.filter((f) => !(DETAILED_TEAM_FIELDS as readonly string[]).includes(f)));
 
 /** Effects only an aggregate team accepts must name a team role declared `form: aggregate`. */
 function requireAggregate(role: string, scope: Scope, path: string, what: string) {
@@ -317,7 +317,7 @@ const EFFECT_CHECKS: Record<string, EffectCheck> = {
     const kind = targetKind(target, scope, path);
     const field = string(o, 'field', path);
     if (!FIELDS[kind].includes(field)) fail(at(path, 'field'), `${kind} has no field ${field}`);
-    if (kind === 'team' && AGGREGATE_ONLY_FIELDS.includes(field)) requireAggregate(target, scope, at(path, 'field'), `changing ${field}`);
+    if (kind === 'team' && AGGREGATE_ONLY_FIELDS.has(field)) requireAggregate(target, scope, at(path, 'field'), `changing ${field}`);
     finite(o, 'amount', path);
     if (Object.hasOwn(o, 'wantTags')) checkWantTags(o.wantTags, at(path, 'wantTags'));
     if (Object.hasOwn(o, 'historyNote')) {
@@ -388,7 +388,7 @@ function checkSituationFields(o: Record<string, unknown>) {
   const levels = o.levels;
   if (!Array.isArray(levels) || !levels.every((l) => typeof l === 'string')) fail('levels', 'must be a list of level ids');
   oneOf(o.priority, ['urgent', 'normal'], 'priority', 'a priority');
-  if (Object.hasOwn(o, 'weight') && !(finite(o, 'weight', '') > 0)) fail('weight', 'must be above 0');
+  if (Object.hasOwn(o, 'weight') && finite(o, 'weight', '') <= 0) fail('weight', 'must be above 0');
   if (Object.hasOwn(o, 'cooldownWeeks') && finite(o, 'cooldownWeeks', '') < 0) fail('cooldownWeeks', 'must not be negative');
   if (Object.hasOwn(o, 'personCooldownWeeks') && finite(o, 'personCooldownWeeks', '') < 0) fail('personCooldownWeeks', 'must not be negative');
   for (const flag of ['once', 'quietWeek']) if (Object.hasOwn(o, flag) && typeof o[flag] !== 'boolean') fail(flag, 'must be true or false');
@@ -413,7 +413,7 @@ function checkRoles(o: Record<string, unknown>): Scope {
     const path = at('roles', i);
     const role = object(r, path, 'a role', ['name', 'kind'], ['form', 'where']);
     const name = string(role, 'name', path);
-    if (!ROLE_NAME.test(name) || RESERVED.includes(name)) fail(at(path, 'name'), `${name} cannot be a role name`);
+    if (!ROLE_NAME.test(name) || RESERVED.has(name)) fail(at(path, 'name'), `${name} cannot be a role name`);
     if (Object.hasOwn(roles, name)) fail(at(path, 'name'), `duplicate role ${name}`);
     roles[name] = oneOf(role.kind, KINDS, at(path, 'kind'), 'a role kind');
     if (Object.hasOwn(role, 'form')) {

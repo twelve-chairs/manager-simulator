@@ -480,7 +480,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   const errorFor = (control: string): Child =>
-    error && error.control === control ? h('p', { 'data-error': true, role: 'alert', class: 'error' }, error.message) : null;
+    error?.control === control ? h('p', { 'data-error': true, role: 'alert', class: 'error' }, error.message) : null;
 
   function contentErrors(): Child {
     if (!options.showContentErrors || options.contentErrors.length === 0) return null;
@@ -569,6 +569,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const turnNumber = turnOf(run, renderer, kind === 'recap' ? run.sim.week - step : run.sim.week);
     const now = stripDay(run, kind, renderer.turn);
     const toReview = weeksToReview(run, options.deps);
+    const promotion = run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review, then takes two reviews in a row rated exceeds or better.';
     return h(
       'section',
       { 'data-screen': 'week', class: 'week' },
@@ -581,7 +582,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
           ' · reputation ', h('strong', { 'data-field': 'reputation' }, bandWord('reputation', status.reputation))),
         edgeWarning(status, renderer.turn),
         // @spec UI-WEEK-017: the rule toward the player's own promotion stays in view between reviews
-        ((line) => (line ? h('p', { class: 'promotion', 'data-field': 'promotion' }, line) : null))(run.towardPromotion ? towardPromotionLine(run.towardPromotion) : 'Promotion opens at your third review, then takes two reviews in a row rated exceeds or better.'),
+        promotion ? h('p', { class: 'promotion', 'data-field': 'promotion' }, promotion) : null,
         h('ul', { 'data-panel': 'goals', class: 'goals' }, status.goals.map((g) => h('li', { 'data-goal': g.id }, h('span', { 'data-field': 'text' }, g.text), ': ', h('span', { 'data-field': 'progress' }, g.progress)))),
       ),
       h(

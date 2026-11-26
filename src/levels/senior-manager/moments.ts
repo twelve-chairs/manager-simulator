@@ -536,7 +536,7 @@ function chooseCalibration(level: SeniorState, sim: SimState, momentId: string, 
 // @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010, SENIOR-MOMENT-014, SENIOR-PLAN-003
 export function chooseSenior(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Chosen {
   const found = level.moments.find((m) => m.id === momentId);
-  if (!found || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
+  if (found?.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
   if (!found.choices.some((c) => c.id === choiceId)) return { ok: false, error: `moment ${momentId} does not offer ${choiceId}` };
   if (found.kind === 'calibration') return chooseCalibration(level, sim, momentId, choiceId);
   const s = structuredClone(level);

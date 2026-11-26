@@ -1,6 +1,5 @@
-import { band } from '../line-manager';
+import { LINE_TUNING, band } from '../line-manager';
 import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type HistoryEntry, type Rating, type Schedule, type SimState } from '../../sim';
-import { LINE_TUNING } from '../line-manager';
 import { leaderOf, quarterOf } from './core';
 import { goalStatus } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
@@ -128,7 +127,7 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
   }
   const upward = [level.executiveId, ...level.peerIds]
     .map((id) => sim.people[id])
-    .filter((p) => p !== undefined && p.status === 'active')
+    .filter((p) => p?.status === 'active')
     .map((p) => ({ id: p!.id, name: p!.name, personality: p!.personality ?? null, role: p!.role as 'executive' | 'peer', trust: band(p!.trust), want: want(p!.id), memory: memoryOf(p!.history) }));
   const bets = level.bets.flatMap((b): BetView[] => {
     const p = sim.projects[b.projectId];

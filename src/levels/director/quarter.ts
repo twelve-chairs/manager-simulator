@@ -110,7 +110,7 @@ function betProgress(s: DirectorState, sim: SimState): Effect[] {
   for (const bet of s.bets) {
     const p = sim.projects[bet.projectId];
     const a = sim.teams[bet.groupId]?.aggregate;
-    if (!p || p.status !== 'active' || !a) continue;
+    if (p?.status !== 'active' || !a) continue;
     if (band(a.stress) >= 3) effects.push(value('project', p.id, 'progress', -b.strainedSlow, 'director.bets'));
     if (bet.peerId && (sim.people[bet.peerId]?.trust ?? 0) >= b.peerTrust) effects.push(value('project', p.id, 'progress', b.peerSpeed, 'director.bets'));
   }
@@ -161,7 +161,7 @@ function peerEscalations(s: DirectorState, sim: SimState): Effect[] {
   const effects: Effect[] = [];
   for (const peer of s.peerIds) {
     const p = sim.people[peer];
-    if (!p || p.status !== 'active' || p.trust >= T.peer.escalateBelow || s.escalated[peer] === period) continue;
+    if (p?.status !== 'active' || p.trust >= T.peer.escalateBelow || s.escalated[peer] === period) continue;
     s.escalated[peer] = period;
     effects.push(
       { type: 'value', target: { kind: 'person', id: s.executiveId }, field: 'trust', amount: -T.peer.escalateTrust, cause: rule('director.peer'), historyNote: 'Heard a peer’s complaint about you' },

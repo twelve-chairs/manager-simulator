@@ -65,7 +65,7 @@ export function operatorOf(condition: object): Operator | undefined {
 function compare(left: Value, op: Operator, operand: Operand, ctx: EvalContext): boolean {
   if (op === 'in') {
     if (left === undefined || !Array.isArray(operand)) return false;
-    return operand.some((x) => x === left);
+    return operand.includes(left);
   }
   const right = isPath(operand) ? resolvePath(ctx, operand.value) : (operand as Value);
   if (left === undefined || right === undefined) return op === 'isNot';

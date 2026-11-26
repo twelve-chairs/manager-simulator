@@ -437,7 +437,7 @@ const HANDLERS: Record<DirectorMoment['kind'], (ctx: Ctx) => Handled> = {
 export function chooseDirector(level: DirectorState, sim0: SimState, momentId: string, choiceId: string): Choose {
   const s = structuredClone(level);
   const m = s.moments.find((x) => x.id === momentId);
-  if (!m || m.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
+  if (m?.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
   const structured = (m.kind === 'headcount' && choiceId.startsWith('place:')) || (m.kind === 'bets' && choiceId.startsWith('fund:'));
   if (!structured && !m.choices.some((c) => c.id === choiceId)) return { ok: false, error: `${choiceId} is not a choice in ${m.title}` };
   const log: ChangeLogEntry[] = [];

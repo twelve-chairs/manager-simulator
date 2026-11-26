@@ -10,7 +10,7 @@ import { SENIOR_TUNING } from './tuning';
 import type { Oversight, SeniorHabits, SeniorState } from './types';
 
 const T = SENIOR_TUNING;
-const OVERSIGHT: readonly Oversight[] = ['handsOff', 'coaching', 'close'];
+const OVERSIGHT: ReadonlySet<string> = new Set<Oversight>(['handsOff', 'coaching', 'close']);
 const OPTIONS = { oneOnOnes: ['weekly', 'fortnightly', 'monthly'], backfill: ['fast', 'holdTheBar'], skipLevel: ['none', 'monthly'], newWork: ['ask', 'assign'] } as const;
 const ONE_ON_ONES_A_MONTH = { weekly: 4, fortnightly: 2, monthly: 1 } as const;
 
@@ -32,7 +32,7 @@ export function setSeniorHabit(level: SeniorState, sim: SimState, command: unkno
   if (c.habit === 'oversight') {
     const managers = s.teamIds.flatMap((t) => managerOf(sim, t) ?? []);
     if (typeof c.managerId !== 'string' || !managers.includes(c.managerId)) return { ok: false, error: `${String(c.managerId)} is not one of your managers` };
-    if (!OVERSIGHT.includes(c.value as Oversight)) return { ok: false, error: `unknown oversight ${String(c.value)}` };
+    if (!OVERSIGHT.has(c.value as string)) return { ok: false, error: `unknown oversight ${String(c.value)}` };
     s.habits.oversight[c.managerId] = c.value as Oversight;
     return { ok: true, level: s };
   }

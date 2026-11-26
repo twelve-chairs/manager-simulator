@@ -26,7 +26,7 @@ function answerable(level: SeniorState, sim: SimState, m: SeniorState['moments']
     case 'finalEvaluation':
       return sim.people[m.managerId!]?.status === 'active';
     case 'replaceManager':
-      return team !== undefined && team.leader === null;
+      return team?.leader === null;
     case 'staffing':
       return (sim.teams[m.otherTeamId!]?.aggregate?.headcount ?? 0) > 1;
     default:

@@ -1,9 +1,8 @@
-import { band } from '../line-manager';
+import { LINE_TUNING, band } from '../line-manager';
 import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type HistoryEntry, type Person, type Rating, type SimState } from '../../sim';
 import { leadOf } from './core';
 import { goalStatus } from './goals';
 import { SENIOR_TUNING } from './tuning';
-import { LINE_TUNING } from '../line-manager';
 import type { CalibrationEntry, SeniorMoment, SeniorState } from './types';
 
 export interface ManagerView {
