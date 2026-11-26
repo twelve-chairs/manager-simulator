@@ -9,7 +9,8 @@ const SOUND = ['spread', 'coach', 'promote', 'letGo', 'splitPromote', 'merge', '
 test('a sound player promoted to director hands over by the rule and plays sound practice through the quarters', async ({ page }, testInfo) => {
   test.setTimeout(240_000);
   const problems = watch(page);
-  const seeds = [101, 102, 103, 104, 105, 106, 107, 108, 11, 12, 13, 14];
+  // Which seeds a scripted sound run takes to the director moves with tuning and content, so the search is wide.
+  const seeds = [101, 102, 103, 104, 105, 106, 107, 108, 11, 12, 13, 14, ...Array.from({ length: 32 }, (_, i) => 109 + i)];
   const { seed, summary } = await firstSeedThatReaches(page, seeds, { strategy: 'sound' }, (s) => s.seen.directorHandover !== null);
   await attachSummary(testInfo, `director-${seed}`, summary);
   expect(summary.violations, 'every screen passes its checks').toEqual([]);
