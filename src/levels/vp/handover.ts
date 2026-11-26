@@ -48,7 +48,6 @@ function emptyState(director: DirectorState, week: number): VpState {
     cut: { asked: false, waves: [] },
     cutHeads: [],
     told: null,
-    hardNewsWeek: null,
     lastDispute: null,
     heldEvaluations: [],
     calibrations: [],

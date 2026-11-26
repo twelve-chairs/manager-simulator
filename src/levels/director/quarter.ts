@@ -1,6 +1,6 @@
 import { band } from '../line-manager';
 import { applyEffects, behindScheduleProjects, overdueProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
-import { attritionEffects, calibrateUnits, driftEffects as groupDrift, rateLeaders, setHabit, type Lead } from '../org';
+import { arrivals, attritionEffects, calibrateUnits, driftEffects as groupDrift, rateLeaders, setHabit, type Lead } from '../org';
 import { generateSeniorManager, leaderOf, quarterOf, randomInt, rule } from './core';
 import { periodEndsThisQuarter, quartersPlayed, remember } from './review';
 import { quarterRecap, snapshotQuarter, type DirectorRecap } from './recap';
@@ -63,19 +63,7 @@ function waitedMoments(s: DirectorState, sim: SimState): Effect[] {
 }
 
 /** Senior managers hired from outside arrive. */
-function arrivals(s: DirectorState, sim: SimState): Effect[] {
-  const effects: Effect[] = [];
-  for (const [g, since] of Object.entries(s.arriving)) {
-    if (since > sim.week) continue;
-    delete s.arriving[g];
-    if (!sim.teams[g] || leaderOf(sim, g)) continue;
-    const hire = generateSeniorManager(s, sim, { skill: randomInt(s, [40, 59]), trust: 50 });
-    s.leniency[hire.id] = randomInt(s, [0, 2]);
-    s.joined.push(hire.id);
-    effects.push({ type: 'hire', teamId: g, person: hire, cause: rule('director.newSenior') });
-  }
-  return effects;
-}
+const seniorArrivals = (s: DirectorState, sim: SimState) => arrivals(s, sim, (now) => generateSeniorManager(s, now, { skill: randomInt(s, [40, 59]), trust: 50 }), 'director.newSenior');
 
 /** Bets slowed by a strained group and sped by a trusting peer. */
 function betProgress(s: DirectorState, sim: SimState): Effect[] {
@@ -152,7 +140,7 @@ function peerEscalations(s: DirectorState, sim: SimState): Effect[] {
 // @spec DIR-MOMENT-006, DIR-BET-003, DIR-BET-004, DIR-QBR-003, DIR-PEER-002, DIR-PLAN-003
 function settleQuarter(s: DirectorState, sim0: SimState, log: ChangeLogEntry[]): SimState {
   // In this order, applied in these batches: arrivals draw on the level's generator, and each batch sees the one before.
-  let sim = apply(sim0, [...waitedMoments(s, sim0), ...arrivals(s, sim0)], log);
+  let sim = apply(sim0, [...waitedMoments(s, sim0), ...seniorArrivals(s, sim0)], log);
   sim = apply(sim, betProgress(s, sim), log);
   for (const g of s.groupIds) s.leaderlessEnds[g] = sim.teams[g] && !leaderOf(sim, g) ? (s.leaderlessEnds[g] ?? 0) + 1 : 0;
   return apply(sim, [...settleBets(s, sim), ...caughtLeftOut(s, sim), ...peerEscalations(s, sim)], log);

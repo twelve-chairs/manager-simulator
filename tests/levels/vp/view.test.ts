@@ -51,7 +51,7 @@ describe('what a VP sees', () => {
     const { level, sim } = vp(2);
     expect(vpView(level, sim).plan).toEqual({ given: null, arrived: 0, priority: null });
     const project = Object.values(sim.projects).find((p) => p.teamId === level.divisionIds[2] && p.status === 'active')!;
-    const set = { ...level, year: { quarter: 1, given: 9, arrived: 3, due: [2, 2, 2], askedMore: false }, priority: { projectId: project.id, divisionId: level.divisionIds[2]!, stake: 10, week: sim.week } };
+    const set = { ...level, year: { quarter: 1, given: 9, arrived: 3, due: [2, 2, 2], askedMore: false }, priority: { projectId: project.id, divisionId: level.divisionIds[2]!, stake: 10, week: sim.week, spreadSlow: 0 } };
     expect(vpView(set, sim).plan).toEqual({
       given: 9,
       arrived: 3,

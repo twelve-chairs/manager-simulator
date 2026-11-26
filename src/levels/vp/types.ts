@@ -61,6 +61,8 @@ export interface Priority {
   stake: number;
   /** The game week it was set. */
   week: number;
+  /** Progress taken off each quarter's end when it is spread across the divisions; 0 when one division carries it. */
+  spreadSlow: number;
 }
 
 export type VpGoalKind = 'landPriority' | 'fewRegretted' | 'peerTrust' | 'unstrainDivision';
@@ -110,11 +112,9 @@ export interface VpState {
   /** Whether the company has asked for its cut, and the heads of each wave still due, earliest first. */
   cut: { asked: boolean; waves: number[] };
   /** Heads lost to cuts, by week; not attrition. */
-  cutHeads: { week: number; count: number }[];
-  /** What the function was last told at an all-hands, while hard news has not yet landed on a celebration. */
-  told: 'truth' | 'celebration' | null;
-  /** The week hard news last landed: a cut, a failed priority, or a strained division. */
-  hardNewsWeek: number | null;
+  cutHeads: { week: number; count: number; divisions: Record<string, number> }[];
+  /** What the function was last told at an all-hands, and the quarter of the level it was told. */
+  told: { what: 'truth' | 'celebration' | 'short'; quarter: number } | null;
   /** The week a leadership dispute was last produced, so there is at most one a quarter. */
   lastDispute: number | null;
   /** Directors on a plan whose third low rating is held for a final evaluation. */

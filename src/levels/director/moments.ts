@@ -12,6 +12,7 @@ import {
   type SimState,
 } from '../../sim';
 import { generateSeniorManager, leaderOf, nextId, pick, randomInt, unusedName } from './core';
+import { finalEvaluation, newLeader, placeMoments } from '../org';
 import { quartersPlayed, remember } from './review';
 import { setGoals } from './goals';
 import { snapshotQuarter } from './recap';
@@ -155,14 +156,8 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
   const rest = optional.slice(0, room);
   // Only an ask the player is shown counts toward the next one's wait.
   if (rest.some((d) => d.kind === 'peerAsk')) s.lastPeerAsk = sim.week;
-  s.moments = [];
   // Final evaluations, new senior managers and headcount fill the quarter's first week; the rest spread through it.
-  first.forEach((d, i) => s.moments.push({ ...d, id: `dm${++s.counters.moment}`, week: Math.floor(i / 5), day: i % 5, time: 'morning', status: 'open' }));
-  rest.forEach((d, i) => {
-    const week = 1 + Math.floor((i * 11) / Math.max(1, rest.length));
-    s.moments.push({ ...d, id: `dm${++s.counters.moment}`, week, day: i % 5, time: i % 2 ? 'afternoon' : 'morning', status: 'open' });
-  });
-  s.moments.push({ ...review, id: `dm${++s.counters.moment}`, week: 12, day: 4, time: 'afternoon', status: 'open' });
+  s.moments = placeMoments(first, rest, review).map((d) => ({ ...d, id: `dm${++s.counters.moment}`, status: 'open' }));
   s.quarterStart = snapshotQuarter(s, sim);
   return s;
 }
@@ -304,24 +299,15 @@ type Handled = Result<{ sim: SimState; reaction: string }>;
 
 function chooseFinalEvaluation({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const lead = m.personId!;
-  s.heldEvaluations = s.heldEvaluations.filter((id) => id !== lead);
-  if (choiceId !== 'letGo') return { ok: true, sim: sim0, reaction: `${name(sim0, lead)} has one more period to turn it around.` };
-  const sim = apply(sim0, [{ type: 'remove', personId: lead, reason: 'fired', cause: { kind: 'action', actionId: 'director.finalEvaluation' } }], log);
-  s.letGo.push(lead);
-  return { ok: true, sim, reaction: `${name(sim0, lead)} leaves. Their group needs a new senior manager.` };
+  return finalEvaluation(s, sim0, lead, choiceId, { oneMore: `${name(sim0, lead)} has one more period to turn it around.`, letGo: `${name(sim0, lead)} leaves. Their group needs a new senior manager.` }, 'director.finalEvaluation', log);
 }
 
 function chooseNewSenior({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const g = m.groupId!;
-  if (choiceId !== 'promote') {
-    s.arriving[g] = sim0.week;
-    return { ok: true, sim: sim0, reaction: `You start a search. ${groupName(sim0, g)} waits a quarter for its new senior manager.` };
-  }
-  const promoted = generateSeniorManager(s, sim0, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
-  const sim = apply(sim0, [{ type: 'hire', teamId: g, person: promoted, cause: { kind: 'action', actionId: 'director.newSenior' } }, value('team', g, 'skill', -T.newSenior.promoteSkill, 'director.newSenior')], log);
-  s.leniency[promoted.id] = randomInt(s, [0, 2]);
-  s.joined.push(promoted.id);
-  return { ok: true, sim, reaction: `${promoted.name}, one of ${groupName(sim, g)}'s managers, steps up to lead it.` };
+  const promote = (now: SimState) => generateSeniorManager(s, now, { skill: randomInt(s, T.newSenior.promotedSkill), trust: T.newSenior.promotedTrust });
+  const r = newLeader(s, sim0, g, choiceId, promote, T.newSenior.promoteSkill, 'director.newSenior', log);
+  const reaction = r.promoted ? `${r.promoted.name}, one of ${groupName(r.sim, g)}'s managers, steps up to lead it.` : `You start a search. ${groupName(sim0, g)} waits a quarter for its new senior manager.`;
+  return { ok: true, sim: r.sim, reaction };
 }
 
 /** The placement a headcount choice stands for: the player's own, spread evenly, all to the most stressed group, or none. */
