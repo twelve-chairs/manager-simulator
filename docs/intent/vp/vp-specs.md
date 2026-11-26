@@ -6,34 +6,34 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Handover
 
-- [ ] **VP-HAND-001**: When a director review promotes the player, the VP level shall offer a handover choice of who leads the player's organization: each active senior manager leading one of the player's groups, shown with their management skill, trust in the player and want, or an outside hire.
-- [ ] **VP-HAND-002**: When the player chooses one of their senior managers, the VP level shall make them the division's director, keeping their management skill, trust and want, and form the division around the group they led.
-- [ ] **VP-HAND-003**: When the player chooses an outside hire, the VP level shall add a director with management skill in the *capable* band, trust of 50 and a want drawn from the level's generator, and raise the division's stress by a tuned amount after the fold.
-- [ ] **VP-HAND-004**: When the handover is applied, the VP level shall fold every group in the player's director organization into one division led by the new director, as the director level's handover folds teams into a group: the division is the group the chosen senior manager led, or with an outside hire the first group, whose own senior manager becomes one of its heads; each other group's heads move into it at their ratings, its senior manager becomes one of its heads, its active projects are reassigned to it, and it is closed.
-- [ ] **VP-HAND-005**: When the handover is applied, the VP level shall add two divisions to the function, each with a generated director, headcount, health and two projects sized for a division; keep the director level's executive and peers in the state but out of the player's view; and add the CEO and two peers.
-- [ ] **VP-HAND-006**: When the handover is applied, the VP level shall keep the player's energy, reputation and rating history, and leave every folded person in the state as an aggregated person with their history.
-- [ ] **VP-HAND-007**: If a handover choice names neither a senior manager leading one of the player's groups nor an outside hire, then the VP level shall reject it with an error and leave the state unchanged.
+- [x] **VP-HAND-001**: When a director review promotes the player, the VP level shall offer a handover choice of who leads the player's organization: each active senior manager leading one of the player's groups, shown with their management skill, trust in the player and want, or an outside hire.
+- [x] **VP-HAND-002**: When the player chooses one of their senior managers, the VP level shall make them the division's director, keeping their management skill, trust and want, and form the division around the group they led.
+- [x] **VP-HAND-003**: When the player chooses an outside hire, the VP level shall add a director with management skill in the *capable* band, trust of 50 and a want drawn from the level's generator, and raise the division's stress by a tuned amount after the fold.
+- [x] **VP-HAND-004**: When the handover is applied, the VP level shall fold every group in the player's director organization into one division led by the new director, as the director level's handover folds teams into a group: the division is the group the chosen senior manager led, or with an outside hire the first group, whose own senior manager becomes one of its heads; each other group's heads move into it at their ratings, its senior manager becomes one of its heads, its active projects are reassigned to it, and it is closed.
+- [x] **VP-HAND-005**: When the handover is applied, the VP level shall add two divisions to the function, each with a generated director, headcount, health and two projects sized for a division; keep the director level's executive and peers in the state but out of the player's view; and add the CEO and two peers.
+- [x] **VP-HAND-006**: When the handover is applied, the VP level shall keep the player's energy, reputation and rating history, and leave every folded person in the state as an aggregated person with their history.
+- [x] **VP-HAND-007**: If a handover choice names neither a senior manager leading one of the player's groups nor an outside hire, then the VP level shall reject it with an error and leave the state unchanged.
 
 ## The function
 
-- [ ] **VP-ORG-001**: The VP level shall give each generated director a name, personality, want, management skill, motivation, stress and trust drawn from the level's generator, and a leniency from 0 to 2 rating steps.
-- [ ] **VP-ORG-002**: The VP level shall give the CEO and each peer a name, personality, want, motivation, stress and trust in the player drawn from the level's generator.
-- [ ] **VP-ORG-003**: The VP level shall give each division at most one director, and treat a division whose director has left as leaderless until a new one is set.
+- [x] **VP-ORG-001**: The VP level shall give each generated director a name, personality, want, management skill, motivation, stress and trust drawn from the level's generator, and a leniency from 0 to 2 rating steps.
+- [x] **VP-ORG-002**: The VP level shall give the CEO and each peer a name, personality, want, motivation, stress and trust in the player drawn from the level's generator.
+- [x] **VP-ORG-003**: The VP level shall give each division at most one director, and treat a division whose director has left as leaderless until a new one is set.
 
 ## Visibility
 
-- [ ] **VP-VIS-001**: When the player's view is requested, the VP level shall show each director with their name, personality, division, performance level, memory, motivation, stress and management skill as bands, and their want once revealed by a moment they took part in.
-- [ ] **VP-VIS-002**: When the player's view is requested, the VP level shall show each division under its director with its current headcount and projects (progress against scope, deadline and schedule status), and its motivation, stress and attrition risk as bands as the last engagement survey measured them, with the survey's quarter.
-- [ ] **VP-VIS-003**: When the player's view is requested, the VP level shall show the CEO and each peer with their name, personality, role, trust in the player as a band, memory, and their want once revealed by a moment they took part in.
-- [ ] **VP-VIS-004**: When the player's view is requested, the VP level shall show the year's plan: the headcount given for the year and how much of it has arrived, and the company priority with the division or divisions carrying it, its project's progress, deadline and schedule status, and its stake.
+- [x] **VP-VIS-001**: When the player's view is requested, the VP level shall show each director with their name, personality, division, performance level, memory, motivation, stress and management skill as bands, and their want once revealed by a moment they took part in.
+- [x] **VP-VIS-002**: When the player's view is requested, the VP level shall show each division under its director with its current headcount and projects (progress against scope, deadline and schedule status), and its motivation, stress and attrition risk as bands as the last engagement survey measured them, with the survey's quarter.
+- [x] **VP-VIS-003**: When the player's view is requested, the VP level shall show the CEO and each peer with their name, personality, role, trust in the player as a band, memory, and their want once revealed by a moment they took part in.
+- [x] **VP-VIS-004**: When the player's view is requested, the VP level shall show the year's plan: the headcount given for the year and how much of it has arrived, and the company priority with the division or divisions carrying it, its project's progress, deadline and schedule status, and its stake.
 - [ ] **VP-VIS-005**: When the player's view is requested, the VP level shall also give the habits, the quarter's moments with their kind, title, text and choices, the player's energy and reputation as bands with whether they are at the edge, the goals with their progress, and the career summary.
-- [ ] **VP-VIS-006**: The VP level shall never show a director's leniency as a value, and shall show no group, team or person inside a division except as named in situations and the recap.
+- [x] **VP-VIS-006**: The VP level shall never show a director's leniency as a value, and shall show no group, team or person inside a division except as named in situations and the recap.
 
 ## Habits
 
-- [ ] **VP-HABIT-001**: When the level begins, the VP level shall set your first team to your function and how you lead your directors to set direction and step back.
-- [ ] **VP-HABIT-002**: When the player changes a habit, the VP level shall apply the new setting from that quarter's end-of-quarter effects and to the moments of later quarters.
-- [ ] **VP-HABIT-003**: If a habit change names an unknown habit or option, then the VP level shall reject it with an error and leave the level state unchanged.
+- [x] **VP-HABIT-001**: When the level begins, the VP level shall set your first team to your function and how you lead your directors to set direction and step back.
+- [x] **VP-HABIT-002**: When the player changes a habit, the VP level shall apply the new setting from that quarter's end-of-quarter effects and to the moments of later quarters.
+- [x] **VP-HABIT-003**: If a habit change names an unknown habit or option, then the VP level shall reject it with an error and leave the level state unchanged.
 - [ ] **VP-HABIT-004**: When a quarter ends with the function first, the VP level shall raise each director's trust by a tuned amount and lower each peer's trust by a tuned amount; with the leadership team first, it shall raise the CEO's and each peer's trust by tuned amounts and lower each director's trust by a smaller tuned amount.
 - [ ] **VP-HABIT-005**: When a quarter ends with direction set and the player stepping back, the VP level shall raise the management skill of each director whose skill is at least *developing* by a tuned amount; with plans reviewed closely, it shall speed the company priority's project by a tuned amount, move each division whose director's management skill is below *capable* a further tuned share toward the motivation and stress a *capable* director sustains, lower each director's trust by a tuned amount, and cost the player a tuned amount of energy.
 
@@ -125,4 +125,4 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## Level state
 
-- [ ] **VP-STATE-001**: The VP level shall keep its state (habits, the directors' leniency, the quarter's moments, the year's headcount given and arrived, the company priority, cuts asked for and waves due, what the function was last told and the hard news since, the last survey, plans, goals and the burnout and review counters) serializable as plain data, derived only from the run's seed and commands.
+- [x] **VP-STATE-001**: The VP level shall keep its state (habits, the directors' leniency, the quarter's moments, the year's headcount given and arrived, the company priority, cuts asked for and waves due, what the function was last told and the hard news since, the last survey, plans, goals and the burnout and review counters) serializable as plain data, derived only from the run's seed and commands.

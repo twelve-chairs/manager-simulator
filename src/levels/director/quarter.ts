@@ -1,6 +1,6 @@
 import { band } from '../line-manager';
 import { applyEffects, behindScheduleProjects, overdueProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
-import { attritionEffects, calibrateUnits, driftEffects as groupDrift, rateLeaders, type Lead } from '../org';
+import { attritionEffects, calibrateUnits, driftEffects as groupDrift, rateLeaders, setHabit, type Lead } from '../org';
 import { generateSeniorManager, leaderOf, quarterOf, randomInt, rule } from './core';
 import { periodEndsThisQuarter, quartersPlayed, remember } from './review';
 import { quarterRecap, snapshotQuarter, type DirectorRecap } from './recap';
@@ -18,16 +18,7 @@ const OPTIONS: { [K in keyof DirectorHabits]: readonly DirectorHabits[K][] } = {
 
 /** Changes a standing habit; it applies from this quarter's end. */
 // @spec DIR-HABIT-002, DIR-HABIT-003
-export function setDirectorHabit(level: DirectorState, _sim: SimState, command: unknown): Result<{ level: DirectorState }> {
-  if (typeof command !== 'object' || command === null) return { ok: false, error: 'a habit change must be an object' };
-  const c = command as { habit?: unknown; value?: unknown };
-  if (typeof c.habit !== 'string' || !Object.hasOwn(OPTIONS, c.habit)) return { ok: false, error: `unknown habit ${String(c.habit)}` };
-  const habit = c.habit as keyof DirectorHabits;
-  if (!(OPTIONS[habit] as readonly unknown[]).includes(c.value)) return { ok: false, error: `unknown option ${String(c.value)} for ${habit}` };
-  const s = structuredClone(level);
-  (s.habits as unknown as Record<string, unknown>)[habit] = c.value;
-  return { ok: true, level: s };
-}
+export const setDirectorHabit = (level: DirectorState, _sim: SimState, command: unknown): Result<{ level: DirectorState }> => setHabit(level, OPTIONS, command);
 
 const energyless = (field: 'reputation', amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind: 'player' }, field, amount, cause: rule(ruleId) });
 const value = (kind: 'person' | 'team' | 'project', id: string, field: string, amount: number, ruleId: string): Effect => ({ type: 'value', target: { kind, id }, field, amount, cause: rule(ruleId) });

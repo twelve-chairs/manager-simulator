@@ -97,3 +97,16 @@ export const moved = (was: number, now: number, up: string, down: string): strin
   if (now > was) return [up];
   return now < was ? [down] : [];
 };
+
+type HabitResult<L> = { ok: true; level: L } | { ok: false; error: string };
+
+/** Changes one of a level's standing habits to one of its options; anything else is refused and changes nothing. */
+export function setHabit<L extends { habits: object }>(level: L, options: Record<string, readonly unknown[]>, command: unknown): HabitResult<L> {
+  if (typeof command !== 'object' || command === null) return { ok: false, error: 'a habit change must be an object' };
+  const c = command as { habit?: unknown; value?: unknown };
+  if (typeof c.habit !== 'string' || !Object.hasOwn(options, c.habit)) return { ok: false, error: `unknown habit ${String(c.habit)}` };
+  if (!options[c.habit]!.includes(c.value)) return { ok: false, error: `unknown option ${String(c.value)} for ${c.habit}` };
+  const s = structuredClone(level);
+  (s.habits as Record<string, unknown>)[c.habit] = c.value;
+  return { ok: true, level: s };
+}
