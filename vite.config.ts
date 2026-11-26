@@ -76,5 +76,7 @@ export default defineConfig(({ command }) => ({
   define: { __APP_VERSION__: JSON.stringify(buildVersion(command, PACKAGE_VERSION, git(ROOT))) },
   // Assets are never inlined as data: URLs, which the policy's img-src 'self' would block.
   // @spec UI-BUILD-003
-  build: { sourcemap: false, modulePreload: { polyfill: false }, assetsInlineLimit: 0 },
+  // One script, about 530 kB and 120 kB as served compressed, cached for a year by its hashed name: splitting it would
+  // add requests for no gain. The warning is set just above it, so it fires only when the game grows by about a third.
+  build: { sourcemap: false, modulePreload: { polyfill: false }, assetsInlineLimit: 0, chunkSizeWarningLimit: 700 },
 }));
