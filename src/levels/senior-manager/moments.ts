@@ -253,6 +253,11 @@ function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
 function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
   const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0 && (s.habits.newWork === 'ask' || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand));
   if (!idle) return [];
+  // @spec SENIOR-MOMENT-017
+  // Deciding each offer, a team with room gets one a quarter; a strained team's is always the player's call.
+  const strained = band(sim.teams[idle]!.aggregate!.stress) >= T.strainedBand;
+  if (!strained && sim.week - s.lastNewWorkOffer < T.newWorkOfferWeeks) return [];
+  s.lastNewWorkOffer = sim.week;
   const team = name(sim, idle);
   const offer = (['launch', 'handover', 'own'] as const)[monthOf(s, sim) % 3]!;
   const OFFER_TEXT = {

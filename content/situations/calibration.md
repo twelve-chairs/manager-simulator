@@ -102,7 +102,7 @@ choices:
           - { type: value, target: engineer, field: trust, amount: 4, historyNote: You argued for them in calibration }
           - { type: value, target: other, field: motivation, amount: 4, wantTags: { serves: [recognition] } }
           - { type: value, target: other, field: trust, amount: 4, historyNote: You argued for them in calibration }
-          - { type: value, target: player, field: reputation, amount: -4 }
+          - { type: value, target: player, field: reputation, amount: -8 }
           - { type: value, target: player, field: stress, amount: 4 }
         aftermath: "It takes the whole afternoon and most of your standing in the room, but both ratings hold. Another manager's engineer takes the drop instead."
         debrief: "Winning both spends goodwill you will want back next quarter. The curve doesn't grow; someone else's person paid for it."
@@ -114,7 +114,7 @@ choices:
           - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
           - { type: value, target: other, field: motivation, amount: -3 }
           - { type: value, target: other, field: trust, amount: 3, historyNote: You argued for them in calibration }
-          - { type: value, target: player, field: reputation, amount: -2 }
+          - { type: value, target: player, field: reputation, amount: -4 }
           - { type: value, target: player, field: stress, amount: 4 }
         aftermath: "The room hears you out, then gives neither the top rating. {engineer} and {other} both know you tried."
         debrief: "Arguing for everyone can leave you with no one. Without the standing to win both, the room settles it, and both lose."

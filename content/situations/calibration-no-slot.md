@@ -82,7 +82,7 @@ choices:
           - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, after you argued for an exception" }
           - { type: value, target: engineer, field: motivation, amount: -3 }
           - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
-          - { type: value, target: player, field: reputation, amount: -2 }
+          - { type: value, target: player, field: reputation, amount: -4 }
           - { type: value, target: player, field: stress, amount: 4 }
         aftermath: "The room hears you out and holds the curve. {engineer} is rated solid, and knows you tried."
         debrief: "Arguing for an exception without the standing for one costs you a little, and changes nothing but how {engineer} sees you."

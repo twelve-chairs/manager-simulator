@@ -189,8 +189,11 @@ export function settleCurve(level: SeniorState, sim: SimState, momentId: string,
   const s = structuredClone(level);
   const moment = s.moments.find((m) => m.id === momentId)!;
   const argued = choice === 'argue';
-  const effects: Effect[] = argued ? [{ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -T.curveExceptionCost, cause: CALIBRATION_CAUSE }] : [];
-  const needed = arguedRecently(level, sim.week) ? T.curveExceptionAgainReputation : T.curveExceptionReputation;
+  const again = arguedRecently(level, sim.week);
+  // Arguing again costs twice as much: the room remembers, whatever the player's standing.
+  const cost = again ? 2 * T.curveExceptionCost : T.curveExceptionCost;
+  const effects: Effect[] = argued ? [{ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -cost, cause: CALIBRATION_CAUSE }] : [];
+  const needed = again ? T.curveExceptionAgainReputation : T.curveExceptionReputation;
   const holds = argued && sim.player.reputation >= needed;
   if (argued) s.lastArgued = sim.week;
   let reaction = 'It costs you in the room, but the exception holds: every top rating stands.';

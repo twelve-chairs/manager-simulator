@@ -177,13 +177,17 @@ describe('calibration', () => {
     expect(good.label).toMatch(/excellent/);
     const trimmed = ok(chooseSenior(good.settled.level, good.settled.sim, good.moment.id, 'argue'));
     expect(groupTop(trimmed.sim, good.level.teamIds)).toBe(good.moment.curve);
+    // and arguing again costs twice the reputation
+    expect(trimmed.sim.player.reputation).toBe(70 - 2 * T.curveExceptionCost);
     const excellent = settle(recently(sim), T.curveExceptionAgainReputation);
     const held = groupTop(excellent.settled.sim, excellent.level.teamIds);
     expect(groupTop(ok(chooseSenior(excellent.settled.level, excellent.settled.sim, excellent.moment.id, 'argue')).sim, excellent.level.teamIds)).toBe(held);
     // long enough ago, or never: good holds, and the label says nothing of it
     const long = settle(sim.week - T.curveMemoryWeeks - 1, 70);
     expect(long.label).not.toMatch(/argued at the last/i);
-    expect(groupTop(ok(chooseSenior(long.settled.level, long.settled.sim, long.moment.id, 'argue')).sim, long.level.teamIds)).toBe(groupTop(long.settled.sim, long.level.teamIds));
+    const fresh = ok(chooseSenior(long.settled.level, long.settled.sim, long.moment.id, 'argue'));
+    expect(groupTop(fresh.sim, long.level.teamIds)).toBe(groupTop(long.settled.sim, long.level.teamIds));
+    expect(fresh.sim.player.reputation).toBe(70 - T.curveExceptionCost);
     // arguing is remembered for the next one
     expect(ok(chooseSenior(long.settled.level, long.settled.sim, long.moment.id, 'argue')).level.lastArgued).toBe(sim.week);
     expect(T.curveExceptionAgainReputation).toBe(80);

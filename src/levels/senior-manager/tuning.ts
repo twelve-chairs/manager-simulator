@@ -71,6 +71,8 @@ export const SENIOR_TUNING = {
   /** New work: the stress spreading it adds to every team, and the reputation declining it costs. */
   spreadStress: 6,
   declineWork: 8,
+  /** While the player decides each offer of new work, the weeks between offers for a team with room. */
+  newWorkOfferWeeks: 12,
   /** New work that differs: a launch's reputation taken and declined; a handover's tech debt and decline; the idle team's own project's motivation, taken and declined. */
   launchReputation: 3,
   launchDecline: 10,

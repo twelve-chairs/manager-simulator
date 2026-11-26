@@ -558,6 +558,11 @@ describe('the room remembers', () => {
     expect(wins('calibration-no-slot', 'argue', 'exception', 85)).toBe(true);
     expect(choice('calibration-no-slot', 'argue-again').outcomes.map((o) => o.id)).toEqual(['no-exception']);
     for (const [id, c] of [['calibration', 'both-again'], ['calibration-no-slot', 'argue-again']] as const) expect(choice(id, c).label, c).toMatch(/you argued at the last calibration/);
+    // arguing again costs twice the reputation of the usual argument, outcome for outcome
+    const reputation = (id: string, c: string, outcome: string) =>
+      choice(id, c).outcomes.find((o) => o.id === outcome)!.effects.filter((e) => e.type === 'value' && (e as { target: string }).target === 'player' && (e as { field: string }).field === 'reputation').reduce((n, e) => n + (e as { amount: number }).amount, 0);
+    for (const outcome of ['both-held', 'both-lost']) expect(reputation('calibration', 'both-again', outcome), outcome).toBe(2 * reputation('calibration', 'both', outcome));
+    expect(reputation('calibration-no-slot', 'argue-again', 'no-exception')).toBe(2 * reputation('calibration-no-slot', 'argue', 'no-exception'));
   });
 });
 

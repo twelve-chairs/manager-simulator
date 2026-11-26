@@ -266,6 +266,31 @@ describe('a month’s moments', () => {
     expect(answer(l, idle, w, 'decline').sim.player.reputation).toBeLessThan(idle.player.reputation);
   });
 
+  // @spec SENIOR-MOMENT-017
+  it('offers new work at most once a quarter while the player decides each offer, except for a strained team', () => {
+    const { level, sim } = calm(6);
+    const t = level.teamIds[2]!;
+    const idleAt = (week: number, stress = 30) =>
+      edit(sim, (s) => {
+        s.week = week;
+        s.teams[t]!.aggregate!.stress = stress;
+        for (const p of Object.values(s.projects)) {
+          if (p.teamId === t) p.status = 'cancelled';
+          else Object.assign(p, { startWeek: s.week - 4, deadlineWeek: s.week + 40, progress: p.scope / 2 });
+        }
+      });
+    const w0 = level.startWeek + 3 * T.weeksPerMonth;
+    const first = beginMonth(level, idleAt(w0));
+    expect(kinds(first)).toContain('newWork');
+    // the month after, and the one after that: no offer yet
+    expect(kinds(beginMonth(first, idleAt(w0 + T.weeksPerMonth)))).not.toContain('newWork');
+    expect(kinds(beginMonth(first, idleAt(w0 + 2 * T.weeksPerMonth)))).not.toContain('newWork');
+    // a quarter on, the next one
+    expect(kinds(beginMonth(first, idleAt(w0 + T.newWorkOfferWeeks)))).toContain('newWork');
+    // a strained idle team still brings it to the player
+    expect(kinds(beginMonth(first, idleAt(w0 + T.weeksPerMonth, 70)))).toContain('newWork');
+  });
+
   // @spec SENIOR-MOMENT-015, SENIOR-MOMENT-016
   it('makes each month’s offer a launch, a handover or the idle team’s own project, each taken and declined at its own cost', () => {
     const { level, sim } = calm(6);

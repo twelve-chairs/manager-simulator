@@ -63,6 +63,7 @@ export function takeOver(line: LineState, lineSim: SimState, choice: string): Re
     surfaced: [],
     issues: {},
     lastArgued: -1000,
+    lastNewWorkOffer: -1000,
     burnoutMonths: 0,
     knownHeadcount: {},
     knownRatings: {},
