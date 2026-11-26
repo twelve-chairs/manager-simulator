@@ -1,5 +1,6 @@
 import { LINE_TUNING, band } from '../line-manager';
-import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type HistoryEntry, type Rating, type Schedule, type SimState } from '../../sim';
+import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type Rating, type Schedule, type SimState } from '../../sim';
+import { memoryOf } from '../org';
 import { leaderOf, quarterOf } from './core';
 import { goalStatus } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
@@ -81,13 +82,6 @@ export interface DirectorView {
   career: { quarters: number; joined: string[]; letGo: string[] };
 }
 
-/** What someone remembers: their latest notes, newest first. */
-const memoryOf = (history: HistoryEntry[]) =>
-  history
-    .filter((h) => h.note)
-    .map((h) => h.note!)
-    .reverse()
-    .slice(0, 3);
 
 /** The player's view: senior managers as people, groups as last surveyed, and the room above. */
 // @spec DIR-VIS-001, DIR-VIS-002, DIR-VIS-003, DIR-VIS-004, DIR-VIS-006, DIR-ORG-003

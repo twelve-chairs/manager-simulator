@@ -1,3 +1,7 @@
+import type { RatingCounts, SurveyEntry } from '../org';
+
+export type { RatingCounts, SurveyEntry };
+
 /** Where the director's time goes: their own organization, an even split, or the room above. */
 export type TimeSplit = 'organization' | 'balanced' | 'upward';
 
@@ -17,12 +21,6 @@ export interface Bet {
   peerId: string | null;
 }
 
-/** A group's mood as the engagement survey measured it: raw values, shown as bands. */
-export interface SurveyEntry {
-  motivation: number;
-  stress: number;
-  attritionRisk: number;
-}
 
 export interface Survey {
   /** The quarter of the level it was taken in, from 1. */
@@ -76,7 +74,6 @@ export interface DirectorGoal {
   personId?: string;
 }
 
-export type RatingCounts = Record<'unrated' | 'below' | 'partial' | 'meets' | 'exceeds' | 'outstanding', number>;
 
 /** What the player could see as a quarter began, for the recap. */
 export interface QuarterStart {

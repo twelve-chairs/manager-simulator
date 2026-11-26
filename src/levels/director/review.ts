@@ -3,7 +3,8 @@ import type { SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { goalStatus } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
-import type { DirectorState, RatingCounts } from './types';
+import { knownRatings, regrettedSince } from '../org';
+import type { DirectorState } from './types';
 
 const WEEKS = T.weeksPerQuarter;
 const PERIOD = T.reviewEveryQuarters * WEEKS;
@@ -35,18 +36,11 @@ export function afterAdvanceDirector(level: DirectorState, sim: SimState): { lev
   // Projects completed this quarter, by when, so on-time work and bets landed by their deadline count.
   for (const p of Object.values(sim.projects)) if (p.status === 'completed' && s.groupIds.includes(p.teamId) && s.completions[p.id] === undefined) s.completions[p.id] = sim.week - WEEKS;
   // Only attrition changes rating counts while the simulation advances, so a fall at meets or above is regretted.
-  let regretted = 0;
-  for (const g of s.groupIds) {
-    const was = s.knownRatings[g];
-    const now = sim.teams[g]?.aggregate?.ratings;
-    if (was && now) for (const r of REGRETTED) regretted += Math.max(0, was[r] - now[r]);
-  }
+  const regretted = regrettedSince(s.knownRatings, s.groupIds, sim);
   if (regretted > 0) s.regretted.push({ week: sim.week - WEEKS, count: regretted });
   remember(s, sim);
   return { level: s, burnedOut: s.burnoutQuarters >= T.burnoutQuarters };
 }
-
-const REGRETTED: (keyof RatingCounts)[] = ['meets', 'exceeds', 'outstanding'];
 
 /** The senior managers of the player's groups who quit in the quarter just played, with what led to it and their last memory. */
 // @spec DIR-RECAP-003
@@ -56,11 +50,7 @@ export function quitLastQuarter(level: DirectorState, sim: SimState): Quit[] {
 
 /** Records each group's rating counts as they are now, so later losses can be counted. */
 export function remember(level: DirectorState, sim: SimState) {
-  level.knownRatings = {};
-  for (const g of level.groupIds) {
-    const a = sim.teams[g]?.aggregate;
-    if (a) level.knownRatings[g] = { ...a.ratings };
-  }
+  level.knownRatings = knownRatings(level.groupIds, sim);
 }
 
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);

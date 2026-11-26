@@ -1,18 +1,7 @@
-import { NAMES } from '../line-manager';
 import type { SeniorState } from '../senior-manager';
-import {
-  addOutsider,
-  addTeam,
-  applyEffects,
-  closeTeam,
-  moveHeads,
-  PERFORMANCE_LEVELS,
-  type Effect,
-  type NewProject,
-  type SimState,
-  type Want,
-} from '../../sim';
-import { generateOutsider, generateSeniorManager, leaderOf, nextId, randomInt, rule, unusedName } from './core';
+import { addOutsider, applyEffects, type Effect, type SimState, type Want } from '../../sim';
+import { addUnit, foldUnits, must } from '../org';
+import { generateOutsider, generateSeniorManager, leaderOf, randomInt, rule } from './core';
 import { DEFAULT_DIRECTOR_HABITS } from './habits';
 import { takeSurvey } from './survey';
 import { remember } from './review';
@@ -44,12 +33,7 @@ export function handoverChoices(senior: SeniorState, sim: SimState): HandoverCho
   }), { id: 'hire', name: 'An outside hire' }];
 }
 
-/** Steps the handover builds itself; a refusal is a bug in the level, not the player's doing. */
-function must<T extends { ok: boolean }>(result: T, what: string): Extract<T, { ok: true }> {
-  if (!result.ok) throw new Error(`handover: ${what}: ${JSON.stringify((result as { error?: unknown }).error)}`);
-  return result as Extract<T, { ok: true }>;
-}
-const apply = (sim: SimState, effects: Effect[]) => must(applyEffects(sim, effects), 'effects').state;
+const apply = (sim: SimState, effects: Effect[]) => must(applyEffects(sim, effects), 'handover: effects').state;
 
 /**
  * Folds the promoted player's teams into one group under its new senior manager, before the hire's adjustment: the
@@ -58,27 +42,8 @@ const apply = (sim: SimState, effects: Effect[]) => must(applyEffects(sim, effec
  */
 // @spec DIR-HAND-002, DIR-HAND-004
 export function foldGroup(senior: SeniorState, start: SimState, choice: string, level: DirectorState): { sim: SimState; groupId: string } {
-  const teams = senior.teamIds.filter((t) => start.teams[t]);
-  const groupId = choice === 'hire' ? teams[0]! : teams.find((t) => leaderOf(start, t) === choice)!;
-  let sim = start;
-  if (choice === 'hire') {
-    const old = leaderOf(sim, groupId);
-    if (old) sim = apply(sim, [{ type: 'move', personId: old, teamId: groupId, cause: HANDOVER }]);
-    const hire = generateSeniorManager(level, sim, { skill: randomInt(level, [40, 59]), trust: 50 });
-    sim = apply(sim, [{ type: 'hire', teamId: groupId, person: hire, cause: HANDOVER }]);
-  }
-  for (const t of teams.filter((x) => x !== groupId)) {
-    for (const l of PERFORMANCE_LEVELS) {
-      const n = sim.teams[t]!.aggregate!.ratings[l];
-      if (n > 0) sim = must(moveHeads(sim, { from: t, to: groupId, level: l, count: n }, HANDOVER), `moving heads from ${t}`).state;
-    }
-    const manager = leaderOf(sim, t);
-    if (manager) sim = apply(sim, [{ type: 'move', personId: manager, teamId: groupId, cause: HANDOVER }]);
-    const projects = Object.values(sim.projects).filter((p) => p.teamId === t && p.status === 'active');
-    if (projects.length) sim = apply(sim, projects.map((p): Effect => ({ type: 'reassignProject', projectId: p.id, teamId: groupId, cause: HANDOVER })));
-    sim = must(closeTeam(sim, t, HANDOVER), `closing ${t}`).state;
-  }
-  return { sim, groupId };
+  const folded = foldUnits(start, senior.teamIds, choice, (sim) => generateSeniorManager(level, sim, { skill: randomInt(level, [40, 59]), trust: 50 }), HANDOVER);
+  return { sim: folded.sim, groupId: folded.unitId };
 }
 
 /**
@@ -132,35 +97,11 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
   }
   level.groupIds.push(groupId);
 
+  const shape = { size: T.groupSize, skill: T.groupSkill, motivation: T.groupMotivation, stress: T.groupStress, projectDeadline: T.groupProjectDeadline, projectScopePerWeek: T.groupProjectScopePerWeek };
   for (let i = 0; i < 2; i++) {
-    const id = nextId(level, 'team', 'g', sim.teams);
-    const manager = generateSeniorManager(level, sim);
-    sim = must(
-      addTeam(sim, {
-        team: {
-          id,
-          name: unusedName(level, NAMES.teams, Object.values(sim.teams).map((t) => t.name)),
-          aggregate: { headcount: randomInt(level, T.groupSize), skill: randomInt(level, T.groupSkill), motivation: randomInt(level, T.groupMotivation), stress: randomInt(level, T.groupStress) },
-        },
-        manager,
-      }, HANDOVER),
-      'adding a group',
-    ).state;
-    for (let j = 0; j < 2; j++) {
-      const project: NewProject = {
-        id: nextId(level, 'project', 'gp', sim.projects),
-        name: unusedName(level, NAMES.projects, Object.values(sim.projects).map((p) => p.name)),
-        teamId: id,
-        ...(() => {
-          const weeks = randomInt(level, T.groupProjectDeadline);
-          return { scope: weeks * randomInt(level, T.groupProjectScopePerWeek), deadlineWeek: sim.week + weeks };
-        })(),
-        risk: randomInt(level, [10, 70]),
-        techDebt: randomInt(level, [10, 50]),
-      };
-      sim = apply(sim, [{ type: 'startProject', project, cause: HANDOVER }]);
-    }
-    level.groupIds.push(id);
+    const added = addUnit(level, sim, { unit: 'g', project: 'gp' }, generateSeniorManager(level, sim), shape, HANDOVER);
+    sim = added.sim;
+    level.groupIds.push(added.unitId);
   }
 
   const executive = generateOutsider(level, sim, 'executive');

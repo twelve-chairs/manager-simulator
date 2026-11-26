@@ -1,6 +1,6 @@
 import { band } from '../line-manager';
-import { deliveredRatings, meanStep } from '../senior-manager';
-import { applyEffects, attritionRiskOf, behindScheduleProjects, overdueProjects, planOf, PERFORMANCE_LEVELS, RATINGS, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
+import { applyEffects, behindScheduleProjects, overdueProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
+import { attritionEffects, calibrateUnits, driftEffects as groupDrift, rateLeaders, type Lead } from '../org';
 import { generateSeniorManager, leaderOf, quarterOf, randomInt, rule } from './core';
 import { periodEndsThisQuarter, quartersPlayed, remember } from './review';
 import { quarterRecap, snapshotQuarter, type DirectorRecap } from './recap';
@@ -53,23 +53,6 @@ function served(want: string, habits: DirectorHabits, groupStress: number): bool
     default:
       return band(groupStress) < 3;
   }
-}
-
-/** Re-rate effects that turn a group's ratings now into the target ones. */
-function reRates(sim: SimState, groupId: string, target: Record<(typeof PERFORMANCE_LEVELS)[number], number>): Effect[] {
-  const now = { ...sim.teams[groupId]!.aggregate!.ratings };
-  const effects: Effect[] = [];
-  for (const from of PERFORMANCE_LEVELS) {
-    for (const to of RATINGS) {
-      if (from === to) continue;
-      const count = Math.min(now[from] - (from === 'unrated' ? 0 : target[from]), target[to] - now[to]);
-      if (count <= 0) continue;
-      effects.push({ type: 'reRate', teamId: groupId, from, to, count, cause: rule('director.calibration') });
-      now[from] -= count;
-      now[to] += count;
-    }
-  }
-  return effects;
 }
 
 /** Moments left waiting: heads held back, no bet funded, the review told straight, one more period for a plan. */
@@ -189,7 +172,6 @@ function troubledIds(s: DirectorState, sim: SimState): string[] {
   return Object.values(sim.projects).filter((p) => p.status === 'active' && s.groupIds.includes(p.teamId) && troubled.has(p.id)).map((p) => p.id);
 }
 
-type Lead = { groupId: string; id: string | null };
 
 /** Where the time goes: upward wins those above and costs the groups; toward the organization, the reverse. */
 function timeEffects(s: DirectorState, sim: SimState, leads: Lead[]): Effect[] {
@@ -223,62 +205,16 @@ function habitEffects(s: DirectorState, sim: SimState, leads: Lead[]): Effect[] 
   return effects;
 }
 
+const DRIFT = { driftShare: T.driftShare, sustains: T.sustains, leaderlessSkill: T.leaderlessSkill, wantServed: T.wantServed, wantUnserved: T.wantUnserved, leaderStressShare: T.seniorStressShare };
+
 /** Groups drift toward what their senior managers sustain; senior managers toward their wants and their groups. */
-function driftEffects(s: DirectorState, sim: SimState, leads: Lead[]): Effect[] {
-  const effects: Effect[] = [];
-  for (const { groupId, id } of leads) {
-    const a = sim.teams[groupId]!.aggregate!;
-    const skill = id ? sim.people[id]!.skill : T.leaderlessSkill;
-    const motivation = T.sustains.motivationBase + skill * T.sustains.motivationPerSkill;
-    const stress = T.sustains.stressBase - skill * T.sustains.stressPerSkill;
-    effects.push(value('team', groupId, 'motivation', Math.round((motivation - a.motivation) * T.driftShare), 'director.drift'), value('team', groupId, 'stress', Math.round((stress - a.stress) * T.driftShare), 'director.drift'));
-    if (!id) continue;
-    const m = sim.people[id]!;
-    effects.push(
-      // A quarter that serves their want is tagged as serving it, so the simulation counts the want as served.
-      served(m.want, s.habits, a.stress)
-        ? { type: 'value', target: { kind: 'person', id }, field: 'motivation', amount: T.wantServed, cause: rule('director.drift'), wantTags: { serves: [m.want] } }
-        : value('person', id, 'motivation', T.wantUnserved, 'director.drift'),
-      value('person', id, 'stress', Math.round((a.stress - m.stress) * T.seniorStressShare), 'director.drift'),
-    );
-  }
-  return effects;
-}
+const driftEffects = (s: DirectorState, sim: SimState, leads: Lead[]) => groupDrift(sim, leads, DRIFT, (want, stress) => served(want, s.habits, stress), 'director.drift');
 
 /** Each senior manager calibrates their group: its delivery, raised by their leniency; ratings above delivery cost motivation. */
 function calibrateGroups(s: DirectorState, sim0: SimState, log: ChangeLogEntry[]): SimState {
-  let sim = sim0;
-  const gaps: number[] = [];
-  for (const g of s.groupIds) {
-    const delivered = deliveredRatings(sim, g);
-    const lead = leaderOf(sim, g);
-    const lenient = lead ? (s.leniency[lead] ?? 0) : 0;
-    const target = { unrated: 0, below: 0, partial: 0, meets: 0, exceeds: 0, outstanding: 0 };
-    RATINGS.forEach((r, i) => (target[RATINGS[Math.min(4, i + lenient)]!] += delivered[r]));
-    sim = apply(sim, reRates(sim, g, target), log);
-    const gap = meanStep(sim.teams[g]!.aggregate!.ratings) - meanStep(delivered);
-    gaps.push(Math.abs(gap));
-    // Ratings above what the group delivered cost it motivation: its people notice.
-    if (gap > 0) sim = apply(sim, [value('team', g, 'motivation', -Math.round(gap * T.calibrationMotivation), 'director.calibration')], log);
-  }
-  s.calibrations.push({ week: sim.week, gap: gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0 });
+  const { sim, gap } = calibrateUnits(sim0, s.groupIds, s.leniency, T.calibrationMotivation, 'director.calibration', log);
+  s.calibrations.push({ week: sim.week, gap });
   return sim;
-}
-
-/** Each senior manager is rated on how their group delivered and fared under them; one on a plan rated low waits for a final evaluation. */
-function rateSeniors(s: DirectorState, sim: SimState): Effect[] {
-  const ratings: Effect[] = [];
-  for (const g of s.groupIds) {
-    const id = leaderOf(sim, g);
-    if (!id) continue;
-    const a = sim.teams[g]!.aggregate!;
-    const step = Math.round(meanStep(deliveredRatings(sim, g))) - (band(a.stress) >= 3 || band(a.motivation) <= 1 ? 1 : 0);
-    const rating = RATINGS[Math.max(0, Math.min(4, step))]!;
-    if ((rating === 'below' || rating === 'partial') && planOf(sim, { kind: 'person', id }) === 'pip') {
-      if (!s.heldEvaluations.includes(id)) s.heldEvaluations.push(id);
-    } else ratings.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule('director.seniorRating') });
-  }
-  return ratings;
 }
 
 /**
@@ -291,15 +227,12 @@ export function endQuarter(level: DirectorState, sim0: SimState): Result<{ level
   const start = s.quarterStart ?? snapshotQuarter(s, sim0);
   const log: ChangeLogEntry[] = [];
   let sim = settleQuarter(s, sim0, log);
-  const leads = s.groupIds.map((g) => ({ groupId: g, id: leaderOf(sim, g) }));
+  const leads = s.groupIds.map((g) => ({ unitId: g, id: leaderOf(sim, g) }));
   sim = apply(sim, [...habitEffects(s, sim, leads), ...driftEffects(s, sim, leads)], log);
-  sim = apply(sim, s.groupIds.map((g) => {
-    const a = sim.teams[g]!.aggregate!;
-    return value('team', g, 'attritionRisk', attritionRiskOf(a.motivation, a.stress) - a.attritionRisk, 'director.drift');
-  }), log);
+  sim = apply(sim, attritionEffects(sim, s.groupIds, 'director.drift'), log);
   if (periodEndsThisQuarter(s, sim)) {
     sim = calibrateGroups(s, sim, log);
-    sim = apply(sim, rateSeniors(s, sim), log);
+    sim = apply(sim, rateLeaders(sim, s.groupIds, s.heldEvaluations, 'director.seniorRating'), log);
     // The engagement survey, in the last quarter before the review.
     s.survey = takeSurvey(s, sim);
   }
