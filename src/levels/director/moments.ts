@@ -68,15 +68,11 @@ function betOffers(level: DirectorState, sim: SimState): BetOffer[] {
   }));
 }
 
-/** Makes the quarter's moments, in the order they play. */
-// @spec DIR-MOMENT-001, DIR-MOMENT-002, DIR-MOMENT-003, DIR-MOMENT-004, DIR-PLAN-003, DIR-BET-001, DIR-QBR-001, DIR-PEER-001
-export function beginQuarter(level: DirectorState, sim: SimState): DirectorState {
-  const s = structuredClone(level);
-  // A new review period begins with this quarter: its goals.
-  if (sim.week > s.periodStart && (sim.week - s.startWeek) % (T.reviewEveryQuarters * T.weeksPerQuarter) === 0) setGoals(s, sim);
-  type Draft = Omit<DirectorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
+type Draft = Omit<DirectorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
+
+/** Final evaluations, groups with no senior manager and none on the way, and the quarter's headcount: the quarter's first week. */
+function firstDrafts(s: DirectorState, sim: SimState): Draft[] {
   const first: Draft[] = [];
-  const optional: Draft[] = [];
   for (const id of s.heldEvaluations) {
     if (sim.people[id]?.status !== 'active') continue;
     first.push({ kind: 'finalEvaluation', personId: id, groupId: sim.people[id]?.teamId ?? undefined, title: `Final evaluation: ${name(sim, id)}`, text: `${name(sim, id)} is on an improvement plan, and their group is still struggling under them. A third low rating ends the plan. It's your call.`, choices: CHOICES.finalEvaluation });
@@ -86,14 +82,19 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
   }
   const heads = headcountGiven(s, sim);
   first.push({ kind: 'headcount', heads, title: 'Headcount for the quarter', text: `Your executive has ${heads} new ${heads === 1 ? 'head' : 'heads'} for your organization this quarter. Where do they go?`, choices: CHOICES.headcount });
-  // Bets come in the first quarter of each review period.
+  return first;
+}
+
+/** Bets, in the first quarter of each review period; then what listening tours surfaced; then groups in trouble. */
+function betsListeningAndTrouble(s: DirectorState, sim: SimState): Draft[] {
+  const drafts: Draft[] = [];
   if (Math.floor(quartersPlayed(s, sim)) % T.reviewEveryQuarters === 0) {
     const offers = betOffers(s, sim);
-    optional.push({ kind: 'bets', offers, title: 'Strategy bets', text: `Your executive has ${offers.length} bets on the table, and room to fund two. Each needs a group to carry it.`, choices: CHOICES.bets });
+    drafts.push({ kind: 'bets', offers, title: 'Strategy bets', text: `Your executive has ${offers.length} bets on the table, and room to fund two. Each needs a group to carry it.`, choices: CHOICES.bets });
   }
   for (const x of s.surfaced) {
     const lead = leaderOf(sim, x.groupId);
-    if (lead) optional.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} raised something ${name(sim, lead)} hasn't brought to you.`, choices: CHOICES.surfaced });
+    if (lead) drafts.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} raised something ${name(sim, lead)} hasn't brought to you.`, choices: CHOICES.surfaced });
   }
   const troubled = inTrouble(sim);
   for (const g of s.groupIds) {
@@ -101,28 +102,54 @@ export function beginQuarter(level: DirectorState, sim: SimState): DirectorState
     const lead = leaderOf(sim, g);
     if (!a || !lead) continue;
     const behind = Object.values(sim.projects).some((p) => p.teamId === g && p.status === 'active' && troubled.has(p.id));
-    if (band(a.stress) >= 3 || band(a.attritionRisk) >= 3 || behind) optional.push({ kind: 'trouble', groupId: g, personId: lead, title: `${groupName(sim, g)} is in trouble`, text: `${name(sim, lead)} comes to you: ${groupName(sim, g)} is ${behind ? 'falling behind' : 'stretched thin'}.`, choices: CHOICES.trouble });
+    if (band(a.stress) >= 3 || band(a.attritionRisk) >= 3 || behind) drafts.push({ kind: 'trouble', groupId: g, personId: lead, title: `${groupName(sim, g)} is in trouble`, text: `${name(sim, lead)} comes to you: ${groupName(sim, g)} is ${behind ? 'falling behind' : 'stretched thin'}.`, choices: CHOICES.trouble });
   }
+  return drafts;
+}
+
+/** A peer's ask, at most every other quarter so it stays a moment rather than a fixture. */
+function peerAskDrafts(s: DirectorState, sim: SimState): Draft[] {
   const peers = s.peerIds.filter((id) => sim.people[id]?.status === 'active');
-  // A peer asks at most every other quarter, so the ask stays a moment rather than a fixture.
   const askedLately = s.lastPeerAsk !== undefined && sim.week - s.lastPeerAsk <= T.weeksPerQuarter;
-  if (peers.length && !askedLately) {
-    const peer = pick(s, peers);
-    const g = [...s.groupIds].filter((x) => sim.teams[x]).sort((x, y) => sim.teams[x]!.aggregate!.stress - sim.teams[y]!.aggregate!.stress)[0];
-    if (g) optional.push({ kind: 'peerAsk', personId: peer, groupId: g, title: `${name(sim, peer)} needs something`, text: `${name(sim, peer)} needs ${groupName(sim, g)} to move a dependency up its list.`, choices: CHOICES.peerAsk });
-  }
+  if (!peers.length || askedLately) return [];
+  const peer = pick(s, peers);
+  const g = [...s.groupIds].filter((x) => sim.teams[x]).sort((x, y) => sim.teams[x]!.aggregate!.stress - sim.teams[y]!.aggregate!.stress)[0];
+  return g ? [{ kind: 'peerAsk', personId: peer, groupId: g, title: `${name(sim, peer)} needs something`, text: `${name(sim, peer)} needs ${groupName(sim, g)} to move a dependency up its list.`, choices: CHOICES.peerAsk }] : [];
+}
+
+/** Groups grown too large for one senior manager, or shrunk too small to carry one. */
+function orgDesignDrafts(s: DirectorState, sim: SimState): Draft[] {
+  const drafts: Draft[] = [];
   for (const g of s.groupIds) {
     const a = sim.teams[g]?.aggregate;
-    if (a && a.headcount > T.org.max) optional.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} has grown large`, text: `${groupName(sim, g)} is ${a.headcount} people now, more than one senior manager can lead well.`, choices: CHOICES.orgSplit });
-    else if (a && a.headcount < T.org.min && s.groupIds.length > 1) optional.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} is small`, text: `${groupName(sim, g)} is down to ${a.headcount} people, small to carry a senior manager.`, choices: CHOICES.orgDesign });
+    if (a && a.headcount > T.org.max) drafts.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} has grown large`, text: `${groupName(sim, g)} is ${a.headcount} people now, more than one senior manager can lead well.`, choices: CHOICES.orgSplit });
+    else if (a && a.headcount < T.org.min && s.groupIds.length > 1) drafts.push({ kind: 'orgDesign', groupId: g, title: `${groupName(sim, g)} is small`, text: `${groupName(sim, g)} is down to ${a.headcount} people, small to carry a senior manager.`, choices: CHOICES.orgDesign });
   }
+  return drafts;
+}
+
+/** The quarterly review with the executive, which closes the quarter. */
+function reviewDraft(s: DirectorState, sim: SimState): Draft {
   const held = quarterHeld(s, sim);
-  const review: Draft = {
+  const onSchedule = held.active.length - held.troubled.length;
+  return {
     kind: 'review',
     title: 'The quarterly review',
-    text: `You present the quarter to your executive: ${held.active.length - held.troubled.length === 1 ? "one project" : `${held.active.length - held.troubled.length} projects`} on schedule and ${held.troubled.length} in trouble.`,
+    text: `You present the quarter to your executive: ${onSchedule === 1 ? 'one project' : `${onSchedule} projects`} on schedule and ${held.troubled.length} in trouble.`,
     choices: CHOICES.review,
   };
+}
+
+/** Makes the quarter's moments, in the order they play. */
+// @spec DIR-MOMENT-001, DIR-MOMENT-002, DIR-MOMENT-003, DIR-MOMENT-004, DIR-PLAN-003, DIR-BET-001, DIR-QBR-001, DIR-PEER-001
+export function beginQuarter(level: DirectorState, sim: SimState): DirectorState {
+  const s = structuredClone(level);
+  // A new review period begins with this quarter: its goals.
+  if (sim.week > s.periodStart && (sim.week - s.startWeek) % (T.reviewEveryQuarters * T.weeksPerQuarter) === 0) setGoals(s, sim);
+  // In this order: the level's generator is drawn on along the way, so the order is part of the run.
+  const first = firstDrafts(s, sim);
+  const optional = [...betsListeningAndTrouble(s, sim), ...peerAskDrafts(s, sim), ...orgDesignDrafts(s, sim)];
+  const review = reviewDraft(s, sim);
   const room = Math.max(0, T.momentCap - first.length - 1);
   const rest = optional.slice(0, room);
   // Only an ask the player is shown counts toward the next one's wait.
@@ -161,6 +188,17 @@ function parse(json: string): Record<string, unknown> | null {
 
 /** Places the quarter's heads: in groups, behind bets, the rest held back. */
 // @spec DIR-HEAD-002, DIR-HEAD-003, DIR-HEAD-004
+/** The effects of placing `n` heads at one target, a funded bet (`bet:<project>`) or a group; or why the target is refused. */
+function placementEffects(s: DirectorState, sim: SimState, key: string, n: number): Result<{ effects: Effect[] }> {
+  if (key.startsWith('bet:')) {
+    const bet = s.bets.find((b) => b.projectId === key.slice(4));
+    if (!bet || !sim.teams[bet.groupId]) return { ok: false, error: `${key.slice(4)} is not a funded bet` };
+    return { ok: true, effects: n ? [value('team', bet.groupId, 'headcount', n, 'director.headcount'), value('project', bet.projectId, 'progress', n * T.head.betSpeed, 'director.headcount')] : [] };
+  }
+  if (!s.groupIds.includes(key) || !sim.teams[key]) return { ok: false, error: `${key} is not one of your groups` };
+  return { ok: true, effects: n ? [value('team', key, 'headcount', n, 'director.headcount'), value('team', key, 'stress', n * T.head.onboardingStress, 'director.headcount')] : [] };
+}
+
 function place(s: DirectorState, sim: SimState, m: DirectorMoment, plan: Record<string, unknown>, log: ChangeLogEntry[]): Result<{ sim: SimState }> {
   const given = m.heads ?? 0;
   let placed = 0;
@@ -168,14 +206,9 @@ function place(s: DirectorState, sim: SimState, m: DirectorMoment, plan: Record<
   for (const [key, n] of Object.entries(plan)) {
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 0) return { ok: false, error: `${key}: a count must be a whole number, not ${String(n)}` };
     placed += n;
-    if (key.startsWith('bet:')) {
-      const bet = s.bets.find((b) => b.projectId === key.slice(4));
-      if (!bet || !sim.teams[bet.groupId]) return { ok: false, error: `${key.slice(4)} is not a funded bet` };
-      if (n) effects.push(value('team', bet.groupId, 'headcount', n, 'director.headcount'), value('project', bet.projectId, 'progress', n * T.head.betSpeed, 'director.headcount'));
-    } else {
-      if (!s.groupIds.includes(key) || !sim.teams[key]) return { ok: false, error: `${key} is not one of your groups` };
-      if (n) effects.push(value('team', key, 'headcount', n, 'director.headcount'), value('team', key, 'stress', n * T.head.onboardingStress, 'director.headcount'));
-    }
+    const at = placementEffects(s, sim, key, n);
+    if (!at.ok) return at;
+    effects.push(...at.effects);
   }
   if (placed > given) return { ok: false, error: `only ${given} heads were given, not ${placed}` };
   if (placed < given) effects.push(value('person', s.executiveId, 'trust', -(given - placed) * T.head.heldTrust, 'director.headcount'));
