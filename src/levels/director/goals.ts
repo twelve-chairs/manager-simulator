@@ -18,29 +18,47 @@ export function setGoals(level: DirectorState, sim: SimState) {
   level.periodStart = sim.week;
 }
 
+type GoalStatus = { text: string; progress: string; achieved: boolean };
+
+function regrettedStatus(goal: DirectorGoal, level: DirectorState): GoalStatus {
+  const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
+  const most = T.goalRegrettedMost;
+  const progress = left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left';
+  return { text: `Lose no more than ${most} of the people you would want to keep`, progress, achieved: left <= most };
+}
+
+function unstrainStatus(goal: DirectorGoal, level: DirectorState, sim: SimState): GoalStatus {
+  const text = `Bring ${sim.teams[goal.groupId!]?.name ?? 'The group'} out of the strained band by the next survey`;
+  const since = level.survey.quarter > quarterOf(level, { ...sim, week: goal.week }) ? level.survey.groups[goal.groupId!] : undefined;
+  if (since === undefined) return { text, progress: 'Waiting for the survey', achieved: false };
+  const out = band(since.stress) < 3;
+  return { text, progress: out ? 'Out of it' : 'Still strained', achieved: out };
+}
+
+function betStatus(goal: DirectorGoal, level: DirectorState, sim: SimState): GoalStatus {
+  const p = sim.projects[goal.projectId!];
+  const landed = level.betResults.some((r) => r.projectId === goal.projectId && r.landed);
+  const text = `Land ${p?.name ?? 'the bet'}`;
+  if (landed) return { text, progress: 'Landed', achieved: true };
+  return { text, progress: p?.status === 'active' ? `${p.progress} / ${p.scope} done` : 'Not landed', achieved: false };
+}
+
+function peerStatus(goal: DirectorGoal, sim: SimState): GoalStatus {
+  const p = sim.people[goal.personId!];
+  const kept = p?.status === 'active' && band(p.trust) >= 3;
+  return { text: `Keep ${p?.name ?? 'your peer'} on side`, progress: kept ? 'Trusting' : 'Not trusting', achieved: kept };
+}
+
 /** A goal in words, its progress, and whether it has been achieved. */
-export function goalStatus(goal: DirectorGoal, level: DirectorState, sim: SimState): { text: string; progress: string; achieved: boolean } {
+export function goalStatus(goal: DirectorGoal, level: DirectorState, sim: SimState): GoalStatus {
   switch (goal.kind) {
-    case 'zeroRegretted': {
-      const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
-      const most = T.goalRegrettedMost;
-      return { text: `Lose no more than ${most} of the people you would want to keep`, progress: left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left', achieved: left <= most };
-    }
-    case 'unstrainGroup': {
-      const name = sim.teams[goal.groupId!]?.name ?? 'The group';
-      const since = level.survey.quarter > quarterOf(level, { ...sim, week: goal.week }) ? level.survey.groups[goal.groupId!] : undefined;
-      const out = since !== undefined && band(since.stress) < 3;
-      return { text: `Bring ${name} out of the strained band by the next survey`, progress: since === undefined ? 'Waiting for the survey' : out ? 'Out of it' : 'Still strained', achieved: out };
-    }
-    case 'landBet': {
-      const p = sim.projects[goal.projectId!];
-      const landed = level.betResults.some((r) => r.projectId === goal.projectId && r.landed);
-      return { text: `Land ${p?.name ?? 'the bet'}`, progress: landed ? 'Landed' : p?.status === 'active' ? `${p.progress} / ${p.scope} done` : 'Not landed', achieved: landed };
-    }
-    case 'peerTrust': {
-      const p = sim.people[goal.personId!];
-      const kept = p?.status === 'active' && band(p.trust) >= 3;
-      return { text: `Keep ${p?.name ?? 'your peer'} on side`, progress: kept ? 'Trusting' : 'Not trusting', achieved: kept };
-    }
+    case 'zeroRegretted':
+      return regrettedStatus(goal, level);
+    case 'unstrainGroup':
+      return unstrainStatus(goal, level, sim);
+    case 'landBet':
+      return betStatus(goal, level, sim);
+    case 'peerTrust':
+      return peerStatus(goal, sim);
   }
 }

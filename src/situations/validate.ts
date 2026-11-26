@@ -357,8 +357,8 @@ function checkEffect(x: unknown, scope: Scope, path: string) {
 const SITUATION_FIELDS = ['id', 'title', 'levels', 'priority', 'roles', 'choices', 'text'] as const;
 const OPTIONAL_SITUATION_FIELDS = ['weight', 'cooldownWeeks', 'personCooldownWeeks', 'once', 'quietWeek', 'when', 'day', 'time', 'waitDebrief'] as const;
 
-function checkSituation(x: unknown): Situation {
-  const o = object(x, '', 'a situation', SITUATION_FIELDS, OPTIONAL_SITUATION_FIELDS);
+/** The situation's own fields, before its roles: ids, levels, priority, cooldowns, when, day, time and the lesson for waiting. */
+function checkSituationFields(o: Record<string, unknown>) {
   string(o, 'id', '');
   string(o, 'title', '');
   const levels = o.levels;
@@ -379,7 +379,10 @@ function checkSituation(x: unknown): Situation {
     if (typeof lesson !== 'string' || lesson.trim() === '') fail('waitDebrief', 'must be a non-empty string');
     else if (hasPlaceholder(lesson)) fail('waitDebrief', 'must not contain a placeholder');
   }
+}
 
+/** The situation's roles, each checked against those before it: the scope its text, choices and effects are checked in. */
+function checkRoles(o: Record<string, unknown>): Scope {
   const roles: Record<string, RoleKind> = {};
   const forms: Record<string, string> = {};
   list(o.roles, 'roles').forEach((r, i) => {
@@ -395,38 +398,46 @@ function checkSituation(x: unknown): Situation {
     }
     if (Object.hasOwn(role, 'where')) checkCondition(role.where, { roles: { ...roles } }, at(path, 'where'));
   });
-  const scope: Scope = { roles, forms };
+  return { roles, forms };
+}
 
+/** One outcome of a choice: unique id, a when on every outcome but the last, its effects and its text. */
+function checkOutcome(oc: unknown, opath: string, last: boolean, choiceId: string, outcomeIds: Set<string>, scope: Scope) {
+  const outcome = object(oc, opath, 'an outcome', ['id', 'effects', 'aftermath', 'debrief'], ['when']);
+  const outcomeId = string(outcome, 'id', opath);
+  if (outcomeIds.has(outcomeId)) fail(at(opath, 'id'), `duplicate outcome id ${outcomeId} in choice ${choiceId}`);
+  outcomeIds.add(outcomeId);
+  if (last && Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'the last outcome cannot have a when; it applies when no other does');
+  if (!last && !Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'required on every outcome but the last');
+  if (!last) checkCondition(outcome.when, scope, at(opath, 'when'));
+  list(outcome.effects, at(opath, 'effects')).forEach((e, k) => checkEffect(e, scope, at(at(opath, 'effects'), k)));
+  checkText(outcome, 'aftermath', opath, scope);
+  checkText(outcome, 'debrief', opath, scope);
+}
+
+/** One choice: unique id, its label, availability and at least one outcome. */
+function checkChoice(ch: unknown, path: string, choiceIds: Set<string>, scope: Scope) {
+  const choice = object(ch, path, 'a choice', ['id', 'label', 'outcomes'], ['availableIf']);
+  const choiceId = string(choice, 'id', path);
+  if (choiceIds.has(choiceId)) fail(at(path, 'id'), `duplicate choice id ${choiceId}`);
+  choiceIds.add(choiceId);
+  checkText(choice, 'label', path, scope);
+  if (Object.hasOwn(choice, 'availableIf')) checkCondition(choice.availableIf, scope, at(path, 'availableIf'));
+  const outcomes = list(choice.outcomes, at(path, 'outcomes'));
+  if (outcomes.length === 0) fail(at(path, 'outcomes'), 'needs at least one outcome');
+  const outcomeIds = new Set<string>();
+  outcomes.forEach((oc, j) => checkOutcome(oc, at(at(path, 'outcomes'), j), j === outcomes.length - 1, choiceId, outcomeIds, scope));
+}
+
+function checkSituation(x: unknown): Situation {
+  const o = object(x, '', 'a situation', SITUATION_FIELDS, OPTIONAL_SITUATION_FIELDS);
+  checkSituationFields(o);
+  const scope = checkRoles(o);
   checkText(o, 'text', '', scope);
   const choices = list(o.choices, 'choices');
   if (choices.length === 0) fail('choices', 'needs at least one choice');
   const choiceIds = new Set<string>();
-  choices.forEach((ch, i) => {
-    const path = at('choices', i);
-    const choice = object(ch, path, 'a choice', ['id', 'label', 'outcomes'], ['availableIf']);
-    const choiceId = string(choice, 'id', path);
-    if (choiceIds.has(choiceId)) fail(at(path, 'id'), `duplicate choice id ${choiceId}`);
-    choiceIds.add(choiceId);
-    checkText(choice, 'label', path, scope);
-    if (Object.hasOwn(choice, 'availableIf')) checkCondition(choice.availableIf, scope, at(path, 'availableIf'));
-    const outcomes = list(choice.outcomes, at(path, 'outcomes'));
-    if (outcomes.length === 0) fail(at(path, 'outcomes'), 'needs at least one outcome');
-    const outcomeIds = new Set<string>();
-    outcomes.forEach((oc, j) => {
-      const opath = at(at(path, 'outcomes'), j);
-      const outcome = object(oc, opath, 'an outcome', ['id', 'effects', 'aftermath', 'debrief'], ['when']);
-      const outcomeId = string(outcome, 'id', opath);
-      if (outcomeIds.has(outcomeId)) fail(at(opath, 'id'), `duplicate outcome id ${outcomeId} in choice ${choiceId}`);
-      outcomeIds.add(outcomeId);
-      const last = j === outcomes.length - 1;
-      if (last && Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'the last outcome cannot have a when; it applies when no other does');
-      if (!last && !Object.hasOwn(outcome, 'when')) fail(at(opath, 'when'), 'required on every outcome but the last');
-      if (!last) checkCondition(outcome.when, scope, at(opath, 'when'));
-      list(outcome.effects, at(opath, 'effects')).forEach((e, k) => checkEffect(e, scope, at(at(opath, 'effects'), k)));
-      checkText(outcome, 'aftermath', opath, scope);
-      checkText(outcome, 'debrief', opath, scope);
-    });
-  });
+  choices.forEach((ch, i) => checkChoice(ch, at('choices', i), choiceIds, scope));
   return structuredClone(o) as unknown as Situation;
 }
 

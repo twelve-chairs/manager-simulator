@@ -131,40 +131,40 @@ const EVERYDAY_ISSUES = [
 
 /** Begins a month: makes its moments from the group's state, up to the cap, in order, and sets them through the month. */
 // @spec SENIOR-MOMENT-001, SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-PLAN-002, SENIOR-CAL-001
-export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
-  const s = structuredClone(level);
-  for (const [t, week] of Object.entries(s.arriving)) if (week <= sim.week) delete s.arriving[t];
+/** Managers on a plan whose third low rating is due. */
+function finalEvaluationDrafts(s: SeniorState, sim: SimState): Draft[] {
   const drafts: Draft[] = [];
-  const health = (t: string) => sim.teams[t]!.aggregate!;
-  const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
-
-  // Managers on a plan whose third low rating is due.
   for (const managerId of s.heldEvaluations) {
     const teamId = s.teamIds.find((t) => leadOf(s, sim, t) === managerId);
     if (!teamId || sim.people[managerId]?.status !== 'active') continue;
     const who = sim.people[managerId].name;
     drafts.push({ kind: 'finalEvaluation', teamId, managerId, title: `Final evaluation: ${who}`, text: `${who} is on an improvement plan, and ${name(sim, teamId)} is still struggling under them. A third low rating ends the plan. It's your call.`, choices: CHOICES.finalEvaluation });
   }
-  // Teams with no manager and none on the way, whether theirs was let go or quit.
-  for (const teamId of s.teamIds) {
-    if (sim.teams[teamId]?.leader || s.arriving[teamId] !== undefined) continue;
-    drafts.push({ kind: 'replaceManager', teamId, title: `${name(sim, teamId)} needs a manager`, text: `${name(sim, teamId)} has no manager. Who leads it now?`, choices: CHOICES.replaceManager });
-  }
-  // Calibration, in the last month before a review.
+  return drafts;
+}
+
+/** Teams with no manager and none on the way, whether theirs was let go or quit; then calibration, in the last month before a review. */
+function leadershipDrafts(s: SeniorState, sim: SimState): Draft[] {
+  const drafts: Draft[] = s.teamIds
+    .filter((teamId) => !sim.teams[teamId]?.leader && s.arriving[teamId] === undefined)
+    .map((teamId) => ({ kind: 'replaceManager', teamId, title: `${name(sim, teamId)} needs a manager`, text: `${name(sim, teamId)} has no manager. Who leads it now?`, choices: CHOICES.replaceManager }));
   if (periodEndsThisMonth(s, sim)) {
     drafts.push({ kind: 'calibration', title: 'Calibration', text: 'Your managers bring their proposed ratings for the period. Set each team’s beside what it delivered.', calibration: calibrationEntries(s, sim), curve: curveOf(s, sim), choices: CHOICES.calibration });
   }
+  return drafts;
+}
 
-  // Problems skip-level listening surfaced last month.
-  const surfaced = new Set(s.surfaced.map((x) => x.teamId));
+/** Problems skip-level listening surfaced last month, told again with how the player answered when they come back unsettled. */
+function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<string>, behind: ReadonlySet<string>): Draft[] {
+  const drafts: Draft[] = [];
   for (const t of surfaced) {
     const issue = surfacedIssue(s, sim, t, behind);
     // A healthy team whose frictions are all settled has nothing new to raise.
     if (!issue) continue;
     // @spec SENIOR-HABIT-011
     const before = s.issues[t]?.[issue.key];
-    const again = before !== undefined && !before.settled;
     const manager = managerName(s, sim, t);
+    const again = before !== undefined && !before.settled;
     drafts.push({
       kind: 'surfaced',
       teamId: t,
@@ -176,32 +176,46 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
       choices: CHOICES.surfaced,
     });
   }
-  // Escalations from teams under strain, at risk of losing people, or with a project behind.
-  for (const t of s.teamIds) {
-    if (surfaced.has(t)) continue;
-    const a = health(t);
-    const slipping = activeProjects(sim, t).some((p) => behind.has(p.id));
-    if (band(a.stress) >= 3 || band(a.attritionRisk) >= 3 || slipping) {
-      const why = band(a.stress) >= 3 ? 'their team is stretched thin' : band(a.attritionRisk) >= 3 ? 'they think people are about to leave' : 'a project is slipping';
-      drafts.push({ kind: 'escalation', teamId: t, title: `${managerName(s, sim, t)} needs help`, text: `${managerName(s, sim, t)} comes to you: ${why}.`, choices: CHOICES.escalation });
-    }
+  return drafts;
+}
+
+/** Why a team's manager escalates: strain, people about to leave, or a project slipping; none when nothing is wrong. */
+function escalationReason(sim: SimState, t: string, behind: ReadonlySet<string>): string | undefined {
+  const a = sim.teams[t]!.aggregate!;
+  if (band(a.stress) >= 3) return 'their team is stretched thin';
+  if (band(a.attritionRisk) >= 3) return 'they think people are about to leave';
+  return activeProjects(sim, t).some((p) => behind.has(p.id)) ? 'a project is slipping' : undefined;
+}
+
+/** Escalations from teams under strain, at risk of losing people, or with a project behind; then a staffing request from the most strained team while another is calm. */
+function escalationDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<string>, behind: ReadonlySet<string>): Draft[] {
+  const drafts: Draft[] = [];
+  for (const t of s.teamIds.filter((x) => !surfaced.has(x))) {
+    const why = escalationReason(sim, t, behind);
+    if (why) drafts.push({ kind: 'escalation', teamId: t, title: `${managerName(s, sim, t)} needs help`, text: `${managerName(s, sim, t)} comes to you: ${why}.`, choices: CHOICES.escalation });
   }
-  // A staffing request from the most strained team, while another is calm.
+  const health = (t: string) => sim.teams[t]!.aggregate!;
   const byStress = [...s.teamIds].sort((x, y) => health(y).stress - health(x).stress);
   const strained = byStress.find((t) => band(health(t).stress) >= 3);
   const roomy = [...byStress].reverse().find((t) => band(health(t).stress) <= 1);
   if (strained && roomy && strained !== roomy) {
     drafts.push({ kind: 'staffing', teamId: strained, otherTeamId: roomy, title: 'A staffing request', text: `${managerName(s, sim, strained)} asks for another pair of hands. ${name(sim, roomy)} has some room.`, choices: CHOICES.staffing });
   }
-  // A dispute between the two teams whose projects are most at risk, skipping pairs whose dispute is settled.
-  // @spec SENIOR-MOMENT-014
+  return drafts;
+}
+
+/** A dispute between the two teams whose projects are most at risk, skipping pairs whose dispute is settled. */
+// @spec SENIOR-MOMENT-014
+function disputeDrafts(s: SeniorState, sim: SimState): Draft[] {
   s.settledDisputes = s.settledDisputes.filter((d) => sim.week - d.week < T.disputeSettledWeeks);
   const settled = (x: string, y: string) => s.settledDisputes.some((d) => d.teams.includes(x) && d.teams.includes(y));
-  const atRisk = s.teamIds.filter((t) => activeProjects(sim, t)[0]?.risk !== undefined && activeProjects(sim, t)[0]!.risk >= T.atRiskProject).sort((x, y) => activeProjects(sim, y)[0]!.risk - activeProjects(sim, x)[0]!.risk);
+  const risk = (t: string) => activeProjects(sim, t)[0]?.risk;
+  const atRisk = s.teamIds.filter((t) => (risk(t) ?? -1) >= T.atRiskProject).sort((x, y) => risk(y)! - risk(x)!);
   const disputing = atRisk.flatMap((x, i) => atRisk.slice(i + 1).map((y) => [x, y] as const)).find(([x, y]) => !settled(x, y));
-  if (disputing) {
-    const [a, b] = disputing;
-    drafts.push({
+  if (!disputing) return [];
+  const [a, b] = disputing;
+  return [
+    {
       kind: 'dispute',
       teamId: a,
       otherTeamId: b,
@@ -210,35 +224,44 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
       title: `${name(sim, a)} and ${name(sim, b)} disagree`,
       text: `${managerName(s, sim, a)} and ${managerName(s, sim, b)} both need the same shared work done first, and both projects are at risk.`,
       choices: CHOICES.dispute,
-    });
-  }
-  // Approvals, from the teams' own ratings, at most once every three months a team.
+    },
+  ];
+}
+
+/** Approvals, from the teams' own ratings, at most once every three months a team. */
+function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
+  const drafts: Draft[] = [];
   for (const t of s.teamIds) {
     const m = leadOf(s, sim, t);
     const last = s.lastApproval[t];
     if (!m || (last !== undefined && sim.week - last < T.approvalCooldownWeeks)) continue;
-    const r = health(t).ratings;
-    const detail = r.exceeds > 0 ? 'promote' : r.below > 0 ? 'letGo' : null;
-    if (!detail) continue;
+    const r = sim.teams[t]!.aggregate!.ratings;
+    if (r.exceeds <= 0 && r.below <= 0) continue;
+    const detail = r.exceeds > 0 ? ('promote' as const) : ('letGo' as const);
     s.lastApproval[t] = sim.week;
     const what = detail === 'promote' ? 'promote one of their engineers' : 'let one of their engineers go';
     drafts.push({ kind: 'approval', teamId: t, detail, title: `${managerName(s, sim, t)} asks for an approval`, text: `${managerName(s, sim, t)} wants to ${what}, and needs your sign-off.`, choices: CHOICES.approval });
   }
-  // New work, while a team has none.
-  // Under the habit of giving work to teams with room, only a strained team makes it the player's call; one with room is
-  // given it at the month's end (SENIOR-MOMENT-013).
+  return drafts;
+}
+
+/**
+ * New work, while a team has none, of a different kind month to month. Under the habit of giving work to teams with room,
+ * only a strained team makes it the player's call; one with room is given it at the month's end (SENIOR-MOMENT-013).
+ */
+// @spec SENIOR-MOMENT-015
+function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
   const idle = s.teamIds.find((t) => activeProjects(sim, t).length === 0 && (s.habits.newWork === 'ask' || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand));
-  if (idle) {
-    const team = name(sim, idle);
-    // @spec SENIOR-MOMENT-015
-    // A different kind of offer month to month, so which to take is a decision and not a reflex.
-    const offer = (['launch', 'handover', 'own'] as const)[monthOf(s, sim) % 3]!;
-    const OFFER_TEXT = {
-      launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
-      handover: { title: 'New work for the group: a handover', text: `Another group wants to hand yours a system it can no longer keep up, old code and heavy tech debt. ${team} has nothing on. Nobody will mind much if you say no.` },
-      own: { title: `New work for the group: ${team}'s own project`, text: `${managerName(s, sim, idle)} has been pushing for a project of ${team}'s own, and your manager has finally offered it. ${team} has nothing on. Saying no is saying no to them.` },
-    } as const;
-    drafts.push({
+  if (!idle) return [];
+  const team = name(sim, idle);
+  const offer = (['launch', 'handover', 'own'] as const)[monthOf(s, sim) % 3]!;
+  const OFFER_TEXT = {
+    launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
+    handover: { title: 'New work for the group: a handover', text: `Another group wants to hand yours a system it can no longer keep up, old code and heavy tech debt. ${team} has nothing on. Nobody will mind much if you say no.` },
+    own: { title: `New work for the group: ${team}'s own project`, text: `${managerName(s, sim, idle)} has been pushing for a project of ${team}'s own, and your manager has finally offered it. ${team} has nothing on. Saying no is saying no to them.` },
+  } as const;
+  return [
+    {
       kind: 'newWork',
       teamId: idle,
       offer,
@@ -250,13 +273,28 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
         { id: 'decline', label: OFFER_LABELS[offer].decline(team) },
         ...CHOICES.newWork.filter((c) => c.id !== 'give' && c.id !== 'decline'),
       ],
-    });
-  }
+    },
+  ];
+}
+
+export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
+  const s = structuredClone(level);
+  for (const [t, week] of Object.entries(s.arriving)) if (week <= sim.week) delete s.arriving[t];
+  const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
+  const surfaced = new Set(s.surfaced.map((x) => x.teamId));
+  const drafts: Draft[] = [
+    ...finalEvaluationDrafts(s, sim),
+    ...leadershipDrafts(s, sim),
+    ...surfacedDrafts(s, sim, surfaced, behind),
+    ...escalationDrafts(s, sim, surfaced, behind),
+    ...disputeDrafts(s, sim),
+    ...approvalDrafts(s, sim),
+    ...newWorkDrafts(s, sim),
+  ];
   // The fourth team, once the group has run a year.
   if (!s.restructured && s.teamIds.length === 3 && monthOf(s, sim) >= T.restructureMonth) {
     drafts.push({ kind: 'restructuring', title: 'A fourth team', text: 'Your manager wants your group to take on a fourth team. It needs a manager.', choices: CHOICES.restructuring });
   }
-
   const kept = drafts.slice(0, T.momentCap);
   s.moments = kept.map((d, i) => {
     // Spread through the month's twenty working days, in order.

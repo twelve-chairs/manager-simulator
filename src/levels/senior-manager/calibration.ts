@@ -215,11 +215,30 @@ export type CalibrationMove = { from: Rating; to: Rating; count: number };
 // @spec SENIOR-CAL-002, SENIOR-CAL-003, SENIOR-CAL-004
 export function calibrateTeam(level: SeniorState, sim: SimState, momentId: string, teamId: string, moves: CalibrationMove[]): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
   const found = level.moments.find((m) => m.id === momentId);
-  if (!found || found.kind !== 'calibration' || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not an open calibration` };
+  if (found?.kind !== 'calibration' || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not an open calibration` };
   const entry = found.calibration!.find((e) => e.teamId === teamId);
   if (!entry || entry.final) return { ok: false, error: `team ${teamId} has no calibration waiting` };
   if (!Array.isArray(moves)) return { ok: false, error: 'moves must be a list' };
-  const final = { ...entry.proposed };
+  const applied = applyMoves(entry.proposed, moves);
+  if (!applied.ok) return applied;
+  const { final, down } = applied;
+
+  const s = structuredClone(level);
+  const moment = s.moments.find((m) => m.id === momentId)!;
+  const settled = moment.calibration!.find((e) => e.teamId === teamId)!;
+  settled.final = final;
+  const effects = [...reRates(sim, teamId, final), ...settlementEffects(sim, settled, final, moves.length, down)];
+  const r = applyEffects(sim, effects);
+  if (!r.ok) return { ok: false, error: r.error.message };
+  finish(s, moment, sim.week);
+  remember(s, r.state);
+  const who = settled.managerId ? r.state.people[settled.managerId]!.name : 'The team';
+  return { ok: true, level: s, sim: r.state, log: r.log, reaction: settledReaction(who, moves.length, down) };
+}
+
+/** A team's proposal with the player's moves applied, one rating at a time, and how many heads went down; or why a move is refused. */
+function applyMoves(proposed: RatingCounts, moves: CalibrationMove[]): Result<{ final: RatingCounts; down: number }> {
+  const final = { ...proposed };
   let down = 0;
   for (const move of moves) {
     const from = RATINGS.indexOf(move?.from);
@@ -231,27 +250,26 @@ export function calibrateTeam(level: SeniorState, sim: SimState, momentId: strin
     final[move.to] += move.count;
     if (to < from) down += move.count;
   }
+  return { ok: true, final, down };
+}
 
-  const s = structuredClone(level);
-  const moment = s.moments.find((m) => m.id === momentId)!;
-  const settled = moment.calibration!.find((e) => e.teamId === teamId)!;
-  settled.final = final;
-  const effects: Effect[] = reRates(sim, teamId, final);
-  const m = settled.managerId;
-  const cause = { kind: 'action' as const, actionId: 'senior.calibration' };
+/** What a team's settlement does beyond its ratings: its manager pleased or less trusting, the team's sense of fairness. */
+function settlementEffects(sim: SimState, entry: CalibrationEntry, final: RatingCounts, moved: number, down: number): Effect[] {
+  const effects: Effect[] = [];
+  const m = entry.managerId;
   if (m && sim.people[m]?.status === 'active') {
-    if (moves.length === 0) effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'motivation', amount: T.calAcceptMotivation, cause });
-    if (down > 0) effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'trust', amount: -down * T.calTrustPerHead, cause });
+    if (moved === 0) effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'motivation', amount: T.calAcceptMotivation, cause: CALIBRATION_CAUSE });
+    if (down > 0) effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'trust', amount: -down * T.calTrustPerHead, cause: CALIBRATION_CAUSE });
   }
-  const unfair = Math.round(Math.abs(meanStep(final) - meanStep(settled.delivered)) * T.calUnfairMotivation);
-  if (unfair) effects.push({ type: 'value', target: { kind: 'team', id: teamId }, field: 'motivation', amount: -unfair, cause });
-  const r = applyEffects(sim, effects);
-  if (!r.ok) return { ok: false, error: r.error.message };
-  finish(s, moment, sim.week);
-  remember(s, r.state);
-  const who = m ? r.state.people[m]!.name : 'The team';
-  const reaction = moves.length === 0 ? `${who} is pleased the ratings stand.` : down > 0 ? `${who} argues for their people, then accepts it.` : `${who} takes the higher ratings gladly.`;
-  return { ok: true, level: s, sim: r.state, log: r.log, reaction };
+  const unfair = Math.round(Math.abs(meanStep(final) - meanStep(entry.delivered)) * T.calUnfairMotivation);
+  if (unfair) effects.push({ type: 'value', target: { kind: 'team', id: entry.teamId }, field: 'motivation', amount: -unfair, cause: CALIBRATION_CAUSE });
+  return effects;
+}
+
+/** How a team's manager takes its settlement. */
+function settledReaction(who: string, moved: number, down: number): string {
+  if (moved === 0) return `${who} is pleased the ratings stand.`;
+  return down > 0 ? `${who} argues for their people, then accepts it.` : `${who} takes the higher ratings gladly.`;
 }
 
 /** Settles every team still waiting: their managers' proposals stand. */

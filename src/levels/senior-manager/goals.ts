@@ -26,29 +26,46 @@ export function setGoals(level: SeniorState, sim: SimState) {
   });
 }
 
+type GoalStatus = { text: string; progress: string; achieved: boolean };
+
+const people = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`;
+
+function regrettedStatus(goal: SeniorGoal, level: SeniorState): GoalStatus {
+  const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
+  return { text: 'Keep everyone you would want to keep', progress: left ? `${people(left)} you'd have kept left` : 'Nobody you would keep has left', achieved: left === 0 };
+}
+
+function unstrainStatus(goal: SeniorGoal, sim: SimState): GoalStatus {
+  const out = band(sim.teams[goal.teamId!]!.aggregate!.stress) < 3;
+  return { text: `Bring ${sim.teams[goal.teamId!]!.name} out of the strained band`, progress: out ? 'Out of it' : 'Still strained', achieved: out };
+}
+
+function shipStatus(goal: SeniorGoal, level: SeniorState, sim: SimState): GoalStatus {
+  const p = sim.projects[goal.projectId!]!;
+  const shipped = p.status === 'completed';
+  const done = shipped && (level.completions[p.id] ?? Infinity) <= goal.deadlineWeek!;
+  return { text: `Ship ${p.name} by week ${goal.deadlineWeek! + 1}`, progress: shipped ? 'Shipped' : `${p.progress} / ${p.scope} done`, achieved: done };
+}
+
+function growStatus(goal: SeniorGoal, sim: SimState): GoalStatus {
+  const m = sim.people[goal.managerId!]!;
+  const text = `Grow ${m.name} as a manager`;
+  if (m.status !== 'active') return { text, progress: `${m.name} has left`, achieved: false };
+  // Skill shows only as a band, so progress is told in words rather than points.
+  const there = band(m.skill) >= goal.targetBand!;
+  return { text, progress: there ? 'There' : 'Not yet', achieved: there };
+}
+
 /** A goal in words, its progress, and whether it has been achieved. */
-export function goalStatus(goal: SeniorGoal, level: SeniorState, sim: SimState): { text: string; progress: string; achieved: boolean } {
+export function goalStatus(goal: SeniorGoal, level: SeniorState, sim: SimState): GoalStatus {
   switch (goal.kind) {
-    case 'zeroRegretted': {
-      const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
-      return { text: 'Keep everyone you would want to keep', progress: left ? `${left} ${left === 1 ? 'person' : 'people'} you'd have kept left` : 'Nobody you would keep has left', achieved: left === 0 };
-    }
-    case 'unstrainTeam': {
-      const a = sim.teams[goal.teamId!]!.aggregate!;
-      const out = band(a.stress) < 3;
-      return { text: `Bring ${sim.teams[goal.teamId!]!.name} out of the strained band`, progress: out ? 'Out of it' : 'Still strained', achieved: out };
-    }
-    case 'shipProject': {
-      const p = sim.projects[goal.projectId!]!;
-      const done = p.status === 'completed' && (level.completions[p.id] ?? Infinity) <= goal.deadlineWeek!;
-      return { text: `Ship ${p.name} by week ${goal.deadlineWeek! + 1}`, progress: p.status === 'completed' ? 'Shipped' : `${p.progress} / ${p.scope} done`, achieved: done };
-    }
-    case 'growManager': {
-      const m = sim.people[goal.managerId!]!;
-      const now = band(m.skill);
-      // Skill shows only as a band, so progress is told in words rather than points.
-      const there = m.status === 'active' && now >= goal.targetBand!;
-      return { text: `Grow ${m.name} as a manager`, progress: m.status !== 'active' ? `${m.name} has left` : there ? 'There' : 'Not yet', achieved: there };
-    }
+    case 'zeroRegretted':
+      return regrettedStatus(goal, level);
+    case 'unstrainTeam':
+      return unstrainStatus(goal, sim);
+    case 'shipProject':
+      return shipStatus(goal, level, sim);
+    case 'growManager':
+      return growStatus(goal, sim);
   }
 }

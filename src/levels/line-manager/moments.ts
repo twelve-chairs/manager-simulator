@@ -115,93 +115,145 @@ function finalEvaluationChoices(sim: SimState, id: string, rating: Rating): Mome
   ];
 }
 
-export function addMoments(s: LineState, sim: SimState) {
+/** The week's moments as they are made: what is covered already, the room left under the cap, and a maker. */
+interface WeekBuilder {
+  s: LineState;
+  sim: SimState;
+  week: number;
+  covered: Set<string>;
+  room: number;
+  make(m: Omit<LevelMoment, 'id' | 'week' | 'status'>): void;
+  /** Open items of these kinds with no moment yet whose subject is still there. */
+  open(kinds: readonly string[]): WorkItem[];
+}
+
+function weekBuilder(s: LineState, sim: SimState): WeekBuilder {
   const week = sim.week;
   s.moments = s.moments.filter((m) => m.week === week);
-  const covered = new Set(s.moments.map((m) => m.ref));
-  let room = LINE_TUNING.levelMomentCap - s.moments.length;
-  const make = (m: Omit<LevelMoment, 'id' | 'week' | 'status'>) => {
-    s.counters.moment += 1;
-    s.moments.push({ id: `m${s.counters.moment}`, week, status: 'open', ...m });
-    covered.add(m.ref);
-    room -= 1;
+  const b: WeekBuilder = {
+    s,
+    sim,
+    week,
+    covered: new Set(s.moments.map((m) => m.ref)),
+    room: LINE_TUNING.levelMomentCap - s.moments.length,
+    make(m) {
+      s.counters.moment += 1;
+      s.moments.push({ id: `m${s.counters.moment}`, week, status: 'open', ...m });
+      b.covered.add(m.ref);
+      b.room -= 1;
+    },
+    open: (kinds) => s.items.filter((i) => kinds.includes(i.kind) && !b.covered.has(i.id) && subjectValid(s, sim, i)),
   };
-  const open = (kinds: readonly string[]) => s.items.filter((i) => kinds.includes(i.kind) && !covered.has(i.id) && subjectValid(s, sim, i));
+  return b;
+}
 
-  // @spec LINE-EVAL-003
-  // Final evaluations first: someone's job depends on them.
-  for (const held of s.heldEvaluations.filter((h) => !covered.has(h.personId) && sim.people[h.personId]?.status === 'active')) {
-    if (room <= 0) break;
-    make({ kind: 'finalEvaluation', ref: held.personId, day: 0, time: 'afternoon', choices: finalEvaluationChoices(sim, held.personId, held.rating) });
+/** Final evaluations first: someone's job depends on them. */
+// @spec LINE-EVAL-003
+function addFinalEvaluations(b: WeekBuilder) {
+  const { s, sim } = b;
+  for (const held of s.heldEvaluations.filter((h) => !b.covered.has(h.personId) && sim.people[h.personId]?.status === 'active')) {
+    if (b.room <= 0) break;
+    b.make({ kind: 'finalEvaluation', ref: held.personId, day: 0, time: 'afternoon', choices: finalEvaluationChoices(sim, held.personId, held.rating) });
   }
-  // Night pages next: they cannot wait for another week.
-  // @spec LINE-HABIT-011
-  // A page the engineer on call can handle is theirs, with no moment; only pages beyond them come to the player.
+}
+
+/** Night pages next, as they cannot wait: the engineer on call, with a backup if any, handles what they can reach with no moment. */
+// @spec LINE-HABIT-011
+function addNightPages(b: WeekBuilder) {
+  const { s, sim, week } = b;
   const onCall = onCallEngineer(s, sim);
-  if (onCall) {
-    s.routinePages = Object.fromEntries(Object.entries(s.routinePages).filter(([id]) => s.items.some((i) => i.id === id && i.lastWeek >= week)));
-    s.backedPages = Object.fromEntries(Object.entries(s.backedPages).filter(([id]) => Object.hasOwn(s.routinePages, id)));
-    const pages = open(['onCall']).filter((item) => !Object.hasOwn(s.routinePages, item.id));
-    const backup = backupEngineer(s, sim, onCall);
-    for (const item of pages) {
-      const alone = band(sim.people[onCall]!.skill) >= band(item.difficulty);
-      // A page beyond the engineer on call that the backup can reach is the two of theirs.
-      const backed = !alone && backup !== undefined && band(sim.people[backup]!.skill) >= band(item.difficulty);
-      if (!alone && !backed) continue;
-      s.routinePages[item.id] = onCall;
-      if (backed) s.backedPages[item.id] = backup;
-      covered.add(item.id);
-    }
-    for (const [i, item] of pages.filter((p) => !covered.has(p.id)).entries()) {
-      if (room <= 0) break;
-      make({ kind: 'onCall', ref: item.id, personId: onCall, day: i % 5, time: 'night', choices: structuredClone(ON_CALL_CHOICES) });
-    }
+  if (!onCall) return;
+  s.routinePages = Object.fromEntries(Object.entries(s.routinePages).filter(([id]) => s.items.some((i) => i.id === id && i.lastWeek >= week)));
+  s.backedPages = Object.fromEntries(Object.entries(s.backedPages).filter(([id]) => Object.hasOwn(s.routinePages, id)));
+  const pages = b.open(['onCall']).filter((item) => !Object.hasOwn(s.routinePages, item.id));
+  const backup = backupEngineer(s, sim, onCall);
+  for (const item of pages) {
+    const alone = band(sim.people[onCall]!.skill) >= band(item.difficulty);
+    // A page beyond the engineer on call that the backup can reach is the two of theirs.
+    const backed = !alone && backup !== undefined && band(sim.people[backup]!.skill) >= band(item.difficulty);
+    if (!alone && !backed) continue;
+    s.routinePages[item.id] = onCall;
+    if (backed) s.backedPages[item.id] = backup;
+    b.covered.add(item.id);
   }
-  // @spec LINE-CHECK-002
-  for (const id of dueCheckIns(s, sim).filter((p) => !covered.has(p))) {
-    if (room <= 0) break;
-    make({ kind: 'checkIn', ref: id, day: 0, time: 'morning', choices: structuredClone(CHECK_IN_CHOICES) });
+  for (const [i, item] of pages.filter((p) => !b.covered.has(p.id)).entries()) {
+    if (b.room <= 0) break;
+    b.make({ kind: 'onCall', ref: item.id, personId: onCall, day: i % 5, time: 'night', choices: structuredClone(ON_CALL_CHOICES) });
+  }
+}
+
+/** Check-ins for projects due one, then interviews for open vacancies. */
+// @spec LINE-CHECK-002
+function addCheckInsAndInterviews(b: WeekBuilder) {
+  const { s, sim, week } = b;
+  for (const id of dueCheckIns(s, sim).filter((p) => !b.covered.has(p))) {
+    if (b.room <= 0) break;
+    b.make({ kind: 'checkIn', ref: id, day: 0, time: 'morning', choices: structuredClone(CHECK_IN_CHOICES) });
     s.checkIns[id] = week;
   }
-  for (const vacancy of s.vacancies.filter((v) => !covered.has(v.id))) {
-    if (room <= 0) break;
-    make({ kind: 'interview', ref: vacancy.id, day: 2, time: 'afternoon', choices: interviewChoices(s, sim) });
+  for (const vacancy of s.vacancies.filter((v) => !b.covered.has(v.id))) {
+    if (b.room <= 0) break;
+    b.make({ kind: 'interview', ref: vacancy.id, day: 2, time: 'afternoon', choices: interviewChoices(s, sim) });
   }
-  // @spec LINE-WORK-013, LINE-WORK-015
-  // Work someone can handle unstrained is the team's, with no moment: a customer request, or a design review on a project
-  // with no debt worth paying down.
+}
+
+/** Whether a design review's project has no debt worth paying down, so the team can take it as routine. */
+const routineReview = (sim: SimState, item: WorkItem) => {
+  const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+  return p !== undefined && band(p.techDebt) <= LINE_TUNING.payDown.band;
+};
+
+/**
+ * Work someone can handle unstrained is the team's, with no moment: a customer request, or a design review on a project
+ * with no debt worth paying down.
+ */
+// @spec LINE-WORK-013, LINE-WORK-015
+function assignRoutineWork(b: WeekBuilder) {
+  const { s, sim } = b;
   s.routineWork = Object.fromEntries(Object.entries(s.routineWork).filter(([id, who]) => s.items.some((i) => i.id === id) && isEngineer(s, sim, who)));
-  for (const item of open(['designReview', 'customerRequest']).filter((i) => !Object.hasOwn(s.routineWork, i.id))) {
+  for (const item of b.open(['designReview', 'customerRequest']).filter((i) => !Object.hasOwn(s.routineWork, i.id))) {
+    if (item.kind === 'designReview' && !routineReview(sim, item)) continue;
     const margin = item.kind === 'customerRequest' ? 1 : 0;
-    if (item.kind === 'designReview') {
-      const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-      if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) continue;
-    }
     const able = teamEngineers(s, sim)
       .filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty) + margin && band(sim.people[id]!.stress) < STRAINED)
-      .sort((a, b) => sim.people[a]!.stress - sim.people[b]!.stress || (a < b ? -1 : 1));
+      .sort((x, y) => sim.people[x]!.stress - sim.people[y]!.stress || (x < y ? -1 : 1));
     if (able[0]) s.routineWork[item.id] = able[0];
   }
-  for (const id of Object.keys(s.routineWork)) covered.add(id);
-  // @spec LINE-WORK-017
-  // Routine reviews left only because everyone who could take them is strained are one problem, and one moment.
-  const piling = open(['designReview']).filter((item) => {
-    const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-    if (!p || band(p.techDebt) > LINE_TUNING.payDown.band) return false;
+  for (const id of Object.keys(s.routineWork)) b.covered.add(id);
+}
+
+/** Routine reviews left only because everyone who could take them is strained are one problem, and one moment. */
+// @spec LINE-WORK-017
+function addPilingReviews(b: WeekBuilder) {
+  const { s, sim } = b;
+  const piling = b.open(['designReview']).filter((item) => {
+    if (!routineReview(sim, item)) return false;
     const able = teamEngineers(s, sim).filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty));
     return able.length > 0 && able.every((id) => band(sim.people[id]!.stress) >= STRAINED);
   });
-  if (piling.length >= 2 && room > 0) {
-    make({ kind: 'work', ref: piling[0]!.id, refs: piling.map((i) => i.id), day: 0, time: 'morning', choices: structuredClone(PILING_CHOICES) });
-    for (const item of piling) covered.add(item.id);
-  }
-  // Closest to expiring first; the sort is stable, so equal deadlines keep their arrival order.
-  const work = open(MOMENT_KINDS).sort((a, b) => a.lastWeek - b.lastWeek).slice(0, Math.max(0, room));
+  if (piling.length < 2 || b.room <= 0) return;
+  b.make({ kind: 'work', ref: piling[0]!.id, refs: piling.map((i) => i.id), day: 0, time: 'morning', choices: structuredClone(PILING_CHOICES) });
+  for (const item of piling) b.covered.add(item.id);
+}
+
+/** The rest of the work, closest to expiring first, spread through the week; the sort is stable, so equal deadlines keep their arrival order. */
+function addWork(b: WeekBuilder) {
+  const work = b.open(MOMENT_KINDS).sort((x, y) => x.lastWeek - y.lastWeek).slice(0, Math.max(0, b.room));
   work.forEach((item, i) => {
     const day = Math.min(4, Math.floor((i * 5) / work.length));
     const firstThatDay = i === 0 || Math.floor(((i - 1) * 5) / work.length) !== day;
-    make({ kind: 'work', ref: item.id, day, time: firstThatDay ? 'morning' : 'afternoon', choices: workChoices(s, sim, item) });
+    b.make({ kind: 'work', ref: item.id, day, time: firstThatDay ? 'morning' : 'afternoon', choices: workChoices(b.s, b.sim, item) });
   });
+}
+
+export function addMoments(s: LineState, sim: SimState) {
+  const b = weekBuilder(s, sim);
+  addFinalEvaluations(b);
+  addNightPages(b);
+  addCheckInsAndInterviews(b);
+  assignRoutineWork(b);
+  addPilingReviews(b);
+  addWork(b);
 }
 
 /** Removes a resolved item. */
