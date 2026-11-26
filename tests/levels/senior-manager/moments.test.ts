@@ -289,6 +289,15 @@ describe('a month’s moments', () => {
     expect(of('launch').w.title).toMatch(/launch/);
     expect(of('handover').w.title).toMatch(/handover/);
     expect(of('own').w.text).toContain(sim.teams[t]!.name);
+    // each choice says what it gains or costs for that kind, and the reaction says what it did
+    const label = (o: { w: SeniorMoment }, id: string) => o.w.choices.find((c) => c.id === id)!.label;
+    expect(label(of('launch'), 'give')).toMatch(/standing/);
+    expect(label(of('launch'), 'decline')).toMatch(/standing|noticed/);
+    expect(label(of('handover'), 'give')).toMatch(/tech debt/);
+    expect(label(of('own'), 'decline')).toContain(sim.teams[t]!.name);
+    expect(new Set(offers.map((o) => label(o, 'give'))).size).toBe(3);
+    expect(answer(of('handover').l, of('handover').state, of('handover').w, 'give').reaction).toMatch(/debt/);
+    expect(answer(of('own').l, of('own').state, of('own').w, 'decline').reaction).toContain(sim.teams[t]!.name);
     // taken
     const launch = of('launch');
     expect(answer(launch.l, launch.state, launch.w, 'give').sim.player.reputation).toBe(launch.state.player.reputation + T.launchReputation);

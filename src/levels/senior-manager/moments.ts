@@ -92,6 +92,26 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
   return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]! };
 }
 
+/** What giving and declining each kind of new work gains or costs, as its choices say it. */
+// @spec SENIOR-MOMENT-015
+const OFFER_LABELS = {
+  launch: { give: (team: string) => `Give the launch to ${team}: your standing rises, and ${team} carries it`, decline: () => 'Decline the launch: your manager will notice, and your standing drops' },
+  handover: { give: (team: string) => `Give the handover to ${team}: they inherit old code and its tech debt`, decline: () => 'Decline the handover: it costs you a little standing' },
+  own: { give: (team: string) => `Give ${team} their own project: their motivation lifts`, decline: (team: string) => `Decline it: ${team} hears no to the project they asked for` },
+} as const;
+
+/** What a choice about new work did, by the kind of offer. */
+function newWorkReaction(offer: 'launch' | 'handover' | 'own', choiceId: string, team: string, manager: string): string {
+  if (choiceId === 'decline') {
+    if (offer === 'launch') return 'Your manager takes the launch elsewhere, and remembers you passed on it.';
+    if (offer === 'handover') return 'The other group finds someone else for its old system, a little put out.';
+    return `${manager} takes the no back to ${team}. It lands badly.`;
+  }
+  if (choiceId === 'spread') return 'Everyone takes a slice. Everyone is a little busier.';
+  const taken = { launch: `${team} takes on the launch, and your manager notices.`, handover: `${team} inherits the old system, debt and all.`, own: `${team} gets the project they asked for. ${manager} is delighted.` }[offer];
+  return choiceId === 'giveAlways' ? `${taken} From now on, new work goes to a team with room unless one is strained.` : taken;
+}
+
 /** How the player answered a problem last time, as the engineers' second telling puts it. */
 const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem', (manager: string) => string> = {
   coach: (manager) => `coached ${manager} through it`,
@@ -225,9 +245,10 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
       title: OFFER_TEXT[offer].title,
       text: OFFER_TEXT[offer].text,
       choices: [
-        { id: 'give', label: `Give it to ${team}` },
+        { id: 'give', label: OFFER_LABELS[offer].give(team) },
         { id: 'giveAlways', label: `Give it to ${team}, and from now on let your manager give new work straight to a team with room (you still decide when that team is strained)` },
-        ...CHOICES.newWork.filter((c) => c.id !== 'give'),
+        { id: 'decline', label: OFFER_LABELS[offer].decline(team) },
+        ...CHOICES.newWork.filter((c) => c.id !== 'give' && c.id !== 'decline'),
       ],
     });
   }
@@ -425,7 +446,7 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
         if (choiceId === 'spread') for (const id of s.teamIds) effects.push(team(id, 'stress', T.spreadStress, 'senior.newWork'));
         if (choiceId === 'giveAlways') s.habits.newWork = 'assign';
       }
-      reaction = choiceId === 'decline' ? 'Your manager takes it elsewhere, and remembers.' : choiceId === 'spread' ? 'Everyone takes a slice. Everyone is a little busier.' : choiceId === 'giveAlways' ? `${name(sim, t)} takes it on. From now on, new work goes to a team with room unless one is strained.` : `${name(sim, t)} takes it on.`;
+      reaction = newWorkReaction(offer, choiceId, name(sim, t), who);
       break;
     }
     case 'restructuring': {
