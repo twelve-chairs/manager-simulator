@@ -1,10 +1,26 @@
-import { headcountWords, moverInto } from './chips';
 import { draftObject } from './drafts';
 import { quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { headsChangeLine, quitLine, shareWord } from './text';
+import {
+  SCHEDULE_WORDS,
+  careerLines,
+  habitControls as habitControlsOf,
+  habitsPanel,
+  headcountChips,
+  leaderCard,
+  leaderChips,
+  leaderLine,
+  outsiderCard,
+  playerChips,
+  plural,
+  recapPart,
+  sharedMeasureValue,
+  trustChips,
+  unitCard,
+} from './org';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The director's How to play topics. */
@@ -30,38 +46,14 @@ const HABITS = {
   staffMeeting: { label: 'Staff meeting', options: { weekly: 'Weekly', fortnightly: 'Fortnightly' }, what: 'Your senior managers together: it builds their trust and tells you what each wants. Weekly costs more of your energy.' },
   listeningTour: { label: 'Listening tour', options: { none: 'None', quarterly: 'Quarterly' }, what: 'Each quarter you spend time inside one group: you see how it really is, and hear what its senior manager hasn’t said.' },
 } as const;
-const SCHEDULE_WORDS = { onSchedule: 'on schedule', behind: 'behind', overdue: 'overdue' } as const;
 
 const viewOf = (ctx: ScreenContext) => ctx.view as DirectorView;
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 /** A bet's stakes in words, not numbers. */
 const stakes = (landing: number, failing: number) => `lands: ${landing >= 10 ? 'a big win' : 'a win'}; fails: ${failing >= 12 ? 'a hard knock' : 'a knock'}`;
 
 /** The habit controls, sending a habit change at once. */
 // @spec UI-DIR-006
-function habitControls(ctx: ScreenContext, withHelp: boolean): Child {
-  const v = viewOf(ctx);
-  return (Object.keys(HABITS) as (keyof typeof HABITS)[]).map((id) =>
-    h(
-      'div',
-      { class: 'habit' },
-      h('label', {}, h('span', { class: 'habit-name' }, HABITS[id].label), ' ',
-        h(
-          'select',
-          { 'data-habit': id, value: v.habits[id], onChange: (e: Event) => ctx.send({ kind: 'plan', command: { kind: 'habit', habit: id, value: (e.target as HTMLSelectElement).value } }, `habit:${id}`, { keepFocus: true }) },
-          Object.entries(HABITS[id].options).map(([value, text]) => h('option', { value }, text)),
-        ),
-        ctx.errorFor(`habit:${id}`)),
-      withHelp ? h('p', { class: 'help' }, HABITS[id].what) : null,
-    ),
-  );
-}
-
-const projectLine = (p: { id: string; name: string; progress: number; scope: number; deadlineWeek: number; schedule: keyof typeof SCHEDULE_WORDS }) =>
-  h('p', { 'data-project': p.id, class: 'project' },
-    h('span', { 'data-field': 'name' }, p.name), ': ',
-    h('span', { 'data-field': 'progress' }, `${p.progress} / ${p.scope}`), ' done, due week ', h('span', { 'data-field': 'deadline' }, p.deadlineWeek + 1),
-    ' · ', h('span', { 'data-field': 'schedule' }, SCHEDULE_WORDS[p.schedule]));
+const habitControls = (ctx: ScreenContext, withHelp: boolean): Child => habitControlsOf(ctx, HABITS, viewOf(ctx).habits as unknown as Record<string, string>, withHelp);
 
 /** The senior managers with their groups, the room above, the bets and the habits. */
 // @spec UI-DIR-002, UI-DIR-003, UI-DIR-004, UI-DIR-005, UI-DIR-006
@@ -69,20 +61,7 @@ function panels(ctx: ScreenContext): Child {
   const v = viewOf(ctx);
   const leads = new Map(v.seniorManagers.map((m) => [m.id, m]));
   const groupNames = new Map(v.groups.map((g) => [g.id, g.name]));
-  const group = (g: DirectorView['groups'][number]) =>
-    h(
-      'div',
-      { 'data-group': g.id, ...(g.seniorManagerId ? {} : { 'data-leaderless': true }), class: 'team-card' },
-      h('strong', { 'data-field': 'group-name' }, g.name),
-      g.seniorManagerId ? null : h('p', { class: 'leaderless' }, 'No senior manager yet'),
-      h('p', { class: 'facts' },
-        h('span', { 'data-field': 'headcount' }, plural(g.headcount, 'person', 'people')),
-        ' · seem ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', g.motivation)),
-        ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', g.stress)),
-        ' · risk of losing people ', h('span', { 'data-field': 'attrition' }, bandWord('risk', g.attritionRisk))),
-      h('p', { class: 'source' }, h('small', { 'data-field': 'source' }, g.seen === 'tour' ? 'as you saw it' : `at the survey in quarter ${g.quarter}`)),
-      g.projects.map(projectLine),
-    );
+  const group = (g: DirectorView['groups'][number]) => unitCard({ ...g, leaderId: g.seniorManagerId }, 'group', 'No senior manager yet', g.seen === 'tour' ? 'as you saw it' : `at the survey in quarter ${g.quarter}`);
   return [
     h(
       'section',
@@ -91,16 +70,7 @@ function panels(ctx: ScreenContext): Child {
       h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.seniorManagers),
       v.groups.map((g) => {
         const m = g.seniorManagerId ? leads.get(g.seniorManagerId) : undefined;
-        if (!m) return group(g);
-        return h(
-          'article',
-          { 'data-senior-manager': m.id, class: 'person' },
-          h('div', { class: 'who' }, h('strong', { 'data-field': 'name' }, m.name), h('span', { class: 'role' }, 'senior manager · ', h('span', { 'data-field': 'personality' }, m.personality ?? ''))),
-          h('p', { class: 'mood' }, 'Seems ', h('strong', { 'data-field': 'motivation' }, bandWord('motivation', m.motivation)), ' and ', h('strong', { 'data-field': 'stress' }, bandWord('stress', m.stress)), '.'),
-          h('p', { class: 'facts' }, 'Leads: ', h('span', { 'data-field': 'skill' }, bandWord('skill', m.skill)), ' · wants ', h('span', { 'data-field': 'want' }, m.want), ' · ', h('span', { 'data-field': 'performance' }, m.performance)),
-          m.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, m.memory.map((note) => h('li', {}, note))) : null,
-          group(g),
-        );
+        return m ? leaderCard(m, 'data-senior-manager', 'senior manager', group(g)) : group(g);
       }),
     ),
     h(
@@ -108,15 +78,7 @@ function panels(ctx: ScreenContext): Child {
       { 'data-panel': 'upward', class: 'team' },
       h('h2', {}, 'Above and beside you'),
       h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.upward),
-      v.upward.map((u) =>
-        h(
-          'article',
-          { 'data-outsider': u.id, class: 'person' },
-          h('div', { class: 'who' }, h('strong', { 'data-field': 'name' }, u.name), h('span', { class: 'role' }, h('span', { 'data-field': 'role' }, u.role === 'executive' ? 'your executive' : 'a peer director'), ' · ', h('span', { 'data-field': 'personality' }, u.personality ?? ''))),
-          h('p', { class: 'facts' }, 'Trusts you: ', h('span', { 'data-field': 'trust' }, bandWord('trust', u.trust)), ' · wants ', h('span', { 'data-field': 'want' }, u.want)),
-          u.memory.length ? h('ul', { 'data-part': 'memory', class: 'memory' }, u.memory.map((note) => h('li', {}, note))) : null,
-        ),
-      ),
+      v.upward.map((u) => outsiderCard(u, { executive: 'your executive', peer: 'a peer director' })),
     ),
     h(
       'section',
@@ -132,13 +94,7 @@ function panels(ctx: ScreenContext): Child {
               h('p', {}, h('small', { 'data-field': 'stakes' }, stakes(b.landing, b.failing)))))
         : h('p', { class: 'quiet' }, 'No bet is funded.'),
     ),
-    h(
-      'details',
-      { 'data-panel': 'habits', class: 'habits', open: ctx.drafts.get('habits')?.open === 'true', onToggle: (e: Event) => ctx.drafts.set('habits', { open: String((e.target as HTMLDetailsElement).open) }) },
-      h('summary', {}, 'Your habits'),
-      h('p', { 'data-part': 'help', class: 'help' }, PANEL_HELP.habits),
-      habitControls(ctx, false),
-    ),
+    habitsPanel(ctx, PANEL_HELP.habits, habitControls(ctx, false)),
   ];
 }
 
@@ -219,35 +175,7 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
   return { title: m.title, text: m.text, choices: m.choices.map((c) => ({ ...c, note: lead ? `leads: ${bandWord('skill', lead.skill)}` : undefined })) };
 }
 
-function leaderChips(a: DirectorView, b: DirectorView, rose: (personId: string) => boolean, out: Chip[]) {
-  const move = moverInto(out);
-  const leads = new Map(b.seniorManagers.map((m) => [m.id, m]));
-  for (const m of a.seniorManagers) {
-    const n = leads.get(m.id);
-    if (!n) continue;
-    move(`sm:${m.id}:motivation`, m.name, m.motivation, n.motivation, true, 'more motivated', 'less motivated');
-    move(`sm:${m.id}:stress`, m.name, m.stress, n.stress, false, 'more stressed', 'less stressed');
-    if (m.stress === n.stress && rose(m.id)) out.push({ key: `sm:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
-    move(`sm:${m.id}:skill`, m.name, m.skill, n.skill, true, 'a better leader', 'a weaker leader');
-  }
-}
-
-function groupChips(a: DirectorView, b: DirectorView, out: Chip[]) {
-  const groups = new Map(b.groups.map((g) => [g.id, g]));
-  for (const g of a.groups) {
-    const n = groups.get(g.id);
-    const d = n ? n.headcount - g.headcount : 0;
-    if (d !== 0) out.push({ key: `group:${g.id}:headcount`, text: `${g.name}: ${headcountWords(d)}`, tone: d > 0 ? 'good' : 'bad' });
-  }
-}
-
-function outsiderAndBetChips(a: DirectorView, b: DirectorView, out: Chip[]) {
-  const move = moverInto(out);
-  const above = new Map(b.upward.map((u) => [u.id, u]));
-  for (const u of a.upward) {
-    const n = above.get(u.id);
-    if (n) move(`outsider:${u.id}:trust`, u.name, u.trust, n.trust, true, 'trusts you more', 'trusts you less');
-  }
+function betChips(a: DirectorView, b: DirectorView, out: Chip[]) {
   const betsNow = new Map(b.bets.map((x) => [x.projectId, x]));
   for (const x of a.bets) {
     const n = betsNow.get(x.projectId);
@@ -261,12 +189,11 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
   const a = before as DirectorView;
   const b = after as DirectorView;
   const out: Chip[] = [];
-  leaderChips(a, b, rose, out);
-  groupChips(a, b, out);
-  outsiderAndBetChips(a, b, out);
-  const move = moverInto(out);
-  move('player:energy', 'You', a.player.energy, b.player.energy, true, 'more energy', 'less energy');
-  move('player:reputation', 'Your reputation', a.player.reputation, b.player.reputation, true, 'up', 'down');
+  leaderChips(a.seniorManagers, b.seniorManagers, 'sm', rose, out);
+  headcountChips(a.groups, b.groups, 'group', out);
+  trustChips(a.upward, b.upward, out);
+  betChips(a, b, out);
+  playerChips(a.player, b.player, out);
   return out;
 }
 
@@ -274,7 +201,7 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
 // @spec UI-DIR-011
 function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const r = value as DirectorRecap;
-  const part = (name: string, title: string, items: Child[]) => (items.length ? h('div', { 'data-part': name }, h('h3', {}, title), h('ul', {}, items)) : h('div', { 'data-part': name }));
+  const part = recapPart;
   const c = r.changes;
   const moved = c.moved ?? [];
   const quits = quitLastQuarter(run.level as DirectorState, run.sim);
@@ -283,7 +210,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet quarter.') : null,
       part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-senior-manager': q.personId }, quitLine(q)))),
-      part('recap-senior-managers', 'Your senior managers', c.seniorManagers.map((m) => h('li', { 'data-senior-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
+      part('recap-senior-managers', 'Your senior managers', c.seniorManagers.map((m) => h('li', { 'data-senior-manager': m.id }, leaderLine(m)))),
       part('recap-survey', c.survey ? `The survey, quarter ${c.survey.quarter}` : 'The survey', (c.survey?.groups ?? []).map((g) => h('li', { 'data-group': g.id }, `${g.name}: ${bandWord('motivation', g.motivation)} and ${bandWord('stress', g.stress)}.`))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),
       part('recap-moved', 'Reorganized', moved.map((m) => h('li', {}, m.kind === 'split' ? `${m.from} split: ${m.count} moved to ${m.to}.` : `${m.from} merged into ${m.to}: ${m.count} moved.`))),
@@ -307,36 +234,12 @@ const MEASURE_NAMES: Record<string, string> = {
 };
 
 function measureValue(_view: unknown, id: string, value: number): string | undefined {
-  if (id.startsWith('goal:')) return value >= 1 ? 'met' : 'missed';
-  const band = Math.max(0, Math.min(4, Math.floor(value / 20)));
-  switch (id) {
-    case 'betsLanded':
-      return shareWord(value, 'all');
-    case 'projectsOnTime':
-    case 'regrettedAttrition':
-      return value === 0 ? 'none' : String(value);
-    case 'executiveConfidence':
-      return bandWord('trust', band);
-    case 'motivation':
-    case 'stress':
-    case 'reputation':
-      return bandWord(id, band);
-    default:
-      return undefined;
-  }
+  return id === 'betsLanded' ? shareWord(value, 'all') : sharedMeasureValue(id, value, ['executiveConfidence']);
 }
 
 /** The director's part of the career summary: quarters at the level, and the senior managers who joined and were let go. */
 // @spec UI-DIR-013
-function career(view: unknown): Child {
-  const c = (view as DirectorView).career;
-  const names = (xs: string[]) => (xs.length ? xs.join(', ') : 'nobody');
-  return [
-    h('li', {}, 'Quarters as a director: ', h('span', { 'data-field': 'quarters' }, c.quarters)),
-    h('li', {}, 'Senior managers who joined: ', h('span', { 'data-field': 'senior-managers-joined' }, names(c.joined))),
-    h('li', {}, 'Senior managers you let go: ', h('span', { 'data-field': 'senior-managers-let-go' }, names(c.letGo))),
-  ];
-}
+const career = (view: unknown): Child => careerLines((view as DirectorView).career, 'director', { label: 'Senior managers', field: 'senior-managers' });
 
 export const directorRenderer: LevelRenderer = {
   turn: 'quarter',

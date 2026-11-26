@@ -242,6 +242,48 @@ The director level keeps the shell (header, scene, recap, review, ended) and bri
 | Bets | A bet lands if its project ships by its deadline. |
 | Habits | Changes apply from this quarter's end, and to moments from next quarter. |
 
+## The VP's Screens
+
+The VP level keeps the shell (header, scene, recap, review, ended) and brings its own renderer, as the director does.
+
+**The handover.** After the review that promotes a director is acknowledged, the screen says so ("You've been promoted to VP") and asks who leads the player's organization now. Each of their senior managers is a choice, showing their name, management skill in words, how much they trust the player in words and their want if known; the last choice is an outside hire, "a capable director you don't know yet". A line under the question says what each costs ("One of your senior managers brings the trust they've built with you. An outside hire is capable, but a stranger in charge unsettles the division at first.").
+
+**The first quarter** opens on a scene before anything arrives: the VP's habits with a line on what each does, and How to play, closed by **Start quarter 1**.
+
+**The directors panel**, in place of the senior managers panel: a card per director as the director level's senior manager cards are, and under each their division: its name, headcount, projects as the projects panel shows them, and its motivation, stress and attrition risk in words, "at the survey in quarter 2". A division without a director says so. No group, team or person inside a division is ever shown.
+
+**The leadership team panel**: the CEO and the two peer VPs, each as a card with their name, role ("your CEO", "a peer VP"), personality, how much they trust you in words, their want once known, and their memory.
+
+**The year's plan panel**: the heads the function was given for the year and how many have arrived ("6 of 9 new heads have arrived"), or that the year is not planned yet; and the company priority, with the division carrying it, its progress, deadline and schedule as a project shows them, and its stake in words, or that none is set.
+
+**The habits panel** has the two VP habits: your first team, and how you lead your directors.
+
+**Moments** read as at the earlier levels, with a button per choice; annual planning's text names the planned heads, and cuts' the heads to lose. A choice that depends on a director shows their skill in words beside it.
+
+**Change chips** compare the VP view before and after a choice: a director's motivation, stress or management skill, a division's headcount, the CEO's or a peer's trust, the company priority's schedule, and the player's energy and reputation.
+
+**The recap** shows what changed (directors, a new survey's results, heads that left or joined, heads cut, the company priority landing, failing or slipping, and who on the leadership team trusts you more or less) and folds the routine into *The whole quarter*.
+
+**The review** names the VP measures: company priorities landed, projects shipped on time, people you'd have kept who left, the divisions' motivation and stress at the survey, your CEO's confidence, your peers' confidence and your reputation; goals by their text.
+
+**The ended screen** says why the run ended at the VP level ("You stayed a VP. Three years went by without the promotion.", or burned out, managed out, or completed), and the career summary adds the VP's part: the quarters played, and the directors who joined and who were let go.
+
+| Topic | Text |
+|---|---|
+| How to play | Each quarter is a run of moments. Your directors run the divisions; you share a budget with the leadership team, carry the company's priorities and speak to the whole function. Pick what you do, or let it wait. A recap ends the quarter. |
+| Your first team | You sit on a leadership team with your CEO and two peer VPs. Putting them first earns their trust; putting your function first earns your directors'. |
+| The survey | You see your divisions' mood as the last engagement survey measured it, twice a year. |
+| Planning and priorities | Each year the leadership team divides one budget; each half your CEO names what the company needs from your function. What you ask for, and whether you carry it, is remembered. |
+| Energy | Your energy falls with what you take on yourself. Two quarters in a row at the edge and you burn out. |
+| Reviews | Every two quarters your CEO reviews you: the company's priorities, delivery, retention, your divisions' health and the leadership team's confidence in you. From your third review on, two of your reviews in a row rated exceeds or better get you promoted. After three years without one, the run ends. |
+
+| Panel | Help line |
+|---|---|
+| Directors | Each division's mood is from the last survey. |
+| Leadership team | How much your CEO and peers trust you shapes the budget and how disputes settle. |
+| The year's plan | The year's heads arrive over its four quarters, to the division that needs them most. |
+| Habits | Changes apply from this quarter's end, and to moments from next quarter. |
+
 ## Bands as Words
 
 The career level shows values as bands, 0 for the lowest. The UI names each band per kind of value:

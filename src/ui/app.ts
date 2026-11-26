@@ -8,6 +8,7 @@ import { HELP_OPEN_THROUGH_WEEK } from './help';
 import { lineManagerRenderer } from './line-manager';
 import { seniorManagerRenderer } from './senior-manager';
 import { directorRenderer } from './director';
+import { vpRenderer } from './vp';
 import { band } from '../levels/line-manager';
 import { emphasis } from './text';
 
@@ -133,10 +134,10 @@ export type Turn = 'week' | 'month' | 'quarter';
 /** Weeks in each kind of turn. */
 const STEP: Record<Turn, number> = { week: 1, month: 4, quarter: 13 };
 
-const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer, 'senior-manager': seniorManagerRenderer, director: directorRenderer };
+const RENDERERS: Record<string, LevelRenderer> = { 'line-manager': lineManagerRenderer, 'senior-manager': seniorManagerRenderer, director: directorRenderer, vp: vpRenderer };
 
 /** What the handover screen calls the level a promotion leads to. */
-const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager', director: 'director' };
+const LEVEL_NAMES: Record<string, string> = { 'line-manager': 'line manager', 'senior-manager': 'senior manager', director: 'director', vp: 'VP' };
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 /** Where in the turn a moment falls: its day and time, and in a month or a quarter its week (UI-WEEK-016). */
