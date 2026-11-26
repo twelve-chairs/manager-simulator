@@ -69,7 +69,7 @@ export const LINE_TUNING = {
     launchReputation: 3,
     launchDeclineReputation: -4,
     handoverTechDebt: 60,
-    handoverDeclineReputation: -1,
+    handoverDeclineReputation: -3,
     rewriteMotivation: 8,
     rewriteDeclineMotivation: 4,
     /** Stress each engineer takes on when the player takes on new work while someone is strained. */
