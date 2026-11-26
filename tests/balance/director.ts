@@ -1,11 +1,11 @@
 import { directorLevel, type DirectorState, type DirectorView } from '../../src/levels/director';
 import { lineManagerLevel } from '../../src/levels/line-manager';
 import { seniorManagerLevel } from '../../src/levels/senior-manager';
-import { apply, newRun, type Command, type Dependencies, type Run } from '../../src/loop';
+import type { Dependencies, Run } from '../../src/loop';
+import type { CareerLevel } from '../../src/loop/types';
 import { conductReview } from '../../src/review';
-import type { Rating } from '../../src/sim';
 import type { Situation } from '../../src/situations';
-import { commandFor, endingOf, type RunResult } from './harness';
+import { playQuarterRun, type QuarterLevelPlay, type QuarterRunResult, type QuarterSeen, type QuarterStrategy } from './upper';
 
 /** The director's harness tuning: the whole level, six reviews, and the checks' thresholds. */
 export const DIRECTOR_BALANCE_TUNING = {
@@ -20,11 +20,7 @@ export const DIRECTOR_BALANCE_TUNING = {
 export const DIRECTOR_DEPS: Dependencies = { levels: [lineManagerLevel, seniorManagerLevel, directorLevel], review: conductReview };
 
 /** Everything a director strategy may see: what the player sees, and nothing else. */
-export interface DirectorSeen {
-  quarter: number;
-  view: DirectorView;
-  reviews: { quarter: number; rating: Rating; outcome: string }[];
-}
+export type DirectorSeen = QuarterSeen<DirectorView>;
 
 /** The current moment as the scene shows it: the level's own, from its view, or a presented situation. */
 export interface DirectorMomentSeen {
@@ -42,60 +38,24 @@ export interface DirectorMomentSeen {
   personId?: string;
 }
 
-export interface DirectorStrategy {
-  name: string;
-  naive: boolean;
-  /** Habit changes at the start of a quarter, as plan commands. */
-  habits?(seen: DirectorSeen): Command[];
-  /** A choice for the current moment (`place:` or `fund:` with JSON where the moment takes one), or `wait`. */
-  choose(seen: DirectorSeen, moment: DirectorMomentSeen): string;
-}
+/** A choice for the current moment is `place:` or `fund:` with JSON where the moment takes one, or `wait`. */
+export type DirectorStrategy = QuarterStrategy<DirectorView, DirectorMomentSeen>;
 
-export type DirectorRunResult = RunResult & { quarters: number };
+export type DirectorRunResult = QuarterRunResult;
+
+const DIRECTOR_PLAY: QuarterLevelPlay<DirectorView, DirectorMomentSeen> = {
+  deps: DIRECTOR_DEPS,
+  handovers: [seniorManagerLevel, directorLevel] as CareerLevel<unknown>[],
+  quarters: DIRECTOR_BALANCE_TUNING.quarters,
+  view: (run) => directorLevel.view(run.level as DirectorState, run.sim) as DirectorView,
+  momentOf: (run, view, id) => momentOf(run, view, id),
+  regretted: (run) => ((run.level as DirectorState).regretted ?? []).reduce((n, r) => n + r.count, 0),
+};
 
 /** Plays the director level from a seed: a line manager run handed straight up twice to outside hires, then up to 12 quarters. */
 // @spec BAL-DIR-001, BAL-DIR-002, BAL-DIR-003
 export function playDirectorRun(strategy: DirectorStrategy, seed: number, content: Situation[], deps: Dependencies = DIRECTOR_DEPS): DirectorRunResult {
-  const reviews: DirectorSeen['reviews'] = [];
-  let run: Run = newRun(seed, content, deps);
-  const quarter = () => Math.round((run.sim.week - run.levelStartWeek) / 13) + 1;
-  const step = (command: Command) => {
-    const result = apply(run, command, content, deps);
-    if (!result.ok) throw new Error(`${strategy.name}, seed ${seed}, quarter ${quarter()}: ${command.kind} refused: ${result.error}`);
-    run = result.run;
-  };
-  // The same start for every strategy: both promotions handed at once to outside hires.
-  run = { ...run, phase: 'handover', handoverChoices: seniorManagerLevel.handoverChoices!(run.level, run.sim) };
-  step({ kind: 'handover', choice: 'hire' });
-  run = { ...run, phase: 'handover', handoverChoices: directorLevel.handoverChoices!(run.level, run.sim) };
-  step({ kind: 'handover', choice: 'hire' });
-  while (run.phase !== 'ended') {
-    if (run.phase === 'review') {
-      reviews.push({ quarter: quarter() - 1, rating: run.review!.rating, outcome: run.review!.outcome });
-      step({ kind: 'acknowledge' });
-      continue;
-    }
-    if (run.phase !== 'week' || quarter() > DIRECTOR_BALANCE_TUNING.quarters) break;
-    // A copy, so a strategy cannot reach the run through what it is shown.
-    const see = (): DirectorSeen => structuredClone({ quarter: quarter(), view: directorLevel.view(run.level as DirectorState, run.sim) as DirectorView, reviews });
-    for (const command of strategy.habits?.(see()) ?? []) step(command);
-    for (let current = run.week.find((m) => m.status === 'open'); current; current = run.week.find((m) => m.status === 'open')) {
-      const seen = see();
-      const choice = strategy.choose(seen, momentOf(run, seen.view, current.id));
-      step(commandFor(choice, current.id));
-    }
-    step({ kind: 'endWeek' });
-  }
-  const level = run.level as DirectorState;
-  return {
-    strategy: strategy.name,
-    seed,
-    weeks: run.sim.week,
-    quarters: Math.min(DIRECTOR_BALANCE_TUNING.quarters, Math.round((run.sim.week - run.levelStartWeek) / 13)),
-    ending: endingOf(run),
-    ratings: reviews.map((r) => r.rating),
-    regrettedQuits: (level.regretted ?? []).reduce((n, r) => n + r.count, 0),
-  };
+  return playQuarterRun({ ...DIRECTOR_PLAY, deps }, strategy, seed, content);
 }
 
 function momentOf(run: Run, view: DirectorView, id: string): DirectorMomentSeen {

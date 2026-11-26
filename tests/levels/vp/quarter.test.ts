@@ -23,7 +23,7 @@ import {
 } from '../../../src/levels/vp';
 import { apply as applyCommand, newRun, type Dependencies, type Run } from '../../../src/loop';
 import { conductReview } from '../../../src/review';
-import { applyEffects, attritionRiskOf, type SimState } from '../../../src/sim';
+import { TUNING as SIM, applyEffects, attritionRiskOf, type SimState } from '../../../src/sim';
 import { CONTENT } from '../../loop/fixtures';
 import { vp } from './fixtures';
 
@@ -179,6 +179,15 @@ describe('the company priority', () => {
     expect(one.sim.teams[g]!.aggregate!.stress).toBe(Math.min(100, sim.teams[g]!.aggregate!.stress + T.priority.oneStress));
     const spread = ok(chooseVp(level, sim, m.id, 'spread'));
     expect(spread.level.priority!.spreadSlow).toBeGreaterThan(0);
+  });
+
+  // @spec VP-PRIO-002
+  it('spreads the priority onto the calmest division even when no division has a director', () => {
+    const { level, sim, m } = priority(5);
+    const leaderless = set(sim, leads(level, sim).map((id) => ({ type: 'remove' as const, personId: id, reason: 'quit' as const, cause: RULE })));
+    const r = ok(chooseVp(level, leaderless, m.id, 'spread'));
+    const calm = [...level.divisionIds].sort((x, y) => leaderless.teams[x]!.aggregate!.stress - leaderless.teams[y]!.aggregate!.stress)[0];
+    expect(r.sim.projects[r.level.priority!.projectId]!.teamId).toBe(calm);
   });
 
   // @spec VP-PRIO-003
@@ -392,6 +401,23 @@ describe('the quarter’s end', () => {
       const m = sim.people[lead]!;
       expect(r.sim.people[lead]!.stress).toBe(clamp(m.stress + Math.round((was.stress - m.stress) * T.drift.leaderStressShare)));
     }
+  });
+
+  // @spec VP-DRIFT-002
+  it('serves a director who wants recognition with the function first, or with an all-hands that spoke about the work', () => {
+    const { level, sim } = vp(9);
+    const lead = leads(level, sim)[0]!;
+    const wants = structuredClone(sim);
+    wants.people[lead]!.want = 'recognition';
+    const company = { ...level, habits: { ...level.habits, firstTeam: 'leadership' as const } };
+    const motivation = (l: VpState) => ok(endQuarter(l, wants)).sim.people[lead]!.motivation;
+    const was = wants.people[lead]!.motivation;
+    // A served want's lift is multiplied by the simulation's want-tag multiplier.
+    const served = Math.min(100, Math.round(was + T.drift.wantServed * SIM.wantTagMultiplier));
+    expect(motivation(company)).toBe(Math.max(0, was + T.drift.wantUnserved));
+    expect(motivation({ ...company, told: { what: 'truth', quarter: 1 } })).toBe(served);
+    expect(motivation({ ...company, told: { what: 'short', quarter: 1 } })).toBe(Math.max(0, was + T.drift.wantUnserved));
+    expect(motivation(level)).toBe(served);
   });
 
   // @spec VP-DRIFT-003, VP-DRIFT-004, VP-PLAN-001

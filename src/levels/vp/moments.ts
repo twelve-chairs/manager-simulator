@@ -175,7 +175,8 @@ function choosePriority({ s, sim0, choiceId, log }: Ctx): Handled {
     return { ok: true, sim, reaction: strained ? 'Your CEO looks at how stretched the function is, and agrees.' : 'Your CEO hears you out, and is not pleased.' };
   }
   const one = choiceId.startsWith('one:') ? choiceId.slice('one:'.length) : null;
-  const divisions = led(s, sim0);
+  // A division without a director can still carry the work; only naming one asks a director to own it.
+  const divisions = s.divisionIds.filter((x) => sim0.teams[x]);
   const g = one ?? [...divisions].sort((x, y) => sim0.teams[x]!.aggregate!.stress - sim0.teams[y]!.aggregate!.stress)[0];
   if (!g || !divisions.includes(g)) return { ok: false, error: `${String(g)} is not one of your divisions` };
   const weeks = randomInt(s, t.deadline);

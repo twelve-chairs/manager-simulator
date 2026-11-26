@@ -51,3 +51,12 @@ Design: [balance-design.md](balance-design.md)
 - [x] **BAL-DIR-005**: The balance harness shall fail unless, at the director, sound practice's average review score exceeds every naive strategy's by at least the director score margin, sound practice's promotion share is at least the director minimum, no naive strategy's promotion share exceeds the director maximum, and sound practice's burnout share is at most the director maximum.
 - [x] **BAL-DIR-006**: The balance harness shall fail if, at the director, sound practice's managed-out share exceeds the maximum sound managed-out share.
 - [x] **BAL-DIR-007**: When the balance report runs, it shall print the director's table beside the other levels'.
+
+## VP
+
+- [x] **BAL-VP-001**: When the balance harness plays a VP run, it shall start a line manager run from the seed, hand it over to an outside hire at each of the three promotions, and play the VP level through the turn loop with the compiled situation content, the real career levels and the real performance review, for up to 12 quarters or until the run ends, acknowledging each review.
+- [x] **BAL-VP-002**: When the balance harness plays a VP quarter, it shall give the strategy only the level's view and the quarter's open moments with their choices, act only through plan and answer commands, and fail with the strategy, seed, quarter and error if the turn loop refuses a command.
+- [x] **BAL-VP-003**: When a VP run ends or reaches 12 quarters, the balance harness shall record its review ratings, whether it ended promoted, burned out or managed out, and its regretted attrition, and report for each VP strategy the same measures as for the director.
+- [x] **BAL-VP-004**: The balance harness shall play the VP strategies as the balance design's table states them, and report sound practice with close review beside the others, including it in no check.
+- [x] **BAL-VP-005**: The balance harness shall fail unless, at the VP, sound practice's average review score exceeds every naive strategy's by at least the VP score margin, sound practice's promotion share is at least the VP minimum, no naive strategy's promotion share exceeds the VP maximum, sound practice's burnout share is at most the VP maximum, and its managed-out share is at most the VP maximum.
+- [x] **BAL-VP-006**: When the balance report runs, it shall print the VP's table beside the other levels'.

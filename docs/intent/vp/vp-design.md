@@ -51,7 +51,7 @@ The level then converts the run as the director level's handover does, one step 
 
 ## How Directors Shape Their Divisions
 
-As at the director level: each quarter, the level moves each division's motivation and stress toward what its director's management skill can sustain, with magnitudes scaled to a division; each division's ratings are calibrated by its director before each review, without a scene, toward what it delivered and shifted up by the director's leniency; and the engagement survey is taken at the start of the level and in the last quarter before each review.
+As at the director level: each quarter, the level moves each division's motivation and stress toward what its director's management skill can sustain, with magnitudes scaled to a division, and each director's motivation by whether the quarter served their want (growth and autonomy by being given room, recognition by putting the function first or by an all-hands that speaks about the function's work, stability by a division out of the strained band); each division's ratings are calibrated by its director before each review, without a scene, toward what it delivered and shifted up by the director's leniency; and the engagement survey is taken at the start of the level and in the last quarter before each review.
 
 The directors place the year's heads themselves: each quarter, the heads due that quarter join the division whose stress is highest, as unrated heads with a quarter's onboarding stress.
 

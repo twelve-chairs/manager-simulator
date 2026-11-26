@@ -102,6 +102,24 @@ The measures are the line manager's, over six review slots; regretted attrition 
 
 The test suite runs 40 seeds per director strategy within the same budget; the report command prints the director table beside the other two.
 
+## The VP
+
+The VP level is measured the same way, on its own. Each run starts the level directly: a line manager run from the seed is handed over to an outside hire at each of the three promotions, the same for every strategy, and plays through the turn loop with the real levels, review and content for up to 12 quarters (six reviews, the whole level). A promotion completes the run.
+
+A strategy sees what the player sees (the VP's view: directors, divisions as last surveyed, the leadership team, the year's plan, the quarter's moments and their choices) and acts through the same commands.
+
+| Strategy | Habits | Annual planning | Company priority | Leadership disputes | Directors at odds | Cuts | All-hands | New directors, final evaluations | Situations |
+|---|---|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets it wait (asks for the plan) | Lets it wait (spread) | Lets them wait | Lets them wait | Lets them wait (across) | Lets it wait (short) | Lets them wait | Lets them wait |
+| **Hero** | The function first; reviews plans closely | Asks for more | Puts the first division on it | Sides with the function | Decides it | Cuts across | Celebrates | Hires from outside; gives one more period | Picks the first offered choice |
+| **Delegator** | Defaults | Asks for the plan | Spreads it | Settles it for the company | Has them settle it together | Cuts across | Keeps it short | Promotes from the division; gives one more period | Picks the first offered choice |
+| **Contrarian** | The function first | Asks for more | Pushes back | Sides with the function | Leaves it | Cuts in waves | Celebrates | Hires from outside; lets them go | Picks the last offered choice |
+| **Sound practice** | The leadership team first; sets direction and steps back | Asks for the plan | Puts the calmest division on it | Brokers a trade with a peer who trusts the player, settles it for the company otherwise | Has them settle it together | Cuts once | Tells them what is hard | Promotes from the division; lets a director on a failed plan go | Picks the situation's better choice from the better-choice table |
+
+A sixth strategy, **sound practice with close review**, plays as sound practice with plans reviewed closely, and is reported and checked against nothing.
+
+The measures and checks are the director's, against thresholds in the VP's own harness tuning. The test suite runs 40 seeds per VP strategy; the report command prints the VP table beside the other three.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -116,13 +134,14 @@ The test suite runs 40 seeds per director strategy within the same budget; the r
 | Where a senior run starts | A line manager run from the seed, handed over at once to an outside hire, the same for every strategy | Play each strategy's own line manager run to a promotion first; let each strategy choose the handover | Most line manager runs are not promoted, so playing up to one would measure few senior runs and mix the two levels' balance; a shared handover keeps the senior measures about how each strategy plays the senior level. |
 | Managed out as a check | A fifth check at the senior manager: sound practice's managed-out share stays low | The line manager's four checks only | Playtests showed sound practice managed out at the senior manager while every other check could pass; the check holds the level to the HLD's learnable-over-ambiguous tenet. |
 | Where a director run starts | A line manager run from the seed, handed over at once at both promotions to outside hires, the same for every strategy | Play each strategy up through both earlier levels | As at the senior manager: few runs reach the director by play, and a shared start keeps its measures about how each strategy plays this level. |
+| Where a VP run starts | A line manager run from the seed, handed over at once at all three promotions to outside hires, the same for every strategy | Play each strategy up through the earlier levels | As at the director: a shared start keeps the VP's measures about how each strategy plays this level. |
+| Sound practice's habits at the VP | The leadership team first, directors given room | The function first, as the default | The VP level's lesson is which team a leader belongs to first; sound practice plays the answer the level teaches. |
 | Choice order across levels | The spread check holds at each career level on its own | One check over every situation | A player meets one level's situations at a time; a spread that holds only across all of them could leave one level's better choices mostly first. |
 
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. Strategies for career levels above the director, written when those levels exist.
-2. Whether to check that sound practice wins on most individual seeds, not only on average.
+1. Whether to check that sound practice wins on most individual seeds, not only on average.
 
 ## References
 

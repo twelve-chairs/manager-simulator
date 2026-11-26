@@ -113,13 +113,14 @@ function habitEffects(s: VpState, sim: SimState, leads: Lead[]): Effect[] {
 }
 
 /** Whether a quarter with these habits gives a director what they want from the job. */
-function served(want: string, s: VpState, unitStress: number): boolean {
+function served(want: string, s: VpState, unitStress: number, quarter: number): boolean {
   switch (want) {
     case 'growth':
     case 'autonomy':
       return s.habits.directors === 'stepBack';
     case 'recognition':
-      return s.habits.firstTeam === 'function';
+      // An all-hands that speaks about the function's work recognizes it, whichever team the player puts first.
+      return s.habits.firstTeam === 'function' || (s.told !== null && s.told.what !== 'short' && s.told.quarter === quarter);
     default:
       return band(unitStress) < 3;
   }
@@ -153,7 +154,7 @@ export function endQuarter(level: VpState, sim0: SimState): Result<{ level: VpSt
   let sim = settleQuarter(s, sim0, log);
   const divisions = s.divisionIds.filter((g) => sim.teams[g]);
   const leads = divisions.map((g) => ({ unitId: g, id: leaderOf(sim, g) }));
-  sim = apply(sim, [...habitEffects(s, sim, leads), ...driftEffects(sim, leads, T.drift, (want, stress) => served(want, s, stress), 'vp.drift')], log);
+  sim = apply(sim, [...habitEffects(s, sim, leads), ...driftEffects(sim, leads, T.drift, (want, stress) => served(want, s, stress, quarterOf(s, sim)), 'vp.drift')], log);
   sim = apply(sim, attritionEffects(sim, divisions, 'vp.drift'), log);
   if (periodEndsThisQuarter(s, sim)) {
     const calibrated = calibrateUnits(sim, divisions, s.leniency, T.calibrationMotivation, 'vp.calibration', log);
