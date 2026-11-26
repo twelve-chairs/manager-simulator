@@ -63,6 +63,9 @@ for (const { strategy, seed } of RUNS) {
     expect(summary.seen.directorHandover !== null).toBe(atDirector);
     if (atDirector) expect(summary.seen.handover).not.toBeNull();
     // Two years at most at the line manager, then three at the senior manager, then three at the director.
-    expect(summary.weeks).toBeLessThanOrEqual(atDirector ? 104 + 144 + 156 : atSenior ? 104 + 144 : 104);
+    let mostWeeks = 104;
+    if (atDirector) mostWeeks = 104 + 144 + 156;
+    else if (atSenior) mostWeeks = 104 + 144;
+    expect(summary.weeks).toBeLessThanOrEqual(mostWeeks);
   });
 }

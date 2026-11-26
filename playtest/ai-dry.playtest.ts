@@ -21,13 +21,10 @@ function fakeClient(): AiClient & { asked: string[] } {
       const bet = /Bets on offer:\n- `([^`]+)`[\s\S]*Groups that could carry one:\n- `([^`]+)`/.exec(user);
       const move = /Calibration moves[^\n]*\n- `([^`]+)`/.exec(user);
       const none = { place: [], fund: [], calibrate: [] };
-      const action = heads
-        ? { ...none, kind: 'place', choice: '', place: [{ target: heads[2], count: Number(heads[1]) }] }
-        : bet
-          ? { ...none, kind: 'fund', choice: '', fund: [{ bet: bet[1], group: bet[2] }] }
-          : move
-            ? { ...none, kind: 'calibrate', choice: '', calibrate: [{ move: move[1], count: 1 }] }
-            : { ...none, kind: 'choose', choice };
+      let action: Record<string, unknown> = { ...none, kind: 'choose', choice };
+      if (heads) action = { ...none, kind: 'place', choice: '', place: [{ target: heads[2], count: Number(heads[1]) }] };
+      else if (bet) action = { ...none, kind: 'fund', choice: '', fund: [{ bet: bet[1], group: bet[2] }] };
+      else if (move) action = { ...none, kind: 'calibrate', choice: '', calibrate: [{ move: move[1], count: 1 }] };
       return schema.parse({ thinkAloud: 'A fake thought.', feeling: 'clear', action, habits: [], notebook: 'Fake notes.' });
     },
   };

@@ -136,12 +136,15 @@ function playInPage(options: InPage): PlaySummary {
   const qa = (s: string, r: ParentNode = document) => [...r.querySelectorAll<HTMLElement>(s)];
   const text = (s: string, r: ParentNode = document) => q(s, r)?.textContent ?? '';
   let state = options.seed >>> 0 || 1;
-  const random = () => ((state = (Math.imul(state, 1103515245) + 12345) >>> 0) / 2 ** 32);
+  const random = () => {
+    state = (Math.imul(state, 1103515245) + 12345) >>> 0;
+    return state / 2 ** 32;
+  };
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const TIMES = ['morning', 'afternoon', 'night'];
-  const ENERGY = ['running on fumes', 'tired', 'okay', 'good', 'fresh', 'at the edge'];
-  const VERDICTS = ['above target', 'on target', 'below target'];
-  const STATUSES = ['You dealt with it', 'You let it wait', 'It passed before you got to it'];
+  const ENERGY = new Set(['running on fumes', 'tired', 'okay', 'good', 'fresh', 'at the edge']);
+  const VERDICTS = new Set(['above target', 'on target', 'below target']);
+  const STATUSES = new Set(['You dealt with it', 'You let it wait', 'It passed before you got to it']);
   const COUNTED = /, (twice|\d+ times)$/;
   /** The titles of each career level's own moments (playtest/metrics.ts); any other moment is a situation. */
   const LINE_TITLES = new RegExp(options.titles.line, 'i');
@@ -166,9 +169,14 @@ function playInPage(options: InPage): PlaySummary {
   const senior = () => q('[data-panel=managers]') !== null;
   /** Whether the page shows the director: senior managers and their groups. */
   const director = () => q('[data-panel=senior-managers]') !== null;
-  const levelOn = (): Level => (director() ? 'director' : senior() ? 'senior' : 'line');
+  const levelOn = (): Level => {
+    if (director()) return 'director';
+    return senior() ? 'senior' : 'line';
+  };
+  /** The value for the career level on screen. */
+  const atLevel = <T,>(values: Record<Level, T>): T => values[levelOn()];
   /** Whether a moment is the career level's own rather than a situation, by its title at the level on screen. */
-  const isLevelMoment = (title: string) => (director() ? DIRECTOR_TITLES.some((re) => re.test(title)) : senior() ? SENIOR_TITLES.some((re) => re.test(title)) : LINE_TITLES.test(title));
+  const isLevelMoment = (title: string) => atLevel({ director: DIRECTOR_TITLES, senior: SENIOR_TITLES, line: [LINE_TITLES] }).some((re) => re.test(title));
   /** The game week the senior manager and director levels began, as the player counts weeks: the last review before each. */
   let seniorBase = 0;
   let directorBase = 0;
@@ -176,7 +184,7 @@ function playInPage(options: InPage): PlaySummary {
   /** The week of the run a screen is about, counting from 1: the header's week, or at a higher level its turn's first week. */
   const runWeek = () => {
     const n = Number(text('[data-field=week]'));
-    return director() ? directorBase + (n - 1) * 13 + 1 : senior() ? seniorBase + (n - 1) * 4 + 1 : n;
+    return atLevel({ director: directorBase + (n - 1) * 13 + 1, senior: seniorBase + (n - 1) * 4 + 1, line: n });
   };
 
   /** The event log (PLAY-RUN-002): only what the page shows, as the player would see it. */
@@ -260,7 +268,7 @@ function playInPage(options: InPage): PlaySummary {
   /** The week screen's own rules: the header, the team cards and the scene. */
   function checkWeek(sc: string, lastSlot: { week: string; slot: number }) {
     const week = text('[data-field=week]');
-    const turn = director() ? 'quarter' : senior() ? 'month' : 'week';
+    const turn = atLevel({ director: 'quarter', senior: 'month', line: 'week' });
     checkHeader();
     checkMemories();
     if (sc === 'recap') checkRecap(turn, week);
@@ -276,7 +284,7 @@ function playInPage(options: InPage): PlaySummary {
   /** The header's energy word, and its burnout warning in one of its two forms. */
   function checkHeader() {
     const energy = text('[data-field=energy]');
-    if (!ENERGY.includes(energy)) flag('header', `energy word "${energy}"`);
+    if (!ENERGY.has(energy)) flag('header', `energy word "${energy}"`);
     const warning = q('[data-field=burnout]')?.textContent ?? null;
     if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?|quarters?) at the edge\. \d+ in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
   }
@@ -320,7 +328,7 @@ function playInPage(options: InPage): PlaySummary {
   /** A debrief's status, and a lesson for every situation dealt with; a lesson for one let wait is counted. */
   function checkDebrief(d: HTMLElement) {
     const status = text('[data-field=status]', d);
-    if (!STATUSES.includes(status)) flag('review', `debrief status "${status}"`);
+    if (!STATUSES.has(status)) flag('review', `debrief status "${status}"`);
     const lesson = q('[data-field=text]', d)?.textContent;
     const title = text('[data-field=title]', d);
     if (status === 'You dealt with it' && !lesson) flag('review', `no lesson for ${title}`);
@@ -335,7 +343,7 @@ function playInPage(options: InPage): PlaySummary {
     for (const m of measures) {
       const name = text('[data-field=name]', m);
       if (/^[a-z]+[A-Z]/.test(name) || name === m.dataset.measure) flag('review', `measure shown by its id: ${name}`);
-      if (!VERDICTS.includes(text('[data-field=verdict]', m))) flag('review', `verdict "${text('[data-field=verdict]', m)}"`);
+      if (!VERDICTS.has(text('[data-field=verdict]', m))) flag('review', `verdict "${text('[data-field=verdict]', m)}"`);
       if (!text('[data-field=numbers]', m)) flag('review', `no numbers for ${name}`);
     }
     for (const d of qa('[data-debrief]')) checkDebrief(d);
@@ -429,10 +437,10 @@ function playInPage(options: InPage): PlaySummary {
 
   /** Whoever a goal names, or who wants growth, or the least skilled, ties by id. */
   function growthFocus() {
-    const goals = qa('[data-goal] [data-field=text]').map((g) => g.textContent ?? '');
+    const goals = new Set(qa('[data-goal] [data-field=text]').map((g) => g.textContent ?? ''));
     const people = qa('[data-panel=team] [data-person]').map((c) => ({ id: c.dataset.person!, name: text('[data-field=name]', c), want: text('[data-field=want]', c), skill: bandOf('skill', text('[data-field=skill]', c)) }));
     return (
-      people.find((p) => goals.includes(`Help ${p.name} grow`)) ??
+      people.find((p) => goals.has(`Help ${p.name} grow`)) ??
       people.find((p) => p.want === 'growth') ??
       [...people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0]
     );
@@ -506,17 +514,20 @@ function playInPage(options: InPage): PlaySummary {
     return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
   }
 
+  /** The first of the choices, in order of preference, that a moment offers. */
+  const preferIn = (by: (pred: (id: string) => boolean) => HTMLElement | null, order: string[]) => {
+    for (const id of order) {
+      const found = by((x) => x === id);
+      if (found) return found;
+    }
+    return null;
+  };
+
   /** Sound practice at the director, in order of preference among the choices a moment offers (PLAY-RUN-009). */
   const DIRECTOR_SOUND = ['spread', 'coach', 'promote', 'letGo', 'splitPromote', 'merge', 'straight'];
   // @spec PLAY-RUN-009
   function directorChoice(choices: HTMLElement[], by: (pred: (id: string) => boolean) => HTMLElement | null): HTMLElement | null {
-    const prefer = (order: string[]) => {
-      for (const id of order) {
-        const found = by((x) => x === id);
-        if (found) return found;
-      }
-      return null;
-    };
+    const prefer = (order: string[]) => preferIn(by, order);
     const title = text('[data-scene] [data-part=heading]');
     const situation = !isLevelMoment(title);
     const better = situation ? options.better[title] : undefined;
@@ -538,7 +549,11 @@ function playInPage(options: InPage): PlaySummary {
       const trust = ['wary', 'guarded', 'neutral', 'trusting', 'loyal'].indexOf(card ? text('[data-field=trust]', card) : '');
       return by((x) => x === (trust >= 3 ? 'negotiate' : 'agree'));
     };
-    const sound = () => (situation ? (better ? by((x) => x === better) : null) ?? choices[0] ?? null : q('[data-scene] [data-detail=bets]') ? fundBets() : (peerAsk() ?? prefer(DIRECTOR_SOUND) ?? choices[0] ?? null));
+    const sound = () => {
+      if (situation) return (better ? by((x) => x === better) : null) ?? choices[0] ?? null;
+      if (q('[data-scene] [data-detail=bets]')) return fundBets();
+      return peerAsk() ?? prefer(DIRECTOR_SOUND) ?? choices[0] ?? null;
+    };
     switch (options.strategy) {
       case 'hero':
       case 'heavyThenEase':
@@ -566,17 +581,14 @@ function playInPage(options: InPage): PlaySummary {
   const SENIOR_DELEGATE = ['letThem', 'acceptAll', 'approve', 'hire', 'letRun', 'oneMorePeriod'];
   // @spec PLAY-RUN-006
   function seniorChoice(choices: HTMLElement[], by: (pred: (id: string) => boolean) => HTMLElement | null): HTMLElement | null {
-    const prefer = (order: string[]) => {
-      for (const id of order) {
-        const found = by((x) => x === id);
-        if (found) return found;
-      }
-      return null;
-    };
+    const prefer = (order: string[]) => preferIn(by, order);
     const title = text('[data-scene] [data-part=heading]');
     const better = isLevelMoment(title) ? undefined : options.better[title];
     // A situation: its better choice from the table, or the first offered (PLAY-RUN-006).
-    const sound = () => (isLevelMoment(title) ? prefer(SENIOR_SOUND) : better ? by((x) => x === better) : null) ?? choices[0] ?? null;
+    const sound = () => {
+      if (isLevelMoment(title)) return prefer(SENIOR_SOUND) ?? choices[0] ?? null;
+      return (better ? by((x) => x === better) : null) ?? choices[0] ?? null;
+    };
     switch (options.strategy) {
       case 'hero':
       case 'heavyThenEase':

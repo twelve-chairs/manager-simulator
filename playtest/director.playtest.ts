@@ -37,7 +37,8 @@ test('a sound player promoted to director hands over by the rule and plays sound
       continue;
     }
     const situationBetter = momentKind(title, 'director') === null ? better[title] : undefined;
-    const preferred = momentKind(title, 'director') === null ? (situationBetter && offered.includes(situationBetter) ? situationBetter : offered[0]) : (SOUND.find((id) => offered.includes(id)) ?? offered[0]);
+    const situationPick = situationBetter && offered.includes(situationBetter) ? situationBetter : offered[0];
+    const preferred = momentKind(title, 'director') === null ? situationPick : (SOUND.find((id) => offered.includes(id)) ?? offered[0]);
     expect(chosen, `${title}: offered ${offered.join(', ')}`).toBe(preferred);
   }
   expect(summary.ending).toMatch(/director|burned out|managed out|promoted past the top/);

@@ -27,7 +27,9 @@ export function readPage(page: Page): Promise<PageState> {
     // What the player reads between decisions: a recap or a review whole, and a reaction's scene, where people answer
     // and bring up what happened before, without the panels around it or its Continue button.
     const reactionText = () => [...(sceneEl?.children ?? [])].filter((c) => c.tagName !== 'BUTTON').map((c) => words(c as HTMLElement)).filter(Boolean).join('\n');
-    const reading = scene === 'recap' || screen === 'review' ? words(q('[data-screen]')) : scene === 'reaction' ? `After your choice:\n${reactionText()}` : '';
+    let reading = '';
+    if (scene === 'recap' || screen === 'review') reading = words(q('[data-screen]'));
+    else if (scene === 'reaction') reading = `After your choice:\n${reactionText()}`;
     // The habits a player can set: each control once, with its options.
     const seen = new Set<string>();
     const habits = qa('select[data-habit]').flatMap((s) => {

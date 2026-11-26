@@ -15,11 +15,11 @@ const NOTE_WEEKS_LATER = 2;
 /** A situation shown again within this many weeks of last being shown counts as a repeat. */
 const REPEAT_WEEKS = 13;
 
-const WORSE_MOTIVATION = ['struggling', 'flat'];
-const WORSE_STRESS = ['strained', 'overwhelmed'];
-const AT_RISK = ['elevated', 'high', 'severe'];
-const TIRED = ['tired', 'running on fumes'];
-const LOW_RATINGS = ['partial', 'below'];
+const WORSE_MOTIVATION = new Set(['struggling', 'flat']);
+const WORSE_STRESS = new Set(['strained', 'overwhelmed']);
+const AT_RISK = new Set(['elevated', 'high', 'severe']);
+const TIRED = new Set(['tired', 'running on fumes']);
+const LOW_RATINGS = new Set(['partial', 'below']);
 const RATING_SCORES: Record<string, number> = { below: 0, partial: 1, meets: 2, exceeds: 3, outstanding: 4 };
 
 /**
@@ -146,7 +146,7 @@ export type JobCounts = Record<keyof JobParts, { name: string; runs: number }[]>
 
 const share = (part: number, whole: number) => (whole ? part / whole : null);
 const isLook = (e: PlayEvent): e is Look => e.kind === 'look';
-const worse = (p: Look['people'][number]) => WORSE_MOTIVATION.includes(p.motivation) || WORSE_STRESS.includes(p.stress);
+const worse = (p: Look['people'][number]) => WORSE_MOTIVATION.has(p.motivation) || WORSE_STRESS.has(p.stress);
 /** A memory line without the count the card adds to a repeated note ("Took on a design review, twice"). */
 const uncounted = (line: string) => line.replace(/, (twice|\d+ times)$/, '');
 /** A moment's kind for a run of moments: the level's own kind, or each situation a kind of its own. */
@@ -154,7 +154,11 @@ const kindOf = (m: { title: string; level: Level }) => momentKind(m.title, m.lev
 const isSituation = (m: { title: string; level: Level }) => momentKind(m.title, m.level) === null;
 const PARTS = ['panels', 'habits', 'moments'] as const;
 const PROMOTIONS: [Level, Level][] = [['line', 'senior'], ['senior', 'director']];
-const sorted = (xs: Iterable<string>) => [...new Set(xs)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+const byCodeUnits = (a: string, b: string) => {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+};
+const sorted = (xs: Iterable<string>) => [...new Set(xs)].sort(byCodeUnits);
 
 /** What the page showed at each level, and for each promotion the run reached, the difference between the two levels. */
 // @spec PLAY-JOB-001
@@ -204,7 +208,7 @@ function tallyReview(t: Tally, events: PlayEvent[], e: EventOf<'review'>, i: num
   if (e.promoted && t.promotedAtMinutes === null) t.promotedAtMinutes = t.seconds / 60;
   const score = RATING_SCORES[e.rating];
   if (score !== undefined) t.ratings.push(score);
-  if (!LOW_RATINGS.includes(e.rating)) return;
+  if (!LOW_RATINGS.has(e.rating)) return;
   const warned = windowBefore(events, i, e.week).some((l) => l.projects.some((p) => p.schedule === 'behind' || p.schedule === 'overdue') || l.people.some(worse));
   t.lowRatings.push({ week: e.week, warned });
 }
@@ -214,9 +218,9 @@ function tallyLook(t: Tally, events: PlayEvent[], e: EventOf<'look'>, i: number)
   for (const project of e.projects) {
     if (project.schedule !== 'overdue' || t.overdue.some((o) => o.name === project.name)) continue;
     const earlier = windowBefore(events, i, e.week).flatMap((l) => l.projects.filter((p) => p.name === project.name));
-    t.overdue.push({ name: project.name, week: e.week, warned: earlier.some((p) => p.schedule === 'behind' || AT_RISK.includes(p.risk)) });
+    t.overdue.push({ name: project.name, week: e.week, warned: earlier.some((p) => p.schedule === 'behind' || AT_RISK.has(p.risk)) });
   }
-  if (e.burnout && !t.burnout) t.burnout = { week: e.week, warned: windowBefore(events, i, e.week).some((l) => TIRED.includes(l.energy)) };
+  if (e.burnout && !t.burnout) t.burnout = { week: e.week, warned: windowBefore(events, i, e.week).some((l) => TIRED.has(l.energy)) };
 }
 
 function tallyEvent(t: Tally, events: PlayEvent[], e: PlayEvent, i: number) {
@@ -267,8 +271,8 @@ export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
     .filter((p) => p.reason === 'quit')
     .map(({ name }) => {
       const seen = looks.filter((l) => l.people.some((p) => p.name === name));
-      const lastWeeks = [...new Set(seen.map((l) => l.week))].slice(-WINDOW_WEEKS);
-      const warned = seen.filter((l) => lastWeeks.includes(l.week)).some((l) => l.people.some((p) => p.name === name && worse(p)));
+      const lastWeeks = new Set([...new Set(seen.map((l) => l.week))].slice(-WINDOW_WEEKS));
+      const warned = seen.filter((l) => lastWeeks.has(l.week)).some((l) => l.people.some((p) => p.name === name && worse(p)));
       return { name, warned };
     });
 
@@ -370,12 +374,15 @@ const num = (x: number | null, digits = 1) => (x === null ? 'n/a' : x.toFixed(di
 export function formatScorecard(card: Scorecard): string {
   const out: string[] = [`Success metrics: ${card.player}, ${card.runs.length} runs`];
   for (const r of card.runs) out.push(`  seed ${r.seed}  ${r.ending ?? 'no ending'}  ${r.weeks} weeks, ${num(r.minutes, 0)} estimated minutes`);
-  out.push('', 'A promotion in the first session');
-  out.push(`  promoted within ${card.promotion.sessionMinutes} minutes: ${pct(card.promotion.withinSession)} of runs (target ${pct(card.promotion.target)})`);
-  for (const r of card.runs) out.push(`  seed ${r.seed}: ${r.promotedAtMinutes === null ? 'not promoted' : `promoted at ${num(r.promotedAtMinutes, 0)} minutes`}`);
-  out.push('', 'Bad outcomes can be traced');
+  const promoted = (r: RunCard) => (r.promotedAtMinutes === null ? 'not promoted' : 'promoted at ' + num(r.promotedAtMinutes, 0) + ' minutes');
+  out.push(
+    '',
+    'A promotion in the first session',
+    `  promoted within ${card.promotion.sessionMinutes} minutes: ${pct(card.promotion.withinSession)} of runs (target ${pct(card.promotion.target)})`,
+    ...card.runs.map((r) => `  seed ${r.seed}: ${promoted(r)}`),
+  );
   const quits = card.runs.flatMap((r) => r.trace.quits);
-  out.push(`  quits with a warning: ${quits.filter((q) => q.warned).length} of ${quits.length} (${pct(card.trace.quits)})`);
+  out.push('', 'Bad outcomes can be traced', `  quits with a warning: ${quits.filter((q) => q.warned).length} of ${quits.length} (${pct(card.trace.quits)})`);
   for (const r of card.runs) for (const q of r.trace.quits.filter((x) => !x.warned)) out.push(`    seed ${r.seed}: ${q.name} quit with no warning on their card`);
   out.push(`  low ratings with a warning: ${pct(card.trace.lowRatings)}; overdue projects: ${pct(card.trace.overdue)}; burnout warnings: ${pct(card.trace.burnout)}`);
   out.push('', 'Choices feel consequential');
@@ -386,8 +393,7 @@ export function formatScorecard(card: Scorecard): string {
     out.push(`  seed ${r.seed}: ${num(d.mean)} decisions a week (${d.fewest} to ${d.most}), ${pct(d.weeksWithNone)} of weeks with none, longest run of one kind ${r.shape.longestSameKind}, ${r.shape.situationRepeats} situation repeats within ${REPEAT_WEEKS} weeks, ${pct(r.shape.distinctReactions)} distinct reactions`);
   }
   out.push('', 'Promotion changes the job', ...jobLines(card));
-  out.push('', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`);
-  out.push('', 'Hard checks');
+  out.push('', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`, '', 'Hard checks');
   for (const c of card.checks) out.push(`  ${c.id.padEnd(16)}${c.passed ? 'passed' : 'FAILED'}  ${c.name}`, ...c.failures.map((f) => `    ${f}`));
   return out.join('\n');
 }

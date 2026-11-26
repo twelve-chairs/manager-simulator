@@ -221,6 +221,9 @@ export function addReading(read: string, reading: string): string {
 /** A screen's title and text with the heading once: a screen whose text opens with its own heading keeps just the text. */
 export const withHeading = (s: { title: string; text: string }): string => (s.text.startsWith(s.title) ? s.text : `${s.title}\n${s.text}`);
 
+/** A screen's choices, one line each: its handle in backticks, then its label. */
+const listChoices = (choices: { handle: string; item: { label: string } }[]) => choices.map((c) => '- `' + c.handle + '`: ' + c.item.label).join('\n');
+
 /** The user message for one decision: the notebook, what was last read, and the screen. */
 // @spec PLAY-AI-002
 export function decisionMessage(screen: Screen, notebook: string, lastRead: string): string {
@@ -229,12 +232,14 @@ export function decisionMessage(screen: Screen, notebook: string, lastRead: stri
     `Your notebook:\n${notebook || '(empty: you have just started)'}`,
     ...(lastRead ? [`What you read since your last decision (reactions, recaps and reviews, in order):\n${lastRead}`] : []),
     `The screen now (${screen.turn}):\n${withHeading(screen)}`,
-    `Choices (pick one by its handle in backticks):\n${h.choices.map((c) => `- \`${c.handle}\`: ${c.item.label}`).join('\n') || '(none)'}`,
+    `Choices (pick one by its handle in backticks):\n${listChoices(h.choices) || '(none)'}`,
     screen.canWait ? 'You may also let this wait.' : 'This cannot be let wait.',
   ];
   if (h.habits.length) {
     const now = (x: (typeof h.habits)[number]) => x.settings.find((o) => o.item.value === x.item.value);
-    lines.push(`Habits:\n${h.habits.map((x) => `- \`${x.handle}\` (${x.item.label}), now \`${now(x)?.handle ?? '?'}\` (${now(x)?.item.label ?? x.item.value}); settings: ${x.settings.map((o) => `\`${o.handle}\` (${o.item.label})`).join(', ')}`).join('\n')}`);
+    const settings = (x: (typeof h.habits)[number]) => x.settings.map((o) => '`' + o.handle + '` (' + o.item.label + ')').join(', ');
+    const habitLine = (x: (typeof h.habits)[number]) => `- \`${x.handle}\` (${x.item.label}), now \`${now(x)?.handle ?? '?'}\` (${now(x)?.item.label ?? x.item.value}); settings: ${settings(x)}`;
+    lines.push(`Habits:\n${h.habits.map(habitLine).join('\n')}`);
   }
   const list = (xs: { handle: string; item: { label: string } }[]) => xs.map((x) => `- \`${x.handle}\`: ${x.item.label}`).join('\n');
   if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${list(h.targets)}`);
@@ -283,8 +288,8 @@ export function interviewMessage(questions: { heading: string; questions: string
     'The facilitator asks you some questions about your session. Answer each heading in your own words, as the player you are, from your notebook and what you thought as you played. Be specific and honest, including about what bored or confused you.',
     ...(promotions.length > 0 ? [`You were promoted during the session. What the game showed you then:\n${promotions.map(withHeading).join('\n\n---\n\n')}`] : []),
     `Your notebook:\n${notebook}`,
-    `What you thought as you played, in order:\n${thinkAloud.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
-    `Questions:\n${asked.map((q) => `### ${q.heading}\n${q.questions.map((x) => `- ${x}`).join('\n')}`).join('\n\n')}`,
+    `What you thought as you played, in order:\n${thinkAloud.map((t, i) => String(i + 1) + '. ' + t).join('\n')}`,
+    `Questions:\n${asked.map((q) => '### ' + q.heading + '\n' + q.questions.map((x) => '- ' + x).join('\n')).join('\n\n')}`,
   ].join('\n\n');
 }
 
