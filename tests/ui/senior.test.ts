@@ -139,10 +139,15 @@ describe('the senior manager’s week screen', () => {
     expect(text(root, `[data-calibration="${teams[0]}"] [data-proposed=${lower}]`)).toBe(String(entry.proposed[lower as 'meets'] + 1));
     // a head moved out of the top ratings shows in the curve at once
     expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop - (top === 'exceeds' ? 1 : 0)));
+    // one move per team undoes its manager's inflation: the proposal set to what the team delivered
+    click(root, `[data-set-delivered="${teams[1]}"]`);
+    const second = moment.calibration![1]!;
+    for (const r of ['below', 'partial', 'meets', 'exceeds', 'outstanding'] as const) expect(text(root, `[data-calibration="${teams[1]}"] [data-proposed=${r}]`)).toBe(String(second.delivered[r]));
     click(root, '[data-action=settle]');
     const state = app.state();
     if (state.screen !== 'run') throw new Error('expected a run');
     expect(state.run.sim.teams[teams[0]!]!.aggregate!.ratings[lower as 'meets']).toBe(entry.proposed[lower as 'meets'] + 1);
+    expect({ ...state.run.sim.teams[teams[1]!]!.aggregate!.ratings, unrated: 0 }).toEqual({ ...second.delivered, unrated: 0 });
   });
 });
 

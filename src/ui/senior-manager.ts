@@ -113,6 +113,32 @@ function panels(ctx: ScreenContext): Child {
   ];
 }
 
+/**
+ * The moves, one rating at a time, that take a team's proposal to what it delivered: heads above where they belong come
+ * down first, from the top, then heads below come up.
+ */
+function movesToDelivered(proposed: Record<Rating, number>, delivered: Record<Rating, number>): { from: Rating; to: Rating; count: number }[] {
+  const now = { ...proposed };
+  const moves: { from: Rating; to: Rating; count: number }[] = [];
+  for (let i = RATINGS.length - 1; i > 0; i--) {
+    const extra = now[RATINGS[i]!] - delivered[RATINGS[i]!];
+    if (extra > 0) {
+      moves.push({ from: RATINGS[i]!, to: RATINGS[i - 1]!, count: extra });
+      now[RATINGS[i]!] -= extra;
+      now[RATINGS[i - 1]!] += extra;
+    }
+  }
+  for (let i = 0; i < RATINGS.length - 1; i++) {
+    const extra = now[RATINGS[i]!] - delivered[RATINGS[i]!];
+    if (extra > 0) {
+      moves.push({ from: RATINGS[i]!, to: RATINGS[i + 1]!, count: extra });
+      now[RATINGS[i]!] -= extra;
+      now[RATINGS[i + 1]!] += extra;
+    }
+  }
+  return moves;
+}
+
 /** Calibration: each team's proposal, with the player's moves so far, beside what it delivered, and the group's curve. */
 // @spec UI-SENIOR-005, UI-SENIOR-011
 function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]): Child {
@@ -162,6 +188,8 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
         'div',
         { 'data-calibration': entry.teamId, class: 'calibration' },
         h('h3', {}, names.get(entry.teamId) ?? entry.teamId),
+        // One move undoes the manager's inflation, at the same cost as moving each head.
+        h('button', { 'data-set-delivered': entry.teamId, onClick: () => { moves[entry.teamId] = movesToDelivered(entry.proposed, entry.delivered); save(); } }, 'Set to what it delivered'),
         h(
           'table',
           {},

@@ -85,10 +85,10 @@ export function readPage(page: Page): Promise<PageState> {
               const id = table.dataset.calibration!;
               const team = (q('h3', table)?.textContent ?? id).trim();
               const ratings = ['below', 'partial', 'meets', 'exceeds', 'outstanding'];
-              return ratings.flatMap((r, i) => [
+              return [{ id: `${id}:delivered`, label: `${team}: set to what it delivered` }, ...ratings.flatMap((r, i) => [
                 ...(i > 0 ? [{ id: `${id}:${r}:${ratings[i - 1]}`, label: `${team}: ${r} down to ${ratings[i - 1]}` }] : []),
                 ...(i < ratings.length - 1 ? [{ id: `${id}:${r}:${ratings[i + 1]}`, label: `${team}: ${r} up to ${ratings[i + 1]}` }] : []),
-              ]);
+              ])];
             }),
           },
         }),
@@ -124,8 +124,13 @@ export async function act(page: Page, screen: Screen, action: Action, habits: { 
       await page.locator('[data-action=fund-bets]').click();
       return;
     case 'calibrate':
-      // Each click moves one head; a move whose row has emptied disappears, so the clicks stop there.
+      // Setting a team to what it delivered replaces its moves, so those go first; then each click moves one head, and a
+      // move whose row has emptied disappears, so the clicks stop there.
+      for (const move of Object.keys(action.calibrate).filter((m) => m.endsWith(':delivered'))) {
+        await page.locator(`[data-set-delivered="${move.slice(0, -':delivered'.length)}"]`).click();
+      }
       for (const [move, count] of Object.entries(action.calibrate)) {
+        if (move.endsWith(':delivered')) continue;
         for (let i = 0; i < count; i++) {
           const button = page.locator(`[data-move="${move}"]`);
           if ((await button.count()) === 0) break;
