@@ -58,33 +58,32 @@ export async function playAi(page: Page, client: AiClient, options: { persona: P
     await act(page, screen, d.action, d.habits);
   };
 
+  /** One screen: moves on, or decides; returns why the run stops here, or '' to go on. */
+  const playScreen = async (): Promise<'' | 'ended' | 'reached' | 'limit'> => {
+    const state = await readPage(page);
+    if (state.screen === 'ended') {
+      reached += ` (the run ended: ${(await page.locator('[data-field=ending]').textContent()) ?? ''})`;
+      return 'ended';
+    }
+    if (state.reading) lastRead = addReading(lastRead, state.reading);
+    const screen = state.decision;
+    if (!screen) {
+      if (!(await moveOn(page, state))) throw new Error(`stuck on screen "${state.screen}", scene "${state.scene}"`);
+      return '';
+    }
+    if (screen.kind === 'handover') promoted(screen);
+    else if (await interviewAfterPromotion(screen.turn)) return 'reached';
+    if (steps.length >= options.maxDecisions) {
+      reached += ` (stopped at the limit of ${options.maxDecisions} decisions)`;
+      return 'limit';
+    }
+    await decideAndAct(screen);
+    return '';
+  };
+
   let stopped = '';
   try {
-    for (let guard = 0; guard < 20_000 && !stopped; guard++) {
-      const state = await readPage(page);
-      if (state.screen === 'ended') {
-        reached += ` (the run ended: ${(await page.locator('[data-field=ending]').textContent()) ?? ''})`;
-        stopped = 'ended';
-        break;
-      }
-      if (state.reading) lastRead = addReading(lastRead, state.reading);
-      const screen = state.decision;
-      if (!screen) {
-        if (!(await moveOn(page, state))) throw new Error(`stuck on screen "${state.screen}", scene "${state.scene}"`);
-        continue;
-      }
-      if (screen.kind === 'handover') promoted(screen);
-      else if (await interviewAfterPromotion(screen.turn)) {
-        stopped = 'reached';
-        break;
-      }
-      if (steps.length >= options.maxDecisions) {
-        reached += ` (stopped at the limit of ${options.maxDecisions} decisions)`;
-        stopped = 'limit';
-        break;
-      }
-      await decideAndAct(screen);
-    }
+    for (let guard = 0; guard < 20_000 && !stopped; guard++) stopped = await playScreen();
   } catch (e) {
     // What was played was paid for: return it for the report, with no interview, since that would be one more request.
     const error = (e instanceof Error ? e.message : String(e)).split('\n')[0]!;

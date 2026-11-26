@@ -184,54 +184,83 @@ function windowBefore(events: PlayEvent[], index: number, week: number): Look[] 
   return events.slice(0, index).filter(isLook).filter((l) => l.week > week - WINDOW_WEEKS && l.week <= week);
 }
 
+/** What scoreRun gathers from the events in one pass, in the order they were recorded. */
+interface Tally {
+  seconds: number;
+  promotedAtMinutes: number | null;
+  ending: string | null;
+  left: { name: string; reason: string }[];
+  weeks: number;
+  lowRatings: RunCard['trace']['lowRatings'];
+  overdue: RunCard['trace']['overdue'];
+  burnout: RunCard['trace']['burnout'];
+  ratings: number[];
+}
+
+type EventOf<K extends PlayEvent['kind']> = Extract<PlayEvent, { kind: K }>;
+
+/** A review: when the run was first promoted, its score, and whether a low rating had a warning in the window before it. */
+function tallyReview(t: Tally, events: PlayEvent[], e: EventOf<'review'>, i: number) {
+  if (e.promoted && t.promotedAtMinutes === null) t.promotedAtMinutes = t.seconds / 60;
+  const score = RATING_SCORES[e.rating];
+  if (score !== undefined) t.ratings.push(score);
+  if (!LOW_RATINGS.includes(e.rating)) return;
+  const warned = windowBefore(events, i, e.week).some((l) => l.projects.some((p) => p.schedule === 'behind' || p.schedule === 'overdue') || l.people.some(worse));
+  t.lowRatings.push({ week: e.week, warned });
+}
+
+/** A look: each project's first week overdue and the run's first burnout warning, each with whether it was warned of. */
+function tallyLook(t: Tally, events: PlayEvent[], e: EventOf<'look'>, i: number) {
+  for (const project of e.projects) {
+    if (project.schedule !== 'overdue' || t.overdue.some((o) => o.name === project.name)) continue;
+    const earlier = windowBefore(events, i, e.week).flatMap((l) => l.projects.filter((p) => p.name === project.name));
+    t.overdue.push({ name: project.name, week: e.week, warned: earlier.some((p) => p.schedule === 'behind' || AT_RISK.includes(p.risk)) });
+  }
+  if (e.burnout && !t.burnout) t.burnout = { week: e.week, warned: windowBefore(events, i, e.week).some((l) => TIRED.includes(l.energy)) };
+}
+
+function tallyEvent(t: Tally, events: PlayEvent[], e: PlayEvent, i: number) {
+  if ('week' in e) t.weeks = Math.max(t.weeks, e.week);
+  switch (e.kind) {
+    case 'read':
+      t.seconds += (e.words / CLOCK.wordsPerMinute) * 60;
+      break;
+    case 'click':
+      t.seconds += e.decision ? CLOCK.decisionSeconds : CLOCK.clickSeconds;
+      break;
+    case 'review':
+      tallyReview(t, events, e, i);
+      break;
+    case 'look':
+      tallyLook(t, events, e, i);
+      break;
+    case 'ended':
+      t.ending = e.ending;
+      t.left = e.left;
+      break;
+  }
+}
+
+/** Of the notes answers left on a card, how many were on screen two weeks later, and how many of those the card still showed. */
+function notesKeptOf(notes: { name: string; note: string; week: number }[], looks: Look[]) {
+  let notesSeen = 0;
+  let notesKept = 0;
+  for (const note of notes) {
+    const later = looks.filter((l) => l.week === note.week).flatMap((l) => l.people.filter((p) => p.name === note.name));
+    if (!later.length) continue;
+    notesSeen++;
+    if (later.some((p) => p.memory.some((line) => uncounted(line) === note.note))) notesKept++;
+  }
+  return { notesSeen, notesKept };
+}
+
 // @spec PLAY-CLOCK-001, PLAY-CLOCK-002, PLAY-CLOCK-003, PLAY-PROMO-001, PLAY-PROMO-002, PLAY-TRACE-001, PLAY-TRACE-002
 // @spec PLAY-TRACE-003, PLAY-TRACE-004, PLAY-CHOICE-001, PLAY-CHOICE-002, PLAY-CHOICE-003, PLAY-SHAPE-001
 // @spec PLAY-SHAPE-002, PLAY-SHAPE-003, PLAY-SHAPE-004
 export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
-  let seconds = 0;
-  let promotedAtMinutes: number | null = null;
-  let ending: string | null = null;
-  let left: { name: string; reason: string }[] = [];
-  let weeks = 0;
-  const lowRatings: RunCard['trace']['lowRatings'] = [];
-  const overdue: RunCard['trace']['overdue'] = [];
-  let burnout: RunCard['trace']['burnout'] = null;
-  const ratings: number[] = [];
-
-  events.forEach((e, i) => {
-    if ('week' in e) weeks = Math.max(weeks, e.week);
-    switch (e.kind) {
-      case 'read':
-        seconds += (e.words / CLOCK.wordsPerMinute) * 60;
-        break;
-      case 'click':
-        seconds += e.decision ? CLOCK.decisionSeconds : CLOCK.clickSeconds;
-        break;
-      case 'review': {
-        if (e.promoted && promotedAtMinutes === null) promotedAtMinutes = seconds / 60;
-        const score = RATING_SCORES[e.rating];
-        if (score !== undefined) ratings.push(score);
-        if (LOW_RATINGS.includes(e.rating)) {
-          const warned = windowBefore(events, i, e.week).some((l) => l.projects.some((p) => p.schedule === 'behind' || p.schedule === 'overdue') || l.people.some(worse));
-          lowRatings.push({ week: e.week, warned });
-        }
-        break;
-      }
-      case 'look': {
-        for (const project of e.projects) {
-          if (project.schedule !== 'overdue' || overdue.some((o) => o.name === project.name)) continue;
-          const earlier = windowBefore(events, i, e.week).flatMap((l) => l.projects.filter((p) => p.name === project.name));
-          overdue.push({ name: project.name, week: e.week, warned: earlier.some((p) => p.schedule === 'behind' || AT_RISK.includes(p.risk)) });
-        }
-        if (e.burnout && !burnout) burnout = { week: e.week, warned: windowBefore(events, i, e.week).some((l) => TIRED.includes(l.energy)) };
-        break;
-      }
-      case 'ended':
-        ending = e.ending;
-        left = e.left;
-        break;
-    }
-  });
+  const t: Tally = { seconds: 0, promotedAtMinutes: null, ending: null, left: [], weeks: 0, lowRatings: [], overdue: [], burnout: null, ratings: [] };
+  events.forEach((e, i) => tallyEvent(t, events, e, i));
+  const { seconds, promotedAtMinutes, ending, left, weeks, lowRatings, overdue, burnout, ratings } = t;
 
   const looks = events.filter(isLook);
   const quits = left
@@ -246,14 +275,7 @@ export function scoreRun(seed: number, events: PlayEvent[]): RunCard {
   const answers = events.filter((e) => e.kind === 'answer');
   const unanswered = answers.filter((a) => !a.reaction?.trim()).map((a) => ({ week: a.week, title: a.title }));
   const notes = answers.flatMap((a) => a.notes.map((n) => ({ ...n, week: a.week + NOTE_WEEKS_LATER })));
-  let notesSeen = 0;
-  let notesKept = 0;
-  for (const note of notes) {
-    const later = looks.filter((l) => l.week === note.week).flatMap((l) => l.people.filter((p) => p.name === note.name));
-    if (!later.length) continue;
-    notesSeen++;
-    if (later.some((p) => p.memory.some((line) => uncounted(line) === note.note))) notesKept++;
-  }
+  const { notesSeen, notesKept } = notesKeptOf(notes, looks);
 
   const perWeek = Array.from({ length: weeks }, () => 0);
   for (const e of events) if ((e.kind === 'answer' || e.kind === 'wait') && e.week >= 1 && e.week <= weeks) perWeek[e.week - 1]!++;
@@ -363,21 +385,19 @@ export function formatScorecard(card: Scorecard): string {
     const d = r.shape.decisions;
     out.push(`  seed ${r.seed}: ${num(d.mean)} decisions a week (${d.fewest} to ${d.most}), ${pct(d.weeksWithNone)} of weeks with none, longest run of one kind ${r.shape.longestSameKind}, ${r.shape.situationRepeats} situation repeats within ${REPEAT_WEEKS} weeks, ${pct(r.shape.distinctReactions)} distinct reactions`);
   }
-  out.push('', 'Promotion changes the job');
-  const items = (xs: { name: string; runs: number }[]) => (xs.length ? xs.map((x) => `${x.name} (${x.runs})`).join(', ') : 'none');
-  if (!card.jobs.length) out.push('  no run was promoted');
-  for (const j of card.jobs) {
-    out.push(`  ${LEVEL_NAMES[j.from]} to ${LEVEL_NAMES[j.to]}: ${j.runs} of ${card.runs.length} runs`);
-    for (const part of PARTS) {
-      out.push(`    ${part}, no longer: ${items(j.gone[part])}`);
-      out.push(`    ${part}, new: ${items(j.came[part])}`);
-    }
-  }
+  out.push('', 'Promotion changes the job', ...jobLines(card));
   out.push('', 'Skill can be learned', `  average review rating: ${num(card.averageRating, 2)} (below 0 to outstanding 4)`);
   out.push('', 'Hard checks');
-  for (const c of card.checks) {
-    out.push(`  ${c.id.padEnd(16)}${c.passed ? 'passed' : 'FAILED'}  ${c.name}`);
-    for (const f of c.failures) out.push(`    ${f}`);
-  }
+  for (const c of card.checks) out.push(`  ${c.id.padEnd(16)}${c.passed ? 'passed' : 'FAILED'}  ${c.name}`, ...c.failures.map((f) => `    ${f}`));
   return out.join('\n');
+}
+
+/** For each promotion the runs made, the panels, habits and moments that went and came, with how many runs saw each. */
+function jobLines(card: Scorecard): string[] {
+  const items = (xs: { name: string; runs: number }[]) => (xs.length ? xs.map((x) => `${x.name} (${x.runs})`).join(', ') : 'none');
+  if (!card.jobs.length) return ['  no run was promoted'];
+  return card.jobs.flatMap((j) => [
+    `  ${LEVEL_NAMES[j.from]} to ${LEVEL_NAMES[j.to]}: ${j.runs} of ${card.runs.length} runs`,
+    ...PARTS.flatMap((part) => [`    ${part}, no longer: ${items(j.gone[part])}`, `    ${part}, new: ${items(j.came[part])}`]),
+  ]);
 }
