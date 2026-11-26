@@ -201,6 +201,12 @@ describe('the page', () => {
     const tricky = wrap(emphasis('*<b>bold</b>*'));
     expect(tricky.querySelector('b')).toBeNull();
     expect(tricky.querySelector('em')!.textContent).toBe('<b>bold</b>');
+    // Mixed markers: the earliest emphasis wins, and a marker inside it is plain text.
+    const ems = (text: string) => [...wrap(emphasis(text)).querySelectorAll('em')].map((x) => x.textContent);
+    expect(ems('_a *b_ *c*')).toEqual(['a *b', 'c']);
+    expect(ems('*a _b* c_')).toEqual(['a _b']);
+    expect(ems('_one_ and *two* and _three_')).toEqual(['one', 'two', 'three']);
+    expect(ems('*x*_y_')).toEqual(['x', 'y']);
   });
 });
 

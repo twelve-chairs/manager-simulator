@@ -1,9 +1,20 @@
 import type { ProgressCause, ProjectMove } from '../levels/line-manager';
 /**
  * Emphasis: `*text*`, or `_text_` standing as its own word, with no space just inside the markers. Underscores inside
- * a word (deploy_job_runner) and doubled markers (**strong**) are not emphasis. Fixed pattern; never built from content.
+ * a word (deploy_job_runner) and doubled markers (**strong**) are not emphasis. Fixed patterns; never built from content.
  */
-const EMPHASIS = /(?<!\*)\*(?![\s*])([^*\n]+?)(?<!\s)\*(?!\*)|(?<!\w)_(?![\s_])([^_\n]+?)(?<!\s)_(?!\w)/g;
+const STAR = /(?<!\*)\*(?![\s*])([^*\n]+?)(?<!\s)\*(?!\*)/g;
+const UNDERSCORE = /(?<!\w)_(?![\s_])([^_\n]+?)(?<!\s)_(?!\w)/g;
+
+/** The first emphasis at or after `from`: the earlier of the two markers' matches, `*` first when both start at once. */
+function nextEmphasis(text: string, from: number): RegExpExecArray | null {
+  STAR.lastIndex = from;
+  const star = STAR.exec(text);
+  UNDERSCORE.lastIndex = from;
+  const underscore = UNDERSCORE.exec(text);
+  if (!star) return underscore;
+  return !underscore || star.index <= underscore.index ? star : underscore;
+}
 
 /**
  * Situation text with Markdown emphasis shown as `em` elements. Text is set as text, so nothing else in the string
@@ -13,10 +24,10 @@ const EMPHASIS = /(?<!\*)\*(?![\s*])([^*\n]+?)(?<!\s)\*(?!\*)|(?<!\w)_(?![\s_])(
 export function emphasis(text: string): Node[] {
   const nodes: Node[] = [];
   let last = 0;
-  for (const match of text.matchAll(EMPHASIS)) {
+  for (let match = nextEmphasis(text, 0); match; match = nextEmphasis(text, last)) {
     nodes.push(document.createTextNode(text.slice(last, match.index)));
     const em = document.createElement('em');
-    em.textContent = match[1] ?? match[2]!;
+    em.textContent = match[1]!;
     nodes.push(em);
     last = match.index + match[0].length;
   }
