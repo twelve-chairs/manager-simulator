@@ -259,6 +259,194 @@ export function addMoments(s: LineState, sim: SimState) {
 /** Removes a resolved item. */
 const resolve = (s: LineState, item: WorkItem) => (s.items = s.items.filter((i) => i.id !== item.id));
 
+/** What a choice handler works on: the copied level, the simulation, the moment and the effects it collects. */
+interface Pick {
+  s: LineState;
+  sim: SimState;
+  moment: LevelMoment;
+  choiceId: string;
+  effects: Effect[];
+}
+
+/** A handler's result: the reaction text and the engineer it involved, or why the choice no longer applies. */
+type Picked = { ok: false; error: string } | { ok: true; text: string; involved?: string };
+
+const gone = (sim: SimState, id: string): Picked => ({ ok: false, error: `${sim.people[id]?.name ?? id} is no longer on the team` });
+const said = (text: string, involved?: string): Picked => ({ ok: true, text, involved });
+
+function pickFinalEvaluation({ s, sim, moment, choiceId, effects }: Pick): Picked {
+  const id = moment.ref;
+  const held = s.heldEvaluations.find((h) => h.personId === id);
+  if (!held || !isEngineer(s, sim, id)) return gone(sim, id);
+  let text: string;
+  if (choiceId === 'letGo') {
+    // The third low rating in a row: the simulation ends their plan and they leave.
+    effects.push({ type: 'rate', target: { kind: 'person', id }, rating: held.rating, cause: action(FINAL_EVALUATION), historyNote: `Rated ${RATING_WORDS[held.rating]} on what they delivered` });
+    text = `You rate ${sim.people[id]!.name} ${RATING_WORDS[held.rating]} and let them go. It's a short, hard conversation.`;
+  } else {
+    effects.push(oneMoreQuarter(id));
+    text = `You give ${sim.people[id]!.name} one more quarter. They know what it means.`;
+  }
+  s.heldEvaluations = s.heldEvaluations.filter((h) => h.personId !== id);
+  return said(text);
+}
+
+function pickCheckIn({ s, sim, moment, choiceId, effects }: Pick): Picked {
+  const p = sim.projects[moment.ref];
+  if (!p || !teamProjects(s, sim).includes(moment.ref)) return { ok: false, error: `project ${moment.ref} is no longer active` };
+  const c = LINE_TUNING.checkIn;
+  const cause = action(CHECK_IN);
+  if (choiceId === 'replan') effects.push(playerEffect('stress', c.replanStress, cause), projectEffect(p.id, 'risk', -c.replanRisk, cause));
+  else if (choiceId === 'cutScope') {
+    // A share of what is left, at least 1, and never below what is already done; scope is kept in whole points.
+    const left = Math.floor(p.scope - p.progress);
+    const cut = Math.min(Math.max(1, Math.round(c.scopeShare * left)), left);
+    if (cut > 0) effects.push(projectEffect(p.id, 'scope', -cut, cause));
+    effects.push(playerEffect('reputation', c.scopeReputation, cause));
+  } else if (choiceId === 'moveDeadline') effects.push(projectEffect(p.id, 'deadlineWeek', c.deadlineWeeks, cause), playerEffect('reputation', c.deadlineReputation, cause));
+  return said(reaction(choiceId as 'replan' | 'cutScope' | 'moveDeadline' | 'pushOn', p.name));
+}
+
+/** Who sits in on the interview: nobody, the player, or an engineer the player asks. */
+function interviewer({ s, sim, choiceId, effects }: Pick, vacancy: { interviews: number }): Picked {
+  if (choiceId === 'skip') return said(reaction('skip', 'interview'));
+  if (choiceId === 'self') {
+    vacancy.interviews += 1;
+    effects.push(playerEffect('stress', LINE_TUNING.work.interviewStress, action(INTERVIEW)));
+    return said(reaction('interview', 'interview'));
+  }
+  const id = choiceId.slice('ask:'.length);
+  if (!isEngineer(s, sim, id)) return gone(sim, id);
+  vacancy.interviews += 1;
+  effects.push(
+    personEffect(id, 'stress', LINE_TUNING.work.interviewerStress, action(INTERVIEW)),
+    personEffect(id, 'motivation', LINE_TUNING.work.interviewerMotivation, action(INTERVIEW), { serves: ['recognition'], note: 'Interviewed a candidate' }),
+  );
+  return said(reaction('ask', 'interview', sim.people[id]), id);
+}
+
+function pickInterview(c: Pick): Picked {
+  const { s, sim, moment, effects } = c;
+  const vacancy = s.vacancies.find((v) => v.id === moment.ref);
+  if (!vacancy) return { ok: false, error: `vacancy ${moment.ref} is no longer open` };
+  const picked = interviewer(c, vacancy);
+  if (!picked.ok || vacancy.interviews < LINE_TUNING.interviewsPerHire) return picked;
+  const hire = generatePerson(s, peopleNames(sim));
+  effects.push({ type: 'hire', teamId: s.teamId, person: hire, cause: action(INTERVIEW) });
+  s.vacancies = s.vacancies.filter((v) => v !== vacancy);
+  return said(`${picked.text} After the last interview you make an offer, and ${hire.name} accepts.`, picked.involved);
+}
+
+/** A night page: roll back, take it over, back the on-call engineer up, or leave it with them. */
+function pickOnCall({ s, sim, moment, choiceId, effects }: Pick, item: WorkItem, thing: string): Picked {
+  const id = moment.personId!;
+  const present = isEngineer(s, sim, id);
+  if (choiceId !== 'takeOver' && !present) return gone(sim, id);
+  const short = present && item.difficulty > sim.people[id]!.skill;
+  const cause = action(ON_CALL);
+  const W = LINE_TUNING.work;
+  if (choiceId === 'rollBack') {
+    const R = LINE_TUNING.rollBack;
+    const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+    const slip = p ? Math.min(R.progress, Math.floor(p.progress)) : 0;
+    if (p && slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(ROLL_BACK)));
+    if (present) effects.push(personEffect(id, 'stress', R.stress, action(ROLL_BACK)));
+    return said(reaction('rollBack', p?.name ?? thing));
+  }
+  if (choiceId === 'takeOver') {
+    effects.push(playerEffect('stress', item.size, cause));
+    return said(reaction('takeOver', thing, sim.people[id]));
+  }
+  if (choiceId === 'backUp') {
+    effects.push(playerEffect('stress', W.backUpStress, cause), personEffect(id, 'stress', W.delegateStress, cause, { note: 'Handled a night page with you' }));
+    if (short) effects.push(personEffect(id, 'skill', W.stretchSkill, cause), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
+    return said(reaction('backUp', thing, sim.people[id]), id);
+  }
+  effects.push(personEffect(id, 'stress', W.delegateStress, cause, { note: 'Handled a night page alone' }));
+  if (short) effects.push(...consequence(item, 1, FELL_SHORT));
+  return said(reaction(short ? 'leaveShort' : 'leave', thing, sim.people[id]), id);
+}
+
+type WorkPick = (c: Pick, item: WorkItem, thing: string) => Picked;
+
+const pickSelf: WorkPick = ({ effects }, item, thing) => {
+  effects.push(playerEffect('stress', Math.round(item.size * LINE_TUNING.work.selfStressPerSize), action(DO_IT_YOURSELF)));
+  return said(reaction('self', thing));
+};
+
+const pickSmaller: WorkPick = ({ effects }, _item, thing) => {
+  effects.push(playerEffect('reputation', -LINE_TUNING.smallerChange.reputation, action(SMALLER_CHANGE)));
+  return said(reaction('smaller', thing));
+};
+
+/** Hands the work to an engineer, a stretch when it is harder than their skill. */
+const pickGive: WorkPick = ({ s, sim, choiceId, effects }, item, thing) => {
+  const id = choiceId.slice('give:'.length);
+  if (!isEngineer(s, sim, id)) return gone(sim, id);
+  const stretch = item.difficulty > sim.people[id]!.skill;
+  effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${thing}` }));
+  if (stretch) effects.push(personEffect(id, 'skill', LINE_TUNING.work.stretchSkill, action(DELEGATE)), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
+  return said(reaction(stretch ? 'stretch' : 'give', thing, sim.people[id]), id);
+};
+
+/** Pays down tech debt on a project; on other work the choice id is read as a hand-off, as before. */
+const pickPayDown: WorkPick = (c, item, thing) => {
+  if (item.subject.kind !== 'project') return pickGive(c, item, thing);
+  const P = LINE_TUNING.payDown;
+  const p = c.sim.projects[item.subject.id]!;
+  // The slip is at most what is done, so progress never goes below zero.
+  const slip = Math.min(P.progress, Math.floor(p.progress));
+  if (slip > 0) c.effects.push(projectEffect(p.id, 'progress', -slip, action(PAY_DOWN)));
+  c.effects.push(projectEffect(p.id, 'techDebt', -P.techDebt, action(PAY_DOWN)), playerEffect('stress', P.stress, action(PAY_DOWN)));
+  return said(reaction('payDown', p.name));
+};
+
+// @spec LINE-INBOX-016
+const pickTake: WorkPick = ({ s, sim, effects }, item, thing) => {
+  const W = LINE_TUNING.work;
+  const offer = item.offer ?? { kind: 'launch' };
+  const started = generateProject(s, projectNames(sim), s.teamId, sim.week, calmRisk(s));
+  if (offer.kind === 'handover') started.techDebt = W.handoverTechDebt;
+  effects.push({ type: 'startProject', project: started, cause: action(ACCEPT_INTAKE) }, playerEffect('stress', item.size, action(ACCEPT_INTAKE)));
+  if (offer.kind === 'launch') effects.push(playerEffect('reputation', W.launchReputation, action(ACCEPT_INTAKE)));
+  if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
+    effects.push(personEffect(offer.engineerId, 'motivation', W.rewriteMotivation, action(ACCEPT_INTAKE), { serves: ['growth', 'autonomy'], note: 'Got the rewrite they wanted' }));
+  }
+  // Offered only while someone is strained, so the whole team feels it.
+  for (const id of teamEngineers(s, sim)) effects.push(personEffect(id, 'stress', W.intakeTeamStress, action(ACCEPT_INTAKE), { note: 'Took on new work while stretched' }));
+  return said(`${reaction('take', thing)} It’s called ${started.name}.`);
+};
+
+// @spec LINE-INBOX-017
+const pickDecline: WorkPick = ({ s, sim, effects }, item, thing) => {
+  const W = LINE_TUNING.work;
+  const offer = item.offer ?? { kind: 'launch' };
+  const lost = { launch: W.launchDeclineReputation, handover: W.handoverDeclineReputation, rewrite: W.declineIntakeReputation }[offer.kind];
+  effects.push(playerEffect('reputation', lost, action(DECLINE_INTAKE)));
+  if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
+    effects.push(personEffect(offer.engineerId, 'motivation', -W.rewriteDeclineMotivation, action(DECLINE_INTAKE), { note: 'Saw the rewrite they wanted turned down' }));
+  }
+  s.intakeDeclinedWeek = sim.week;
+  return said(reaction('decline', thing));
+};
+
+/** Choices on a work item, by choice id; any other id hands the work to an engineer. Every one but pushing back resolves the item. */
+const WORK_PICKS: Record<string, WorkPick> = { self: pickSelf, payDown: pickPayDown, smaller: pickSmaller, take: pickTake, decline: pickDecline };
+
+function pickWork(c: Pick, momentId: string): Picked {
+  const { s, sim, moment, choiceId } = c;
+  const item = s.items.find((i) => i.id === moment.ref);
+  if (!item || !subjectValid(s, sim, item)) return { ok: false, error: `the work for moment ${momentId} is no longer there` };
+  const thing = WORK_LABELS[item.kind];
+  if (moment.kind !== 'onCall' && choiceId === 'pushBack') return said(reaction('pushBack', thing));
+  const pick = moment.kind === 'onCall' ? pickOnCall : (WORK_PICKS[choiceId] ?? pickGive);
+  const picked = pick(c, item, thing);
+  if (picked.ok) resolve(s, item);
+  return picked;
+}
+
+const PICKS: Partial<Record<LevelMoment['kind'], (c: Pick) => Picked>> = { finalEvaluation: pickFinalEvaluation, checkIn: pickCheckIn, interview: pickInterview };
+
 /** Applies one choice for an open level moment at once and closes the moment. */
 // @spec LINE-MOMENT-003, LINE-WORK-003, LINE-WORK-004, LINE-WORK-005, LINE-WORK-009, LINE-WORK-011, LINE-WORK-012, LINE-WORK-016
 // @spec LINE-INBOX-004, LINE-INBOX-005, LINE-INBOX-006, LINE-INBOX-007, LINE-INBOX-011, LINE-INBOX-012
@@ -274,159 +462,18 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
   const s = structuredClone(level);
   const moment = s.moments.find((m) => m.id === momentId)!;
   const effects: Effect[] = [];
-  let text: string;
-  /** The engineer the choice involves, whose memories its reaction can bring up. */
-  let involved: string | undefined;
-  const engineer = (id: string) => sim.people[id]!;
-  const gone = (id: string) => `${sim.people[id]?.name ?? id} is no longer on the team`;
-
-  if (moment.kind === 'finalEvaluation') {
-    const id = moment.ref;
-    const held = s.heldEvaluations.find((h) => h.personId === id);
-    if (!held || !isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
-    if (choiceId === 'letGo') {
-      // The third low rating in a row: the simulation ends their plan and they leave.
-      effects.push({ type: 'rate', target: { kind: 'person', id }, rating: held.rating, cause: action(FINAL_EVALUATION), historyNote: `Rated ${RATING_WORDS[held.rating]} on what they delivered` });
-      text = `You rate ${engineer(id).name} ${RATING_WORDS[held.rating]} and let them go. It's a short, hard conversation.`;
-    } else {
-      effects.push(oneMoreQuarter(id));
-      text = `You give ${engineer(id).name} one more quarter. They know what it means.`;
-    }
-    s.heldEvaluations = s.heldEvaluations.filter((h) => h.personId !== id);
-  } else if (moment.kind === 'checkIn') {
-    const p = sim.projects[moment.ref];
-    if (!p || !teamProjects(s, sim).includes(moment.ref)) return { ok: false, error: `project ${moment.ref} is no longer active` };
-    const c = LINE_TUNING.checkIn;
-    const cause = action(CHECK_IN);
-    if (choiceId === 'replan') effects.push(playerEffect('stress', c.replanStress, cause), projectEffect(p.id, 'risk', -c.replanRisk, cause));
-    else if (choiceId === 'cutScope') {
-      // A share of what is left, at least 1, and never below what is already done; scope is kept in whole points.
-      const left = Math.floor(p.scope - p.progress);
-      const cut = Math.min(Math.max(1, Math.round(c.scopeShare * left)), left);
-      if (cut > 0) effects.push(projectEffect(p.id, 'scope', -cut, cause));
-      effects.push(playerEffect('reputation', c.scopeReputation, cause));
-    } else if (choiceId === 'moveDeadline') effects.push(projectEffect(p.id, 'deadlineWeek', c.deadlineWeeks, cause), playerEffect('reputation', c.deadlineReputation, cause));
-    text = reaction(choiceId as 'replan' | 'cutScope' | 'moveDeadline' | 'pushOn', p.name);
-  } else if (moment.kind === 'interview') {
-    const vacancy = s.vacancies.find((v) => v.id === moment.ref);
-    if (!vacancy) return { ok: false, error: `vacancy ${moment.ref} is no longer open` };
-    if (choiceId === 'skip') text = reaction('skip', 'interview');
-    else if (choiceId === 'self') {
-      vacancy.interviews += 1;
-      effects.push(playerEffect('stress', LINE_TUNING.work.interviewStress, action(INTERVIEW)));
-      text = reaction('interview', 'interview');
-    } else {
-      const id = choiceId.slice('ask:'.length);
-      if (!isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
-      vacancy.interviews += 1;
-      effects.push(
-        personEffect(id, 'stress', LINE_TUNING.work.interviewerStress, action(INTERVIEW)),
-        personEffect(id, 'motivation', LINE_TUNING.work.interviewerMotivation, action(INTERVIEW), { serves: ['recognition'], note: 'Interviewed a candidate' }),
-      );
-      text = reaction('ask', 'interview', engineer(id));
-      involved = id;
-    }
-    if (vacancy.interviews >= LINE_TUNING.interviewsPerHire) {
-      const hire = generatePerson(s, peopleNames(sim));
-      effects.push({ type: 'hire', teamId: s.teamId, person: hire, cause: action(INTERVIEW) });
-      s.vacancies = s.vacancies.filter((v) => v !== vacancy);
-      text += ` After the last interview you make an offer, and ${hire.name} accepts.`;
-    }
-  } else {
-    const item = s.items.find((i) => i.id === moment.ref);
-    if (!item || !subjectValid(s, sim, item)) return { ok: false, error: `the work for moment ${momentId} is no longer there` };
-    const thing = WORK_LABELS[item.kind];
-    if (moment.kind === 'onCall') {
-      const id = moment.personId!;
-      if (choiceId !== 'takeOver' && !isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
-      const short = isEngineer(s, sim, id) && item.difficulty > engineer(id).skill;
-      const cause = action(ON_CALL);
-      if (choiceId === 'rollBack') {
-        const R = LINE_TUNING.rollBack;
-        const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-        const slip = p ? Math.min(R.progress, Math.floor(p.progress)) : 0;
-        if (p && slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(ROLL_BACK)));
-        if (isEngineer(s, sim, id)) effects.push(personEffect(id, 'stress', R.stress, action(ROLL_BACK)));
-        text = reaction('rollBack', p?.name ?? thing);
-      } else if (choiceId === 'takeOver') {
-        effects.push(playerEffect('stress', item.size, cause));
-        text = reaction('takeOver', thing, sim.people[id]);
-      } else if (choiceId === 'backUp') {
-        effects.push(playerEffect('stress', LINE_TUNING.work.backUpStress, cause), personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: 'Handled a night page with you' }));
-        if (short) effects.push(personEffect(id, 'skill', LINE_TUNING.work.stretchSkill, cause), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
-        text = reaction('backUp', thing, engineer(id));
-        involved = id;
-      } else {
-        effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: 'Handled a night page alone' }));
-        if (short) effects.push(...consequence(item, 1, FELL_SHORT));
-        text = reaction(short ? 'leaveShort' : 'leave', thing, engineer(id));
-        involved = id;
-      }
-      resolve(s, item);
-    } else if (choiceId === 'pushBack') {
-      text = reaction('pushBack', thing);
-    } else if (choiceId === 'self') {
-      effects.push(playerEffect('stress', Math.round(item.size * LINE_TUNING.work.selfStressPerSize), action(DO_IT_YOURSELF)));
-      text = reaction('self', thing);
-      resolve(s, item);
-    } else if (choiceId === 'payDown' && item.subject.kind === 'project') {
-      const P = LINE_TUNING.payDown;
-      const p = sim.projects[item.subject.id]!;
-      // The slip is at most what is done, so progress never goes below zero.
-      const slip = Math.min(P.progress, Math.floor(p.progress));
-      if (slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(PAY_DOWN)));
-      effects.push(projectEffect(p.id, 'techDebt', -P.techDebt, action(PAY_DOWN)), playerEffect('stress', P.stress, action(PAY_DOWN)));
-      text = reaction('payDown', p.name);
-      resolve(s, item);
-    } else if (choiceId === 'smaller') {
-      effects.push(playerEffect('reputation', -LINE_TUNING.smallerChange.reputation, action(SMALLER_CHANGE)));
-      text = reaction('smaller', thing);
-      resolve(s, item);
-    } else if (choiceId === 'take') {
-      // @spec LINE-INBOX-016
-      const W = LINE_TUNING.work;
-      const offer = item.offer ?? { kind: 'launch' };
-      const started = generateProject(s, projectNames(sim), s.teamId, sim.week, calmRisk(s));
-      if (offer.kind === 'handover') started.techDebt = W.handoverTechDebt;
-      effects.push({ type: 'startProject', project: started, cause: action(ACCEPT_INTAKE) }, playerEffect('stress', item.size, action(ACCEPT_INTAKE)));
-      if (offer.kind === 'launch') effects.push(playerEffect('reputation', W.launchReputation, action(ACCEPT_INTAKE)));
-      if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
-        effects.push(personEffect(offer.engineerId, 'motivation', W.rewriteMotivation, action(ACCEPT_INTAKE), { serves: ['growth', 'autonomy'], note: 'Got the rewrite they wanted' }));
-      }
-      // Offered only while someone is strained, so the whole team feels it.
-      for (const id of teamEngineers(s, sim)) effects.push(personEffect(id, 'stress', LINE_TUNING.work.intakeTeamStress, action(ACCEPT_INTAKE), { note: 'Took on new work while stretched' }));
-      text = `${reaction('take', thing)} It’s called ${started.name}.`;
-      resolve(s, item);
-    } else if (choiceId === 'decline') {
-      // @spec LINE-INBOX-017
-      const W = LINE_TUNING.work;
-      const offer = item.offer ?? { kind: 'launch' };
-      const lost = { launch: W.launchDeclineReputation, handover: W.handoverDeclineReputation, rewrite: W.declineIntakeReputation }[offer.kind];
-      effects.push(playerEffect('reputation', lost, action(DECLINE_INTAKE)));
-      if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
-        effects.push(personEffect(offer.engineerId, 'motivation', -W.rewriteDeclineMotivation, action(DECLINE_INTAKE), { note: 'Saw the rewrite they wanted turned down' }));
-      }
-      s.intakeDeclinedWeek = sim.week;
-      text = reaction('decline', thing);
-      resolve(s, item);
-    } else {
-      const id = choiceId.slice('give:'.length);
-      if (!isEngineer(s, sim, id)) return { ok: false, error: gone(id) };
-      const stretch = item.difficulty > engineer(id).skill;
-      effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${thing}` }));
-      if (stretch) effects.push(personEffect(id, 'skill', LINE_TUNING.work.stretchSkill, action(DELEGATE)), ...consequence(item, LINE_TUNING.reducedConsequence, FELL_SHORT));
-      text = reaction(stretch ? 'stretch' : 'give', thing, engineer(id));
-      involved = id;
-      resolve(s, item);
-    }
-  }
+  const c: Pick = { s, sim, moment, choiceId, effects };
+  const handler = PICKS[moment.kind];
+  const picked = handler ? handler(c) : pickWork(c, momentId);
+  if (!picked.ok) return picked;
 
   const applied = applyEffects(sim, effects);
   if (!applied.ok) return { ok: false, error: `the simulation rejected the choice: ${applied.error.message}` };
   tallyProgress(s, applied.log);
+  // The engineer the choice involves can bring up a memory in its reaction.
   // @spec LINE-WORK-006
-  const recalled = involved !== undefined ? callBack(s, sim, involved, moment.kind === 'onCall') : null;
-  if (recalled) text = `${text} ${recalled}`;
+  const recalled = picked.involved !== undefined ? callBack(s, sim, picked.involved, moment.kind === 'onCall') : null;
+  const text = recalled ? `${picked.text} ${recalled}` : picked.text;
   // A choice that costs the player energy ends the week's chance of being quiet.
   // @spec LINE-END-013
   if (effects.some((e) => e.type === 'value' && e.target.kind === 'player' && e.field === 'stress' && e.amount > 0)) s.energySpent += 1;
