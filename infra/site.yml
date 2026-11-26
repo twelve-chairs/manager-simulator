@@ -4,6 +4,7 @@
 # certificates live:
 #   aws cloudformation deploy --region us-east-1 --stack-name manager-simulator-site --template-file infra/site.yml \
 #     --capabilities CAPABILITY_NAMED_IAM --parameter-overrides HostedZoneId=<the domain's hosted zone id>
+# An update keeps each parameter's previous value unless it is passed, so pass any parameter whose default changed.
 # Long-form intrinsic functions throughout, so the template is plain YAML its tests can read.
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Manager Simulator, served at www.manager-simulator.io
@@ -16,7 +17,8 @@ Parameters:
     Type: AWS::Route53::HostedZone::Id
   Repository:
     Type: String
-    Default: twelve-chairs/manager-simulator
+    Description: The repository as GitHub's immutable OIDC subject names it, owner and repository each with its id.
+    Default: twelve-chairs@56702533/manager-simulator@1454409896
   ContentSecurityPolicy:
     Type: String
     Description: The UI design's policy (vite.config.ts), with frame-ancestors added; a test keeps the two in step.
@@ -24,11 +26,24 @@ Parameters:
 
 Resources:
   # @spec UI-HOST-001
-  SiteBucket:
+  # Access logging is off by design: the game collects nothing about its players, and a log would record every
+  # visitor's address (docs/decisions/hosting.md, the security rule's AWS section).
+  SiteBucket: # NOSONAR
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
+      # Earlier versions are kept for a month, so a bad upload can be rolled back.
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -138,7 +153,8 @@ Resources:
   Distribution:
     Type: AWS::CloudFront::Distribution
     Properties:
-      DistributionConfig:
+      # No access logging, for the same reason as the bucket's.
+      DistributionConfig: # NOSONAR
         Enabled: true
         Comment: Manager Simulator
         Aliases:

@@ -64,6 +64,8 @@ describe('the site’s hosting', () => {
     expect(trust).toHaveLength(1);
     expect(trust[0]).toMatchObject({ Action: 'sts:AssumeRoleWithWebIdentity', Principal: { Federated: { Ref: 'GitHubOidc' } } });
     expect(trust[0]!.Condition.StringEquals).toEqual({ 'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com', 'token.actions.githubusercontent.com:sub': { 'Fn::Sub': 'repo:${Repository}:ref:refs/heads/main' } });
+    // The repository uses GitHub's immutable subject: owner and repository each named with its id.
+    expect(template.Parameters.Repository.Default).toBe('twelve-chairs@56702533/manager-simulator@1454409896');
     const allowed = (role.Policies as Node[]).flatMap((p) => p.PolicyDocument.Statement as Node[]);
     expect(allowed.map((s) => s.Action)).toEqual(['s3:ListBucket', ['s3:PutObject', 's3:DeleteObject'], 'cloudfront:CreateInvalidation']);
     // Each permission names the site's own bucket or distribution: none applies to every resource.
