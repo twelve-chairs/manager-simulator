@@ -45,18 +45,21 @@ const missingTeam = (s: SimState, id: string) => (s.teams[id] ? undefined : `tea
 const outside = (s: SimState, id: string) => (s.people[id]?.teamId === null ? `person ${id} is outside the organization` : undefined);
 const missingProject = (s: SimState, id: string) => (s.projects[id] ? undefined : `project ${id} does not exist`);
 
+function invalidTeamField(s: SimState, id: string, field: string): string | undefined {
+  const t = s.teams[id];
+  if (!t) return `team ${id} does not exist`;
+  const fields = t.form === 'aggregate' ? AGGREGATE_TEAM_FIELDS : DETAILED_TEAM_FIELDS;
+  return has(fields, field) ? undefined : `unknown ${t.form} team field ${field}`;
+}
+
 function invalidValue(s: SimState, e: Of<'value'>): string | undefined {
   if (e.historyNote !== undefined && e.target.kind !== 'person') return 'history notes can only target a person';
   if (!Number.isFinite(e.amount)) return 'amount is not a finite number';
   switch (e.target.kind) {
     case 'person':
       return activePerson(s, e.target.id) ?? (has(PERSON_FIELDS, e.field) ? undefined : `unknown person field ${e.field}`);
-    case 'team': {
-      const t = s.teams[e.target.id];
-      if (!t) return `team ${e.target.id} does not exist`;
-      const fields = t.form === 'aggregate' ? AGGREGATE_TEAM_FIELDS : DETAILED_TEAM_FIELDS;
-      return has(fields, e.field) ? undefined : `unknown ${t.form} team field ${e.field}`;
-    }
+    case 'team':
+      return invalidTeamField(s, e.target.id, e.field);
     case 'project':
       return missingProject(s, e.target.id) ?? (has(PROJECT_FIELDS, e.field) ? undefined : `unknown project field ${e.field}`);
     case 'player':

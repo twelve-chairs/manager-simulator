@@ -81,12 +81,19 @@ type WeekEnd = {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
+/** What the recap says of a moment let wait, by kind; anything else waits for another week. */
+const WAITED: Partial<Record<LineState['moments'][number]['kind'], string>> = {
+  onCall: 'Nobody picked up the page.',
+  interview: 'No interview this week.',
+  finalEvaluation: 'They get one more quarter.',
+};
+
 /** Unanswered moments are let wait: work stays open, an interview is skipped, a night page expires. */
 function waitMoments(w: WeekEnd) {
   for (const m of w.s.moments.filter((x) => x.week === w.week)) {
     if (m.status === 'open') {
       m.status = 'waited';
-      m.outcome = m.kind === 'onCall' ? 'Nobody picked up the page.' : m.kind === 'interview' ? 'No interview this week.' : m.kind === 'finalEvaluation' ? 'They get one more quarter.' : 'It waits for another week.';
+      m.outcome = WAITED[m.kind] ?? 'It waits for another week.';
       if (m.kind === 'onCall') w.expireNow.add(m.ref);
       // A final evaluation left unanswered gives them one more quarter.
       if (m.kind === 'finalEvaluation' && w.sim.people[m.ref]?.status === 'active') w.effects.push(oneMoreQuarter(m.ref));
@@ -256,6 +263,18 @@ function assignIdleWork(s: LineState, sim: SimState, week: number, log: ChangeLo
   return { ok: true, sim: after };
 }
 
+type Bands = { motivation: number; stress: number; skill: number };
+
+/** The bands a person moved through this week, in words; `stressed` says what made them more stressed. */
+function bandChanges(p: Bands, was: Bands, stressed: () => string): string[] {
+  const changes: string[] = [];
+  if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
+  if (band(p.stress) > band(was.stress)) changes.push(stressed());
+  else if (band(p.stress) < band(was.stress)) changes.push('less stressed');
+  if (band(p.skill) > band(was.skill)) changes.push('grown in skill');
+  return changes;
+}
+
 /** Who changed band this week, against how they started it, or gained a note from something other than a habit. */
 function peopleRecap(s: LineState, sim: SimState, after: SimState, week: number, recap: Recap) {
   const start = s.weekStart.week === week ? s.weekStart.people : {};
@@ -266,11 +285,7 @@ function peopleRecap(s: LineState, sim: SimState, after: SimState, week: number,
   for (const id of teamEngineers(s, after)) {
     const p = after.people[id]!;
     const was = start[id] ?? { motivation: sim.people[id]!.motivation, stress: sim.people[id]!.stress, skill: sim.people[id]!.skill };
-    const changes: string[] = [];
-    if (band(p.motivation) !== band(was.motivation)) changes.push(band(p.motivation) > band(was.motivation) ? 'more motivated' : 'less motivated');
-    if (band(p.stress) > band(was.stress)) changes.push(moreStressed(s.weekStart.week === week ? s.weekStart.stress[id] : undefined));
-    else if (band(p.stress) < band(was.stress)) changes.push('less stressed');
-    if (band(p.skill) > band(was.skill)) changes.push('grown in skill');
+    const changes = bandChanges(p, was, () => moreStressed(s.weekStart.week === week ? s.weekStart.stress[id] : undefined));
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }

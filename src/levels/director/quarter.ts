@@ -191,19 +191,20 @@ function troubledIds(s: DirectorState, sim: SimState): string[] {
 
 type Lead = { groupId: string; id: string | null };
 
+/** Where the time goes: upward wins those above and costs the groups; toward the organization, the reverse. */
+function timeEffects(s: DirectorState, sim: SimState, leads: Lead[]): Effect[] {
+  if (s.habits.time === 'balanced') return [];
+  const t = T.time;
+  const up = s.habits.time === 'upward' ? 1 : -1;
+  const above = [s.executiveId, ...s.peerIds].filter((id) => sim.people[id]?.status === 'active');
+  const effects: Effect[] = [...above.map((id) => value('person', id, 'trust', up * t.aboveTrust, 'director.time')), ...s.groupIds.map((g) => value('team', g, 'motivation', -up * t.groupMotivation, 'director.time'))];
+  if (up < 0) for (const { id } of leads) if (id) effects.push(value('person', id, 'trust', t.seniorTrust, 'director.time'));
+  return effects;
+}
+
 /** Where the time goes, the staff meetings, and the listening tour. */
 function habitEffects(s: DirectorState, sim: SimState, leads: Lead[]): Effect[] {
-  const effects: Effect[] = [];
-  const above = [s.executiveId, ...s.peerIds].filter((id) => sim.people[id]?.status === 'active');
-  const t = T.time;
-  if (s.habits.time === 'upward') {
-    for (const id of above) effects.push(value('person', id, 'trust', t.aboveTrust, 'director.time'));
-    for (const g of s.groupIds) effects.push(value('team', g, 'motivation', -t.groupMotivation, 'director.time'));
-  } else if (s.habits.time === 'organization') {
-    for (const id of above) effects.push(value('person', id, 'trust', -t.aboveTrust, 'director.time'));
-    for (const g of s.groupIds) effects.push(value('team', g, 'motivation', t.groupMotivation, 'director.time'));
-    for (const { id } of leads) if (id) effects.push(value('person', id, 'trust', t.seniorTrust, 'director.time'));
-  }
+  const effects = timeEffects(s, sim, leads);
   const meeting = T.staffMeeting[s.habits.staffMeeting];
   effects.push(energy(meeting.energy, 'director.staffMeeting'));
   for (const { id } of leads) {
