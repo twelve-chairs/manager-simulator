@@ -73,7 +73,7 @@ function describeOffer(sim: SimState, item: WorkItem): Described {
   const offer = item.offer ?? { kind: 'launch' };
   const difficulty = band(item.difficulty);
   if (offer.kind === 'handover')
-    return { title: 'New work: a handover', text: 'Another team wants to hand yours a system it can no longer keep up: old code, heavy tech debt, and nobody asking for it. Taking it on helps them; declining leaves them holding it, and they’ll remember.', difficulty };
+    return { title: 'New work: a handover', text: 'Another team wants to hand yours a system it can no longer keep up: old code, heavy tech debt, and nobody asking for it. Taking it on helps them; declining leaves them holding it, and costs you some of their goodwill.', difficulty };
   if (offer.kind === 'rewrite')
     return { title: 'New work: a rewrite', text: `Another team needs a service rewritten from scratch, and ${nameOf(sim, offer.engineerId!)} has been wanting exactly this kind of work. Saying no is saying no to them too.`, difficulty };
   return { title: 'New work: a launch', text: 'Another team wants yours to take on a launch the whole company will see. Taking it on lifts your standing and loads the team; declining it is noticed.', difficulty };
