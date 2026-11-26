@@ -340,174 +340,214 @@ function addFourthTeam(s: SeniorState, sim: SimState, manager: ReturnType<typeof
   return added.state;
 }
 
+/** What a choice handler works on: the copied level, the simulation, the moment, its team and manager, and the effects it collects. */
+interface Pick {
+  s: SeniorState;
+  sim: SimState;
+  moment: SeniorMoment;
+  choiceId: string;
+  effects: Effect[];
+  /** The moment's team. */
+  t: string;
+  /** The team's manager, if it has one. */
+  m: string | null;
+  /** How the reaction names that manager. */
+  who: string;
+}
+
+/** A handler's result: the reaction, and the simulation the effects apply to when the handler already changed it. */
+type Picked = { reaction: string; next?: SimState };
+
+function pickFinalEvaluation({ s, sim, moment, choiceId, effects, t }: Pick): Picked {
+  const id = moment.managerId!;
+  s.heldEvaluations = s.heldEvaluations.filter((x) => x !== id);
+  if (choiceId !== 'letGo') return { reaction: `${sim.people[id]!.name} gets one more period. They know what it means.` };
+  // A third low rating ends the plan: the simulation lets them go, and the team waits for a new manager.
+  effects.push({ type: 'rate', target: { kind: 'person', id }, rating: 'below', cause: { kind: 'action', actionId: 'senior.finalEvaluation' } });
+  s.letGoManagers.push(id);
+  return { reaction: `You let ${sim.people[id]!.name} go. ${name(sim, t)} is without a manager for now.` };
+}
+
+function pickReplaceManager({ s, sim, choiceId, effects, t }: Pick): Picked {
+  const promote = choiceId === 'promoteFromTeam';
+  const manager = generateManager(s, sim, promote ? { skill: randomInt(s, ...T.promotedSkill), trust: T.promotedTrust } : { skill: randomInt(s, 40, 59), trust: 50 });
+  if (promote) effects.push(team(t, 'skill', -T.promoteSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
+  effects.push({ type: 'hire', teamId: t, person: manager, cause: { kind: 'action', actionId: 'senior.replaceManager' } });
+  s.leniency[manager.id] = randomInt(s, 0, 2);
+  s.habits.oversight[manager.id] = 'coaching';
+  s.joinedManagers.push(manager.id);
+  if (!promote) s.arriving[t] = sim.week + T.weeksPerMonth;
+  return { reaction: promote ? `${manager.name} steps up from inside ${name(sim, t)}.` : `${manager.name} accepts, and starts next month.` };
+}
+
+/** A surfaced problem is settled when the answer fixed it, and remembered either way. */
+// @spec SENIOR-HABIT-011
+function rememberIssue({ s, sim, moment, choiceId, t }: Pick, skill: number) {
+  if (moment.kind !== 'surfaced' || !moment.issue) return;
+  const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
+  const settled = answer === 'stepIn' || (answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2);
+  const record = s.issues[t] ?? {};
+  record[moment.issue] = { week: sim.week, settled, answer };
+  s.issues[t] = record;
+}
+
+/** A surfaced problem or an escalation: step in, coach the manager, or leave it with them. */
+function pickTrouble(c: Pick): Picked {
+  const { sim, choiceId, effects, t, m, who } = c;
+  const skill = m ? band(sim.people[m]!.skill) : 0;
+  rememberIssue(c, skill);
+  if (choiceId === 'stepIn') {
+    effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
+    return { reaction: `You sort it out yourself. ${who} watches, and next time will come to you again.` };
+  }
+  if (choiceId === 'coach') {
+    effects.push(player('stress', T.coachEnergy, 'senior.coach'));
+    if (m) effects.push(person(m, 'skill', T.coachGrowth, 'senior.coach'));
+    if (skill < 1) return { reaction: `You talk it through with ${who}. They learn something, but the problem is still there.` };
+    effects.push(team(t, 'stress', -T.coachFix, 'senior.coach'));
+    return { reaction: `You talk it through with ${who}. They take it from there, and it holds.` };
+  }
+  if (skill < 2) return { reaction: `You leave it with ${who}. Nothing much changes.` };
+  effects.push(team(t, 'stress', -T.coachFix, 'senior.letThem'));
+  return { reaction: `${who} handles it without you.` };
+}
+
+function pickStaffing({ s, sim, moment, choiceId, effects, t, who }: Pick): Picked {
+  const giver = moment.otherTeamId!;
+  if (choiceId === 'hire') {
+    s.backfills.push({ teamId: t, since: sim.week, months: 0 });
+    return { reaction: `You open a role on ${name(sim, t)}. Help is on the way, not here yet.` };
+  }
+  if (choiceId !== 'move') return { reaction: `${who} goes back to a team that's still stretched.` };
+  effects.push(team(t, 'headcount', 1, 'senior.staffing'), team(giver, 'headcount', -1, 'senior.staffing'), team(t, 'stress', -T.moveRelief, 'senior.staffing'), team(giver, 'stress', T.moveStress, 'senior.staffing'));
+  const giverManager = leadOf(s, sim, giver);
+  const after = sim.teams[giver]!.aggregate!.stress + T.moveStress;
+  if (giverManager && band(after) >= 2) effects.push(person(giverManager, 'trust', -T.moveTrust, 'senior.staffing'));
+  return { reaction: `Someone from ${name(sim, giver)} moves across to ${name(sim, t)}.` };
+}
+
+function pickDispute({ s, sim, moment, choiceId, effects, t, m, who }: Pick): Picked {
+  const other = moment.otherTeamId!;
+  const otherManager = leadOf(s, sim, other);
+  if (choiceId === 'agree') {
+    effects.push(player('stress', T.agreeEnergy, 'senior.dispute'));
+    for (const x of [m, otherManager]) if (x) effects.push(person(x, 'skill', T.agreeGrowth, 'senior.dispute'));
+    effects.push(project(moment.projectId!, 'risk', -T.agreeRelief, 'senior.dispute'), project(moment.otherProjectId!, 'risk', -T.agreeRelief, 'senior.dispute'));
+    s.settledDisputes.push({ teams: [t, other], week: sim.week });
+    return { reaction: `It takes an hour, but ${who} and ${managerName(s, sim, other)} leave with a plan they both own, and the shared work is no longer a race.` };
+  }
+  if (choiceId === 'decide') {
+    effects.push(project(moment.projectId!, 'risk', -T.decideRelief, 'senior.dispute'));
+    if (otherManager) effects.push(person(otherManager, 'trust', -T.decideTrust, 'senior.dispute'));
+    s.settledDisputes.push({ teams: [t, other], week: sim.week });
+    return { reaction: `You call it for ${name(sim, t)}. ${managerName(s, sim, other)} accepts it, without enthusiasm.` };
+  }
+  effects.push(project(moment.projectId!, 'risk', T.letRunRisk, 'senior.dispute'), project(moment.otherProjectId!, 'risk', T.letRunRisk, 'senior.dispute'));
+  return { reaction: 'Both teams wait on each other, and both projects slip.' };
+}
+
+function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): Picked {
+  const apply = () => {
+    if (moment.detail === 'promote') effects.push({ type: 'reRate', teamId: t, from: 'exceeds', to: 'outstanding', count: 1, cause: { kind: 'action', actionId: 'senior.approval' } });
+    else effects.push(team(t, 'headcount', -1, 'senior.approval'));
+  };
+  const lenient = m ? (s.leniency[m] ?? 0) > 0 : false;
+  if (choiceId === 'approve') {
+    apply();
+    if (lenient) effects.push(team(t, 'motivation', -T.approvalDip, 'senior.approval'));
+    return { reaction: lenient ? `You sign it. Some of ${name(sim, t)} wonder what it took.` : 'You sign it.' };
+  }
+  if (choiceId !== 'evidence') {
+    if (m) effects.push(person(m, 'trust', -T.refuseTrust, 'senior.approval'));
+    return { reaction: `${who} takes the no back to their team.` };
+  }
+  if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
+  if (lenient) return { reaction: `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` };
+  apply();
+  const evidence = moment.detail === 'promote' ? 'a half-year rated exceeds, and a design the team still builds on' : "two low ratings in a row, and a plan that was followed but didn't take";
+  return { reaction: `${who} brings the evidence: ${evidence}. It holds up, and you sign it.` };
+}
+
+/** Takes the new work on: starts the project, then the offer's and the choice's side effects. */
+function startNewWork({ s, sim, choiceId, effects, t }: Pick, offer: 'launch' | 'handover' | 'own') {
+  const pr = nextId(s, 'project', 'pr', sim.projects);
+  // Drawn even for a handover, whose debt is fixed, so every offer draws the same numbers in the same order.
+  const techDebt = randomInt(s, 10, 40);
+  effects.push({
+    type: 'startProject',
+    project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: offer === 'handover' ? T.handoverTechDebt : techDebt, deadlineWeek: sim.week + randomInt(s, 20, 32) },
+    cause: { kind: 'action', actionId: 'senior.newWork' },
+  });
+  if (offer === 'launch') effects.push(player('reputation', T.launchReputation, 'senior.newWork'));
+  if (offer === 'own') effects.push(team(t, 'motivation', T.ownProjectMotivation, 'senior.newWork'));
+  if (choiceId === 'spread') for (const id of s.teamIds) effects.push(team(id, 'stress', T.spreadStress, 'senior.newWork'));
+  if (choiceId === 'giveAlways') s.habits.newWork = 'assign';
+}
+
+// @spec SENIOR-MOMENT-016
+function pickNewWork(c: Pick): Picked {
+  const { sim, moment, choiceId, effects, t, who } = c;
+  const offer = moment.offer ?? 'launch';
+  if (choiceId === 'decline') {
+    const declineCost = { launch: T.launchDecline, handover: T.handoverDecline, own: T.declineWork }[offer];
+    effects.push(player('reputation', -declineCost, 'senior.newWork'));
+    if (offer === 'own') effects.push(team(t, 'motivation', -T.ownProjectDeclineMotivation, 'senior.newWork'));
+  } else startNewWork(c, offer);
+  return { reaction: newWorkReaction(offer, choiceId, name(sim, t), who) };
+}
+
+function pickRestructuring({ s, sim, choiceId }: Pick): Picked {
+  s.restructured = true;
+  if (choiceId !== 'promoteFromTeam') {
+    const next = addFourthTeam(s, sim, generateManager(s, sim, { skill: randomInt(s, 40, 59), trust: 50 }), sim.week + T.weeksPerMonth);
+    return { next, reaction: 'You start looking. The new team waits a month for its manager.' };
+  }
+  const source = s.teamIds.slice(1).reduce((x, y) => (sim.teams[x]!.aggregate!.skill >= sim.teams[y]!.aggregate!.skill ? x : y), s.teamIds[0]!);
+  const r = applyEffects(sim, [team(source, 'skill', -T.restructureSkill, 'senior.restructuring'), team(source, 'headcount', -1, 'senior.restructuring')]);
+  if (!r.ok) throw new Error(r.error.message);
+  const next = addFourthTeam(s, r.state, generateManager(s, r.state, { skill: randomInt(s, 20, 39) }), null);
+  return { next, reaction: `One of ${name(sim, source)}'s strongest engineers steps up to lead the new team.` };
+}
+
+const PICKS: Record<Exclude<SeniorMomentKind, 'calibration'>, (c: Pick) => Picked> = {
+  finalEvaluation: pickFinalEvaluation,
+  replaceManager: pickReplaceManager,
+  surfaced: pickTrouble,
+  escalation: pickTrouble,
+  staffing: pickStaffing,
+  dispute: pickDispute,
+  approval: pickApproval,
+  newWork: pickNewWork,
+  restructuring: pickRestructuring,
+};
+
+type Chosen = Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;
+
+/** Calibration choices settle through the calibration module: argue or trim one proposal, or accept the rest. */
+function chooseCalibration(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Chosen {
+  if (choiceId === 'argue' || choiceId === 'trim') return settleCurve(level, sim, momentId, choiceId);
+  const r = acceptRemaining(level, sim, momentId);
+  if (!r.ok) return r;
+  const done = structuredClone(r.level);
+  return { ok: true, level: done, sim: r.sim, log: r.log, reaction: `You accept every proposal. Your managers are pleased; the ratings say what they say.${overCurveLine(done, momentId)}` };
+}
+
 /** Applies the player's choice for one of the month's open moments, and closes it. */
 // @spec SENIOR-MOMENT-004, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-MOMENT-010, SENIOR-MOMENT-014, SENIOR-PLAN-003
-export function chooseSenior(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
+export function chooseSenior(level: SeniorState, sim: SimState, momentId: string, choiceId: string): Chosen {
   const found = level.moments.find((m) => m.id === momentId);
   if (!found || found.status !== 'open') return { ok: false, error: `moment ${momentId} is not open` };
   if (!found.choices.some((c) => c.id === choiceId)) return { ok: false, error: `moment ${momentId} does not offer ${choiceId}` };
+  if (found.kind === 'calibration') return chooseCalibration(level, sim, momentId, choiceId);
   const s = structuredClone(level);
   const moment = s.moments.find((m) => m.id === momentId)!;
   const effects: Effect[] = [];
   const t = moment.teamId!;
   const m = moment.teamId ? leadOf(s, sim, t) : null;
   const who = moment.teamId ? managerName(s, sim, t) : '';
-  let reaction = '';
-  let next = sim;
+  const picked = PICKS[moment.kind as Exclude<SeniorMomentKind, 'calibration'>]({ s, sim, moment, choiceId, effects, t, m, who });
 
-  switch (moment.kind) {
-    case 'calibration': {
-      if (choiceId === 'argue' || choiceId === 'trim') return settleCurve(level, sim, momentId, choiceId);
-      const r = acceptRemaining(level, sim, momentId);
-      if (!r.ok) return r;
-      const done = structuredClone(r.level);
-      return { ok: true, level: done, sim: r.sim, log: r.log, reaction: `You accept every proposal. Your managers are pleased; the ratings say what they say.${overCurveLine(done, momentId)}` };
-    }
-    case 'finalEvaluation': {
-      const id = moment.managerId!;
-      s.heldEvaluations = s.heldEvaluations.filter((x) => x !== id);
-      if (choiceId === 'letGo') {
-        // A third low rating ends the plan: the simulation lets them go, and the team waits for a new manager.
-        effects.push({ type: 'rate', target: { kind: 'person', id }, rating: 'below', cause: { kind: 'action', actionId: 'senior.finalEvaluation' } });
-        s.letGoManagers.push(id);
-        reaction = `You let ${sim.people[id]!.name} go. ${name(sim, t)} is without a manager for now.`;
-      } else reaction = `${sim.people[id]!.name} gets one more period. They know what it means.`;
-      break;
-    }
-    case 'replaceManager': {
-      const promote = choiceId === 'promoteFromTeam';
-      const manager = generateManager(s, sim, promote ? { skill: randomInt(s, ...T.promotedSkill), trust: T.promotedTrust } : { skill: randomInt(s, 40, 59), trust: 50 });
-      if (promote) effects.push(team(t, 'skill', -T.promoteSkill, 'senior.replaceManager'), team(t, 'headcount', -1, 'senior.replaceManager'));
-      effects.push({ type: 'hire', teamId: t, person: manager, cause: { kind: 'action', actionId: 'senior.replaceManager' } });
-      s.leniency[manager.id] = randomInt(s, 0, 2);
-      s.habits.oversight[manager.id] = 'coaching';
-      s.joinedManagers.push(manager.id);
-      if (!promote) s.arriving[t] = sim.week + T.weeksPerMonth;
-      reaction = promote ? `${manager.name} steps up from inside ${name(sim, t)}.` : `${manager.name} accepts, and starts next month.`;
-      break;
-    }
-    case 'surfaced':
-    case 'escalation': {
-      const skill = m ? band(sim.people[m]!.skill) : 0;
-      // @spec SENIOR-HABIT-011
-      // A surfaced problem is settled when the answer fixed it, and remembered either way.
-      if (moment.kind === 'surfaced' && moment.issue) {
-        const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
-        const settled = answer === 'stepIn' || (answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2);
-        const record = s.issues[t] ?? {};
-        record[moment.issue] = { week: sim.week, settled, answer };
-        s.issues[t] = record;
-      }
-      if (choiceId === 'stepIn') {
-        effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
-        reaction = `You sort it out yourself. ${who} watches, and next time will come to you again.`;
-      } else if (choiceId === 'coach') {
-        effects.push(player('stress', T.coachEnergy, 'senior.coach'));
-        if (m) effects.push(person(m, 'skill', T.coachGrowth, 'senior.coach'));
-        if (skill >= 1) {
-          effects.push(team(t, 'stress', -T.coachFix, 'senior.coach'));
-          reaction = `You talk it through with ${who}. They take it from there, and it holds.`;
-        } else reaction = `You talk it through with ${who}. They learn something, but the problem is still there.`;
-      } else if (skill >= 2) {
-        effects.push(team(t, 'stress', -T.coachFix, 'senior.letThem'));
-        reaction = `${who} handles it without you.`;
-      } else reaction = `You leave it with ${who}. Nothing much changes.`;
-      break;
-    }
-    case 'staffing': {
-      const giver = moment.otherTeamId!;
-      if (choiceId === 'move') {
-        effects.push(team(t, 'headcount', 1, 'senior.staffing'), team(giver, 'headcount', -1, 'senior.staffing'), team(t, 'stress', -T.moveRelief, 'senior.staffing'), team(giver, 'stress', T.moveStress, 'senior.staffing'));
-        const giverManager = leadOf(s, sim, giver);
-        const after = sim.teams[giver]!.aggregate!.stress + T.moveStress;
-        if (giverManager && band(after) >= 2) effects.push(person(giverManager, 'trust', -T.moveTrust, 'senior.staffing'));
-        reaction = `Someone from ${name(sim, giver)} moves across to ${name(sim, t)}.`;
-      } else if (choiceId === 'hire') {
-        s.backfills.push({ teamId: t, since: sim.week, months: 0 });
-        reaction = `You open a role on ${name(sim, t)}. Help is on the way, not here yet.`;
-      } else reaction = `${who} goes back to a team that's still stretched.`;
-      break;
-    }
-    case 'dispute': {
-      const other = moment.otherTeamId!;
-      const otherManager = leadOf(s, sim, other);
-      if (choiceId === 'agree') {
-        effects.push(player('stress', T.agreeEnergy, 'senior.dispute'));
-        for (const x of [m, otherManager]) if (x) effects.push(person(x, 'skill', T.agreeGrowth, 'senior.dispute'));
-        effects.push(project(moment.projectId!, 'risk', -T.agreeRelief, 'senior.dispute'), project(moment.otherProjectId!, 'risk', -T.agreeRelief, 'senior.dispute'));
-        s.settledDisputes.push({ teams: [t, other], week: sim.week });
-        reaction = `It takes an hour, but ${who} and ${managerName(s, sim, other)} leave with a plan they both own, and the shared work is no longer a race.`;
-      } else if (choiceId === 'decide') {
-        effects.push(project(moment.projectId!, 'risk', -T.decideRelief, 'senior.dispute'));
-        if (otherManager) effects.push(person(otherManager, 'trust', -T.decideTrust, 'senior.dispute'));
-        s.settledDisputes.push({ teams: [t, other], week: sim.week });
-        reaction = `You call it for ${name(sim, t)}. ${managerName(s, sim, other)} accepts it, without enthusiasm.`;
-      } else {
-        effects.push(project(moment.projectId!, 'risk', T.letRunRisk, 'senior.dispute'), project(moment.otherProjectId!, 'risk', T.letRunRisk, 'senior.dispute'));
-        reaction = 'Both teams wait on each other, and both projects slip.';
-      }
-      break;
-    }
-    case 'approval': {
-      const apply = () => {
-        if (moment.detail === 'promote') effects.push({ type: 'reRate', teamId: t, from: 'exceeds', to: 'outstanding', count: 1, cause: { kind: 'action', actionId: 'senior.approval' } });
-        else effects.push(team(t, 'headcount', -1, 'senior.approval'));
-      };
-      const lenient = m ? (s.leniency[m] ?? 0) > 0 : false;
-      if (choiceId === 'approve') {
-        apply();
-        if (lenient) effects.push(team(t, 'motivation', -T.approvalDip, 'senior.approval'));
-        reaction = lenient ? `You sign it. Some of ${name(sim, t)} wonder what it took.` : 'You sign it.';
-      } else if (choiceId === 'evidence') {
-        if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
-        if (!lenient) apply();
-        const evidence = moment.detail === 'promote' ? 'a half-year rated exceeds, and a design the team still builds on' : "two low ratings in a row, and a plan that was followed but didn't take";
-        reaction = lenient ? `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` : `${who} brings the evidence: ${evidence}. It holds up, and you sign it.`;
-      } else {
-        if (m) effects.push(person(m, 'trust', -T.refuseTrust, 'senior.approval'));
-        reaction = `${who} takes the no back to their team.`;
-      }
-      break;
-    }
-    case 'newWork': {
-      // @spec SENIOR-MOMENT-016
-      const offer = moment.offer ?? 'launch';
-      if (choiceId === 'decline') {
-        const declineCost = { launch: T.launchDecline, handover: T.handoverDecline, own: T.declineWork }[offer];
-        effects.push(player('reputation', -declineCost, 'senior.newWork'));
-        if (offer === 'own') effects.push(team(t, 'motivation', -T.ownProjectDeclineMotivation, 'senior.newWork'));
-      } else {
-        const pr = nextId(s, 'project', 'pr', sim.projects);
-        const techDebt = randomInt(s, 10, 40);
-        effects.push({
-          type: 'startProject',
-          project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: offer === 'handover' ? T.handoverTechDebt : techDebt, deadlineWeek: sim.week + randomInt(s, 20, 32) },
-          cause: { kind: 'action', actionId: 'senior.newWork' },
-        });
-        if (offer === 'launch') effects.push(player('reputation', T.launchReputation, 'senior.newWork'));
-        if (offer === 'own') effects.push(team(t, 'motivation', T.ownProjectMotivation, 'senior.newWork'));
-        if (choiceId === 'spread') for (const id of s.teamIds) effects.push(team(id, 'stress', T.spreadStress, 'senior.newWork'));
-        if (choiceId === 'giveAlways') s.habits.newWork = 'assign';
-      }
-      reaction = newWorkReaction(offer, choiceId, name(sim, t), who);
-      break;
-    }
-    case 'restructuring': {
-      if (choiceId === 'promoteFromTeam') {
-        const source = s.teamIds.slice(1).reduce((x, y) => (sim.teams[x]!.aggregate!.skill >= sim.teams[y]!.aggregate!.skill ? x : y), s.teamIds[0]!);
-        const r = applyEffects(sim, [team(source, 'skill', -T.restructureSkill, 'senior.restructuring'), team(source, 'headcount', -1, 'senior.restructuring')]);
-        if (!r.ok) throw new Error(r.error.message);
-        next = addFourthTeam(s, r.state, generateManager(s, r.state, { skill: randomInt(s, 20, 39) }), null);
-        reaction = `One of ${name(sim, source)}'s strongest engineers steps up to lead the new team.`;
-      } else {
-        next = addFourthTeam(s, sim, generateManager(s, sim, { skill: randomInt(s, 40, 59), trust: 50 }), sim.week + T.weeksPerMonth);
-        reaction = 'You start looking. The new team waits a month for its manager.';
-      }
-      s.restructured = true;
-      break;
-    }
-  }
-
+  let next = picked.next ?? sim;
   let log: ChangeLogEntry[] = [];
   if (effects.length) {
     const r = applyEffects(next, effects);
@@ -518,5 +558,5 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
   // Heads moved or let go by a choice are not lost to attrition: remember the teams as they are now.
   remember(s, next);
   moment.status = 'answered';
-  return { ok: true, level: s, sim: next, log, reaction };
+  return { ok: true, level: s, sim: next, log, reaction: picked.reaction };
 }
