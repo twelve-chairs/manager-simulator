@@ -253,7 +253,7 @@ describe('the senior manager renderer', () => {
     const routine = document.createElement('div');
     for (const c of [part.routine].flat(3)) if (c instanceof Node) routine.append(c);
     expect(routine.querySelector('[data-part=recap-habits] li')).not.toBeNull();
-    expect($$(routine, '[data-part=recap-goals] li').length).toBe(level(run).goals.length);
+    expect($$(routine, '[data-part=recap-goals] li')).toHaveLength(level(run).goals.length);
     const quiet = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [] }, routine: { habits: [], goals: [] } });
     const q = document.createElement('div');
     for (const c of [quiet.changes].flat(3)) if (c instanceof Node) q.append(c);

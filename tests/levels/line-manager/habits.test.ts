@@ -51,7 +51,7 @@ describe('habits', () => {
     const ended = end(level, gone);
     expect(ended.level.habits.approvals).toBe('me');
     expect(ended.level.habits.growth).toBe('nobody');
-    expect(ended.recap.habitChanges.length).toBe(2);
+    expect(ended.recap.habitChanges).toHaveLength(2);
   });
 
   // @spec LINE-HABIT-004

@@ -36,7 +36,7 @@ export interface DirectorMomentSeen {
   text: string;
   choices: { id: string; label: string }[];
   kind?: DirectorView['moments'][number]['kind'];
-  offers?: DirectorView['moments'][number]['offers'];
+  offers?: NonNullable<DirectorView['moments'][number]['offers']>;
   heads?: number;
   groupId?: string;
   personId?: string;

@@ -34,7 +34,7 @@ function situations(): Plugin {
       const paths = readdirSync(SITUATIONS_DIR).filter((f) => f.endsWith('.md')).sort().map((f) => join(SITUATIONS_DIR, f));
       for (const path of paths) this.addWatchFile(path);
       const result = compileSituations(paths.map((path) => ({ path, text: readFileSync(path, 'utf8') })));
-      if (!result.ok) throw new Error(`invalid situations:\n${result.errors.map((e) => `${e.path}: ${e.message}`).join('\n')}`);
+      if (!result.ok) throw new Error(`invalid situations:\n${result.errors.map((e) => e.path + ': ' + e.message).join('\n')}`);
       return `export default ${JSON.stringify(result.bundle)};`;
     },
   };

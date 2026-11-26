@@ -35,7 +35,7 @@ export interface SeniorMoment {
   text: string;
   choices: { id: string; label: string }[];
   kind?: SeniorView['moments'][number]['kind'];
-  calibration?: SeniorView['moments'][number]['calibration'];
+  calibration?: NonNullable<SeniorView['moments'][number]['calibration']>;
   teamId?: string;
 }
 

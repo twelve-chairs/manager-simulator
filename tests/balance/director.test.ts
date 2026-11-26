@@ -33,7 +33,7 @@ describe('playing director runs', () => {
     const spy: DirectorStrategy = { name: 'spy', naive: true, habits: (s) => (seen.push(s), []), choose: () => 'wait' };
     playDirectorRun(spy, 2, CONTENT);
     expect(Object.keys(seen[0]!).sort()).toEqual(['quarter', 'reviews', 'view']);
-    expect(seen[0]!.view.seniorManagers.length).toBe(3);
+    expect(seen[0]!.view.seniorManagers).toHaveLength(3);
     const bad: DirectorStrategy = { name: 'bad', naive: true, choose: () => 'nonsense' };
     expect(() => playDirectorRun(bad, 3, CONTENT)).toThrow(/bad, seed 3, quarter \d+/);
   });

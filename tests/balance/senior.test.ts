@@ -55,7 +55,7 @@ describe('playing senior manager runs', () => {
     playSeniorRun(spy, 2, CONTENT);
     expect(seen.length).toBeGreaterThan(0);
     expect(Object.keys(seen[0]!).sort()).toEqual(['month', 'reviews', 'view']);
-    expect(seen[0]!.view.managers.length).toBe(3);
+    expect(seen[0]!.view.managers).toHaveLength(3);
     const bad: SeniorStrategy = { name: 'bad', naive: true, choose: () => 'nonsense' };
     expect(() => playSeniorRun(bad, 3, CONTENT)).toThrow(/bad, seed 3, month \d+/);
   });

@@ -164,7 +164,7 @@ describe('the whole view', () => {
     expect(v.moments.find((m) => m.kind === 'bets')!.offers!.length).toBeGreaterThanOrEqual(2);
     expect(v.player).toEqual({ energy: band(100 - sim.player.stress), reputation: band(sim.player.reputation), edge: { at: false, quarters: 0, limit: T.burnoutQuarters } });
     expect(v.career).toEqual({ quarters: 0, joined: [], letGo: [] });
-    expect(v.goals.length).toBe(level.goals.length);
+    expect(v.goals).toHaveLength(level.goals.length);
   });
 
   // @spec DIR-VIS-005

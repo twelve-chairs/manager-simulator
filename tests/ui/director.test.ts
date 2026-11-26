@@ -109,7 +109,7 @@ describe('the director’s scenes', () => {
     expect(showing(root, 'headcount')).toBe(true);
     const given = Number(text(root, '[data-field=heads-given]'));
     const groups = $$(root, '[data-step-up^="group:"]');
-    expect(groups.length).toBe(3);
+    expect(groups).toHaveLength(3);
     if (given > 0) {
       groups[0]!.click();
       expect(Number(text(root, '[data-field=heads-left]'))).toBe(given - 1);

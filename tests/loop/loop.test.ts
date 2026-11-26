@@ -33,7 +33,7 @@ describe('the run', () => {
     expect(run.level).toEqual(begun);
     expect(run.presented.length).toBeGreaterThan(0);
     expect(run.presented.length).toBeLessThanOrEqual(L.params.situationLimit);
-    expect(run.week.length).toBe(L.moments(begun, sim).length + run.presented.length);
+    expect(run.week).toHaveLength(L.moments(begun, sim).length + run.presented.length);
     expect(run.week.every((m) => m.status === 'open')).toBe(true);
   });
 

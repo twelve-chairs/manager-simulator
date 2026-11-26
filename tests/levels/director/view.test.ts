@@ -38,7 +38,7 @@ describe('what a director sees', () => {
     const toured = { ...level, visited: { groupId: g, quarter: quarterOf(level, worse.state) } };
     const now = directorView(toured, worse.state).groups.find((x) => x.id === g)!;
     expect(now).toMatchObject({ stress: band(worse.state.teams[g]!.aggregate!.stress), seen: 'tour' });
-    expect(now.projects.length).toBe(2);
+    expect(now.projects).toHaveLength(2);
   });
 
   // @spec DIR-VIS-003

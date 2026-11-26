@@ -1,10 +1,9 @@
 import { lineManagerLevel, type LineState } from '../../src/levels/line-manager';
 import { apply, newRun, type Command, type Dependencies, type Run } from '../../src/loop';
 import { conductReview } from '../../src/review';
-import type { ContentError } from '../../src/situations';
+import type { ContentError, Situation } from '../../src/situations';
 import { createApp } from '../../src/ui/app';
 import { CONTENT } from '../loop/fixtures';
-import type { Situation } from '../../src/situations';
 
 export { CONTENT };
 

@@ -367,7 +367,7 @@ describe('recap', () => {
     expect(recap.habits.length).toBeGreaterThan(0);
     expect(recap.moments.map((m) => m.ref)).toContain('answered');
     expect(recap.expired.map((e) => e.itemId)).toContain('left');
-    expect(recap.goals.length).toBe(answered.level.goals.length);
+    expect(recap.goals).toHaveLength(answered.level.goals.length);
   });
 
   // @spec LINE-RECAP-002
