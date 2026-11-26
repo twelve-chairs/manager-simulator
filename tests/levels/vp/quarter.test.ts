@@ -25,6 +25,7 @@ import { apply as applyCommand, newRun, type Dependencies, type Run } from '../.
 import { conductReview } from '../../../src/review';
 import { TUNING as SIM, applyEffects, attritionRiskOf, type SimState } from '../../../src/sim';
 import { CONTENT } from '../../loop/fixtures';
+import { realContent } from '../../balance/harness';
 import { vp } from './fixtures';
 
 const RULE = { kind: 'rule', ruleId: 'test' } as const;
@@ -88,6 +89,17 @@ describe('a quarter’s moments', () => {
     expect(r.level.priority).toMatchObject({ spreadSlow: expect.any(Number) });
     expect(r.level.priority!.spreadSlow).toBeGreaterThan(0);
     expect(r.level.told).toBeNull();
+  });
+});
+
+describe('VP situations', () => {
+  // @spec VP-MOMENT-005
+  it('has VP situations, and none that lowers a division’s headcount', () => {
+    const situations = realContent().filter((x) => x.levels.includes('vp'));
+    expect(situations.length).toBeGreaterThan(0);
+    for (const s of situations) {
+      for (const c of s.choices) for (const o of c.outcomes) for (const e of o.effects as { type: string; field?: string; amount?: number }[]) expect(e.type === 'value' && e.field === 'headcount' && (e.amount ?? 0) < 0, s.id).toBe(false);
+    }
   });
 });
 

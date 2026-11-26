@@ -130,7 +130,7 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
   trustChips(a.leadership, b.leadership, out);
   const was = a.plan.priority;
   const now = b.plan.priority;
-  if (was && now && was.projectId === now.projectId && was.schedule !== now.schedule) out.push({ key: `priority:${now.projectId}:schedule`, text: `${now.name}: ${SCHEDULE_WORDS[now.schedule]}`, tone: now.schedule === 'onSchedule' ? 'good' : 'bad' });
+  if (was && now?.projectId === was.projectId && was.schedule !== now.schedule) out.push({ key: `priority:${now.projectId}:schedule`, text: `${now.name}: ${SCHEDULE_WORDS[now.schedule]}`, tone: now.schedule === 'onSchedule' ? 'good' : 'bad' });
   playerChips(a.player, b.player, out);
   return out;
 }

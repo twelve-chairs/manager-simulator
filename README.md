@@ -70,13 +70,14 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 - directors as people, and divisions you see through the twice-yearly survey;
 - your CEO and two peer VPs, and a habit that asks which team you put first, your function or the leadership team;
 - annual planning against your peers for one company budget, the company's priority each half, disputes at the leadership table, and one round of cuts to make well or badly;
-- an all-hands each quarter, where you tell the whole function how things stand.
+- an all-hands each quarter, where you tell the whole function how things stand;
+- written situations about running a function: a demo for the board, the CEO going around you, a peer recruiting from your division, a reorg rumour, a director ready for more, a conference keynote.
 
-A promotion at the VP completes the run. The VP has no written situations of its own yet.
+A promotion at the VP completes the run.
 
 Your run saves in the browser after every move, and can be exported to a file and imported again.
 
-**Next up:** written situations for the VP, then a round of human playtests through all three promotions.
+**Next up:** a round of human playtests through all three promotions.
 
 ## Fiction, not advice
 

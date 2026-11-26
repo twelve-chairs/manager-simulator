@@ -51,7 +51,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **VP-MOMENT-002**: The VP level shall give each moment a week of the quarter, a day and a time, in order through the quarter, with annual planning in the first week and the all-hands in the last.
 - [x] **VP-MOMENT-003**: When the player picks a choice for one of the quarter's open level moments, the VP level shall apply it at once and close the moment; if the moment is not open or does not offer the choice, it shall return an error and leave the state unchanged.
 - [x] **VP-MOMENT-004**: When a quarter's end applies, the VP level shall close each level moment left unanswered as letting it wait, and apply what waiting means for its kind: annual planning left unanswered asks for what the plan needs, a company priority left unanswered is spread across the divisions, cuts left unanswered are made across every division, and the all-hands left unanswered is kept short.
-- [ ] **VP-MOMENT-005**: The situation content tagged for the VP level shall contain no effect that lowers an aggregate team's headcount.
+- [x] **VP-MOMENT-005**: The situation content tagged for the VP level shall contain no effect that lowers an aggregate team's headcount.
 
 ## Annual planning
 

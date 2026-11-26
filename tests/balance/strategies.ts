@@ -83,6 +83,12 @@ export const BETTER_CHOICES: Record<string, string> = {
   'director-org-chart-tug': 'make-case',
   'director-peer-in-trouble': 'lend-one',
   'director-staff-meeting-leak': 'agreement',
+  'vp-board-demo': 'honest',
+  'vp-ceo-side-channel': 'back-lead',
+  'vp-peer-poaching': 'fair-move',
+  'vp-reorg-rumor': 'tell-known',
+  'vp-director-ready': 'stretch',
+  'vp-keynote': 'send-lead',
 };
 
 /** A band, as the view gives it: 2 is "okay" energy and "busy" stress. */
