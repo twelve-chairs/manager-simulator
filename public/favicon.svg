@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Manager Simulator's icon: an org chart, one person above three, in the game's amber on its ink. -->
+  <rect width="512" height="512" rx="112" fill="#1b2330"/>
+  <g fill="none" stroke="#f0ac2e" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 196 V262 M120 318 V262 H392 V318 M256 262 V318"/>
+  </g>
+  <g fill="#f0ac2e">
+    <circle cx="256" cy="146" r="58"/>
+    <circle cx="120" cy="370" r="52"/>
+    <circle cx="256" cy="370" r="52"/>
+    <circle cx="392" cy="370" r="52"/>
+  </g>
+</svg>

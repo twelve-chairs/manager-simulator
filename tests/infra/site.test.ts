@@ -83,16 +83,17 @@ describe('the site’s hosting', () => {
   });
 
   // @spec UI-HOST-006
-  it('deploys main to the bucket, built for the root, the page uncached and assets for a year, then invalidates the page', () => {
+  it('deploys main to the bucket, built for the root, the page uncached with its charset, hashed assets for a year and other files for an hour, then invalidates', () => {
     const job = workflow.jobs.site as Node;
     expect(job.needs).toBe('build');
     expect(job.if).toContain("github.ref == 'refs/heads/main'");
     expect(job.permissions).toEqual({ contents: 'read', 'id-token': 'write' });
     const runs = (job.steps as Node[]).map((s) => s.run ?? '').join('\n');
     expect(runs).toMatch(/^npm run build$/m);
-    expect(runs).toContain('aws s3 sync dist "s3://$SITE_BUCKET" --delete --exclude index.html --cache-control "public, max-age=31536000, immutable"');
-    expect(runs).toContain('aws s3 cp dist/index.html "s3://$SITE_BUCKET/index.html" --cache-control "no-cache"');
-    expect(runs).toContain('create-invalidation');
+    expect(runs).toContain('aws s3 sync dist/assets "s3://$SITE_BUCKET/assets" --delete --cache-control "public, max-age=31536000, immutable"');
+    expect(runs).toContain('aws s3 sync dist "s3://$SITE_BUCKET" --delete --exclude index.html --exclude "assets/*" --cache-control "public, max-age=3600"');
+    expect(runs).toContain('aws s3 cp dist/index.html "s3://$SITE_BUCKET/index.html" --cache-control "no-cache" --content-type "text/html; charset=utf-8"');
+    expect(runs).toContain('create-invalidation --distribution-id "$SITE_DISTRIBUTION_ID" --paths "/*"');
     const login = (job.steps as Node[]).find((s) => String(s.uses).startsWith('aws-actions/configure-aws-credentials@'))!;
     expect(login.uses).toMatch(/@[0-9a-f]{40}$/);
     expect(login.with['role-to-assume']).toBe('${{ secrets.AWS_DEPLOY_ROLE_ARN }}');

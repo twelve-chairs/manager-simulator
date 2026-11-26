@@ -144,6 +144,8 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `tests/balance/` | Balance harness: scripted strategies play seeded runs at each career level to check that sound management outperforms naive habits |
 | `scripts/` | Build-time tools: the situation content compiler and the version stamp |
 | `.github/workflows/deploy.yml` | Typechecks, tests and builds every push and pull request, and publishes the game to www.manager-simulator.io from `main`, with a page at the old GitHub Pages address sending visitors there |
+| `public/` | Files copied to the site's root as they are: the icons, the link preview image, the web app manifest, `robots.txt` and the sitemap |
+| `art/` | SVG sources of the icon and the link preview; `scripts/render-art.sh` renders them into `public/` |
 | `redirect/` | The page the old GitHub Pages address serves, sending visitors to www.manager-simulator.io |
 | `infra/site.yml` | The hosting stack: the S3 bucket, CloudFront distribution and security headers, the bare-domain redirect, certificate, DNS records and the deploy's role |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |

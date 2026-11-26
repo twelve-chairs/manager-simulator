@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- The link preview: the game's name and line over its circuit pattern, in its ink and amber. -->
+  <defs>
+    <pattern id="circuit" width="240" height="240" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#9aa6b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.14">
+        <path d="M0 30 H50 L70 50 H130 L150 30 H240"/>
+        <path d="M0 150 H40 L60 130 H96"/>
+        <path d="M144 130 H180 L200 150 H240"/>
+        <path d="M0 210 H110 L125 195 H170"/>
+        <path d="M30 0 V70 L45 85 V110"/>
+        <path d="M210 0 V60 L190 80 V100"/>
+        <path d="M90 240 V200 L105 185 V158"/>
+        <path d="M200 240 V215 L185 200 V175"/>
+        <rect x="96" y="120" width="48" height="32" rx="3"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#141922"/>
+  <rect width="1200" height="630" fill="url(#circuit)"/>
+  <g transform="translate(96 165) scale(0.586)">
+    <rect width="512" height="512" rx="112" fill="#1b2330" stroke="#2e3848" stroke-width="6"/>
+    <path d="M256 196 V262 M120 318 V262 H392 V318 M256 262 V318" fill="none" stroke="#f0ac2e" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#f0ac2e"><circle cx="256" cy="146" r="58"/><circle cx="120" cy="370" r="52"/><circle cx="256" cy="370" r="52"/><circle cx="392" cy="370" r="52"/></g>
+  </g>
+  <g font-family="Avenir Next, Segoe UI, Helvetica, Arial, sans-serif">
+    <text x="456" y="250" font-size="68" font-weight="700" fill="#e8edf4">Manager Simulator</text>
+    <text x="456" y="318" font-size="34" fill="#e8edf4">You just got promoted. Now five engineers,</text>
+    <text x="456" y="362" font-size="34" fill="#e8edf4">two projects and a pager are yours.</text>
+    <text x="456" y="426" font-size="26" fill="#9aa6b6">A game about the career of a software engineering</text>
+    <text x="456" y="462" font-size="26" fill="#9aa6b6">manager, from line manager to VP.</text>
+    <text x="456" y="530" font-size="28" font-weight="600" fill="#f0ac2e">www.manager-simulator.io</text>
+  </g>
+</svg>
