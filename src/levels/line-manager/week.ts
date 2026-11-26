@@ -1,4 +1,4 @@
-import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type Effect, type HistoryEntry, type SimState } from '../../sim';
+import { STARTING_ORGANIZATION_RULE, applyEffects, correspondingRating, planOf, type ChangeLogEntry, type Effect, type HistoryEntry, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generateProject, isEngineer, nameOf, personEffect, playerEffect, projectNames, reconcileVacancies, rule, subjectValid, teamEngineers, teamProjects } from './core';
 import { recallInRecap } from './callbacks';
 import { setGoals, goalStatus } from './goals';
@@ -66,37 +66,40 @@ function counted(notes: string[]): string[] {
   return [...times].map(([n, k]) => (k === 1 ? n : `${n}, ${k === 2 ? 'twice' : `${k} times`}`));
 }
 
-/** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
-// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014, LINE-HABIT-017, LINE-WORK-014
-// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-END-013, LINE-INBOX-002, LINE-INBOX-013
-export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
-  const s = structuredClone(level);
-  const week = sim.week;
-  const t = LINE_TUNING.habits;
-  const effects: Effect[] = [];
-  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [], assigned: [], held: [] };
-  reconcileVacancies(s, sim);
-  recap.habitChanges.push(...s.habitNotes, ...fallBack(s, sim));
-  s.habitNotes = [];
-  s.items = s.items.filter((i) => subjectValid(s, sim, i));
+/** What the week's end works on: the level's copy, the simulation as the week leaves it, and what the steps gather. */
+type WeekEnd = {
+  s: LineState;
+  sim: SimState;
+  week: number;
+  effects: Effect[];
+  recap: Recap;
+  /** Items dealt with this week, removed before expiries. */
+  signed: Set<string>;
+  /** Night pages whose moment was let wait: they expire now. */
+  expireNow: Set<string>;
+};
 
-  // Unanswered moments are let wait: work stays open, an interview is skipped, a night page expires.
-  const expireNow = new Set<string>();
-  for (const m of s.moments.filter((x) => x.week === week)) {
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** Unanswered moments are let wait: work stays open, an interview is skipped, a night page expires. */
+function waitMoments(w: WeekEnd) {
+  for (const m of w.s.moments.filter((x) => x.week === w.week)) {
     if (m.status === 'open') {
       m.status = 'waited';
       m.outcome = m.kind === 'onCall' ? 'Nobody picked up the page.' : m.kind === 'interview' ? 'No interview this week.' : m.kind === 'finalEvaluation' ? 'They get one more quarter.' : 'It waits for another week.';
-      if (m.kind === 'onCall') expireNow.add(m.ref);
+      if (m.kind === 'onCall') w.expireNow.add(m.ref);
       // A final evaluation left unanswered gives them one more quarter.
-      if (m.kind === 'finalEvaluation' && sim.people[m.ref]?.status === 'active') effects.push(oneMoreQuarter(m.ref));
+      if (m.kind === 'finalEvaluation' && w.sim.people[m.ref]?.status === 'active') w.effects.push(oneMoreQuarter(m.ref));
     }
-    recap.moments.push({ momentId: m.id, ref: m.ref, text: m.outcome ?? '' });
+    w.recap.moments.push({ momentId: m.id, ref: m.ref, text: m.outcome ?? '' });
   }
+}
 
-  // Routine approvals, signed by you or by the engineer the habit names.
+/** Routine approvals, signed by the player or by the engineer the habit names. */
+function signApprovals({ s, sim, effects, recap, signed }: WeekEnd) {
+  const t = LINE_TUNING.habits;
   const routine = s.items.filter((i) => ROUTINE_KINDS.includes(i.kind));
   const approvals = action(HABIT_CAUSE.approvals);
-  const signed = new Set<string>();
   const signer = s.habits.approvals === 'me' ? undefined : s.habits.approvals;
   // A signer never approves their own expenses; those come to the player with everything else when no one is named.
   const own = (i: (typeof routine)[number]) => i.subject.kind === 'person' && i.subject.id === signer;
@@ -105,27 +108,29 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   const able = signer ? theirs.filter((i) => band(sim.people[signer]!.skill) >= band(i.difficulty)) : [];
   const beyond = theirs.filter((i) => !able.includes(i));
   const mine = signer ? routine.filter(own) : routine;
-  if (mine.length) recap.habits.push(`You signed ${mine.length} routine approval${mine.length === 1 ? '' : 's'}.`);
+  if (mine.length) recap.habits.push(`You signed ${plural(mine.length, 'routine approval')}.`);
   if (mine.length + beyond.length) {
     for (const item of [...mine, ...beyond]) signed.add(item.id);
     effects.push(playerEffect('stress', (mine.length + beyond.length) * t.approvalStress, approvals));
   }
-  if (signer) {
-    for (const item of able) {
-      effects.push(personEffect(signer, 'stress', t.signerStress, approvals, { serves: ['autonomy'] }));
-      signed.add(item.id);
-    }
-    const n = beyond.length;
-    const rest = n ? ` ${n} ${n === 1 ? 'was beyond them, so you signed it' : 'were beyond them, so you signed them'}.` : '';
-    if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${able.length} routine approval${able.length === 1 ? '' : 's'}.${rest}`);
+  if (!signer) return;
+  for (const item of able) {
+    effects.push(personEffect(signer, 'stress', t.signerStress, approvals, { serves: ['autonomy'] }));
+    signed.add(item.id);
   }
+  const n = beyond.length;
+  const rest = n ? ` ${n} ${n === 1 ? 'was beyond them, so you signed it' : 'were beyond them, so you signed them'}.` : '';
+  if (theirs.length) recap.habits.push(`${nameOf(sim, signer)} signed ${plural(able.length, 'routine approval')}.${rest}`);
+}
 
-  // @spec LINE-HABIT-017
-  // Night pages the engineer on call could handle are theirs, as if the player had left the page to them.
-  // @spec LINE-HABIT-018
-  // Under a backup, a page beyond the engineer on call is the two of theirs, and costs the backup their sleep too.
+// @spec LINE-HABIT-017
+// Night pages the engineer on call could handle are theirs, as if the player had left the page to them.
+// @spec LINE-HABIT-018
+// Under a backup, a page beyond the engineer on call is the two of theirs, and costs the backup their sleep too.
+function routineNightPages({ s, sim, effects, recap, signed }: WeekEnd) {
   const handled = new Map<string, number>();
   const together = new Map<string, number>();
+  const cause = action(HABIT_CAUSE.nightPages);
   for (const item of s.items.filter((i) => i.kind === 'onCall' && Object.hasOwn(s.routinePages, i.id))) {
     const id = s.routinePages[item.id]!;
     const backup = s.backedPages[item.id];
@@ -133,33 +138,34 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     if (!isEngineer(s, sim, id)) continue;
     if (backup !== undefined && isEngineer(s, sim, backup)) {
       effects.push(
-        personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page with a backup' }),
-        personEffect(backup, 'stress', LINE_TUNING.work.backUpStress, action(HABIT_CAUSE.nightPages), { note: 'Backed up a night page' }),
+        personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: 'Handled a night page with a backup' }),
+        personEffect(backup, 'stress', LINE_TUNING.work.backUpStress, cause, { note: 'Backed up a night page' }),
       );
       const pair = `${id} ${backup}`;
       together.set(pair, (together.get(pair) ?? 0) + 1);
       continue;
     }
-    // @spec LINE-HABIT-017
     // With a backup behind them, the engineer on call is not on their own, even on a page they handle themselves.
     const behind = backupEngineer(s, sim, id);
-    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: behind ? 'Handled a night page with a backup' : 'Handled a night page alone' }));
+    effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, cause, { note: behind ? 'Handled a night page with a backup' : 'Handled a night page alone' }));
     handled.set(id, (handled.get(id) ?? 0) + 1);
   }
   for (const [id, n] of handled) {
     const behind = backupEngineer(s, sim, id);
-    const pages = `${n} night page${n === 1 ? '' : 's'}`;
+    const pages = plural(n, 'night page');
     recap.habits.push(behind ? `${nameOf(sim, id)} handled ${pages}, with ${nameOf(sim, behind)} as backup.` : `${nameOf(sim, id)} handled ${pages} on their own.`);
   }
   for (const [pair, n] of together) {
     const [id, backup] = pair.split(' ');
-    recap.habits.push(`${nameOf(sim, id!)} and ${nameOf(sim, backup!)} handled ${n} night page${n === 1 ? '' : 's'} together.`);
+    recap.habits.push(`${nameOf(sim, id!)} and ${nameOf(sim, backup!)} handled ${plural(n, 'night page')} together.`);
   }
   s.routinePages = {};
   s.backedPages = {};
+}
 
-  // @spec LINE-WORK-014
-  // Work the team took, as if the player had given each item to its engineer; one whose engineer left stays open.
+// @spec LINE-WORK-014
+// Work the team took, as if the player had given each item to its engineer; one whose engineer left stays open.
+function routineWork({ s, sim, effects, recap, signed }: WeekEnd) {
   for (const kind of ['designReview', 'customerRequest'] as const) {
     const label = WORK_LABELS[kind];
     const took = new Map<string, number>();
@@ -170,25 +176,24 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
       effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(DELEGATE), { serves: ['growth', 'autonomy'], note: `Took on a ${label}` }));
       took.set(id, (took.get(id) ?? 0) + 1);
     }
-    for (const [id, n] of took) recap.habits.push(`${nameOf(sim, id)} took ${n} ${label}${n === 1 ? '' : 's'}.`);
+    for (const [id, n] of took) recap.habits.push(`${nameOf(sim, id)} took ${plural(n, label)}.`);
   }
   s.routineWork = {};
+}
 
-  // Night pages with no moment this week (you take pages, they arrived while you did, or nobody could be on call) are yours.
+/** Night pages with no moment this week (the player takes pages, they arrived while the player did, or nobody could be on call) are the player's. */
+function playerPages({ s, week, effects, recap, signed }: WeekEnd) {
   const covered = new Set([...s.moments.filter((m) => m.week === week).map((m) => m.ref), ...signed]);
   const pages = s.items.filter((i) => i.kind === 'onCall' && !covered.has(i.id));
   for (const item of pages) {
-    effects.push(playerEffect('stress', item.size * t.pageStressPerSize, action(HABIT_CAUSE.nightPages)));
+    effects.push(playerEffect('stress', item.size * LINE_TUNING.habits.pageStressPerSize, action(HABIT_CAUSE.nightPages)));
     signed.add(item.id);
   }
-  if (pages.length) recap.habits.push(`You took ${pages.length} night page${pages.length === 1 ? '' : 's'} yourself.`);
-  s.items = s.items.filter((i) => !signed.has(i.id));
+  if (pages.length) recap.habits.push(`You took ${plural(pages.length, 'night page')} yourself.`);
+}
 
-  const habits = habitEffects(s, sim);
-  effects.push(...habits.effects);
-  recap.habits.push(...habits.recap);
-
-  // Expiries
+/** Work past its last week, or a night page let wait, lands with its consequence. */
+function expire({ s, week, effects, recap, expireNow }: WeekEnd) {
   for (const item of s.items.filter((i) => i.lastWeek <= week || expireNow.has(i.id))) {
     effects.push(...consequence(item, 1, EXPIRED));
     recap.expired.push({ itemId: item.id, kind: item.kind, subject: { ...item.subject } });
@@ -196,79 +201,63 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
   }
   const gone = new Set(recap.expired.map((e) => e.itemId));
   s.items = s.items.filter((i) => !gone.has(i.id));
+}
 
-  // The last week of a review period: everyone not yet rated this period is rated on what they delivered.
-  if ((week + 1) % LINE_TUNING.reviewEveryWeeks === 0) {
-    const periodStart = week + 1 - LINE_TUNING.reviewEveryWeeks;
-    for (const id of teamEngineers(s, sim)) {
-      const p = sim.people[id]!;
-      const ratedThisPeriod = p.history.some((h) => h.rating && h.week >= periodStart && !(h.cause.kind === 'rule' && h.cause.ruleId === STARTING_ORGANIZATION_RULE));
-      const rating = correspondingRating(sim, id);
-      if (p.joinedWeek > periodStart || ratedThisPeriod || !rating) continue;
-      // A third low rating in a row would let them go: that is the player's decision, in a final evaluation.
-      if (planOf(sim, { kind: 'person', id }) === 'pip' && LOW.includes(rating)) {
-        s.heldEvaluations.push({ personId: id, rating });
-        recap.held.push({ personId: id, name: p.name });
-        continue;
-      }
-      effects.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule(EVALUATION), historyNote: `Rated ${RATING_WORDS[rating]} on what they delivered` });
-      recap.evaluations.push({ personId: id, name: p.name, rating });
+/** The last week of a review period: everyone not yet rated this period is rated on what they delivered. */
+function periodRatings({ s, sim, week, effects, recap }: WeekEnd) {
+  if ((week + 1) % LINE_TUNING.reviewEveryWeeks !== 0) return;
+  const periodStart = week + 1 - LINE_TUNING.reviewEveryWeeks;
+  for (const id of teamEngineers(s, sim)) {
+    const p = sim.people[id]!;
+    const ratedThisPeriod = p.history.some((h) => h.rating && h.week >= periodStart && !(h.cause.kind === 'rule' && h.cause.ruleId === STARTING_ORGANIZATION_RULE));
+    const rating = correspondingRating(sim, id);
+    if (p.joinedWeek > periodStart || ratedThisPeriod || !rating) continue;
+    // A third low rating in a row would let them go: that is the player's decision, in a final evaluation.
+    if (planOf(sim, { kind: 'person', id }) === 'pip' && LOW.includes(rating)) {
+      s.heldEvaluations.push({ personId: id, rating });
+      recap.held.push({ personId: id, name: p.name });
+      continue;
     }
+    effects.push({ type: 'rate', target: { kind: 'person', id }, rating, cause: rule(EVALUATION), historyNote: `Rated ${RATING_WORDS[rating]} on what they delivered` });
+    recap.evaluations.push({ personId: id, name: p.name, rating });
   }
+}
 
-  // A quiet week, with no choice that raised the player's stress, lets them recover.
-  if (s.energySpent === 0) effects.push(playerEffect('stress', -LINE_TUNING.restRecovery, rule(REST)));
-  s.energySpent = 0;
+type Assigned = { ok: true; sim: SimState } | { ok: false; error: string };
 
-  const applied = applyEffects(sim, effects);
-  if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
-  let after = applied.state;
-  const log = [...applied.log];
-  tallyProgress(s, log);
+/** The player's manager starts a new project for the team. */
+function assignProject(s: LineState, sim: SimState, week: number, log: ChangeLogEntry[], recap: Recap): Assigned {
+  const project = generateProject(s, projectNames(sim), s.teamId, week, calmRisk(s));
+  const started = applyEffects(sim, [{ type: 'startProject', project, cause: rule(ASSIGNED) }]);
+  if (!started.ok) return { ok: false, error: `the simulation rejected the assigned project: ${started.error.message}` };
+  log.push(...started.log);
+  recap.assigned.push({ projectId: project.id, name: project.name });
+  return { ok: true, sim: started.state };
+}
 
-  // Final evaluations from last period are settled this week, answered or not.
-  s.heldEvaluations = s.heldEvaluations.filter((h) => !s.moments.some((m) => m.week === week && m.kind === 'finalEvaluation' && m.ref === h.personId));
-
-  // Weeks the team ends with no active project; after a run of them, the player's manager assigns one.
+/** Weeks the team ends with no active project; after a run of them, or with room and nothing offered, the player's manager assigns one. */
+function assignIdleWork(s: LineState, sim: SimState, week: number, log: ChangeLogEntry[], recap: Recap): Assigned {
+  let after = sim;
   if (week % LINE_TUNING.reviewEveryWeeks === 0) s.idleWeeks = 0;
   if (teamProjects(s, after).length === 0) {
     s.idleWeeks++;
     s.idleStreak++;
   } else s.idleStreak = 0;
   if (s.idleStreak >= LINE_TUNING.assignAfterIdleWeeks) {
-    const project = generateProject(s, projectNames(after), s.teamId, week, calmRisk(s));
-    const started = applyEffects(after, [{ type: 'startProject', project, cause: rule(ASSIGNED) }]);
-    if (!started.ok) return { ok: false, error: `the simulation rejected the assigned project: ${started.error.message}` };
-    after = started.state;
-    log.push(...started.log);
-    recap.assigned.push({ projectId: project.id, name: project.name });
+    const r = assignProject(s, after, week, log, recap);
+    if (!r.ok) return r;
+    after = r.sim;
     s.idleStreak = 0;
   }
-
   // The week counts as idle above; then, with room on the team and nothing offered or recently declined, the
   // player's manager assigns new work itself, one project a week.
   // @spec LINE-INBOX-014
-  if (recap.assigned.length === 0 && teamProjects(s, after).length < 2 && !teamStretched(s, after) && !intakeWaiting(s, week) && !s.items.some((i) => i.kind === 'workIntake')) {
-    const project = generateProject(s, projectNames(after), s.teamId, week, calmRisk(s));
-    const started = applyEffects(after, [{ type: 'startProject', project, cause: rule(ASSIGNED) }]);
-    if (!started.ok) return { ok: false, error: `the simulation rejected the assigned project: ${started.error.message}` };
-    after = started.state;
-    log.push(...started.log);
-    recap.assigned.push({ projectId: project.id, name: project.name });
-  }
+  if (recap.assigned.length === 0 && teamProjects(s, after).length < 2 && !teamStretched(s, after) && !intakeWaiting(s, week) && !s.items.some((i) => i.kind === 'workIntake')) return assignProject(s, after, week, log, recap);
+  return { ok: true, sim: after };
+}
 
-  // Weeks the team ends overwhelmed, counted afresh each review period.
-  const team = teamEngineers(s, after);
-  const teamStress = team.length ? team.reduce((sum, id) => sum + after.people[id]!.stress, 0) / team.length : 0;
-  if (week % LINE_TUNING.reviewEveryWeeks === 0) s.overwhelmedWeeks = 0;
-  if (band(teamStress) >= LINE_TUNING.stretchedTeamBand) s.overwhelmedWeeks++;
-
-  for (const goal of s.goals) {
-    const status = goalStatus(goal, s, after);
-    recap.goals.push({ id: goal.id, text: `${status.text}: ${status.progress}.` });
-  }
-
-  // Who changed band this week, against how they started it, or gained a note from something other than a habit.
+/** Who changed band this week, against how they started it, or gained a note from something other than a habit. */
+function peopleRecap(s: LineState, sim: SimState, after: SimState, week: number, recap: Recap) {
   const start = s.weekStart.week === week ? s.weekStart.people : {};
   const habitCauses = new Set<string>(Object.values(HABIT_CAUSE));
   const fromHabit = (h: HistoryEntry) => h.cause.kind === 'action' && habitCauses.has(h.cause.actionId);
@@ -285,6 +274,60 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     const thisWeek = p.history.filter((h) => h.week === week && h.note && !fromEvaluation(h));
     if (changes.length || thisWeek.some((h) => !fromHabit(h))) recap.people.push({ personId: id, name: p.name, changes, notes: counted(thisWeek.map((h) => h.note!)) });
   }
+}
+
+/** Ends the week: unanswered moments wait, the habits act, expired work lands, all as one batch, and the recap is written. */
+// @spec LINE-MOMENT-004, LINE-HABIT-004, LINE-HABIT-005, LINE-HABIT-010, LINE-HABIT-013, LINE-HABIT-014, LINE-HABIT-017, LINE-WORK-014
+// @spec LINE-INBOX-009, LINE-INBOX-010, LINE-RECAP-001, LINE-RECAP-002, LINE-GOAL-003, LINE-EVAL-001, LINE-EVAL-002, LINE-EVAL-004, LINE-EVAL-005, LINE-END-010, LINE-END-012, LINE-END-013, LINE-INBOX-002, LINE-INBOX-013
+export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult> {
+  const s = structuredClone(level);
+  const week = sim.week;
+  const recap: Recap = { habits: [], habitChanges: [], moments: [], expired: [], goals: [], people: [], evaluations: [], assigned: [], held: [] };
+  reconcileVacancies(s, sim);
+  recap.habitChanges.push(...s.habitNotes, ...fallBack(s, sim));
+  s.habitNotes = [];
+  s.items = s.items.filter((i) => subjectValid(s, sim, i));
+
+  // In this order: each step sees the items the one before dealt with, and the effects apply as one batch.
+  const w: WeekEnd = { s, sim, week, effects: [], recap, signed: new Set(), expireNow: new Set() };
+  waitMoments(w);
+  signApprovals(w);
+  routineNightPages(w);
+  routineWork(w);
+  playerPages(w);
+  s.items = s.items.filter((i) => !w.signed.has(i.id));
+  const habits = habitEffects(s, sim);
+  w.effects.push(...habits.effects);
+  recap.habits.push(...habits.recap);
+  expire(w);
+  periodRatings(w);
+  // A quiet week, with no choice that raised the player's stress, lets them recover.
+  if (s.energySpent === 0) w.effects.push(playerEffect('stress', -LINE_TUNING.restRecovery, rule(REST)));
+  s.energySpent = 0;
+
+  const applied = applyEffects(sim, w.effects);
+  if (!applied.ok) return { ok: false, error: `the simulation rejected the week: ${applied.error.message}` };
+  const log = [...applied.log];
+  tallyProgress(s, log);
+
+  // Final evaluations from last period are settled this week, answered or not.
+  s.heldEvaluations = s.heldEvaluations.filter((h) => !s.moments.some((m) => m.week === week && m.kind === 'finalEvaluation' && m.ref === h.personId));
+
+  const assigned = assignIdleWork(s, applied.state, week, log, recap);
+  if (!assigned.ok) return assigned;
+  const after = assigned.sim;
+
+  // Weeks the team ends overwhelmed, counted afresh each review period.
+  const team = teamEngineers(s, after);
+  const teamStress = team.length ? team.reduce((sum, id) => sum + after.people[id]!.stress, 0) / team.length : 0;
+  if (week % LINE_TUNING.reviewEveryWeeks === 0) s.overwhelmedWeeks = 0;
+  if (band(teamStress) >= LINE_TUNING.stretchedTeamBand) s.overwhelmedWeeks++;
+
+  for (const goal of s.goals) {
+    const status = goalStatus(goal, s, after);
+    recap.goals.push({ id: goal.id, text: `${status.text}: ${status.progress}.` });
+  }
+  peopleRecap(s, sim, after, week, recap);
   const recalled = recallInRecap(s, after, teamEngineers(s, after));
   if (recalled) recap.recalled = recalled;
   return { ok: true, level: s, sim: after, log, recap };
