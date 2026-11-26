@@ -261,10 +261,7 @@ function playInPage(options: InPage): PlaySummary {
   function checkWeek(sc: string, lastSlot: { week: string; slot: number }) {
     const week = text('[data-field=week]');
     const turn = director() ? 'quarter' : senior() ? 'month' : 'week';
-    const energy = text('[data-field=energy]');
-    if (!ENERGY.includes(energy)) flag('header', `energy word "${energy}"`);
-    const warning = q('[data-field=burnout]')?.textContent ?? null;
-    if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?|quarters?) at the edge\. \d+ in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
+    checkHeader();
     checkMemories();
     if (sc === 'recap') checkRecap(turn, week);
     if (sc === 'done' && text('[data-scene] .where') !== 'The weekend') flag('done', 'not set at the weekend');
@@ -274,6 +271,14 @@ function playInPage(options: InPage): PlaySummary {
       for (const chip of qa('[data-scene] [data-chip]')) if (COUNTED.test(chip.textContent ?? '')) flag('reaction', `a chip with a count: ${chip.textContent}`);
     }
     if (sc === 'moment') checkWhen(turn, week, lastSlot);
+  }
+
+  /** The header's energy word, and its burnout warning in one of its two forms. */
+  function checkHeader() {
+    const energy = text('[data-field=energy]');
+    if (!ENERGY.includes(energy)) flag('header', `energy word "${energy}"`);
+    const warning = q('[data-field=burnout]')?.textContent ?? null;
+    if (warning && !/^You're close to the edge\. Take something off your plate\.$|^You've ended \d+ (weeks?|months?|quarters?) at the edge\. \d+ in a row and you burn out\.$/.test(warning)) flag('header', `burnout warning "${warning}"`);
   }
 
   /** At most three memory lines on a card, no 1:1 notes, and no line twice in a row. */
@@ -477,19 +482,28 @@ function playInPage(options: InPage): PlaySummary {
         return situation && random() < 0.5 ? null : sound();
       // The success-metric playtests' first-timer (PLAY-RUN-003).
       // @spec PLAY-RUN-003
-      case 'mixed': {
-        const r = random();
-        if (r < 0.1) return null;
-        if (r < 0.3) return choices[Math.floor(random() * choices.length)] ?? null;
-        return sound();
-      }
+      case 'mixed':
+        return firstTimer(choices, sound);
       case 'heavyThenEase':
-        if (!easing && q('[data-field=burnout]')) {
-          easing = true;
-          setHabit('nightPages', /a week on their own/i);
-        }
-        return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
+        return heavyThenEase(by, hero);
     }
+  }
+
+  /** A first-timer: lets a tenth of moments wait, picks a fifth at random, and plays the rest soundly. */
+  function firstTimer(choices: HTMLElement[], sound: () => HTMLElement | null): HTMLElement | null {
+    const r = random();
+    if (r < 0.1) return null;
+    if (r < 0.3) return choices[Math.floor(random() * choices.length)] ?? null;
+    return sound();
+  }
+
+  /** Plays the hero until the first burnout warning, then eases off for good: pages left to the team, work handed out. */
+  function heavyThenEase(by: (pred: (id: string) => boolean) => HTMLElement | null, hero: () => HTMLElement | null): HTMLElement | null {
+    if (!easing && q('[data-field=burnout]')) {
+      easing = true;
+      setHabit('nightPages', /a week on their own/i);
+    }
+    return easing ? by((id) => id.startsWith('give:') || ['leave', 'cutScope', 'decline', 'pushOn', 'oneMoreQuarter'].includes(id)) : hero();
   }
 
   /** Sound practice at the director, in order of preference among the choices a moment offers (PLAY-RUN-009). */
