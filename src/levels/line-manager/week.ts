@@ -132,8 +132,10 @@ export function endWeek(level: LineState, sim: SimState): LevelResult<WeekResult
     signed.add(item.id);
     if (!isEngineer(s, sim, id)) continue;
     if (backup !== undefined && isEngineer(s, sim, backup)) {
-      effects.push(personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page with a backup' }));
-      effects.push(personEffect(backup, 'stress', LINE_TUNING.work.backUpStress, action(HABIT_CAUSE.nightPages), { note: 'Backed up a night page' }));
+      effects.push(
+        personEffect(id, 'stress', LINE_TUNING.work.delegateStress, action(HABIT_CAUSE.nightPages), { note: 'Handled a night page with a backup' }),
+        personEffect(backup, 'stress', LINE_TUNING.work.backUpStress, action(HABIT_CAUSE.nightPages), { note: 'Backed up a night page' }),
+      );
       const pair = `${id} ${backup}`;
       together.set(pair, (together.get(pair) ?? 0) + 1);
       continue;

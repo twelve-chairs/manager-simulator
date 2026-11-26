@@ -142,40 +142,51 @@ export function overCurveLine(level: SeniorState, momentId: string): string {
   return over ? ` But the group now holds ${over.held} top ratings, and the curve allows ${over.room}.` : '';
 }
 
+const CALIBRATION_CAUSE = { kind: 'action' as const, actionId: 'senior.calibration' };
+
+const topRatings = (n: number) => (n === 1 ? 'a top rating' : `${n} top ratings`);
+
+/**
+ * The room's trim of a calibration over the curve: the effects of each trimmed team's new ratings, motivation and its
+ * manager's trust, applied to the moment's entries, and the teams that lost top ratings, in words.
+ */
+function roomTrim(sim: SimState, moment: SeniorMoment): { effects: Effect[]; lost: string[] } {
+  const effects: Effect[] = [];
+  const lost: string[] = [];
+  const entries = moment.calibration!.map((e) => ({ teamId: e.teamId, delivered: e.delivered, counts: { ...e.final! }, was: e }));
+  trimTo(entries, moment.curve!);
+  for (const e of entries) {
+    const cut = topOf(e.was.final!) - topOf(e.counts);
+    if (cut === 0) continue;
+    const unfair = (c: RatingCounts) => Math.round(Math.abs(meanStep(c) - meanStep(e.delivered)) * T.calUnfairMotivation);
+    const before = unfair(e.was.final!);
+    const after = unfair(e.counts);
+    effects.push(...reRates(sim, e.teamId, e.counts));
+    if (after !== before) effects.push({ type: 'value', target: { kind: 'team', id: e.teamId }, field: 'motivation', amount: before - after, cause: CALIBRATION_CAUSE });
+    const m = e.was.managerId;
+    if (m && sim.people[m]?.status === 'active') effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'trust', amount: -cut * T.calTrustPerHead, cause: CALIBRATION_CAUSE });
+    e.was.final = e.counts;
+    lost.push(`${sim.teams[e.teamId]!.name} loses ${topRatings(cut)}`);
+  }
+  return { effects, lost };
+}
+
 /** Arguing for an exception, or letting the room trim, once calibration is settled over the curve. */
 // @spec SENIOR-CAL-007, SENIOR-CAL-008
 export function settleCurve(level: SeniorState, sim: SimState, momentId: string, choice: 'argue' | 'trim'): Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }> {
   const found = level.moments.find((m) => m.id === momentId);
-  if (!found || found.kind !== 'calibration' || found.status !== 'open' || !found.overCurve) return { ok: false, error: `moment ${momentId} is not calibration over the curve` };
+  if (found?.kind !== 'calibration' || found.status !== 'open' || !found.overCurve) return { ok: false, error: `moment ${momentId} is not calibration over the curve` };
   const s = structuredClone(level);
   const moment = s.moments.find((m) => m.id === momentId)!;
-  const cause = { kind: 'action' as const, actionId: 'senior.calibration' };
-  const effects: Effect[] = [];
-  let reaction: string;
-  let trim = choice === 'trim';
-  if (choice === 'argue') {
-    effects.push({ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -T.curveExceptionCost, cause });
-    trim = sim.player.reputation < T.curveExceptionReputation;
-  }
-  const lost: string[] = [];
-  if (trim) {
-    const entries = moment.calibration!.map((e) => ({ teamId: e.teamId, delivered: e.delivered, counts: { ...e.final! }, was: e }));
-    trimTo(entries, moment.curve!);
-    for (const e of entries) {
-      const cut = topOf(e.was.final!) - topOf(e.counts);
-      if (cut === 0) continue;
-      const before = Math.round(Math.abs(meanStep(e.was.final!) - meanStep(e.delivered)) * T.calUnfairMotivation);
-      const after = Math.round(Math.abs(meanStep(e.counts) - meanStep(e.delivered)) * T.calUnfairMotivation);
-      effects.push(...reRates(sim, e.teamId, e.counts));
-      if (after !== before) effects.push({ type: 'value', target: { kind: 'team', id: e.teamId }, field: 'motivation', amount: before - after, cause });
-      const m = e.was.managerId;
-      if (m && sim.people[m]?.status === 'active') effects.push({ type: 'value', target: { kind: 'person', id: m }, field: 'trust', amount: -cut * T.calTrustPerHead, cause });
-      e.was.final = e.counts;
-      lost.push(`${sim.teams[e.teamId]!.name} loses ${cut === 1 ? 'a top rating' : `${cut} top ratings`}`);
-    }
-    reaction = `${choice === 'argue' ? 'The room hears you out and holds the curve. ' : ''}The room trims to the curve: ${lost.join(', ')}.`;
-  } else {
-    reaction = 'It costs you in the room, but the exception holds: every top rating stands.';
+  const argued = choice === 'argue';
+  const effects: Effect[] = argued ? [{ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -T.curveExceptionCost, cause: CALIBRATION_CAUSE }] : [];
+  const holds = argued && sim.player.reputation >= T.curveExceptionReputation;
+  let reaction = 'It costs you in the room, but the exception holds: every top rating stands.';
+  if (!holds) {
+    const trimmed = roomTrim(sim, moment);
+    effects.push(...trimmed.effects);
+    const heard = argued ? 'The room hears you out and holds the curve. ' : '';
+    reaction = `${heard}The room trims to the curve: ${trimmed.lost.join(', ')}.`;
   }
   const r = applyEffects(sim, effects);
   if (!r.ok) return { ok: false, error: r.error.message };

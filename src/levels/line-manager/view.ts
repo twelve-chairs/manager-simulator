@@ -49,54 +49,74 @@ function checkInReason(sim: SimState, projectId: string): string {
   return 'is at high risk';
 }
 
-/** A moment's heading and the scene it sets. */
-export function describeMoment(level: LineState, sim: SimState, m: LevelMoment): { title: string; text: string; difficulty?: number } {
-  if (m.kind === 'finalEvaluation') return { title: `Final evaluation: ${nameOf(sim, m.ref)}`, text: `${nameOf(sim, m.ref)} is on an improvement plan, and this quarter's work would be their third low rating in a row. A third ends the plan. It's your call.` };
-  if (m.kind === 'interview') return { title: 'Interview', text: 'A candidate for the open role is in the building this afternoon. Who talks to them?' };
-  if (m.kind === 'checkIn') {
-    const p = sim.projects[m.ref];
-    const name = p?.name ?? m.ref;
-    return { title: `Check-in: ${name}`, text: `Monday's project check-in. ${name} ${checkInReason(sim, m.ref)}. What do you do about it?` };
-  }
-  // @spec LINE-WORK-017
-  if (m.refs) {
-    const items = m.refs.map((id) => level.items.find((i) => i.id === id)).filter((i): i is WorkItem => i !== undefined);
-    const names = [...new Set(items.map((i) => (i.subject.kind === 'project' ? (sim.projects[i.subject.id]?.name ?? '') : nameOf(sim, i.subject.id))))];
-    const on = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
-    return {
-      title: 'Design reviews piling up',
-      text: `${m.refs.length} design reviews are waiting, on ${on}, and everyone who could take them is strained. Whoever takes them, the week gets heavier.`,
-      difficulty: Math.max(0, ...items.map((i) => band(i.difficulty))),
-    };
-  }
-  const item = level.items.find((i) => i.id === m.ref);
-  const about = item ? (item.subject.kind === 'project' ? (sim.projects[item.subject.id]?.name ?? '') : nameOf(sim, item.subject.id)) : '';
-  const difficulty = item ? { difficulty: band(item.difficulty) } : {};
-  // @spec LINE-MOMENT-005
-  if (m.kind === 'onCall') return { title: 'Night page', text: `A change from ${about} has taken production down, and ${nameOf(sim, m.personId!)} is on call.`, ...difficulty };
-  switch (item?.kind) {
+type Described = { title: string; text: string; difficulty?: number };
+
+/** What a work item is about: its project's name, or the person who raised it. */
+const subjectName = (sim: SimState, item: WorkItem) => (item.subject.kind === 'project' ? (sim.projects[item.subject.id]?.name ?? '') : nameOf(sim, item.subject.id));
+
+/** Design reviews piling up on a strained team, as one scene. */
+// @spec LINE-WORK-017
+function describePiling(level: LineState, sim: SimState, refs: string[]): Described {
+  const items = refs.map((id) => level.items.find((i) => i.id === id)).filter((i): i is WorkItem => i !== undefined);
+  const names = [...new Set(items.map((i) => subjectName(sim, i)))];
+  const on = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  return {
+    title: 'Design reviews piling up',
+    text: `${refs.length} design reviews are waiting, on ${on}, and everyone who could take them is strained. Whoever takes them, the week gets heavier.`,
+    difficulty: Math.max(0, ...items.map((i) => band(i.difficulty))),
+  };
+}
+
+/** An offer of new work, by its kind. */
+// @spec LINE-INBOX-018
+function describeOffer(sim: SimState, item: WorkItem): Described {
+  const offer = item.offer ?? { kind: 'launch' };
+  const difficulty = band(item.difficulty);
+  if (offer.kind === 'handover')
+    return { title: 'New work: a handover', text: 'Another team wants to hand yours a system it can no longer keep up: old code, heavy tech debt, and nobody asking for it. Taking it on helps them; declining leaves them holding it, and they’ll remember.', difficulty };
+  if (offer.kind === 'rewrite')
+    return { title: 'New work: a rewrite', text: `Another team needs a service rewritten from scratch, and ${nameOf(sim, offer.engineerId!)} has been wanting exactly this kind of work. Saying no is saying no to them too.`, difficulty };
+  return { title: 'New work: a launch', text: 'Another team wants yours to take on a launch the whole company will see. Taking it on lifts your standing and loads the team; declining it is noticed.', difficulty };
+}
+
+/** A work item's scene, by its kind. */
+function describeWork(sim: SimState, item: WorkItem): Described {
+  const about = subjectName(sim, item);
+  const difficulty = band(item.difficulty);
+  switch (item.kind) {
     // @spec LINE-MOMENT-006
     case 'designReview': {
       const debt = DEBT_WORDS[Math.min(4, band(sim.projects[item.subject.id]?.techDebt ?? 0))]!;
-      return { title: 'Design review', text: pick(DESIGN_REVIEW, item).replaceAll('{project}', about).replaceAll('{debt}', debt), ...difficulty };
+      return { title: 'Design review', text: pick(DESIGN_REVIEW, item).replaceAll('{project}', about).replaceAll('{debt}', debt), difficulty };
     }
     // @spec LINE-MOMENT-007
     case 'customerRequest': {
       const customer = NAMES.customers[itemNumber(item) % NAMES.customers.length]!;
-      return { title: 'Customer request', text: pick(CUSTOMER_REQUEST, item).replaceAll('{project}', about).replaceAll('{customer}', customer), ...difficulty };
+      return { title: 'Customer request', text: pick(CUSTOMER_REQUEST, item).replaceAll('{project}', about).replaceAll('{customer}', customer), difficulty };
     }
-    // @spec LINE-INBOX-018
-    case 'workIntake': {
-      const offer = item.offer ?? { kind: 'launch' };
-      if (offer.kind === 'handover')
-        return { title: 'New work: a handover', text: 'Another team wants to hand yours a system it can no longer keep up: old code, heavy tech debt, and nobody asking for it. Taking it on helps them; declining leaves them holding it, and they’ll remember.', ...difficulty };
-      if (offer.kind === 'rewrite')
-        return { title: 'New work: a rewrite', text: `Another team needs a service rewritten from scratch, and ${nameOf(sim, offer.engineerId!)} has been wanting exactly this kind of work. Saying no is saying no to them too.`, ...difficulty };
-      return { title: 'New work: a launch', text: 'Another team wants yours to take on a launch the whole company will see. Taking it on lifts your standing and loads the team; declining it is noticed.', ...difficulty };
-    }
+    case 'workIntake':
+      return describeOffer(sim, item);
     default:
-      return { title: item ? WORK_LABELS[item.kind] : 'Work', text: about, ...difficulty };
+      return { title: WORK_LABELS[item.kind], text: about, difficulty };
   }
+}
+
+/** A moment's heading and the scene it sets. */
+export function describeMoment(level: LineState, sim: SimState, m: LevelMoment): Described {
+  if (m.kind === 'finalEvaluation') return { title: `Final evaluation: ${nameOf(sim, m.ref)}`, text: `${nameOf(sim, m.ref)} is on an improvement plan, and this quarter's work would be their third low rating in a row. A third ends the plan. It's your call.` };
+  if (m.kind === 'interview') return { title: 'Interview', text: 'A candidate for the open role is in the building this afternoon. Who talks to them?' };
+  if (m.kind === 'checkIn') {
+    const name = sim.projects[m.ref]?.name ?? m.ref;
+    return { title: `Check-in: ${name}`, text: `Monday's project check-in. ${name} ${checkInReason(sim, m.ref)}. What do you do about it?` };
+  }
+  if (m.refs) return describePiling(level, sim, m.refs);
+  const item = level.items.find((i) => i.id === m.ref);
+  // @spec LINE-MOMENT-005
+  if (m.kind === 'onCall') {
+    const about = item ? subjectName(sim, item) : '';
+    return { title: 'Night page', text: `A change from ${about} has taken production down, and ${nameOf(sim, m.personId!)} is on call.`, ...(item && { difficulty: band(item.difficulty) }) };
+  }
+  return item ? describeWork(sim, item) : { title: 'Work', text: '' };
 }
 
 /** What the player can see: exact where a manager would know, bands where they would only have a sense. */

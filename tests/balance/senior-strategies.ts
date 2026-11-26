@@ -71,13 +71,22 @@ export const seniorDelegator: SeniorStrategy = {
 export const seniorContrarian: SeniorStrategy = {
   name: 'contrarian',
   naive: true,
-  choose: (_seen, m) => (m.source === 'situation' ? last(m) : overCurve(m) ? 'argue' : m.kind === 'calibration' ? markDown(m) : prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo'])),
+  choose(_seen, m) {
+    if (m.source === 'situation') return last(m);
+    if (overCurve(m)) return 'argue';
+    if (m.kind === 'calibration') return markDown(m);
+    return prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo']);
+  },
 };
 
 /** Sound practice at the senior manager: the rules in the balance design. */
 // @spec BAL-SENIOR-008
-const soundChoice = (_seen: SeniorSeen, m: SeniorMoment) =>
-  m.source === 'situation' ? better(m) : overCurve(m) ? 'trim' : m.kind === 'calibration' ? settleOnEvidence(m) : prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
+function soundChoice(_seen: SeniorSeen, m: SeniorMoment): string {
+  if (m.source === 'situation') return better(m);
+  if (overCurve(m)) return 'trim';
+  if (m.kind === 'calibration') return settleOnEvidence(m);
+  return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
+}
 
 export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null, { newWork: 'assign' }), choose: soundChoice };
 

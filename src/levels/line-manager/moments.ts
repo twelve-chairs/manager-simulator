@@ -349,7 +349,7 @@ export function chooseMoment(level: LineState, sim: SimState, momentId: string, 
       // @spec LINE-INBOX-017
       const W = LINE_TUNING.work;
       const offer = item.offer ?? { kind: 'launch' };
-      const lost = offer.kind === 'launch' ? W.launchDeclineReputation : offer.kind === 'handover' ? W.handoverDeclineReputation : W.declineIntakeReputation;
+      const lost = { launch: W.launchDeclineReputation, handover: W.handoverDeclineReputation, rewrite: W.declineIntakeReputation }[offer.kind];
       effects.push(playerEffect('reputation', lost, action(DECLINE_INTAKE)));
       if (offer.kind === 'rewrite' && offer.engineerId && isEngineer(s, sim, offer.engineerId)) {
         effects.push(personEffect(offer.engineerId, 'motivation', -W.rewriteDeclineMotivation, action(DECLINE_INTAKE), { note: 'Saw the rewrite they wanted turned down' }));

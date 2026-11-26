@@ -183,16 +183,18 @@ const PLAN_NEXT = {
 /** Names joined as a sentence lists them: "a", "a and b", "a, b and c". */
 const listed = (names: string[]) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
+/** What kept a rating from exceeds, or that nothing was below target. */
+function heldBackLine(ids: string[], name: (id: string) => string): string {
+  if (ids.length === 0) return 'Every measure was on target or better; exceeds takes more of them above target.';
+  return `What kept this from exceeds: ${listed(ids.map(name))}.`;
+}
+
 /** The standing's words: margins, the way to promotion, what held the rating back and the plan's next step. */
 // @spec UI-REVIEW-002
 function standingLines(s: Standing, name: (id: string) => string): Child[] {
   const p = s.promotion;
   const toward = towardPromotionLine(p);
-  const held = s.heldBack
-    ? s.heldBack.length
-      ? `What kept this from exceeds: ${listed(s.heldBack.map(name))}.`
-      : 'Every measure was on target or better; exceeds takes more of them above target.'
-    : null;
+  const held = s.heldBack ? heldBackLine(s.heldBack, name) : null;
   return [
     s.marginUp ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step better would have made it ${s.marginUp}.`) : null,
     s.marginDown ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step worse would have made it ${s.marginDown}.`) : null,

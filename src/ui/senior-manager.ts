@@ -1,4 +1,5 @@
 import { draftObject } from './drafts';
+import { headcountWords, moverInto } from './chips';
 import { headsLostLastMonth, quitLastMonth, shippedLastMonth, type CalibrationEntry, type SeniorRecap, type SeniorState, type SeniorView } from '../levels/senior-manager';
 import type { Run } from '../loop';
 import { RATINGS, type Rating } from '../sim';
@@ -224,15 +225,8 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
   return { title: m.title, text: m.text, choices: m.choices.map((c) => ({ ...c, note: manager ? `manages: ${bandWord('skill', manager.skill)}` : undefined })) };
 }
 
-/** A chip per band that moved for a manager, a team as shown, or the player, and per change in a team's headcount. */
-// @spec UI-SENIOR-007
-function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
-  const a = before as SeniorView;
-  const b = after as SeniorView;
-  const out: Chip[] = [];
-  const move = (key: string, who: string, was: number, now: number, upIsGood: boolean, up: string, down: string) => {
-    if (was !== now) out.push({ key, text: `${who}: ${now > was ? up : down}`, tone: now > was === upIsGood ? 'good' : 'bad' });
-  };
+function managerChips(a: SeniorView, b: SeniorView, rose: (personId: string) => boolean, out: Chip[]) {
+  const move = moverInto(out);
   const managers = new Map(b.managers.map((m) => [m.id, m]));
   for (const m of a.managers) {
     const n = managers.get(m.id);
@@ -242,17 +236,30 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
     if (m.stress === n.stress && rose(m.id)) out.push({ key: `manager:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
     move(`manager:${m.id}:skill`, m.name, m.skill, n.skill, true, 'a better manager', 'a weaker manager');
   }
+}
+
+function teamChips(a: SeniorView, b: SeniorView, out: Chip[]) {
+  const move = moverInto(out);
   const teams = new Map(b.teams.map((t) => [t.id, t]));
   for (const t of a.teams) {
     const n = teams.get(t.id);
     if (!n) continue;
     move(`team:${t.id}:motivation`, t.name, t.motivation, n.motivation, true, 'more motivated', 'less motivated');
     move(`team:${t.id}:stress`, t.name, t.stress, n.stress, false, 'more stressed', 'less stressed');
-    if (n.headcount !== t.headcount) {
-      const d = n.headcount - t.headcount;
-      out.push({ key: `team:${t.id}:headcount`, text: `${t.name}: ${d > 0 ? (d === 1 ? 'one more person' : `${d} more people`) : d === -1 ? 'one person fewer' : `${-d} people fewer`}`, tone: d > 0 ? 'good' : 'bad' });
-    }
+    const d = n.headcount - t.headcount;
+    if (d !== 0) out.push({ key: `team:${t.id}:headcount`, text: `${t.name}: ${headcountWords(d)}`, tone: d > 0 ? 'good' : 'bad' });
   }
+}
+
+/** A chip per band that moved for a manager, a team as shown, or the player, and per change in a team's headcount. */
+// @spec UI-SENIOR-007
+function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
+  const a = before as SeniorView;
+  const b = after as SeniorView;
+  const out: Chip[] = [];
+  managerChips(a, b, rose, out);
+  teamChips(a, b, out);
+  const move = moverInto(out);
   move('player:energy', 'You', a.player.energy, b.player.energy, true, 'more energy', 'less energy');
   move('player:reputation', 'Your reputation', a.player.reputation, b.player.reputation, true, 'up', 'down');
   return out;

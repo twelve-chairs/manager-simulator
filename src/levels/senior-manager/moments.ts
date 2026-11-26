@@ -330,7 +330,9 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       if (moment.kind === 'surfaced' && moment.issue) {
         const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
         const settled = answer === 'stepIn' || (answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2);
-        (s.issues[t] ??= {})[moment.issue] = { week: sim.week, settled, answer };
+        const record = s.issues[t] ?? {};
+        record[moment.issue] = { week: sim.week, settled, answer };
+        s.issues[t] = record;
       }
       if (choiceId === 'stepIn') {
         effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
@@ -407,7 +409,8 @@ export function chooseSenior(level: SeniorState, sim: SimState, momentId: string
       // @spec SENIOR-MOMENT-016
       const offer = moment.offer ?? 'launch';
       if (choiceId === 'decline') {
-        effects.push(player('reputation', -(offer === 'launch' ? T.launchDecline : offer === 'handover' ? T.handoverDecline : T.declineWork), 'senior.newWork'));
+        const declineCost = { launch: T.launchDecline, handover: T.handoverDecline, own: T.declineWork }[offer];
+        effects.push(player('reputation', -declineCost, 'senior.newWork'));
         if (offer === 'own') effects.push(team(t, 'motivation', -T.ownProjectDeclineMotivation, 'senior.newWork'));
       } else {
         const pr = nextId(s, 'project', 'pr', sim.projects);

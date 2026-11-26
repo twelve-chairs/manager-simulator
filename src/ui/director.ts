@@ -1,3 +1,4 @@
+import { headcountWords, moverInto } from './chips';
 import { draftObject } from './drafts';
 import { quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
 import type { Run } from '../loop';
@@ -218,15 +219,8 @@ function moment(ctx: ScreenContext, momentId: string): MomentDetails | undefined
   return { title: m.title, text: m.text, choices: m.choices.map((c) => ({ ...c, note: lead ? `leads: ${bandWord('skill', lead.skill)}` : undefined })) };
 }
 
-/** A chip per band that moved, per change in a group's headcount, and per bet whose schedule changed. */
-// @spec UI-DIR-010
-function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
-  const a = before as DirectorView;
-  const b = after as DirectorView;
-  const out: Chip[] = [];
-  const move = (key: string, who: string, was: number, now: number, upIsGood: boolean, up: string, down: string) => {
-    if (was !== now) out.push({ key, text: `${who}: ${now > was ? up : down}`, tone: now > was === upIsGood ? 'good' : 'bad' });
-  };
+function leaderChips(a: DirectorView, b: DirectorView, rose: (personId: string) => boolean, out: Chip[]) {
+  const move = moverInto(out);
   const leads = new Map(b.seniorManagers.map((m) => [m.id, m]));
   for (const m of a.seniorManagers) {
     const n = leads.get(m.id);
@@ -236,13 +230,19 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
     if (m.stress === n.stress && rose(m.id)) out.push({ key: `sm:${m.id}:heavier`, text: `${m.name}: a heavier week`, tone: 'bad' });
     move(`sm:${m.id}:skill`, m.name, m.skill, n.skill, true, 'a better leader', 'a weaker leader');
   }
+}
+
+function groupChips(a: DirectorView, b: DirectorView, out: Chip[]) {
   const groups = new Map(b.groups.map((g) => [g.id, g]));
   for (const g of a.groups) {
     const n = groups.get(g.id);
-    if (!n || n.headcount === g.headcount) continue;
-    const d = n.headcount - g.headcount;
-    out.push({ key: `group:${g.id}:headcount`, text: `${g.name}: ${d > 0 ? (d === 1 ? 'one more person' : `${d} more people`) : d === -1 ? 'one person fewer' : `${-d} people fewer`}`, tone: d > 0 ? 'good' : 'bad' });
+    const d = n ? n.headcount - g.headcount : 0;
+    if (d !== 0) out.push({ key: `group:${g.id}:headcount`, text: `${g.name}: ${headcountWords(d)}`, tone: d > 0 ? 'good' : 'bad' });
   }
+}
+
+function outsiderAndBetChips(a: DirectorView, b: DirectorView, out: Chip[]) {
+  const move = moverInto(out);
   const above = new Map(b.upward.map((u) => [u.id, u]));
   for (const u of a.upward) {
     const n = above.get(u.id);
@@ -253,6 +253,18 @@ function chips(before: unknown, after: unknown, rose: (personId: string) => bool
     const n = betsNow.get(x.projectId);
     if (n && n.schedule !== x.schedule) out.push({ key: `bet:${x.projectId}:schedule`, text: `${x.name}: ${SCHEDULE_WORDS[n.schedule]}`, tone: n.schedule === 'onSchedule' ? 'good' : 'bad' });
   }
+}
+
+/** A chip per band that moved, per change in a group's headcount, and per bet whose schedule changed. */
+// @spec UI-DIR-010
+function chips(before: unknown, after: unknown, rose: (personId: string) => boolean = () => false): Chip[] {
+  const a = before as DirectorView;
+  const b = after as DirectorView;
+  const out: Chip[] = [];
+  leaderChips(a, b, rose, out);
+  groupChips(a, b, out);
+  outsiderAndBetChips(a, b, out);
+  const move = moverInto(out);
   move('player:energy', 'You', a.player.energy, b.player.energy, true, 'more energy', 'less energy');
   move('player:reputation', 'Your reputation', a.player.reputation, b.player.reputation, true, 'up', 'down');
   return out;
