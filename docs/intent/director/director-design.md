@@ -93,7 +93,7 @@ Each quarter ends with a recap, folded as the earlier levels' are: what changed 
 - **The last review**: the sixth, at quarter 12. A player not promoted there has stayed a director, and the run ends.
 - **Burnout**: two quarters in a row ending at the edge.
 - **Managed out**: as at the earlier levels.
-- **Promotion past this level**: until a level above exists, it ends the run as completed.
+- **Promotion past this level**: hands the run to the [VP level](../vp/vp-design.md) through its handover.
 
 A quarter should take about eight to ten estimated minutes to play, by the success-metric playtests' session clock, so a promotion at quarter 6 comes about an hour into the level.
 
@@ -133,7 +133,6 @@ Committing to this level changes other segments, each walked through its own des
 
 ### Deferred
 1. Tuning: the headcount allotment, bets' scope and stakes, how fast groups drift, how spin is found out, the moment cap and goal thresholds are set by the balance harness and playtesting.
-2. How a level above the director takes over a director run, and which of its duties (executive politics, organization-wide strategy) it makes central.
 
 ## References
 
