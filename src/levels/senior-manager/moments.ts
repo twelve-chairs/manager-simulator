@@ -82,9 +82,12 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
   if (band(a.motivation) <= 1) return { key: 'motivation', text: 'nobody can say any more why the work matters' };
   const record = level.issues[teamId] ?? {};
   const keys = EVERYDAY_ISSUES.map((_, i) => `everyday:${i}`);
-  const unsettled = keys.find((k) => record[k] && !record[k]!.settled);
+  const unsettled = keys.find((k) => record[k]?.settled === false);
   const start = (Math.floor(sim.week / T.weeksPerMonth) + Number(teamId.replace(/\D/g, '') || 0)) % EVERYDAY_ISSUES.length;
-  const fresh = keys.map((_, i) => keys[(start + i) % keys.length]!).find((k) => !(record[k]?.settled && sim.week - record[k]!.week < T.issueSettledWeeks));
+  const fresh = keys.map((_, i) => keys[(start + i) % keys.length]!).find((k) => {
+    const r = record[k];
+    return !(r?.settled && sim.week - r.week < T.issueSettledWeeks);
+  });
   const key = unsettled ?? fresh;
   return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]! };
 }

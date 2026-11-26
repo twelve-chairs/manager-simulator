@@ -71,7 +71,10 @@ function candidates(level: LineState, sim: SimState): Omit<Watch, 'text'>[] {
   const nearMotivation = (motivation: number) => band(motivation) === lowBand && motivation >= TUNING.lowMotivationLine;
   // Started each of the last `watchWeeks` weeks in the band, and still there.
   const stayed = (id: string, near: (x: { stress: number; motivation: number }) => boolean) =>
-    level.recentWeeks.length >= LINE_TUNING.watchWeeks && level.recentWeeks.every((w) => w.people[id] !== undefined && near(w.people[id]!));
+    level.recentWeeks.length >= LINE_TUNING.watchWeeks && level.recentWeeks.every((w) => {
+      const p = w.people[id];
+      return p !== undefined && near(p);
+    });
   for (const id of people) {
     const p = sim.people[id]!;
     const was = start[id];
