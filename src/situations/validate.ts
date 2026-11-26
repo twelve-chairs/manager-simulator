@@ -166,56 +166,72 @@ function checkWindow(o: Obj, where: string) {
 /** How deeply `all`, `any`, `not` and `count` may nest; a cap keeps a malformed bundle from exhausting the stack. */
 const MAX_CONDITION_DEPTH = 32;
 
+type FormCheck = (o: Obj, scope: Scope, where: string, depth: number) => void;
+
+function checkAllOrAny(o: Obj, scope: Scope, where: string, depth: number) {
+  const form = Object.hasOwn(o, 'all') ? 'all' : 'any';
+  object(o, where, `an ${form} condition`, [form]);
+  list(o[form], at(where, form)).forEach((c, i) => checkCondition(c, scope, at(at(where, form), i), depth + 1));
+}
+
+function checkNot(o: Obj, scope: Scope, where: string, depth: number) {
+  object(o, where, 'a not condition', ['not']);
+  checkCondition(o.not, scope, at(where, 'not'), depth + 1);
+}
+
+function checkCount(o: Obj, scope: Scope, where: string, depth: number) {
+  checkCountOperand(o, 'count', ['count'], where);
+  const count = object(o.count, at(where, 'count'), 'a count', ['kind'], ['where']);
+  const kind = oneOf(count.kind, KINDS, at(at(where, 'count'), 'kind'), 'a kind');
+  if (Object.hasOwn(count, 'where')) checkCondition(count.where, { roles: scope.roles, it: kind }, at(at(where, 'count'), 'where'), depth + 1);
+}
+
+function checkHistoryAction(o: Obj, where: string) {
+  const action = string(o, 'action', where);
+  if (Object.hasOwn(o, 'situation') || Object.hasOwn(o, 'choice'))
+    fail(at(where, 'action'), 'an action cannot be combined with a situation or choice; no history entry is caused by both');
+  if (!PLAYER_ACTION_IDS.includes(action)) fail(at(where, 'action'), `${action} is not in the player action catalogue`);
+}
+
+function checkHistory(o: Obj, scope: Scope, where: string) {
+  checkCountOperand(o, 'history', ['history', 'situation', 'choice', 'action', 'note', 'rating', 'withinWeeks'], where);
+  const role = o.history;
+  if (typeof role !== 'string' || !Object.hasOwn(scope.roles, role) || scope.roles[role] !== 'person')
+    fail(at(where, 'history'), `${String(role)} is not a person role bound here`);
+  if (Object.hasOwn(o, 'situation')) string(o, 'situation', where);
+  if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
+  if (Object.hasOwn(o, 'action')) checkHistoryAction(o, where);
+  // @spec SIT-CONTENT-028
+  if (Object.hasOwn(o, 'note') && string(o, 'note', where) === '') fail(at(where, 'note'), 'must not be empty');
+  if (Object.hasOwn(o, 'rating')) list(o.rating, at(where, 'rating')).forEach((r, i) => oneOf(r, RATINGS, at(at(where, 'rating'), i), 'a rating'));
+  checkWindow(o, where);
+}
+
+function checkPresented(o: Obj, _scope: Scope, where: string) {
+  checkCountOperand(o, 'presented', ['presented', 'choice', 'withinWeeks'], where);
+  string(o, 'presented', where);
+  if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
+  checkWindow(o, where);
+}
+
+/** Each condition form by the key that marks it, in the order a condition is matched against them. */
+const CONDITION_FORMS: readonly [string, FormCheck][] = [
+  ['all', checkAllOrAny],
+  ['any', checkAllOrAny],
+  ['not', checkNot],
+  ['value', (o, scope, where) => checkComparison(o, scope, where)],
+  ['count', checkCount],
+  ['history', checkHistory],
+  ['presented', checkPresented],
+];
+
 function checkCondition(x: unknown, scope: Scope, where: string, depth = 0): void {
   if (!isObject(x)) fail(where, 'a condition must be an object');
   const o = x as Obj;
   const nested = ['all', 'any', 'not', 'count'].some((form) => Object.hasOwn(o, form));
   if (nested && depth >= MAX_CONDITION_DEPTH) fail(where, `conditions nest too deep (more than ${MAX_CONDITION_DEPTH} levels)`);
-  if (Object.hasOwn(o, 'all') || Object.hasOwn(o, 'any')) {
-    const form = Object.hasOwn(o, 'all') ? 'all' : 'any';
-    object(o, where, `an ${form} condition`, [form]);
-    list(o[form], at(where, form)).forEach((c, i) => checkCondition(c, scope, at(at(where, form), i), depth + 1));
-    return;
-  }
-  if (Object.hasOwn(o, 'not')) {
-    object(o, where, 'a not condition', ['not']);
-    checkCondition(o.not, scope, at(where, 'not'), depth + 1);
-    return;
-  }
-  if (Object.hasOwn(o, 'value')) return checkComparison(o, scope, where);
-  if (Object.hasOwn(o, 'count')) {
-    checkCountOperand(o, 'count', ['count'], where);
-    const count = object(o.count, at(where, 'count'), 'a count', ['kind'], ['where']);
-    const kind = oneOf(count.kind, KINDS, at(at(where, 'count'), 'kind'), 'a kind');
-    if (Object.hasOwn(count, 'where')) checkCondition(count.where, { roles: scope.roles, it: kind }, at(at(where, 'count'), 'where'), depth + 1);
-    return;
-  }
-  if (Object.hasOwn(o, 'history')) {
-    checkCountOperand(o, 'history', ['history', 'situation', 'choice', 'action', 'note', 'rating', 'withinWeeks'], where);
-    const role = o.history;
-    if (typeof role !== 'string' || !Object.hasOwn(scope.roles, role) || scope.roles[role] !== 'person')
-      fail(at(where, 'history'), `${String(role)} is not a person role bound here`);
-    if (Object.hasOwn(o, 'situation')) string(o, 'situation', where);
-    if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
-    if (Object.hasOwn(o, 'action')) {
-      const action = string(o, 'action', where);
-      if (Object.hasOwn(o, 'situation') || Object.hasOwn(o, 'choice'))
-        fail(at(where, 'action'), 'an action cannot be combined with a situation or choice; no history entry is caused by both');
-      if (!PLAYER_ACTION_IDS.includes(action)) fail(at(where, 'action'), `${action} is not in the player action catalogue`);
-    }
-    // @spec SIT-CONTENT-028
-    if (Object.hasOwn(o, 'note') && string(o, 'note', where) === '') fail(at(where, 'note'), 'must not be empty');
-    if (Object.hasOwn(o, 'rating')) list(o.rating, at(where, 'rating')).forEach((r, i) => oneOf(r, RATINGS, at(at(where, 'rating'), i), 'a rating'));
-    checkWindow(o, where);
-    return;
-  }
-  if (Object.hasOwn(o, 'presented')) {
-    checkCountOperand(o, 'presented', ['presented', 'choice', 'withinWeeks'], where);
-    string(o, 'presented', where);
-    if (Object.hasOwn(o, 'choice')) string(o, 'choice', where);
-    checkWindow(o, where);
-    return;
-  }
+  const form = CONDITION_FORMS.find(([key]) => Object.hasOwn(o, key));
+  if (form) return form[1](o, scope, where, depth);
   const keys = Object.keys(o);
   fail(where, `unknown condition form ${keys.length ? keys.join(', ') : '(empty)'}`);
 }
@@ -275,81 +291,83 @@ function checkWantTags(x: unknown, path: string) {
   }
 }
 
+/** The kind of thing a value effect's target names: the player, or the kind of a bound role. */
+function targetKind(target: string, scope: Scope, path: string): RoleKind | 'player' {
+  if (target === 'player') return 'player';
+  if (Object.hasOwn(scope.roles, target)) return scope.roles[target]!;
+  return fail(at(path, 'target'), `${target} is not a role`);
+}
+
+type EffectCheck = (x: unknown, scope: Scope, path: string) => void;
+
+const careerOnly: EffectCheck = (x, _scope, path) => fail(path, `situations cannot use ${String((x as Obj).type)} effects; they are career-level actions`);
+
+const EFFECT_CHECKS: Record<string, EffectCheck> = {
+  hire: careerOnly,
+  startProject: careerOnly,
+  value(x, scope, path) {
+    const o = object(x, path, 'a value effect', ['type', 'target', 'field', 'amount'], ['wantTags', 'historyNote']);
+    const target = string(o, 'target', path);
+    const kind = targetKind(target, scope, path);
+    const field = string(o, 'field', path);
+    if (!FIELDS[kind].includes(field)) fail(at(path, 'field'), `${kind} has no field ${field}`);
+    if (kind === 'team' && AGGREGATE_ONLY_FIELDS.includes(field)) requireAggregate(target, scope, at(path, 'field'), `changing ${field}`);
+    finite(o, 'amount', path);
+    if (Object.hasOwn(o, 'wantTags')) checkWantTags(o.wantTags, at(path, 'wantTags'));
+    if (Object.hasOwn(o, 'historyNote')) {
+      historyNote(o, path);
+      if (kind !== 'person') fail(at(path, 'historyNote'), 'history notes can only target a person');
+    }
+  },
+  rate(x, scope, path) {
+    const o = object(x, path, 'a rate effect', ['type', 'target', 'rating'], ['revision', 'historyNote']);
+    if (o.target === 'player') fail(at(path, 'target'), 'situations cannot rate the player; only the performance review does');
+    roleOf(o, 'target', 'person', scope, path);
+    oneOf(o.rating, RATINGS, at(path, 'rating'), 'a rating');
+    if (Object.hasOwn(o, 'revision') && typeof o.revision !== 'boolean') fail(at(path, 'revision'), 'must be true or false');
+    if (Object.hasOwn(o, 'historyNote')) historyNote(o, path);
+  },
+  reRate(x, scope, path) {
+    const o = object(x, path, 'a reRate effect', ['type', 'teamId', 'from', 'to', 'count']);
+    roleOf(o, 'teamId', 'team', scope, path);
+    requireAggregate(o.teamId as string, scope, at(path, 'teamId'), 're-rating');
+    oneOf(o.from, PERFORMANCE_LEVELS, at(path, 'from'), 'a performance level');
+    oneOf(o.to, RATINGS, at(path, 'to'), 'a rating');
+    if (!Number.isInteger(o.count) || (o.count as number) < 1) fail(at(path, 'count'), 'must be a whole number of at least one');
+  },
+  remove(x, scope, path) {
+    const o = object(x, path, 'a remove effect', ['type', 'personId', 'reason']);
+    roleOf(o, 'personId', 'person', scope, path);
+    oneOf(o.reason, DEPARTURE_REASONS, at(path, 'reason'), 'a departure reason');
+  },
+  move(x, scope, path) {
+    const o = object(x, path, 'a move effect', ['type', 'personId', 'teamId']);
+    roleOf(o, 'personId', 'person', scope, path);
+    roleOf(o, 'teamId', 'team', scope, path);
+  },
+  setLeader(x, scope, path) {
+    const o = object(x, path, 'a setLeader effect', ['type', 'teamId', 'leader']);
+    roleOf(o, 'teamId', 'team', scope, path);
+    if (o.leader !== 'player') roleOf(o, 'leader', 'person', scope, path);
+  },
+  reassignProject(x, scope, path) {
+    const o = object(x, path, 'a reassignProject effect', ['type', 'projectId', 'teamId']);
+    roleOf(o, 'projectId', 'project', scope, path);
+    roleOf(o, 'teamId', 'team', scope, path);
+  },
+  cancelProject(x, scope, path) {
+    const o = object(x, path, 'a cancelProject effect', ['type', 'projectId']);
+    roleOf(o, 'projectId', 'project', scope, path);
+  },
+};
+
 function checkEffect(x: unknown, scope: Scope, path: string) {
   if (!isObject(x)) fail(path, 'an effect must be an object');
   const type = (x as Obj).type;
-  switch (type) {
-    case 'hire':
-    case 'startProject':
-      return fail(path, `situations cannot use ${type} effects; they are career-level actions`);
-    case 'value': {
-      const o = object(x, path, 'a value effect', ['type', 'target', 'field', 'amount'], ['wantTags', 'historyNote']);
-      const target = string(o, 'target', path);
-      let kind: RoleKind | 'player';
-      if (target === 'player') kind = 'player';
-      else if (Object.hasOwn(scope.roles, target)) kind = scope.roles[target]!;
-      else return fail(at(path, 'target'), `${target} is not a role`);
-      const field = string(o, 'field', path);
-      if (!FIELDS[kind].includes(field)) fail(at(path, 'field'), `${kind} has no field ${field}`);
-      if (kind === 'team' && AGGREGATE_ONLY_FIELDS.includes(field)) requireAggregate(target, scope, at(path, 'field'), `changing ${field}`);
-      finite(o, 'amount', path);
-      if (Object.hasOwn(o, 'wantTags')) checkWantTags(o.wantTags, at(path, 'wantTags'));
-      if (Object.hasOwn(o, 'historyNote')) {
-        historyNote(o, path);
-        if (kind !== 'person') fail(at(path, 'historyNote'), 'history notes can only target a person');
-      }
-      return;
-    }
-    case 'rate': {
-      const o = object(x, path, 'a rate effect', ['type', 'target', 'rating'], ['revision', 'historyNote']);
-      if (o.target === 'player') fail(at(path, 'target'), 'situations cannot rate the player; only the performance review does');
-      roleOf(o, 'target', 'person', scope, path);
-      oneOf(o.rating, RATINGS, at(path, 'rating'), 'a rating');
-      if (Object.hasOwn(o, 'revision') && typeof o.revision !== 'boolean') fail(at(path, 'revision'), 'must be true or false');
-      if (Object.hasOwn(o, 'historyNote')) historyNote(o, path);
-      return;
-    }
-    case 'reRate': {
-      const o = object(x, path, 'a reRate effect', ['type', 'teamId', 'from', 'to', 'count']);
-      roleOf(o, 'teamId', 'team', scope, path);
-      requireAggregate(o.teamId as string, scope, at(path, 'teamId'), 're-rating');
-      oneOf(o.from, PERFORMANCE_LEVELS, at(path, 'from'), 'a performance level');
-      oneOf(o.to, RATINGS, at(path, 'to'), 'a rating');
-      if (!Number.isInteger(o.count) || (o.count as number) < 1) fail(at(path, 'count'), 'must be a whole number of at least one');
-      return;
-    }
-    case 'remove': {
-      const o = object(x, path, 'a remove effect', ['type', 'personId', 'reason']);
-      roleOf(o, 'personId', 'person', scope, path);
-      oneOf(o.reason, DEPARTURE_REASONS, at(path, 'reason'), 'a departure reason');
-      return;
-    }
-    case 'move': {
-      const o = object(x, path, 'a move effect', ['type', 'personId', 'teamId']);
-      roleOf(o, 'personId', 'person', scope, path);
-      roleOf(o, 'teamId', 'team', scope, path);
-      return;
-    }
-    case 'setLeader': {
-      const o = object(x, path, 'a setLeader effect', ['type', 'teamId', 'leader']);
-      roleOf(o, 'teamId', 'team', scope, path);
-      if (o.leader !== 'player') roleOf(o, 'leader', 'person', scope, path);
-      return;
-    }
-    case 'reassignProject': {
-      const o = object(x, path, 'a reassignProject effect', ['type', 'projectId', 'teamId']);
-      roleOf(o, 'projectId', 'project', scope, path);
-      roleOf(o, 'teamId', 'team', scope, path);
-      return;
-    }
-    case 'cancelProject': {
-      const o = object(x, path, 'a cancelProject effect', ['type', 'projectId']);
-      roleOf(o, 'projectId', 'project', scope, path);
-      return;
-    }
-    default:
-      fail(at(path, 'type'), `unknown effect type ${String(type)}`);
-  }
+  // Own keys only: a type such as "constructor" or "__proto__" is unknown, not inherited.
+  const check = typeof type === 'string' && Object.hasOwn(EFFECT_CHECKS, type) ? EFFECT_CHECKS[type]! : undefined;
+  if (!check) return fail(at(path, 'type'), `unknown effect type ${String(type)}`);
+  check(x, scope, path);
 }
 
 // ---- situations ----
@@ -367,18 +385,18 @@ function checkSituationFields(o: Record<string, unknown>) {
   if (Object.hasOwn(o, 'weight') && !(finite(o, 'weight', '') > 0)) fail('weight', 'must be above 0');
   if (Object.hasOwn(o, 'cooldownWeeks') && finite(o, 'cooldownWeeks', '') < 0) fail('cooldownWeeks', 'must not be negative');
   if (Object.hasOwn(o, 'personCooldownWeeks') && finite(o, 'personCooldownWeeks', '') < 0) fail('personCooldownWeeks', 'must not be negative');
-  if (Object.hasOwn(o, 'once') && typeof o.once !== 'boolean') fail('once', 'must be true or false');
-  if (Object.hasOwn(o, 'quietWeek') && typeof o.quietWeek !== 'boolean') fail('quietWeek', 'must be true or false');
+  for (const flag of ['once', 'quietWeek']) if (Object.hasOwn(o, flag) && typeof o[flag] !== 'boolean') fail(flag, 'must be true or false');
   if (Object.hasOwn(o, 'when')) checkCondition(o.when, { roles: {} }, 'when');
   if (Object.hasOwn(o, 'day')) oneOf(o.day, DAYS, 'day', 'a weekday');
   if (Object.hasOwn(o, 'time')) oneOf(o.time, TIMES, 'time', 'a time of day');
-  // @spec SIT-CONTENT-026
-  // No outcome bound the roles when a situation was let wait, so its lesson for waiting names no one.
-  if (Object.hasOwn(o, 'waitDebrief')) {
-    const lesson = o.waitDebrief;
-    if (typeof lesson !== 'string' || lesson.trim() === '') fail('waitDebrief', 'must be a non-empty string');
-    else if (hasPlaceholder(lesson)) fail('waitDebrief', 'must not contain a placeholder');
-  }
+  if (Object.hasOwn(o, 'waitDebrief')) checkWaitDebrief(o.waitDebrief);
+}
+
+/** No outcome bound the roles when a situation was let wait, so its lesson for waiting names no one. */
+// @spec SIT-CONTENT-026
+function checkWaitDebrief(lesson: unknown) {
+  if (typeof lesson !== 'string' || lesson.trim() === '') fail('waitDebrief', 'must be a non-empty string');
+  else if (hasPlaceholder(lesson)) fail('waitDebrief', 'must not contain a placeholder');
 }
 
 /** The situation's roles, each checked against those before it: the scope its text, choices and effects are checked in. */

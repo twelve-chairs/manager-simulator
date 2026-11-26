@@ -337,6 +337,16 @@ function pickInterview(c: Pick): Picked {
   return said(`${picked.text} After the last interview you make an offer, and ${hire.name} accepts.`, picked.involved);
 }
 
+/** Rolls the change back: the project slips by at most what is done, and the on-call engineer, if still here, feels it. */
+function rollBack(sim: SimState, effects: Effect[], item: WorkItem, thing: string, onCall: string | undefined): Picked {
+  const R = LINE_TUNING.rollBack;
+  const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
+  const slip = p ? Math.min(R.progress, Math.floor(p.progress)) : 0;
+  if (p && slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(ROLL_BACK)));
+  if (onCall) effects.push(personEffect(onCall, 'stress', R.stress, action(ROLL_BACK)));
+  return said(reaction('rollBack', p?.name ?? thing));
+}
+
 /** A night page: roll back, take it over, back the on-call engineer up, or leave it with them. */
 function pickOnCall({ s, sim, moment, choiceId, effects }: Pick, item: WorkItem, thing: string): Picked {
   const id = moment.personId!;
@@ -345,14 +355,7 @@ function pickOnCall({ s, sim, moment, choiceId, effects }: Pick, item: WorkItem,
   const short = present && item.difficulty > sim.people[id]!.skill;
   const cause = action(ON_CALL);
   const W = LINE_TUNING.work;
-  if (choiceId === 'rollBack') {
-    const R = LINE_TUNING.rollBack;
-    const p = item.subject.kind === 'project' ? sim.projects[item.subject.id] : undefined;
-    const slip = p ? Math.min(R.progress, Math.floor(p.progress)) : 0;
-    if (p && slip > 0) effects.push(projectEffect(p.id, 'progress', -slip, action(ROLL_BACK)));
-    if (present) effects.push(personEffect(id, 'stress', R.stress, action(ROLL_BACK)));
-    return said(reaction('rollBack', p?.name ?? thing));
-  }
+  if (choiceId === 'rollBack') return rollBack(sim, effects, item, thing, present ? id : undefined);
   if (choiceId === 'takeOver') {
     effects.push(playerEffect('stress', item.size, cause));
     return said(reaction('takeOver', thing, sim.people[id]));
