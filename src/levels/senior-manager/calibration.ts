@@ -80,6 +80,16 @@ export const CURVE_CHOICES = [
   { id: 'trim', label: 'Let the room trim to the curve' },
 ];
 
+/** The same, after an argument at the last calibration, which the room remembers. */
+// @spec SENIOR-CAL-009
+export const CURVE_CHOICES_AGAIN = [
+  { id: 'argue', label: 'Argue for an exception again: you argued at the last calibration, so the room will hold it only for an excellent reputation' },
+  { id: 'trim', label: 'Let the room trim to the curve' },
+];
+
+/** Whether the player argued for an exception recently enough that the room remembers it. */
+const arguedRecently = (level: SeniorState, week: number) => week - level.lastArgued < T.curveMemoryWeeks;
+
 /**
  * The order the room trims in, applied to `entries`' counts as `pick` reads them: one top-rated head at a time to meets,
  * an exceeds before an outstanding, from the team furthest above what it delivered, then the one with the most top
@@ -129,7 +139,7 @@ function finish(level: SeniorState, moment: SeniorMoment, week: number) {
   const held = entries.reduce((n, e) => n + topOf(e.final!), 0);
   if (moment.curve !== undefined && held > moment.curve) {
     moment.overCurve = { held, room: moment.curve };
-    moment.choices = CURVE_CHOICES;
+    moment.choices = arguedRecently(level, week) ? CURVE_CHOICES_AGAIN : CURVE_CHOICES;
     return;
   }
   moment.status = 'answered';
@@ -180,7 +190,9 @@ export function settleCurve(level: SeniorState, sim: SimState, momentId: string,
   const moment = s.moments.find((m) => m.id === momentId)!;
   const argued = choice === 'argue';
   const effects: Effect[] = argued ? [{ type: 'value', target: { kind: 'player' }, field: 'reputation', amount: -T.curveExceptionCost, cause: CALIBRATION_CAUSE }] : [];
-  const holds = argued && sim.player.reputation >= T.curveExceptionReputation;
+  const needed = arguedRecently(level, sim.week) ? T.curveExceptionAgainReputation : T.curveExceptionReputation;
+  const holds = argued && sim.player.reputation >= needed;
+  if (argued) s.lastArgued = sim.week;
   let reaction = 'It costs you in the room, but the exception holds: every top rating stands.';
   if (!holds) {
     const trimmed = roomTrim(sim, moment);

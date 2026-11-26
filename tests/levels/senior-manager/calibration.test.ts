@@ -161,6 +161,34 @@ describe('calibration', () => {
     }
   });
 
+  // @spec SENIOR-CAL-007, SENIOR-CAL-009
+  it('remembers an argument at the last calibration: the next exception takes an excellent reputation, and says so', () => {
+    const settle = (lastArgued: number, reputation: number) => {
+      const { level, sim, moment } = calibrationAt('strong', 7);
+      const l = { ...level, lastArgued };
+      const settled = ok(chooseSenior(l, edit(sim, (s) => (s.player.reputation = reputation)), moment.id, 'acceptAll'));
+      return { settled, moment, level, label: settled.level.moments.find((m) => m.id === moment.id)!.choices.find((c) => c.id === 'argue')!.label };
+    };
+    const recently = (sim: SimState) => sim.week - T.curveMemoryWeeks + 1;
+    const { sim } = calibrationAt('strong', 7);
+    // argued at the last calibration: good is not enough, excellent is
+    const good = settle(recently(sim), 70);
+    expect(good.label).toMatch(/you argued at the last calibration/i);
+    expect(good.label).toMatch(/excellent/);
+    const trimmed = ok(chooseSenior(good.settled.level, good.settled.sim, good.moment.id, 'argue'));
+    expect(groupTop(trimmed.sim, good.level.teamIds)).toBe(good.moment.curve);
+    const excellent = settle(recently(sim), T.curveExceptionAgainReputation);
+    const held = groupTop(excellent.settled.sim, excellent.level.teamIds);
+    expect(groupTop(ok(chooseSenior(excellent.settled.level, excellent.settled.sim, excellent.moment.id, 'argue')).sim, excellent.level.teamIds)).toBe(held);
+    // long enough ago, or never: good holds, and the label says nothing of it
+    const long = settle(sim.week - T.curveMemoryWeeks - 1, 70);
+    expect(long.label).not.toMatch(/argued at the last/i);
+    expect(groupTop(ok(chooseSenior(long.settled.level, long.settled.sim, long.moment.id, 'argue')).sim, long.level.teamIds)).toBe(groupTop(long.settled.sim, long.level.teamIds));
+    // arguing is remembered for the next one
+    expect(ok(chooseSenior(long.settled.level, long.settled.sim, long.moment.id, 'argue')).level.lastArgued).toBe(sim.week);
+    expect(T.curveExceptionAgainReputation).toBe(80);
+  });
+
   // @spec SENIOR-CAL-008
   it('trims to the curve from the team furthest above its delivery, exceeds before outstanding, costing its manager trust', () => {
     const { level, sim } = senior(8);

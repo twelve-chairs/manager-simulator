@@ -122,6 +122,8 @@ export interface SeniorState {
   skipRotation: number;
   /** Problems skip-level listening surfaced, to become moments next month. */
   surfaced: { teamId: string; week: number }[];
+  /** The week the player last argued for an exception to the curve; far in the past when they never have. */
+  lastArgued: number;
   /** Each team's surfaced problems the player has answered, by problem: when, how, and whether the answer settled it. */
   issues: Record<string, Record<string, { week: number; settled: boolean; answer: 'coach' | 'stepIn' | 'letThem' }>>;
   /** Months in a row the player has ended at the edge. */

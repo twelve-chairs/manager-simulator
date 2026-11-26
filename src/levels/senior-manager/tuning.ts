@@ -99,6 +99,9 @@ export const SENIOR_TUNING = {
   /** Where the good reputation band begins, so the scene can name it. */
   curveExceptionReputation: 60,
   curveExceptionCost: 4,
+  /** After an argument: the weeks the room remembers it, and the reputation the next exception takes, where the excellent band begins. */
+  curveMemoryWeeks: 26,
+  curveExceptionAgainReputation: 80,
   /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, and the share of heads a rating either side. */
   deliveryThresholds: [20, 35, 55, 72] as const,
   deliverySpread: 0.2,
