@@ -26,6 +26,7 @@ export const BETTER_CHOICES: Record<string, string> = {
   'calm-customer-visit': 'go',
   'calm-training': 'ask',
   'calm-tool': 'share',
+  'calm-office-hours': 'office-hour',
   'feedback-gap': 'direct',
   'improvement-plan': 'real-plan',
   'improvement-plan-later': 'real-plan',
