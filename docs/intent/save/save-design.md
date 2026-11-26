@@ -31,6 +31,8 @@ The **content fingerprint** is a 32-bit FNV-1a hash of the loaded situations in 
 
 The game saves after every command that applies and when a new run begins, replacing the previous save: there is one saved run. A run that has ended stays saved, so a reload shows its ending, until the player begins another. Saving goes to the browser's `localStorage`. If storage is unavailable or full, the game keeps playing unsaved, says so once, and removes any earlier save it can, so a reload never silently resumes a run from before the failure.
 
+The game may be open in more than one tab, and there is one save. When another tab writes or removes the save, this tab's run is no longer the saved one: it stops saving, so it cannot overwrite the newer run, and stops play, so nothing the player does there is lost unsaved. It offers to continue here, which loads the save as it now stands. The newest write always belongs to the tab the player last played in.
+
 ## Loading
 
 When the page loads with a save in storage, or the player imports a save file:
@@ -77,8 +79,7 @@ The UI wires these to storage, the file picker and the download link; they hold 
 
 ### Deferred
 1. Several save slots.
-2. Two tabs playing at once both write the one save; the last write wins.
-3. Migrating saves when the format version changes; for now an unknown version is rejected with a message.
+2. Migrating saves when the format version changes; for now an unknown version is rejected with a message.
 
 ## References
 

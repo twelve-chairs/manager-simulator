@@ -34,6 +34,52 @@ const saved = (storage: ReturnType<typeof memoryStorage>) => JSON.parse(storage.
 
 afterEach(() => vi.restoreAllMocks());
 
+/** An app whose storage another tab can change: `otherTab` writes or removes the save there, as the browser reports it. */
+function twoTabs(initial: Record<string, string> = {}) {
+  const storage = memoryStorage(initial);
+  let notify: (key: string | null) => void = () => {};
+  const root = document.createElement('div');
+  document.body.replaceChildren(root);
+  createApp(root, { content: CONTENT, contentErrors: [], showContentErrors: false, deps: DEPS, newSeed: () => 42, version: 'v0.0.1 (0000000)', storage, watchStorage: (listener) => (notify = listener) });
+  const otherTab = (save: string | null, key: string | null = KEY) => {
+    if (save === null) storage.data.delete(KEY);
+    else storage.data.set(KEY, save);
+    notify(key);
+  };
+  return { root, storage, otherTab };
+}
+
+describe('another tab', () => {
+  const STALE = 'This run was played on in another tab, so this tab stopped saving to keep from overwriting it.';
+
+  // @spec UI-SAVE-010
+  it('stops play and saving when another tab saves, and continues from that save on request', () => {
+    const { root, storage, otherTab } = twoTabs();
+    click(root, '[data-action=begin]');
+    const newer = JSON.stringify(toSave(endWeeks(run(3), 2), FP));
+    otherTab(newer);
+    expect(text(root, '[data-part=other-tab]')).toContain(STALE);
+    expect(root.querySelector('[data-action=end-week], [data-action=start-week], [data-action=close-recap]')).toBeNull();
+    expect(storage.data.get(KEY)).toBe(newer);
+    click(root, '[data-action=continue-here]');
+    expect($(root, '[data-screen]').dataset.screen).toBe('week');
+    expect(text(root, '[data-field=week]')).toBe('2');
+    expect(root.querySelector('[data-part=other-tab]')).toBeNull();
+  });
+
+  // @spec UI-SAVE-010
+  it('shows the start screen on continuing when the other tab removed the save, and ignores other keys', () => {
+    const { root, otherTab } = twoTabs();
+    click(root, '[data-action=begin]');
+    otherTab(JSON.stringify(toSave(run(5), FP)), 'something-else');
+    expect(root.querySelector('[data-part=other-tab]')).toBeNull();
+    otherTab(null, null);
+    expect(text(root, '[data-part=other-tab]')).toContain(STALE);
+    click(root, '[data-action=continue-here]');
+    expect($(root, '[data-screen]').dataset.screen).toBe('start');
+  });
+});
+
 /** Ends the week from the scene the page opens on: past Before Monday or the recap, which have no End the week beside them. */
 function endTheWeek(root: ParentNode) {
   for (const opener of ['[data-action=start-week]', '[data-action=close-recap]']) if (root.querySelector(opener)) click(root, opener);

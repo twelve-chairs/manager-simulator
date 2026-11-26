@@ -135,7 +135,9 @@ The UI wires the save component (see [Save / load](../save/save-design.md)) to t
 - Every run screen has a small save area with **Export save**, **Load a saved game** and **Discard and start over**; the start screen has **Load a saved game** too. Loading is the same action everywhere, under the same name: a button that opens the browser's file picker, with the file input hidden behind it. Discarding, and importing over the current run, each show a confirmation (**Yes** and **Cancel** buttons in the save area) before anything is replaced or removed.
 - If writing a save fails, the UI also removes the stored save if it can, so a reload does not resume a run from before the failure.
 
-Storage is passed to the app rather than reached for directly, so tests can supply their own and the app works when the browser's storage is missing.
+- When another tab writes or removes the save, the run screen gives way to a notice, "This run was played on in another tab, so this tab stopped saving to keep from overwriting it.", with a **Continue here** button that loads the save as it now stands, or shows the start screen when there is none.
+
+Storage is passed to the app rather than reached for directly, and so is the browser's notice that another tab changed it, so tests can supply their own and the app works when the browser's storage is missing.
 
 ## Help Text
 

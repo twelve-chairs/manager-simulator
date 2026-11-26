@@ -25,6 +25,8 @@ export interface AppOptions {
   run?: Run;
   /** Where the run is saved (the browser's localStorage in the game). Without it, the game plays without saving. */
   storage?: SaveStorage;
+  /** Calls back with the key when another tab changes storage (null when it cleared everything); the browser's storage event in the game. */
+  watchStorage?: (listener: (key: string | null) => void) => void;
 }
 
 /** The part of the browser's Storage the app uses. */
@@ -239,6 +241,8 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   /** A message about saving or loading, shown until the player's next command. */
   let notice: string | null = null;
   let warnedStorage = false;
+  /** Another tab has written or removed the save since this tab last did: this tab's run is no longer the saved one. */
+  let otherTab = false;
   const drafts = new Map<string, Record<string, string>>();
   // Where the player is looking, kept only on the page (UI-WEEK-009): a reload never shows a reaction again.
   let reaction: Reaction | null = null;
@@ -262,7 +266,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   /** Writes the run's save; a storage failure is reported once, and the game plays on unsaved. */
   // @spec UI-SAVE-002, UI-SAVE-005
   function save(run: Run) {
-    if (!options.storage) return;
+    if (!options.storage || otherTab) return;
     try {
       options.storage.setItem(SAVE_KEY, JSON.stringify(toSave(run, fingerprint)));
     } catch {
@@ -313,6 +317,43 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     if (stored !== null) load(stored, 'storage');
   }
   if (state.screen === 'start') state = { screen: 'start', seed: options.newSeed() };
+
+  // Another tab saved over this one's run: stop here, so this tab neither overwrites the newer run nor plays on unsaved.
+  // @spec UI-SAVE-010
+  options.watchStorage?.((key) => {
+    if (key !== null && key !== SAVE_KEY) return;
+    otherTab = true;
+    render();
+  });
+
+  /** Picks up the run as the other tab left it, or the start screen when it removed the save. */
+  // @spec UI-SAVE-010
+  function continueHere() {
+    otherTab = false;
+    notice = null;
+    let stored: string | null = null;
+    try {
+      stored = options.storage?.getItem(SAVE_KEY) ?? null;
+    } catch {
+      stored = null;
+    }
+    if (stored === null || !load(stored, 'storage')) {
+      state = { screen: 'start', seed: options.newSeed() };
+      resetPage();
+    }
+    focusScene = true;
+    render();
+  }
+
+  // @spec UI-SAVE-010
+  const otherTabScreen = (): Child =>
+    h(
+      'section',
+      { 'data-part': 'other-tab', 'data-screen': 'other-tab', class: 'start' },
+      h('h2', { 'data-part': 'heading', tabindex: '-1' }, 'Playing in another tab'),
+      h('p', { role: 'status' }, 'This run was played on in another tab, so this tab stopped saving to keep from overwriting it.'),
+      h('button', { 'data-action': 'continue-here', class: 'primary', onClick: continueHere }, 'Continue here'),
+    );
 
   // @spec UI-SAVE-006
   function exportSave(run: Run) {
@@ -909,6 +950,10 @@ export function createApp(root: HTMLElement, options: AppOptions) {
   }
 
   function render() {
+    if (otherTab) {
+      root.replaceChildren(otherTabScreen() as Node);
+      return;
+    }
     const focus = focusKey(root);
     const screen = state.screen === 'start' ? startScreen(state.seed) : runScreen(state.run);
     root.replaceChildren();

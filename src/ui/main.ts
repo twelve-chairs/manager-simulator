@@ -34,4 +34,6 @@ createApp(document.getElementById('app')!, {
   newSeed,
   version: __APP_VERSION__,
   storage: browserStorage(),
+  // The browser tells each other open tab when one writes storage (UI-SAVE-010).
+  watchStorage: (listener) => window.addEventListener('storage', (e) => listener(e.key)),
 });

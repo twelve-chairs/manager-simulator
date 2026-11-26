@@ -104,6 +104,29 @@ test('resumes where the player was after a reload, from the browser’s storage'
   await expect(page.locator('[data-field=week]')).toHaveText('1');
 });
 
+// @spec UI-SAVE-010
+test('a tab another tab has saved over stops, and continues from the other tab’s run', async ({ page, context }) => {
+  await startWeek(page);
+  const other = await context.newPage();
+  await other.goto('/');
+  await expect(other.locator('[data-screen]')).toHaveAttribute('data-screen', 'week');
+  // Plays a week in the other tab: past Before Monday when it shows, letting each moment wait, then ending the week.
+  if (await other.locator('[data-action=start-week]').count()) await other.locator('[data-action=start-week]').click();
+  while (await other.locator('[data-scene] [data-action=wait]').count()) await other.locator('[data-scene] [data-action=wait]').first().click();
+  // Mid-week the button is end-week; on the weekend scene, once every moment is done, it is finish-week.
+  await other.locator('[data-action=end-week], [data-action=finish-week]').first().click();
+  await expect(other.locator('[data-part=recap-changes]')).toBeVisible();
+  await expect(page.locator('[data-part=other-tab]')).toContainText('played on in another tab');
+  // Continuing here picks up the other tab's run: this tab was mid-week, and the saved run has ended its week, so it
+  // opens on that week's recap, as a reload of the other tab does.
+  await other.reload();
+  await expect(other.locator('[data-part=recap-changes]')).toBeVisible();
+  await expect(page.locator('[data-part=recap-changes]')).toHaveCount(0);
+  await page.locator('[data-action=continue-here]').click();
+  await expect(page.locator('[data-part=recap-changes]')).toBeVisible();
+  await expect(page.locator('[data-field=week]')).toHaveText((await other.locator('[data-field=week]').textContent()) ?? '');
+});
+
 // @spec UI-SHELL-005
 test('moves keyboard focus to the scene heading as the scene changes', async ({ page }) => {
   await startWeek(page);
