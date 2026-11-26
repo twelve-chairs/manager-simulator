@@ -42,14 +42,15 @@ choices:
         debrief: "Sometimes the curve wins. Telling someone yourself, with the reason, keeps the trust a letter would cost."
   - id: argue
     label: "Bring {engineer}'s work to the room and argue for an exception"
+    availableIf:
+      all:
+        - { presented: calibration, choice: both, withinWeeks: 20, is: 0 }
+        - { presented: calibration, choice: both-again, withinWeeks: 20, is: 0 }
+        - { presented: calibration-no-slot, choice: argue, withinWeeks: 20, is: 0 }
+        - { presented: calibration-no-slot, choice: argue-again, withinWeeks: 20, is: 0 }
     outcomes:
       - id: exception
-        when:
-          all:
-            - { value: player.reputation, atLeast: 80 }
-            # No exception for a manager who argued at the last calibration: the room remembers.
-            - { presented: calibration, choice: both, withinWeeks: 20, is: 0 }
-            - { presented: calibration-no-slot, choice: argue, withinWeeks: 20, is: 0 }
+        when: { value: player.reputation, atLeast: 80 }
         effects:
           - { type: value, target: engineer, field: motivation, amount: 5, wantTags: { serves: [recognition] } }
           - { type: value, target: engineer, field: trust, amount: 4, historyNote: You argued for them in calibration }
@@ -57,6 +58,25 @@ choices:
           - { type: value, target: player, field: stress, amount: 4 }
         aftermath: "The room grumbles, then gives {engineer} the rating. Someone else's curve absorbs it."
         debrief: "An exception to the curve takes a reputation the room already trusts, and spends some of it."
+      - id: no-exception
+        effects:
+          - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, after you argued for an exception" }
+          - { type: value, target: engineer, field: motivation, amount: -3 }
+          - { type: value, target: engineer, field: trust, amount: 3, historyNote: You argued for them in calibration }
+          - { type: value, target: player, field: reputation, amount: -2 }
+          - { type: value, target: player, field: stress, amount: 4 }
+        aftermath: "The room hears you out and holds the curve. {engineer} is rated solid, and knows you tried."
+        debrief: "Arguing for an exception without the standing for one costs you a little, and changes nothing but how {engineer} sees you."
+  # After an argument at the last calibration, the room grants no exception: arguing anyway costs and changes nothing.
+  - id: argue-again
+    label: "Argue for an exception anyway: you argued at the last calibration, and the room won't grant one this time"
+    availableIf:
+      any:
+        - { presented: calibration, choice: both, withinWeeks: 20, atLeast: 1 }
+        - { presented: calibration, choice: both-again, withinWeeks: 20, atLeast: 1 }
+        - { presented: calibration-no-slot, choice: argue, withinWeeks: 20, atLeast: 1 }
+        - { presented: calibration-no-slot, choice: argue-again, withinWeeks: 20, atLeast: 1 }
+    outcomes:
       - id: no-exception
         effects:
           - { type: rate, target: engineer, rating: meets, historyNote: "Rated meets in calibration, after you argued for an exception" }

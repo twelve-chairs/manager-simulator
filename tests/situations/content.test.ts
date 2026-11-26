@@ -469,9 +469,12 @@ describe('calibration results', () => {
       'calibration/back-other/backed': { engineer: 'meets' },
       'calibration/both/both-held': {},
       'calibration/both/both-lost': { engineer: 'meets', other: 'meets' },
+      'calibration/both-again/both-held': {},
+      'calibration/both-again/both-lost': { engineer: 'meets', other: 'meets' },
       'calibration-no-slot/accept/marked-down': { engineer: 'meets' },
       'calibration-no-slot/argue/exception': {},
       'calibration-no-slot/argue/no-exception': { engineer: 'meets' },
+      'calibration-no-slot/argue-again/no-exception': { engineer: 'meets' },
       'calibration-no-slot/trade/traded': { other: 'partial' },
     };
     const found: Record<string, Record<string, string>> = {};
@@ -525,26 +528,36 @@ describe('calibration odds', () => {
 
 describe('the room remembers', () => {
   // @spec LINE-EVAL-010
-  it('asks a band more of a player who argued at the last calibration, and says so', () => {
+  it('offers the argument again with a label that says the player argued last time, at a band more', () => {
     const content = realContent();
     const { sim } = startRun(1);
     const at = (reputation: number) => patch(sim, (s) => Object.assign(s, { week: 40 }, { player: { ...s.player, reputation } }));
     const argued = (situationId: string, choiceId: string, week: number) => ({ ...createEngine(1), debriefs: [{ week, situationId, bindings: {}, status: 'resolved' as const, choiceId }] });
-    const wins = (id: string, choice: string, outcome: string, reputation: number, engine = createEngine(1)) => {
-      const o = content.find((x) => x.id === id)!.choices.find((c) => c.id === choice)!.outcomes.find((x) => x.id === outcome)!;
-      return evaluateCondition(o.when!, { sim: at(reputation), engine, bindings: {}, kinds: {} });
+    const ctx = (reputation: number, engine = createEngine(1)) => ({ sim: at(reputation), engine, bindings: {}, kinds: {} });
+    const choice = (id: string, c: string) => content.find((x) => x.id === id)!.choices.find((x) => x.id === c)!;
+    const offered = (id: string, c: string, engine = createEngine(1)) => evaluateCondition(choice(id, c).availableIf!, ctx(70, engine));
+    const wins = (id: string, c: string, outcome: string, reputation: number) => {
+      const o = choice(id, c).outcomes.find((x) => x.id === outcome)!;
+      return evaluateCondition(o.when!, ctx(reputation));
     };
-    // Arguing for both: good holds, unless the player argued at the last calibration, when it takes excellent.
-    expect(wins('calibration', 'both', 'both-held', 65)).toBe(true);
-    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration-no-slot', 'argue', 27))).toBe(false);
-    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration', 'both', 27))).toBe(false);
-    expect(wins('calibration', 'both', 'both-held', 85, argued('calibration', 'both', 27))).toBe(true);
+    // Who argued last time gets the "again" choice, whichever scene the argument was in; nobody else does.
+    for (const last of [argued('calibration', 'both', 27), argued('calibration-no-slot', 'argue', 27), argued('calibration', 'both-again', 27), argued('calibration-no-slot', 'argue-again', 27)]) {
+      expect(offered('calibration', 'both', last)).toBe(false);
+      expect(offered('calibration', 'both-again', last)).toBe(true);
+      expect(offered('calibration-no-slot', 'argue', last)).toBe(false);
+      expect(offered('calibration-no-slot', 'argue-again', last)).toBe(true);
+    }
+    expect(offered('calibration', 'both')).toBe(true);
+    expect(offered('calibration', 'both-again')).toBe(false);
     // Long enough ago, the room has moved on.
-    expect(wins('calibration', 'both', 'both-held', 65, argued('calibration', 'both', 10))).toBe(true);
-    // An exception beyond the curve: excellent holds, and nothing does after an argument.
+    expect(offered('calibration', 'both', argued('calibration', 'both', 10))).toBe(true);
+    // A band more: good holds the first time, excellent the second; an exception not at all the second time.
+    expect(wins('calibration', 'both', 'both-held', 65)).toBe(true);
+    expect(wins('calibration', 'both-again', 'both-held', 65)).toBe(false);
+    expect(wins('calibration', 'both-again', 'both-held', 85)).toBe(true);
     expect(wins('calibration-no-slot', 'argue', 'exception', 85)).toBe(true);
-    expect(wins('calibration-no-slot', 'argue', 'exception', 95, argued('calibration', 'both', 27))).toBe(false);
-    for (const id of ['calibration', 'calibration-no-slot']) expect(content.find((x) => x.id === id)!.text, id).toMatch(/argued at the last calibration/);
+    expect(choice('calibration-no-slot', 'argue-again').outcomes.map((o) => o.id)).toEqual(['no-exception']);
+    for (const [id, c] of [['calibration', 'both-again'], ['calibration-no-slot', 'argue-again']] as const) expect(choice(id, c).label, c).toMatch(/you argued at the last calibration/);
   });
 });
 

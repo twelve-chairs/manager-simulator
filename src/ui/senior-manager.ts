@@ -119,7 +119,7 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
   const v = viewOf(ctx);
   // Settled over the curve: what is left is the room's question, asked by the moment's own choices.
   if (moment.overCurve) {
-    return h('p', { 'data-part': 'over-curve' }, `Your teams hold ${moment.overCurve.held} top ratings between them, and the curve allows ${moment.overCurve.room}. Argue for an exception, or let the room trim to the curve.`);
+    return h('p', { 'data-part': 'over-curve' }, `Your teams hold ${moment.overCurve.held} top ratings (exceeds and outstanding) between them, and the curve allows ${moment.overCurve.room}. Argue for an exception, or let the room trim to the curve.`);
   }
   const key = `calibration:${moment.id}`;
   const moves = draftObject<{ from: Rating; to: Rating; count: number }[]>(ctx.drafts.get(key)?.moves);
@@ -145,7 +145,7 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
       ? h(
           'p',
           { 'data-part': 'curve', class: held > moment.curve ? 'over' : undefined },
-          'Top ratings: ',
+          'Top ratings (exceeds and outstanding): ',
           h('strong', { 'data-curve-held': '' }, String(held)),
           ' as the moves stand, of ',
           h('strong', { 'data-curve-room': '' }, String(moment.curve)),

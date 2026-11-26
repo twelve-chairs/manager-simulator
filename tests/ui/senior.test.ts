@@ -129,6 +129,7 @@ describe('the senior manager’s week screen', () => {
     const proposedTop = moment.calibration!.reduce((n, c) => n + topOf(c.proposed), 0);
     expect(text(root, '[data-part=curve] [data-curve-room]')).toBe(String(moment.curve));
     expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop));
+    expect(text(root, '[data-part=curve]')).toMatch(/^Top ratings \(exceeds and outstanding\)/);
     const top = (['outstanding', 'exceeds', 'meets', 'partial'] as const).find((r) => entry.proposed[r] > 0)!;
     const lower = { outstanding: 'exceeds', exceeds: 'meets', meets: 'partial', partial: 'below' }[top];
     // no move is offered out of an empty rating
