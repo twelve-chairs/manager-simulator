@@ -20,7 +20,7 @@ Four principles shape it:
 
 ## The Organization
 
-A run starts from an organization the level generates from the run's seed: one team led by the player, of five engineers with varied skill, motivation, stress, wants and **personalities**, and two projects, one on track and one already at risk. Names come from a fixed list of fictional names in the level's data.
+A run starts from an organization the level generates from the run's seed: one team led by the player, of five engineers with varied skill, motivation, stress, wants and **personalities**, and two projects, one on track and one already at risk. Names come from a fixed list of fictional names in the level's data. Teams, at every level, take their names from the same data, so no project's name contains a team's: a project called after one team would read as that team's work wherever another team carries it.
 
 A **personality** is one trait from the personality catalogue, the shared list the situation engine also validates content against (for example *ambitious*, *quiet*, *eager*, *steady*, *blunt*, *anxious*), drawn so that a starting team has at least three different ones. It is stored on the simulation's person, where story situations can read it as a condition, but no simulation rule uses it: it changes no number, and content conditions on it to choose which reaction a choice gets.
 

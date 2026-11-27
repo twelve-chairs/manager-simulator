@@ -137,4 +137,9 @@ describe('purity and determinism', () => {
     };
     expect(play()).toEqual(play());
   });
+
+  // @spec LINE-ORG-005
+  it('names no project after a team', () => {
+    for (const project of NAMES.projects) for (const team of NAMES.teams) expect(project.toLowerCase(), project).not.toContain(team.toLowerCase());
+  });
 });

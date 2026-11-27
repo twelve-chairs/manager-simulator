@@ -9,7 +9,7 @@ export const NAMES = {
   ],
   teams: ['Checkout', 'Search', 'Payments', 'Onboarding', 'Platform'],
   projects: [
-    'Checkout rewrite', 'Search relevance', 'Billing migration', 'Mobile login', 'Audit trail',
+    'Cart rewrite', 'Ranking model', 'Billing migration', 'Mobile login', 'Audit trail',
     'Data export', 'Rate limiter', 'Settings redesign', 'Notification service', 'Report builder',
     'Feature flags', 'Inventory sync',
   ],
