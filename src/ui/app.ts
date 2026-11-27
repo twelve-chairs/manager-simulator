@@ -173,7 +173,7 @@ const COUNTS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'ei
 const TOWARD_PROMOTION: Record<'oneMore' | 'twoInARow' | 'outOfTime', (reviewsLeft: number) => string> = {
   oneMore: (left) => `One more review rated exceeds or better and you'll be promoted.${left === 1 ? " It's your last review at this level." : ''}`,
   twoInARow: (left) => `Promotion takes two reviews in a row rated exceeds or better, and ${COUNTS[left] ?? left} are left at this level.`,
-  outOfTime: () => "There aren't enough reviews left at this level for a promotion.",
+  outOfTime: () => "There aren't enough reviews left at this level for a promotion. Your reviews still count: ratings of partial or below put you on a plan and can end the run, and the end of the run tells who you kept and who you lost.",
 };
 /** Where the player stands toward promotion, as the review screen and the header say it. */
 function towardPromotionLine(p: TowardPromotion): string | null {

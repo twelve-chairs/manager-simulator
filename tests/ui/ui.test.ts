@@ -279,7 +279,7 @@ describe('the header while the recap shows', () => {
     expect(promotion({ kind: 'oneMore', reviewsLeft: 3 })).toBe("One more review rated exceeds or better and you'll be promoted.");
     expect(promotion({ kind: 'oneMore', reviewsLeft: 1 })).toBe("One more review rated exceeds or better and you'll be promoted. It's your last review at this level.");
     expect(promotion({ kind: 'twoInARow', reviewsLeft: 3 })).toBe('Promotion takes two reviews in a row rated exceeds or better, and three are left at this level.');
-    expect(promotion({ kind: 'outOfTime' })).toBe("There aren't enough reviews left at this level for a promotion.");
+    expect(promotion({ kind: 'outOfTime' })).toBe("There aren't enough reviews left at this level for a promotion. Your reviews still count: ratings of partial or below put you on a plan and can end the run, and the end of the run tells who you kept and who you lost.");
     expect(promotion({ kind: 'ended' })).toBeNull();
   });
 
@@ -937,7 +937,7 @@ describe('review and end', () => {
     expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).toBe('Promotion takes two reviews in a row rated exceeds or better, and two are left at this level.');
     expect(shown({ promotion: { kind: 'oneMore', reviewsLeft: 1 } }).promotion).toBe("One more review rated exceeds or better and you'll be promoted. It's your last review at this level.");
     expect(shown({ promotion: { kind: 'notOpenYet', reviews: 2 } }).promotion).toBe('Promotion opens in 2 reviews, then takes two in a row rated exceeds or better.');
-    expect(shown({ promotion: { kind: 'outOfTime' } }).promotion).toBe("There aren't enough reviews left at this level for a promotion.");
+    expect(shown({ promotion: { kind: 'outOfTime' } }).promotion).toBe("There aren't enough reviews left at this level for a promotion. Your reviews still count: ratings of partial or below put you on a plan and can end the run, and the end of the run tells who you kept and who you lost.");
     expect(shown({ promotion: { kind: 'promoted' } }).promotion).toBeNull();
     expect(shown({ promotion: { kind: 'ended' } }).promotion).toBeNull();
     expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 }, plan: 'coaching' }).plan).toBe('One more review rated partial or below puts you on an improvement plan.');
