@@ -18,7 +18,7 @@ export interface WorkItem {
   offer?: { kind: 'launch' | 'handover' | 'rewrite'; engineerId?: string };
 }
 
-export type HabitId = 'nightPages' | 'oneOnOnes' | 'approvals' | 'ceremonies' | 'growth';
+export type HabitId = 'nightPages' | 'oneOnOnes' | 'approvals' | 'ceremonies' | 'growth' | 'breather';
 
 export interface Habits {
   nightPages: 'rotation' | 'me' | 'seniors' | 'backup';
@@ -28,6 +28,8 @@ export interface Habits {
   ceremonies: 'full' | 'light';
   /** `nobody`, or the id of the engineer being coached. */
   growth: string;
+  /** `nobody`, or the id of the engineer given a breather: no routine work or night pages, and time to recover. */
+  breather: string;
 }
 
 export interface MomentChoice {

@@ -151,6 +151,9 @@ export const contrarian: Strategy = {
 };
 
 /** Habits a careful manager settles into: coach whoever a goal or their own want says to; routine approvals stay with them. */
+/** The stress band from which sound practice gives the most stressed engineer a breather: busy. */
+const BREATHER_BAND = 2;
+
 function soundHabitChanges(seen: Seen): Command[] {
   const { view } = seen;
   const commands: Command[] = [];
@@ -159,6 +162,10 @@ function soundHabitChanges(seen: Seen): Command[] {
   const growth =
     goalPerson ?? view.people.find((p) => p.want === 'growth') ?? [...view.people].sort((a, b) => a.skill - b.skill || (a.id < b.id ? -1 : 1))[0];
   if (growth && view.habits.growth !== growth.id) commands.push(habit('growth', growth.id));
+  // A breather for the most stressed engineer while anyone is busy or worse; nobody once the team is steady.
+  const strained = [...view.people].filter((p) => p.stress >= BREATHER_BAND).sort((a, b) => b.stress - a.stress || (a.id < b.id ? -1 : 1))[0];
+  const breather = strained?.id ?? 'nobody';
+  if (view.habits.breather !== breather) commands.push(habit('breather', breather));
   return commands;
 }
 

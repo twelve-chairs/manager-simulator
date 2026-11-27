@@ -389,6 +389,8 @@ function playInPage(options: InPage): PlaySummary {
   /** A band word as the balance harness's band number: 2 is "okay" energy, "busy" stress and "fair" reputation. */
   const bandOf = (kind: keyof typeof BANDS, word: string) => BANDS[kind].indexOf(word.trim());
   const OKAY = 2;
+  /** The stress band from which sound practice gives the most stressed engineer a breather. */
+  const BUSY = 2;
 
   /**
    * Sound practice at the line manager, as the balance design states it and the balance harness plays it
@@ -457,7 +459,7 @@ function playInPage(options: InPage): PlaySummary {
     );
   }
 
-  /** Sound practice's habit: the growth focus on whoever a goal names, or who wants growth, or the least skilled. */
+  /** Sound practice's habits: the growth focus on whoever a goal names, or who wants growth, or the least skilled; a breather for the most stressed while anyone is busy. */
   // @spec PLAY-RUN-007
   let habitsWeek = '';
   function soundHabits() {
@@ -472,6 +474,17 @@ function playInPage(options: InPage): PlaySummary {
     if (growth && select && select.value !== growth.id) {
       select.value = growth.id;
       select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    // A breather for the most stressed engineer while anyone is busy or worse, as the harness's sound practice does.
+    const stressed = qa('[data-panel=team] [data-person]')
+      .map((c) => ({ id: c.dataset.person!, stress: bandOf('stress', text('[data-field=stress]', c)) }))
+      .filter((p) => p.stress >= BUSY)
+      .sort((a, b) => b.stress - a.stress || (a.id < b.id ? -1 : 1))[0];
+    const breather = q('[data-habit=breather]') as HTMLSelectElement | null;
+    const want = stressed?.id ?? 'nobody';
+    if (breather && breather.value !== want) {
+      breather.value = want;
+      breather.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
 

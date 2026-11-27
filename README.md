@@ -36,7 +36,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 ## What makes it different
 
 - **People, not spreadsheets.** Every engineer has a personality and a memory of what happened between you. The same choice lands differently on a quiet engineer and a blunt one.
-- **Habits do the routine, so the week can be about the moments.** Decide who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony the team runs and whose growth you focus on, then change them as the team changes.
+- **Habits do the routine, so the week can be about the moments.** Decide who takes night pages, how often you hold 1:1s, who signs routine approvals, how much ceremony the team runs, whose growth you focus on and who gets a breather, then change them as the team changes.
 - **Your energy is the budget.** Everything you take on yourself costs you. Push it to the edge for four weeks in a row and you burn out.
 - **Consequences you can trace.** Push back on a design review and it comes back as tech debt. Ignore what someone wants and they start looking around. The quarterly review connects the outcome to the choices that caused it.
 - **Good management actually wins.** On every build, a balance harness plays over a hundred seeded runs with scripted strategies, and the build fails unless sound practice clearly outscores always saying yes, always delegating, doing everything yourself and doing nothing.
@@ -48,7 +48,7 @@ Friday, the recap tells you who's more stressed, who learned something, and what
 **Line manager**, from your first day to promotion, burnout, being managed out, or two years in without the promotion:
 
 - a week of short scenes: design reviews, customer requests, night pages, interviews, project check-ins, and authored story situations, including ones about growth and recognition that fill a well-run team's quieter weeks;
-- five standing habits, quarterly goals from your manager and a review every 13 weeks;
+- six standing habits, quarterly goals from your manager and a review every 13 weeks;
 - a guided first three weeks, and How to play on hand throughout.
 
 **Senior manager**, once promoted: you choose who leads your old team, then run three teams through their managers, a month at a time:

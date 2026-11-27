@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LINE_TUNING, setHabit } from '../../../src/levels/line-manager';
 import { beginWeek } from '../../../src/levels/line-manager';
+import { onCallEngineer } from '../../../src/levels/line-manager/moments';
 import { begin, end, engineers, expectRefused, habit, nextWeek, patch, projects, quietRun, run, withItem } from './fixtures';
 
 const actionCauses = (log: { cause: { kind: string; actionId?: string } }[]) =>
@@ -9,7 +10,7 @@ const actionCauses = (log: { cause: { kind: string; actionId?: string } }[]) =>
 describe('habits', () => {
   // @spec LINE-HABIT-001
   it('starts every run with the default habits', () => {
-    expect(run(1).level.habits).toEqual({ nightPages: 'rotation', oneOnOnes: 'fortnightly', approvals: 'me', ceremonies: 'full', growth: 'nobody' });
+    expect(run(1).level.habits).toEqual({ nightPages: 'rotation', oneOnOnes: 'fortnightly', approvals: 'me', ceremonies: 'full', growth: 'nobody', breather: 'nobody' });
   });
 
   // @spec LINE-HABIT-002
@@ -325,5 +326,25 @@ describe('ceremonies and growth focus', () => {
     expect(focused.sim.player.stress).toBeGreaterThan(plain.sim.player.stress);
     expect(focused.sim.people[a]!.history.some((h) => h.cause.kind === 'action' && h.cause.actionId === 'line-manager.habit.growth')).toBe(true);
     expect(nextWeek(habit(level, s, 'growth', a), s).recap.habits.length).toBeGreaterThan(0);
+  });
+
+  // @spec LINE-HABIT-020
+  it('gives the breather engineer time to recover, off the rota and routine work, at a cost to the projects', () => {
+    const { level, sim } = quietRun(1);
+    const people = engineers(sim);
+    const a = people[sim.week % people.length]!;
+    const s = patch(sim, (st) => {
+      st.people[a]!.stress = 60;
+      for (const id of projects(st)) st.projects[id]!.progress = 50;
+    });
+    const rested = end(habit(level, s, 'breather', a), s);
+    const plain = end(level, s);
+    expect(rested.sim.people[a]!.stress).toBeLessThanOrEqual(plain.sim.people[a]!.stress - LINE_TUNING.habits.breatherRecovery);
+    for (const id of projects(s)) expect(rested.sim.projects[id]!.progress).toBeLessThan(plain.sim.projects[id]!.progress);
+    expect(rested.sim.people[a]!.history.some((h) => h.cause.kind === 'action' && h.cause.actionId === 'line-manager.habit.breather')).toBe(true);
+    expect(nextWeek(habit(level, s, 'breather', a), s).recap.habits.some((line) => line.includes('had a breather'))).toBe(true);
+    // off the night pages rota, and passed over for routine work
+        expect(onCallEngineer(level, s)).toBe(a);
+    expect(onCallEngineer(habit(level, s, 'breather', a), s)).not.toBe(a);
   });
 });

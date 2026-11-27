@@ -53,6 +53,9 @@ export const LINE_TUNING = {
     lightCeremoniesRisk: 3,
     coachingSkill: 2,
     coachingStress: 1,
+    /** A breather: the stress the engineer recovers each week, and the progress each of the team's projects loses without them. */
+    breatherRecovery: 4,
+    breatherProgress: 1,
   },
 
   /** How many weeks back a memory can be brought up in a reaction. */
@@ -163,6 +166,7 @@ export const HABIT_CAUSE: Record<HabitId, string> = {
   approvals: 'line-manager.habit.approvals',
   ceremonies: 'line-manager.habit.ceremonies',
   growth: 'line-manager.habit.growth',
+  breather: 'line-manager.habit.breather',
 };
 export const DO_IT_YOURSELF = 'line-manager.self';
 export const DELEGATE = 'line-manager.delegate';

@@ -1,6 +1,7 @@
 import { callBack } from './callbacks';
 import { applyEffects, behindScheduleProjects, overdueProjects, type Effect, type Rating, type SimState } from '../../sim';
 import { RATING_WORDS, action, band, calmRisk, generatePerson, generateProject, isEngineer, peopleNames, personEffect, playerEffect, projectEffect, projectNames, subjectValid, teamEngineers, teamProjects } from './core';
+import { breatherOf } from './habits';
 import { reaction } from './reactions';
 import { ACCEPT_INTAKE, CHECK_IN, DECLINE_INTAKE, DELEGATE, DO_IT_YOURSELF, FINAL_EVALUATION, INTERVIEW, LINE_TUNING, MOMENT_KINDS, ON_CALL, PAY_DOWN, ROLL_BACK, SMALLER_CHANGE } from './tuning';
 import { FELL_SHORT, WORK_LABELS, consequence, tallyProgress, workChoices } from './work';
@@ -9,7 +10,9 @@ import type { ChoiceResult, LevelMoment, LevelResult, LineState, MomentChoice, W
 /** The engineer the night pages habit puts on call this week, if any. */
 // @spec LINE-HABIT-011
 export function onCallEngineer(level: LineState, sim: SimState): string | undefined {
-  const people = teamEngineers(level, sim);
+  // An engineer on a breather is off the rota (LINE-HABIT-020).
+  const resting = breatherOf(level, sim);
+  const people = teamEngineers(level, sim).filter((id) => id !== resting);
   if (people.length === 0 || level.habits.nightPages === 'me') return undefined;
   if (level.habits.nightPages === 'rotation' || level.habits.nightPages === 'backup') return people[sim.week % people.length];
   return [...people].sort((a, b) => sim.people[b]!.skill - sim.people[a]!.skill || (a < b ? -1 : 1))[0];
@@ -19,8 +22,9 @@ export function onCallEngineer(level: LineState, sim: SimState): string | undefi
 // @spec LINE-HABIT-011
 export function backupEngineer(level: LineState, sim: SimState, onCall: string): string | undefined {
   if (level.habits.nightPages !== 'backup') return undefined;
+  const resting = breatherOf(level, sim);
   return teamEngineers(level, sim)
-    .filter((id) => id !== onCall)
+    .filter((id) => id !== onCall && id !== resting)
     .sort((a, b) => sim.people[b]!.skill - sim.people[a]!.skill || (a < b ? -1 : 1))[0];
 }
 
@@ -214,8 +218,9 @@ function assignRoutineWork(b: WeekBuilder) {
   for (const item of b.open(['designReview', 'customerRequest']).filter((i) => !Object.hasOwn(s.routineWork, i.id))) {
     if (item.kind === 'designReview' && !routineReview(sim, item)) continue;
     const margin = item.kind === 'customerRequest' ? 1 : 0;
+    const resting = breatherOf(s, sim);
     const able = teamEngineers(s, sim)
-      .filter((id) => band(sim.people[id]!.skill) >= band(item.difficulty) + margin && band(sim.people[id]!.stress) < STRAINED)
+      .filter((id) => id !== resting && band(sim.people[id]!.skill) >= band(item.difficulty) + margin && band(sim.people[id]!.stress) < STRAINED)
       .sort((x, y) => sim.people[x]!.stress - sim.people[y]!.stress || (x < y ? -1 : 1));
     if (able[0]) s.routineWork[item.id] = able[0];
   }

@@ -9,11 +9,12 @@ const OPTIONS: Record<HabitId, readonly string[] | 'engineer'> = {
   approvals: 'engineer',
   ceremonies: ['full', 'light'],
   growth: 'engineer',
+  breather: 'engineer',
 };
 /** The setting of a habit that names an engineer when it names nobody. */
-const NOBODY = { approvals: 'me', growth: 'nobody' } as const;
+const NOBODY = { approvals: 'me', growth: 'nobody', breather: 'nobody' } as const;
 
-export const DEFAULT_HABITS: Habits = { nightPages: 'rotation', oneOnOnes: 'fortnightly', approvals: 'me', ceremonies: 'full', growth: 'nobody' };
+export const DEFAULT_HABITS: Habits = { nightPages: 'rotation', oneOnOnes: 'fortnightly', approvals: 'me', ceremonies: 'full', growth: 'nobody', breather: 'nobody' };
 
 /** Changes one habit; moments already produced keep the choices they were made with. */
 // @spec LINE-HABIT-002, LINE-HABIT-003
@@ -42,8 +43,16 @@ export function fallBack(s: LineState, sim: SimState): string[] {
     changes.push(`${nameOf(sim, s.habits.growth)} has left, so nobody is your growth focus now.`);
     s.habits.growth = NOBODY.growth;
   }
+  if (s.habits.breather !== NOBODY.breather && !isEngineer(s, sim, s.habits.breather)) {
+    changes.push(`${nameOf(sim, s.habits.breather)} has left, so nobody has a breather now.`);
+    s.habits.breather = NOBODY.breather;
+  }
   return changes;
 }
+
+/** The engineer the breather habit names, while they are on the team. */
+export const breatherOf = (level: LineState, sim: SimState): string | undefined =>
+  level.habits.breather !== NOBODY.breather && isEngineer(level, sim, level.habits.breather) ? level.habits.breather : undefined;
 
 /** Engineers due a 1:1 this week under the cadence. */
 export function dueOneOnOnes(level: LineState, sim: SimState): string[] {
@@ -92,6 +101,15 @@ export function habitEffects(s: LineState, sim: SimState): { effects: Effect[]; 
     const growth = action(HABIT_CAUSE.growth);
     effects.push(personEffect(id, 'skill', t.coachingSkill, growth, { serves: ['growth'], note: 'Coaching' }), playerEffect('stress', t.coachingStress, growth));
     recap.push(`You coached ${nameOf(sim, id)}.`);
+  }
+
+  // @spec LINE-HABIT-020
+  const resting = breatherOf(s, sim);
+  if (resting) {
+    const breather = action(HABIT_CAUSE.breather);
+    effects.push(personEffect(resting, 'stress', -t.breatherRecovery, breather, { note: 'A breather' }));
+    for (const id of teamProjects(s, sim)) effects.push(projectEffect(id, 'progress', -t.breatherProgress, breather));
+    recap.push(`${nameOf(sim, resting)} had a breather: no routine work or night pages, and time to recover. The projects moved a little slower for it.`);
   }
   return { effects, recap };
 }

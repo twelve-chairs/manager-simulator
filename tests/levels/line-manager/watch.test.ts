@@ -293,4 +293,19 @@ describe('a watch line that comes back', () => {
     r = played(r.level, r.sim, edge);
     expect(r.watch).toMatchObject({ kind: 'edge', weeks: LINE_TUNING.burnoutWeeks - 1, weeksLeft: 1 });
   });
+
+  // @spec LINE-RECAP-011
+  it('suggests a breather when it warns about someone’s stress, unless they already have one', () => {
+    const { level, sim } = calm();
+    const [a] = engineers(sim) as [string];
+    const HINT = 'A breather would take them off night pages and routine work for a while.';
+    const worn = played(level, sim, (s) => over(s, a, 3)).watch!;
+    expect(worn.text).toMatch(/looks worn through/);
+    expect(worn.text.endsWith(HINT)).toBe(true);
+    const resting = played({ ...level, habits: { ...level.habits, breather: a } }, sim, (s) => over(s, a, 3)).watch!;
+    expect(resting.text).toMatch(/looks worn through/);
+    expect(resting.text).not.toContain(HINT);
+    // not for a motivation warning
+    expect(played(level, sim, (s) => over(s, a, 3, 'motivation')).watch!.text).not.toContain(HINT);
+  });
 });

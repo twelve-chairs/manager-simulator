@@ -317,7 +317,7 @@ describe('the scene', () => {
     const r = run();
     const { root, app } = makeApp({ run: r });
     expect(scene(root)).toBe('before-monday');
-    expect($$(root, '[data-scene] [data-habit]').map((h) => h.dataset.habit)).toEqual(['nightPages', 'oneOnOnes', 'approvals', 'ceremonies', 'growth']);
+    expect($$(root, '[data-scene] [data-habit]').map((h) => h.dataset.habit)).toEqual(['nightPages', 'oneOnOnes', 'approvals', 'ceremonies', 'growth', 'breather']);
     expect(($(root, '[data-scene] [data-panel=help]') as HTMLDetailsElement).open).toBe(true);
     select(root, '[data-scene] [data-habit=oneOnOnes]', 'weekly');
     let state = app.state();

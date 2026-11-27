@@ -178,6 +178,10 @@ function habitSentence(level: LineState, subject: string, cause: WatchCause | un
   return ` The ${habit} habit has added to their load in ${weeks} of the last ${LINE_TUNING.watchWeeks} weeks.`;
 }
 
+/** The lever for someone's stress the player may not know: a breather, unless they already have it. */
+// @spec LINE-RECAP-011
+const breatherHint = (level: LineState, subject: string) => (level.habits.breather === subject ? '' : ' A breather would take them off night pages and routine work for a while.');
+
 /** A restless engineer in words: how soon they may leave, and what would keep them, or that the player doesn't know. */
 // @spec LINE-RECAP-010
 function restlessText(level: LineState, sim: SimState, w: Candidate, name: string): string {
@@ -196,10 +200,10 @@ function textOf(level: LineState, sim: SimState, w: Candidate): string {
   const habitLine = habitSentence(level, w.subject, w.cause);
   if (w.kind === 'over') {
     return w.line === 'stress'
-      ? `${name} looks worn through: ${weeksWord(w.weeks!)} over the line${because}.${habitLine} Every week like this makes leaving likelier.`
+      ? `${name} looks worn through: ${weeksWord(w.weeks!)} over the line${because}.${habitLine} Every week like this makes leaving likelier.${breatherHint(level, w.subject)}`
       : `${name} has gone flat: ${weeksWord(w.weeks!)} of low motivation${because}. Every week like this makes leaving likelier.`;
   }
-  return w.line === 'stress' ? `${name} is getting stretched thin${because}.${habitLine}` : `${name} seems to be losing interest${because}.`;
+  return w.line === 'stress' ? `${name} is getting stretched thin${because}.${habitLine}${breatherHint(level, w.subject)}` : `${name} seems to be losing interest${because}.`;
 }
 
 /**

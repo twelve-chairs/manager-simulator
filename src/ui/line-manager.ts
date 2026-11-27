@@ -33,9 +33,10 @@ const HABITS: Record<HabitId, { label: string; what: string; options: Record<str
     options: { full: 'Full', light: 'Light' },
   },
   growth: { label: 'Growth focus', what: 'One engineer you coach each week.', options: { nobody: 'Nobody' } },
+  breather: { label: 'Breather', what: 'One engineer off routine work and night pages, recovering each week. The others cover for them, and projects move a little slower.', options: { nobody: 'Nobody' } },
 };
 const HABIT_IDS = Object.keys(HABITS) as HabitId[];
-const NAMES_ENGINEERS = new Set<HabitId>(['approvals', 'growth']);
+const NAMES_ENGINEERS = new Set<HabitId>(['approvals', 'growth', 'breather']);
 
 const viewOf = (ctx: ScreenContext) => ctx.view as View;
 
