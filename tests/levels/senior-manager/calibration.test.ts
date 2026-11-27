@@ -22,7 +22,7 @@ function calibrationMonth(seed = 1, leniency?: number) {
 /** Every team's aggregate health set so that its delivery lands at one rating band: middling (mostly meets) or strong (mostly outstanding). */
 const health = (sim: SimState, teamIds: string[], kind: 'middling' | 'strong') =>
   edit(sim, (s) => {
-    for (const id of teamIds) Object.assign(s.teams[id]!.aggregate!, kind === 'middling' ? { skill: 40, motivation: 50, stress: 50 } : { skill: 85, motivation: 85, stress: 15 });
+    for (const id of teamIds) Object.assign(s.teams[id]!.aggregate!, kind === 'middling' ? { skill: 50, motivation: 55, stress: 45 } : { skill: 95, motivation: 95, stress: 5 });
   });
 /** The calibration month with every team's delivery at one band, and the moment rebuilt from it. */
 function calibrationAt(kind: 'middling' | 'strong', seed = 1, leniency = 0) {
@@ -45,6 +45,28 @@ const mean = (counts: Record<string, number>) => {
   const heads = RATINGS.reduce((n, r) => n + (counts[r] ?? 0), 0);
   return heads ? RATINGS.reduce((n, r) => n + step(r) * (counts[r] ?? 0), 0) / heads : 0;
 };
+
+describe('what a team delivered', () => {
+  // @spec SENIOR-CAL-010
+  it('climbs steadily with the team’s score: a point better never moves more than a few heads', () => {
+    const { level, sim } = senior(1);
+    const t = level.teamIds[0]!;
+    const at = (score: number) => deliveredRatings(edit(sim, (s) => Object.assign(s.teams[t]!.aggregate!, { headcount: 10, skill: score, motivation: score, stress: 100 - score })), t);
+    const tops = (c: Record<string, number>) => c.exceeds! + c.outstanding!;
+    let before = at(0);
+    for (let score = 1; score <= 100; score++) {
+      const now = at(score);
+      expect(RATINGS.reduce((n, r) => n + now[r], 0)).toBe(10);
+      expect(mean(now)).toBeGreaterThanOrEqual(mean(before));
+      expect(Math.abs(tops(now) - tops(before)), `score ${score}`).toBeLessThanOrEqual(2);
+      before = now;
+    }
+    // between two thresholds, the share at the higher rating follows the climb
+    const [, meets, exceeds] = T.deliveryThresholds;
+    const halfway = at((meets + exceeds) / 2);
+    expect(halfway.meets).toBe(halfway.exceeds - Math.floor(10 * T.deliverySpread));
+  });
+});
 
 describe('calibration', () => {
   // @spec SENIOR-CAL-001

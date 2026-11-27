@@ -15,17 +15,27 @@ export const meanStep = (c: RatingCounts) => {
   return n ? RATINGS.reduce((sum, r, i) => sum + i * c[r], 0) / n : 0;
 };
 
-/** The ratings a team's delivery corresponds to: most heads at the rating its health and skill earn, some a rating either side. */
+/**
+ * The ratings a team's delivery corresponds to: its health and skill earn it a place between two ratings, and its heads
+ * split between them by how far it has climbed from the lower toward the higher, with some a rating either side, so a
+ * team's top ratings grow steadily as it gets better rather than all at once.
+ */
 // @spec SENIOR-CAL-001
 export function deliveredRatings(sim: SimState, teamId: string): RatingCounts {
   const a = sim.teams[teamId]!.aggregate!;
   const score = a.skill * 0.5 + a.motivation * 0.3 + (100 - a.stress) * 0.2;
-  const base = T.deliveryThresholds.filter((x) => score >= x).length;
+  const t = T.deliveryThresholds;
+  const base = t.filter((x) => score >= x).length;
+  const lower = base === 0 ? 0 : t[base - 1]!;
+  const upper = base === t.length ? 100 : t[base]!;
+  const climbed = base === t.length ? 0 : Math.max(0, Math.min(1, (score - lower) / (upper - lower)));
   const spread = Math.floor(a.headcount * T.deliverySpread);
+  const middle = a.headcount - 2 * spread;
+  const up = Math.round(middle * climbed);
   const counts = empty();
   counts[RATINGS[Math.max(0, base - 1)]!] += spread;
-  counts[RATINGS[Math.min(4, base + 1)]!] += spread;
-  counts[RATINGS[base]!] += a.headcount - 2 * spread;
+  counts[RATINGS[Math.min(4, base + 1)]!] += spread + up;
+  counts[RATINGS[base]!] += middle - up;
   return counts;
 }
 

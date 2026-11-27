@@ -106,8 +106,8 @@ export const SENIOR_TUNING = {
   /** After an argument: the weeks the room remembers it, and the reputation the next exception takes, where the excellent band begins. */
   curveMemoryWeeks: 26,
   curveExceptionAgainReputation: 80,
-  /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, and the share of heads a rating either side. */
-  deliveryThresholds: [20, 35, 55, 72] as const,
+  /** Delivery: the score thresholds for partial, meets, exceeds and outstanding, between which a team's heads climb, and the share of heads a rating either side. Set so a well-run group delivers a few more top ratings than the curve holds. */
+  deliveryThresholds: [20, 50, 82, 96] as const,
   deliverySpread: 0.2,
   /** Months before promotion is possible, and the month of the last review. */
   promotionFromMonth: 18,
