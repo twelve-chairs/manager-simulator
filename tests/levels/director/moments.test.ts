@@ -426,6 +426,17 @@ describe('peers', () => {
     expect(trust(ok(chooseDirector(level, cold, m.id, 'negotiate')).sim, peer)).toBe(0);
   });
 
+  // @spec DIR-PEER-003
+  it('says a trade needs the peer’s trust, and when it falls through for lack of it', () => {
+    const { level, sim, m } = asked();
+    const peer = m.personId!;
+    expect(m.choices.find((c) => c.id === 'negotiate')!.label).toMatch(/only with a peer who trusts you/);
+    const warm = fx(sim, [{ type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: 100 }]);
+    const cold = fx(sim, [{ type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: -100 }]);
+    expect(ok(chooseDirector(level, warm, m.id, 'negotiate')).reaction).toBe('You trade what each of you can give.');
+    expect(ok(chooseDirector(level, cold, m.id, 'negotiate')).reaction).toBe(`${sim.people[peer]!.name} doesn't trust you enough to trade, and hears it as a no.`);
+  });
+
   // @spec DIR-PEER-002
   it('has a distrustful peer raise it with the executive, once a period', () => {
     const { level, sim } = director(3);

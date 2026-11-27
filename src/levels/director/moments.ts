@@ -30,7 +30,7 @@ const CHOICES: Record<Exclude<DirectorMoment['kind'], 'stay'> | 'orgSplit', { id
   bets: [{ id: 'none', label: 'Fund none of them' }],
   surfaced: [{ id: 'coach', label: 'Coach them through it' }, { id: 'decide', label: 'Take the decision yourself' }, { id: 'replace', label: 'Replace them' }],
   trouble: [{ id: 'coach', label: 'Coach them through it' }, { id: 'decide', label: 'Take the decision yourself' }, { id: 'replace', label: 'Replace them' }],
-  peerAsk: [{ id: 'agree', label: 'Agree' }, { id: 'negotiate', label: 'Negotiate a trade' }, { id: 'refuse', label: 'Refuse' }],
+  peerAsk: [{ id: 'agree', label: 'Agree' }, { id: 'negotiate', label: 'Negotiate a trade: it works only with a peer who trusts you' }, { id: 'refuse', label: 'Refuse' }],
   orgDesign: [{ id: 'merge', label: 'Merge it into another group' }, { id: 'leave', label: 'Leave it as it is' }],
   orgSplit: [{ id: 'splitPromote', label: 'Split it, promoting one of its managers to lead the new group' }, { id: 'splitHire', label: 'Split it, hiring a senior manager for the new group' }, { id: 'leave', label: 'Leave it as it is' }],
   review: [{ id: 'straight', label: 'Tell it straight: what went wrong, and the plan' }, { id: 'wins', label: 'Lead with the wins' }, { id: 'promise', label: 'Promise more next quarter' }],
@@ -434,9 +434,11 @@ function choosePeerAsk({ sim0, m, choiceId, log }: Ctx): Handled {
     const sim = apply(sim0, [value('team', m.groupId!, 'stress', p.askStress, 'director.peer'), value('person', peer, 'trust', p.agreeTrust, 'director.peer')], log);
     return { ok: true, sim, reaction: `${name(sim0, peer)} is grateful. ${groupName(sim, m.groupId!)} is busier.` };
   }
+  // @spec DIR-PEER-003
   if (choiceId === 'negotiate') {
-    const sim = apply(sim0, [value('person', peer, 'trust', sim0.people[peer]!.trust >= p.negotiateAt ? p.negotiateTrust : -p.negotiateTrust, 'director.peer')], log);
-    return { ok: true, sim, reaction: `You trade what each of you can give.` };
+    const trusted = sim0.people[peer]!.trust >= p.negotiateAt;
+    const sim = apply(sim0, [value('person', peer, 'trust', trusted ? p.negotiateTrust : -p.negotiateTrust, 'director.peer')], log);
+    return { ok: true, sim, reaction: trusted ? 'You trade what each of you can give.' : `${name(sim0, peer)} doesn't trust you enough to trade, and hears it as a no.` };
   }
   const sim = apply(sim0, [value('person', peer, 'trust', -p.refuseTrust, 'director.peer')], log);
   return { ok: true, sim, reaction: choiceId === 'refuse' ? `${name(sim0, peer)} takes the no, and remembers it.` : `You trade what each of you can give.` };
