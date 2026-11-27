@@ -74,7 +74,9 @@ function wantDrift(ctx: Ctx, weeks: number) {
   for (const p of activePeople(ctx.s)) {
     // Split the step into weeks within the drift threshold and weeks past it.
     const endWeek = ctx.s.week + weeks;
-    const pastThreshold = Math.min(weeks, Math.max(0, endWeek - p.wantServedWeek - TUNING.wantDriftThresholdWeeks));
+    // A want served when the step begins counts as served for the whole step, however long the step is (SIM-ADV-009).
+    const threshold = Math.max(TUNING.wantDriftThresholdWeeks, weeks);
+    const pastThreshold = Math.min(weeks, Math.max(0, endWeek - p.wantServedWeek - threshold));
     const amount = (weeks - pastThreshold) * TUNING.wantRecoveryPerWeek - pastThreshold * TUNING.wantDriftPerWeek;
     if (amount !== 0) changePerson(ctx, p, 'motivation', amount, cause);
   }

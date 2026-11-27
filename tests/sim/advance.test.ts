@@ -130,6 +130,21 @@ describe('advance', () => {
     expect(person(advance(s, 1).state, 'e1').motivation).toBeLessThan(50);
   });
 
+  // @spec SIM-ADV-009, SIM-ADV-010
+  it('counts a want served as a long advance begins as served for the whole advance', () => {
+    const weeks = 13;
+    const served = patch(quiet(), (st) => {
+      st.week = 20;
+      st.people.e1!.wantServedWeek = 20;
+    });
+    expect(person(advance(served, weeks).state, 'e1').motivation).toBe(50 + weeks * TUNING.wantRecoveryPerWeek);
+    // served two weeks before the advance: its last two weeks drift
+    const earlier = patch(served, (st) => {
+      st.people.e1!.wantServedWeek = 18;
+    });
+    expect(person(advance(earlier, weeks).state, 'e1').motivation).toBe(50 + (weeks - 2) * TUNING.wantRecoveryPerWeek - 2 * TUNING.wantDriftPerWeek);
+  });
+
   // @spec SIM-ADV-010
   it('slowly raises motivation while a want has been served recently', () => {
     const s = patch(quiet(), (st) => {

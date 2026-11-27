@@ -29,9 +29,10 @@ describe('game time', () => {
 
     const served = patch(fresh(), (s) => {
       s.projects = {};
+      s.week = 13;
       s.people.e1!.wantServedWeek = 0;
     });
-    // One 13-week step passes the 8-week drift threshold even though it is a single step.
+    // A want unserved since a step ago has gone 13 weeks unserved, past even a 13-week step's threshold, by its end.
     expect(person(advance(served, 13).state, 'e1').motivation).toBeLessThan(50);
   });
 });
