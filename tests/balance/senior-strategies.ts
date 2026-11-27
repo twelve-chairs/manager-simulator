@@ -85,6 +85,8 @@ function soundChoice(_seen: SeniorSeen, m: SeniorMoment): string {
   if (m.source === 'situation') return better(m);
   if (overCurve(m)) return 'trim';
   if (m.kind === 'calibration') return settleOnEvidence(m);
+  // A problem above the manager is the player's to move: coaching them through it changes nothing.
+  if (m.kind === 'surfaced' && m.text.includes("can settle alone")) return 'stepIn';
   return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo', 'keep']);
 }
 

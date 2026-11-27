@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SENIOR_TUNING, beginMonth, chooseSenior, endMonth, seniorView, type SeniorMoment, type SeniorState } from '../../../src/levels/senior-manager';
 import type { SimState } from '../../../src/sim';
+import { EVERYDAY_ISSUES } from '../../../src/levels/senior-manager/moments';
 import { senior } from './fixtures';
 
 const T = SENIOR_TUNING;
@@ -460,32 +461,39 @@ describe('skip-level problems that stay settled', () => {
     const next = surfacedFor(answered.level, sim, t)!;
     expect(next.issue).not.toBe(first.issue);
     // every friction settled lately: nothing new to raise
-    const all = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`everyday:${i}`, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
+    const all = Object.fromEntries(EVERYDAY_ISSUES.map((_, i) => [`everyday:${i}`, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
     expect(surfacedFor({ ...level, issues: { [t]: all } }, sim, t)).toBeUndefined();
     // half a year on, a settled friction can come back
     const later = edit(sim, (s) => (s.week += T.issueSettledWeeks + 1));
     expect(surfacedFor({ ...level, issues: { [t]: all } }, later, t)).toBeDefined();
   });
 
-  // @spec SENIOR-HABIT-011
-  it('settles a problem only by an answer that fixed it, and brings an unsettled one back saying how it was answered', () => {
-    const { level, sim } = calm(4);
+  /** Records of every friction but those of one owner, settled lately: what is left to raise is that owner's. */
+  const onlyOpen = (above: boolean, week: number) =>
+    Object.fromEntries(EVERYDAY_ISSUES.flatMap((x, i) => (x.above === above ? [] : [[`everyday:${i}`, { week: week - 1, settled: true, answer: 'stepIn' as const }]])));
+  /** Answers the friction a skip-level with team `t` surfaced, of one owner, with the team's manager at a skill. */
+  function answerFriction(seed: number, above: boolean, skill: number, choice: string) {
+    const { level, sim } = calm(seed);
     const t = level.teamIds[1]!;
     const m = (sim.teams[t]!.leader as { id: string }).id;
-    const settles = (skill: number, choice: string) => {
-      const state = edit(sim, (s) => (s.people[m]!.skill = skill));
-      const begun = beginMonth({ ...level, surfaced: [{ teamId: t, week: state.week - 4 }] }, state);
-      const moment = begun.moments.find((x) => x.kind === 'surfaced')!;
-      const r = chooseSenior(begun, state, moment.id, choice);
-      if (!r.ok) throw new Error(r.error);
-      return { r, issue: moment.issue!, state };
-    };
-    expect(Object.values(settles(25, 'coach').r.level.issues[t]!)[0]!.settled).toBe(true);
-    expect(Object.values(settles(10, 'coach').r.level.issues[t]!)[0]!.settled).toBe(false);
-    expect(Object.values(settles(45, 'letThem').r.level.issues[t]!)[0]!.settled).toBe(true);
-    expect(Object.values(settles(25, 'letThem').r.level.issues[t]!)[0]!.settled).toBe(false);
+    const state = edit(sim, (s) => (s.people[m]!.skill = skill));
+    const begun = beginMonth({ ...level, issues: { [t]: onlyOpen(above, sim.week) }, surfaced: [{ teamId: t, week: state.week - 4 }] }, state);
+    const moment = begun.moments.find((x) => x.kind === 'surfaced')!;
+    const r = chooseSenior(begun, state, moment.id, choice);
+    if (!r.ok) throw new Error(r.error);
+    return { r, moment, issue: moment.issue!, state, t, m, settled: r.level.issues[t]![moment.issue!]!.settled };
+  }
+
+  // @spec SENIOR-HABIT-011
+  it('settles a problem only by an answer that fixed it, and brings an unsettled one back saying how it was answered', () => {
+    const settles = (skill: number, choice: string) => answerFriction(4, false, skill, choice);
+    expect(settles(25, 'coach').settled).toBe(true);
+    expect(settles(10, 'coach').settled).toBe(false);
+    expect(settles(45, 'letThem').settled).toBe(true);
+    expect(settles(25, 'letThem').settled).toBe(false);
+    expect(settles(10, 'stepIn').settled).toBe(true);
     // left unsettled, it comes back as itself, saying so
-    const { r, issue, state } = settles(10, 'letThem');
+    const { r, issue, state, t, m } = settles(10, 'letThem');
     // four months on, the projects' plans moved with the clock so that nothing is behind
     const later = edit(state, (s) => {
       s.week += 16;
@@ -496,5 +504,29 @@ describe('skip-level problems that stay settled', () => {
     expect(again.title).toMatch(/again/);
     expect(again.text).toMatch(/again/);
     expect(again.text).toContain(`Last time you left it with ${r.sim.people[m]!.name}`);
+  });
+
+  // @spec SENIOR-HABIT-008, SENIOR-HABIT-012
+  it('says when a friction is above the manager, settles it only by stepping in, and eases nothing when coached or left', () => {
+    expect(EVERYDAY_ISSUES).toHaveLength(10);
+    expect(EVERYDAY_ISSUES.filter((x) => x.above)).toHaveLength(4);
+    const mine = answerFriction(4, false, 45, 'coach');
+    expect(mine.moment.text).not.toMatch(/can settle alone/);
+
+    const coached = answerFriction(4, true, 45, 'coach');
+    const manager = coached.state.people[coached.m]!.name;
+    expect(coached.moment.text).toContain(`It isn't something ${manager} can settle alone.`);
+    expect(coached.settled).toBe(false);
+    expect(coached.r.reaction).toMatch(/isn't theirs to fix/);
+    expect(coached.r.sim.teams[coached.t]!.aggregate!.stress).toBe(coached.state.teams[coached.t]!.aggregate!.stress);
+    expect(coached.r.sim.people[coached.m]!.skill).toBeGreaterThan(45);
+    expect(coached.r.sim.player.stress).toBeGreaterThan(coached.state.player.stress);
+
+    const left = answerFriction(4, true, 45, 'letThem');
+    expect(left.settled).toBe(false);
+    expect(left.r.reaction).toMatch(/isn't theirs to fix/);
+    expect(left.r.sim.teams[left.t]!.aggregate!.stress).toBe(left.state.teams[left.t]!.aggregate!.stress);
+
+    expect(answerFriction(4, true, 45, 'stepIn').settled).toBe(true);
   });
 });

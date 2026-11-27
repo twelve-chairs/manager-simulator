@@ -90,7 +90,7 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
     return !(r?.settled && sim.week - r.week < T.issueSettledWeeks);
   });
   const key = unsettled ?? fresh;
-  return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]! };
+  return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]!.text };
 }
 
 /** What giving and declining each kind of new work gains or costs, as its choices say it. */
@@ -120,15 +120,26 @@ const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem', (manager: string) => str
   letThem: (manager) => `left it with ${manager}`,
 };
 
-/** What engineers raise at a skip-level when nothing is badly wrong. */
-const EVERYDAY_ISSUES = [
-  "the team's priorities keep changing with no explanation",
-  'the build has got slow enough that people batch their changes to avoid it',
-  'there are too many meetings to get a run of focused work in',
-  'nobody is sure who decides on the shared service the team depends on',
-  'on-call handovers keep dropping things between shifts',
-  'reviews wait days for the one person who knows the old code',
-] as const;
+/**
+ * What engineers raise at a skip-level when nothing is badly wrong, and whose it is to settle: the team's manager's, or
+ * above them, where only the player can move it.
+ */
+// @spec SENIOR-HABIT-008, SENIOR-HABIT-012
+export const EVERYDAY_ISSUES: readonly { text: string; above: boolean }[] = [
+  { text: "the team's priorities keep changing with no explanation from above", above: true },
+  { text: 'the build has got slow enough that people batch their changes to avoid it', above: false },
+  { text: 'there are too many meetings to get a run of focused work in', above: false },
+  { text: 'nobody is sure who decides on the shared service the team depends on', above: true },
+  { text: 'on-call handovers keep dropping things between shifts', above: false },
+  { text: 'reviews wait days for the one person who knows the old code', above: false },
+  { text: 'another group keeps landing urgent requests on them without going through anyone', above: true },
+  { text: 'the newest engineers say nobody has time to answer their questions', above: false },
+  { text: 'retrospectives keep naming the same problems, and nothing changes', above: false },
+  { text: 'a promotion promised last year has gone quiet somewhere above their manager', above: true },
+];
+
+/** Whether a surfaced problem sits above the team's manager, out of their reach to settle. */
+const aboveManager = (issue: string | undefined) => !!issue?.startsWith('everyday:') && EVERYDAY_ISSUES[Number(issue.slice('everyday:'.length))]!.above;
 
 /** Begins a month: makes its moments from the group's state, up to the cap, in order, and sets them through the month. */
 // @spec SENIOR-MOMENT-001, SENIOR-MOMENT-002, SENIOR-MOMENT-003, SENIOR-MOMENT-005, SENIOR-MOMENT-006, SENIOR-MOMENT-007, SENIOR-MOMENT-008, SENIOR-MOMENT-009, SENIOR-PLAN-002, SENIOR-CAL-001
@@ -175,14 +186,15 @@ function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<str
     const before = s.issues[t]?.[issue.key];
     const manager = managerName(s, sim, t);
     const again = before !== undefined && !before.settled;
+    const reach = aboveManager(issue.key) ? ` It isn't something ${manager} can settle alone.` : '';
     drafts.push({
       kind: 'surfaced',
       teamId: t,
       issue: issue.key,
       title: again ? `What ${name(sim, t)} told you again` : `What ${name(sim, t)} told you`,
       text: again
-        ? `At last month's skip-level, ${name(sim, t)}'s engineers told you again that ${issue.text.replace(/^that /, '')}. Last time you ${LAST_TIME[before.answer](manager)}, and it didn't hold.`
-        : `At last month's skip-level, ${name(sim, t)}'s engineers told you ${issue.text}. ${manager} hasn't mentioned it to you.`,
+        ? `At last month's skip-level, ${name(sim, t)}'s engineers told you again that ${issue.text.replace(/^that /, '')}. Last time you ${LAST_TIME[before.answer](manager)}, and it didn't hold.${reach}`
+        : `At last month's skip-level, ${name(sim, t)}'s engineers told you ${issue.text}. ${manager} hasn't mentioned it to you.${reach}`,
       choices: CHOICES.surfaced,
     });
   }
@@ -396,7 +408,7 @@ function pickReplaceManager({ s, sim, choiceId, effects, t }: Pick): Picked {
 function rememberIssue({ s, sim, moment, choiceId, t }: Pick, skill: number) {
   if (moment.kind !== 'surfaced' || !moment.issue) return;
   const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
-  const settled = answer === 'stepIn' || (answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2);
+  const settled = answer === 'stepIn' || (!aboveManager(moment.issue) && ((answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2)));
   const record = s.issues[t] ?? {};
   record[moment.issue] = { week: sim.week, settled, answer };
   s.issues[t] = record;
@@ -411,13 +423,17 @@ function pickTrouble(c: Pick): Picked {
     effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
     return { reaction: `You sort it out yourself. ${who} watches, and next time will come to you again.` };
   }
+  // @spec SENIOR-HABIT-012
+  const above = c.moment.kind === 'surfaced' && aboveManager(c.moment.issue);
   if (choiceId === 'coach') {
     effects.push(player('stress', T.coachEnergy, 'senior.coach'));
     if (m) effects.push(person(m, 'skill', T.coachGrowth, 'senior.coach'));
+    if (above) return { reaction: `You talk it through with ${who}. They see it, but it isn't theirs to fix, and it's still there.` };
     if (skill < 1) return { reaction: `You talk it through with ${who}. They learn something, but the problem is still there.` };
     effects.push(team(t, 'stress', -T.coachFix, 'senior.coach'));
     return { reaction: `You talk it through with ${who}. They take it from there, and it holds.` };
   }
+  if (above) return { reaction: `You leave it with ${who}. It isn't theirs to fix, and nothing changes.` };
   if (skill < 2) return { reaction: `You leave it with ${who}. Nothing much changes.` };
   effects.push(team(t, 'stress', -T.coachFix, 'senior.letThem'));
   return { reaction: `${who} handles it without you.` };
