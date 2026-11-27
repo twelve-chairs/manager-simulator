@@ -242,9 +242,10 @@ export function decisionMessage(screen: Screen, notebook: string, lastRead: stri
     lines.push(`Habits:\n${h.habits.map(habitLine).join('\n')}`);
   }
   const list = (xs: { handle: string; item: { label: string } }[]) => xs.map((x) => `- \`${x.handle}\`: ${x.item.label}`).join('\n');
-  if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${list(h.targets)}`);
+  // The scene's own controls for heads and bets are actions, not listed choices, so the message says how to use them.
+  if (screen.placement) lines.push(`Heads to place: ${screen.placement.heads}. Targets:\n${list(h.targets)}\nTo place them, use the "place" action with a count for each target; a listed choice places them all one way.`);
   if (screen.calibration) lines.push(`Calibration moves (each moves one head; give a count to move several; moves apply in the order given, so a head moved into a row can be moved on from it):\n${list(h.moves)}`);
-  if (screen.funding) lines.push(`Bets on offer:\n${list(h.bets)}\nGroups that could carry one:\n${list(h.groups)}`);
+  if (screen.funding) lines.push(`Bets on offer:\n${list(h.bets)}\nGroups that could carry one:\n${list(h.groups)}\nTo fund bets, use the "fund" action with up to two bets, each with the group to carry it; the listed choice declines them all.`);
   return lines.join('\n\n');
 }
 

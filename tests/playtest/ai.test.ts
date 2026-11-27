@@ -86,9 +86,11 @@ describe('the AI playtester', () => {
     expect(bets).toMatch(/Bets on offer:\n- `B1`: Atlas/);
     expect(bets).toMatch(/Groups that could carry one:\n- `G1`: Payments/);
     expect(bets).not.toMatch(/bo1|`g1`/);
+    expect(bets).toContain('To fund bets, use the "fund" action');
     const heads = decisionMessage(moment({ placement: { heads: 2, targets: [{ id: 'group:g1', label: 'Payments' }] } }), '', '');
     expect(heads).toMatch(/- `T1`: Payments/);
     expect(heads).not.toContain('group:g1');
+    expect(heads).toContain('To place them, use the "place" action');
     const cal = decisionMessage(moment({ calibration: { moves: [{ id: 't1:outstanding:exceeds', label: 'Platform: outstanding down to exceeds' }] } }), '', '');
     expect(cal).toMatch(/Calibration moves[\s\S]*`M1`: Platform: outstanding down to exceeds/);
     expect(cal).not.toContain('t1:outstanding');
