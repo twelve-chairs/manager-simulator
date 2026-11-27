@@ -12,7 +12,7 @@ import {
   type DirectorMoment,
   type DirectorState,
 } from '../../../src/levels/director';
-import { applyEffects, PERFORMANCE_LEVELS, type Effect, type SimState } from '../../../src/sim';
+import { TUNING as SIM, applyEffects, PERFORMANCE_LEVELS, type Effect, type SimState } from '../../../src/sim';
 import { realContent } from '../../balance/harness';
 import { director } from './fixtures';
 
@@ -282,6 +282,21 @@ describe('headcount', () => {
     expect(r.sim.teams[g0]!.aggregate!.headcount).toBe(sim.teams[g0]!.aggregate!.headcount);
   });
 
+  // @spec DIR-HEAD-006
+  it('says what placed heads will do: work a quarter for a group, a jump for a bet, and the executive noticing any held back', () => {
+    const { level: l0, sim: s0 } = begun();
+    const sim = fx(s0, [{ type: 'value', target: { kind: 'person', id: l0.executiveId }, field: 'trust', amount: 100 }]);
+    const level = beginQuarter({ ...l0, moments: [] }, sim);
+    const funded = choose(level, sim, 'bets', `fund:${JSON.stringify({ [find(level, 'bets').offers![0]!.id]: level.groupIds[1] })}`);
+    const bet = funded.level.bets[0]!;
+    const g = level.groupIds[0]!;
+    const r = ok(chooseDirector(funded.level, funded.sim, find(level, 'headcount').id, `place:${JSON.stringify({ [g]: 2, [`bet:${bet.projectId}`]: 1 })}`));
+    expect(r.reaction).toContain(`${sim.teams[g]!.name} gets 2 more people: up to ${2 * SIM.workPerPersonPerWeek * T.weeksPerQuarter} more units of work a quarter on its projects, and more stress while they settle in.`);
+    expect(r.reaction).toContain(`${funded.sim.projects[bet.projectId]!.name} gets one more person, and jumps ${T.head.betSpeed} units ahead.`);
+    expect(r.reaction).toMatch(/You hold the rest back\. Your executive notices\.$/);
+    expect(ok(chooseDirector(level, sim, find(level, 'headcount').id, 'hold')).reaction).toBe('You hold the heads back. Your executive notices.');
+  });
+
   // @spec DIR-HEAD-004
   it('rejects placing more heads than given, unknown groups or bets, or negative counts', () => {
     const { level, sim } = begun();
@@ -382,6 +397,16 @@ describe('the quarterly review', () => {
     expect(count(after)).toBe(count(before) + 1);
   });
 
+  // @spec DIR-QBR-005
+  it('says what each way of telling the quarter does', () => {
+    const { level, sim } = troubled();
+    const m = find(beginQuarter({ ...level, moments: [] }, sim), 'review');
+    const label = (id: string) => m.choices.find((c) => c.id === id)!.label;
+    expect(label('straight')).toMatch(/trusts you more.*costs a little standing/);
+    expect(label('wins')).toMatch(/standing rises now.*costs far more if it is still in trouble/);
+    expect(label('promise')).toMatch(/stakes rise/);
+  });
+
   // @spec DIR-QBR-002
   it('builds the executive’s trust when told straight, at a cost in reputation for each thing in trouble', () => {
     const { level, sim } = troubled();
@@ -448,6 +473,8 @@ describe('peers', () => {
     const { level, sim, m } = asked();
     const peer = m.personId!;
     expect(m.choices.find((c) => c.id === 'negotiate')!.label).toMatch(/only with a peer who trusts you/);
+    expect(m.choices.find((c) => c.id === 'agree')!.label).toMatch(/gets busier.*more of their trust than a trade/);
+    expect(m.choices.find((c) => c.id === 'refuse')!.label).toMatch(/costs their trust/);
     const warm = fx(sim, [{ type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: 100 }]);
     const cold = fx(sim, [{ type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: -100 }]);
     expect(ok(chooseDirector(level, warm, m.id, 'negotiate')).reaction).toBe('You trade what each of you can give.');

@@ -10,6 +10,7 @@ import {
   type ChangeLogEntry,
   type Effect,
   type SimState,
+  TUNING as SIM,
 } from '../../sim';
 import { generateSeniorManager, leaderOf, nextId, pick, randomInt, unusedName } from './core';
 import { finalEvaluation, newLeader, placeMoments, restlessLeaders, stayAnswer, stayDraft } from '../org';
@@ -30,10 +31,15 @@ const CHOICES: Record<Exclude<DirectorMoment['kind'], 'stay'> | 'orgSplit', { id
   bets: [{ id: 'none', label: 'Fund none of them' }],
   surfaced: [{ id: 'coach', label: 'Coach them through it' }, { id: 'decide', label: 'Take the decision yourself' }, { id: 'replace', label: 'Replace them' }],
   trouble: [{ id: 'coach', label: 'Coach them through it' }, { id: 'decide', label: 'Take the decision yourself' }, { id: 'replace', label: 'Replace them' }],
-  peerAsk: [{ id: 'agree', label: 'Agree' }, { id: 'negotiate', label: 'Negotiate a trade: it works only with a peer who trusts you' }, { id: 'refuse', label: 'Refuse' }],
+  peerAsk: [{ id: 'agree', label: 'Agree: one of your groups gets busier, and it earns more of their trust than a trade' }, { id: 'negotiate', label: 'Negotiate a trade: it works only with a peer who trusts you' }, { id: 'refuse', label: 'Refuse: it costs their trust' }],
   orgDesign: [{ id: 'merge', label: 'Merge it into another group' }, { id: 'leave', label: 'Leave it as it is' }],
   orgSplit: [{ id: 'splitPromote', label: 'Split it, promoting one of its managers to lead the new group' }, { id: 'splitHire', label: 'Split it, hiring a senior manager for the new group' }, { id: 'leave', label: 'Leave it as it is' }],
-  review: [{ id: 'straight', label: 'Tell it straight: what went wrong, and the plan' }, { id: 'wins', label: 'Lead with the wins' }, { id: 'promise', label: 'Promise more next quarter' }],
+  // @spec DIR-QBR-005
+  review: [
+    { id: 'straight', label: 'Tell it straight, what went wrong and the plan: your executive trusts you more, and each thing in trouble costs a little standing' },
+    { id: 'wins', label: 'Lead with the wins: your standing rises now, and anything in trouble you leave out costs far more if it is still in trouble next quarter' },
+    { id: 'promise', label: 'Promise more next quarter: a little standing now, and every funded bet’s stakes rise' },
+  ],
 };
 
 const name = (sim: SimState, id: string) => sim.people[id]?.name ?? 'Someone';
@@ -378,7 +384,28 @@ function chooseHeadcount({ s, sim0, m, choiceId, log }: Ctx): Handled {
   if (!plan) return { ok: false, error: 'a placement must be JSON naming groups or bets' };
   const r = place(s, sim0, m, plan, log);
   if (!r.ok) return r;
-  return { ok: true, sim: r.sim, reaction: choiceId === 'hold' ? 'You hold the heads back. Your executive notices.' : 'The new heads start next week.' };
+  return { ok: true, sim: r.sim, reaction: headcountReaction(s, sim0, m, plan) };
+}
+
+/** What the placed heads will do: more work a quarter for each group, a jump for each bet, and the executive noticing any held back. */
+// @spec DIR-HEAD-006
+function headcountReaction(s: DirectorState, sim: SimState, m: DirectorMoment, plan: Record<string, unknown>): string {
+  const lines: string[] = [];
+  let placed = 0;
+  for (const [key, value] of Object.entries(plan)) {
+    const n = value as number;
+    if (!n) continue;
+    placed += n;
+    const heads = n === 1 ? 'one more person' : `${n} more people`;
+    if (key.startsWith('bet:')) {
+      const bet = s.bets.find((b) => b.projectId === key.slice(4));
+      lines.push(`${sim.projects[bet?.projectId ?? '']?.name ?? 'The bet'} gets ${heads}, and jumps ${n * T.head.betSpeed} units ahead.`);
+    } else {
+      lines.push(`${groupName(sim, key)} gets ${heads}: up to ${n * SIM.workPerPersonPerWeek * T.weeksPerQuarter} more units of work a quarter on its projects, and more stress while they settle in.`);
+    }
+  }
+  if (placed < (m.heads ?? 0)) lines.push(placed === 0 ? 'You hold the heads back. Your executive notices.' : 'You hold the rest back. Your executive notices.');
+  return lines.join(' ');
 }
 
 function chooseBets({ s, sim0, m, choiceId, log }: Ctx): Handled {
