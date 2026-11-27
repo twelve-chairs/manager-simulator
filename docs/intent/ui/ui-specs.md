@@ -119,6 +119,7 @@ Design: [ui-design.md](ui-design.md)
 - [x] **UI-BUILD-004**: When the game is built with git and the whole commit history available, the build shall stamp the version `v<major>.<minor>.<count> (<commit>)`, where `<major>` and `<minor>` are the first two numbers of `package.json`'s `version`, `<count>` is the number of commits reachable from the commit being built that are not reachable from the parent of the most recent commit that set `package.json`'s version to that major and minor (so the commit that set it counts as 1, and a major or minor not yet committed counts 0), or every commit reachable when no commit ever set one, and `<commit>` is that commit's short hash.
 - [x] **UI-BUILD-005**: If git is unavailable or the history is shallow when the game is built, then the build shall stamp the version `unversioned`.
 - [x] **UI-BUILD-006**: While the game is served by the development server, the UI shall use the version `development`.
+- [x] **UI-BUILD-007**: Every relative import in the files Vite's configuration loads, directly or through other imports, shall name the imported file with its extension, or a directory's `index.ts`.
 - [x] **UI-BUILD-001**: When the game is built, the build shall compile the situations in `content/situations/` into the bundle, fail on an invalid situation, and emit static files with no inline script.
 
 ## Hosting

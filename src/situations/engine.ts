@@ -1,7 +1,7 @@
-import { applyEffects, nextRandom as random, type Cause, type Effect, type SimState, type ValueTarget } from '../sim';
-import { candidatesOf, evaluateCondition, type EvalContext } from './conditions';
-import { render } from './text';
-import { DAYS } from './types';
+import { applyEffects, nextRandom as random, type Cause, type Effect, type SimState, type ValueTarget } from '../sim/index.ts';
+import { candidatesOf, evaluateCondition, type EvalContext } from './conditions.ts';
+import { render } from './text.ts';
+import { DAYS } from './types.ts';
 import type {
   DebriefRecord,
   EngineState,
@@ -11,7 +11,7 @@ import type {
   RoleKind,
   Situation,
   SituationEffect,
-} from './types';
+} from './types.ts';
 
 function shuffled<T>(s: EngineState, items: T[]): T[] {
   const out = [...items];

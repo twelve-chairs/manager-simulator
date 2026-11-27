@@ -14,9 +14,9 @@ import {
   sortedIds,
   summarize,
   type Ctx,
-} from './core';
-import { TUNING } from './tuning';
-import { PERFORMANCE_LEVELS, RATINGS } from './types';
+} from './core.ts';
+import { TUNING } from './tuning.ts';
+import { PERFORMANCE_LEVELS, RATINGS } from './types.ts';
 import type {
   Cause,
   HistoryEntry,
@@ -33,11 +33,11 @@ import type {
   TeamAggregate,
   PerformanceLevel,
   Want,
-} from './types';
+} from './types.ts';
 
-export * from './types';
-export { TUNING } from './tuning';
-export { attritionRiskOf, byId, compareCodeUnits, nextRandom, scheduleOf, type Schedule } from './core';
+export * from './types.ts';
+export { TUNING } from './tuning.ts';
+export { attritionRiskOf, byId, compareCodeUnits, nextRandom, scheduleOf, type Schedule } from './core.ts';
 export {
   applyEffects,
   AGGREGATE_TEAM_FIELDS,
@@ -45,8 +45,8 @@ export {
   PERSON_FIELDS,
   PLAYER_FIELDS,
   PROJECT_FIELDS,
-} from './effects';
-export { advance } from './advance';
+} from './effects.ts';
+export { advance } from './advance.ts';
 
 /** Ids of the advance rules, in the order they apply. Each rule's changes carry its id as the cause. */
 export const RULE_ORDER = [

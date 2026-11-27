@@ -1,7 +1,7 @@
-import { compareCodeUnits } from '../sim';
-import type { HistoryEntry, SimState } from '../sim';
-import { propertyValue, ratingRank, type Value } from './properties';
-import type { Condition, EngineState, Operand, Operator, RoleKind } from './types';
+import { compareCodeUnits } from '../sim/index.ts';
+import type { HistoryEntry, SimState } from '../sim/index.ts';
+import { propertyValue, ratingRank, type Value } from './properties.ts';
+import type { Condition, EngineState, Operand, Operator, RoleKind } from './types.ts';
 
 export const OPERATORS: readonly Operator[] = ['below', 'atMost', 'above', 'atLeast', 'is', 'isNot', 'in'];
 

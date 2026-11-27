@@ -8,12 +8,12 @@ import {
   PROJECT_FIELDS,
   RATINGS,
   WANTS,
-} from '../sim';
-import { PLAYER_ACTION_IDS } from '../actions';
-import { OPERATORS } from './conditions';
-import { WEEK_TYPE, propertyType, type PropertyType } from './properties';
-import { PLACEHOLDER, PLACEHOLDER_PROPERTIES } from './text';
-import { DAYS, TIMES, type ContentError, type RoleKind, type Situation } from './types';
+} from '../sim/index.ts';
+import { PLAYER_ACTION_IDS } from '../actions.ts';
+import { OPERATORS } from './conditions.ts';
+import { WEEK_TYPE, propertyType, type PropertyType } from './properties.ts';
+import { PLACEHOLDER, PLACEHOLDER_PROPERTIES } from './text.ts';
+import { DAYS, TIMES, type ContentError, type RoleKind, type Situation } from './types.ts';
 
 class Invalid extends Error {}
 

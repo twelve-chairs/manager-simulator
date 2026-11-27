@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseDocument, visit } from 'yaml';
-import { validateBundle, type Situation } from '../src/situations';
+import { validateBundle, type Situation } from '../src/situations/index.ts';
 
 export interface SourceFile {
   path: string;

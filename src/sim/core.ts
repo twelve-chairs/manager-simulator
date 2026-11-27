@@ -13,8 +13,8 @@ import {
   type TeamAggregate,
   type ValueTarget,
   type WantTags,
-} from './types';
-import { TUNING } from './tuning';
+} from './types.ts';
+import { TUNING } from './tuning.ts';
 
 /** A working copy of the state plus the change log for the operation in progress. */
 export interface Ctx {

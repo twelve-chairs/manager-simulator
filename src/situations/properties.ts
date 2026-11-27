@@ -1,4 +1,4 @@
-import { compareCodeUnits } from '../sim';
+import { compareCodeUnits } from '../sim/index.ts';
 import {
   PERFORMANCE_LEVELS,
   WANTS as WANT_VALUES,
@@ -10,9 +10,9 @@ import {
   teamSummary,
   type PerformanceLevel,
   type SimState,
-} from '../sim';
-import { PERSONALITIES } from '../personalities';
-import type { RoleKind } from './types';
+} from '../sim/index.ts';
+import { PERSONALITIES } from '../personalities.ts';
+import type { RoleKind } from './types.ts';
 
 /** What a property's values are, which decides the operators and literals it can be compared with. */
 export type PropertyType =

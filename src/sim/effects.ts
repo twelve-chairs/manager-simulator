@@ -1,4 +1,4 @@
-import { changePerson, changeTeam, clamp100, cloneState, depart, gainHeads, leadsTeam, loseHeads, personRatings, planFrom, record, type Ctx } from './core';
+import { changePerson, changeTeam, clamp100, cloneState, depart, gainHeads, leadsTeam, loseHeads, personRatings, planFrom, record, type Ctx } from './core.ts';
 import {
   PERFORMANCE_LEVELS,
   RATINGS,
@@ -8,7 +8,7 @@ import {
   type HistoryEntry,
   type Person,
   type SimState,
-} from './types';
+} from './types.ts';
 
 export const PERSON_FIELDS = ['skill', 'motivation', 'stress', 'trust'] as const;
 export const DETAILED_TEAM_FIELDS = ['skill', 'motivation', 'stress'] as const;

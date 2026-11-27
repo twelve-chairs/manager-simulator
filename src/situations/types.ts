@@ -1,4 +1,4 @@
-import type { ChangeLogEntry, DepartureReason, PerformanceLevel, Rating, SimState, WantTags } from '../sim';
+import type { ChangeLogEntry, DepartureReason, PerformanceLevel, Rating, SimState, WantTags } from '../sim/index.ts';
 
 export type RoleKind = 'person' | 'team' | 'project';
 export type TeamForm = 'detailed' | 'aggregate';

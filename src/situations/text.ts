@@ -1,5 +1,5 @@
-import type { SimState } from '../sim';
-import type { RoleKind } from './types';
+import type { SimState } from '../sim/index.ts';
+import type { RoleKind } from './types.ts';
 
 /** A placeholder: `{role}` or `{role.property}`. Fixed pattern; never built from content. */
 export const PLACEHOLDER = /\{([^{}]*)\}/g;

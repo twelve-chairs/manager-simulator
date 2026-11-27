@@ -3,8 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
-import { compileSituations } from './scripts/compile-situations';
-import { buildVersion, git } from './scripts/version';
+import { compileSituations } from './scripts/compile-situations.ts';
+import { buildVersion, git } from './scripts/version.ts';
 
 /** Where situation files live; the build test points this elsewhere to check that invalid content fails the build. */
 // Resolved from this file, not the working directory, so the build finds content however Vite is started.

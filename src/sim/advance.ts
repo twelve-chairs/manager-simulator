@@ -14,9 +14,9 @@ import {
   summarize,
   troubles,
   type Ctx,
-} from './core';
-import { TUNING } from './tuning';
-import type { Cause, OperationResult, Person, SimState, Team } from './types';
+} from './core.ts';
+import { TUNING } from './tuning.ts';
+import type { Cause, OperationResult, Person, SimState, Team } from './types.ts';
 
 const rule = (ruleId: string): Cause => ({ kind: 'rule', ruleId });
 
