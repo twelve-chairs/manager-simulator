@@ -83,7 +83,8 @@ export function readPage(page: Page): Promise<PageState> {
         // that row its own buttons, as a player sees after their first click.
         ...(calibration.length > 0 && {
           calibration: {
-            moves: calibration.flatMap((table) => {
+            // One move sets every team to what it delivered, as the scene's own button does.
+            moves: [{ id: 'all:delivered', label: 'Every team: set to what it delivered' }, ...calibration.flatMap((table) => {
               const id = table.dataset.calibration!;
               const team = (q('h3', table)?.textContent ?? id).trim();
               const ratings = ['below', 'partial', 'meets', 'exceeds', 'outstanding'];
@@ -91,7 +92,7 @@ export function readPage(page: Page): Promise<PageState> {
                 ...(i > 0 ? [{ id: `${id}:${r}:${ratings[i - 1]}`, label: `${team}: ${r} down to ${ratings[i - 1]}` }] : []),
                 ...(i < ratings.length - 1 ? [{ id: `${id}:${r}:${ratings[i + 1]}`, label: `${team}: ${r} up to ${ratings[i + 1]}` }] : []),
               ])];
-            }),
+            })],
           },
         }),
         ...(bets && {
@@ -136,7 +137,8 @@ async function moveHeads(page: Page, move: string, count: number) {
  */
 async function calibrate(page: Page, moves: Record<string, number>) {
   const delivered = (move: string) => move.endsWith(':delivered');
-  for (const move of Object.keys(moves).filter(delivered)) await page.locator(`[data-set-delivered="${move.slice(0, -':delivered'.length)}"]`).click();
+  if (moves['all:delivered']) await page.locator('[data-action=set-all-delivered]').click();
+  for (const move of Object.keys(moves).filter((m) => delivered(m) && m !== 'all:delivered')) await page.locator(`[data-set-delivered="${move.slice(0, -':delivered'.length)}"]`).click();
   for (const [move, count] of Object.entries(moves)) if (!delivered(move)) await moveHeads(page, move, count);
   await page.locator('[data-action=settle]').click();
 }
