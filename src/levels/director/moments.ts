@@ -91,6 +91,37 @@ function firstDrafts(s: DirectorState, sim: SimState): Draft[] {
   return first;
 }
 
+/** Everyday frictions of running a group of teams; those marked above sit beyond what its senior manager can settle alone. */
+export const DIRECTOR_ISSUES: readonly { text: string; above: boolean }[] = [
+  { text: 'every team in the group runs planning its own way, so their work never lines up', above: false },
+  { text: 'headcount the group was promised two quarters ago still hasn’t arrived', above: true },
+  { text: 'the on-call rota leans on the same few people week after week', above: false },
+  { text: 'the group’s goals pull against another organization’s, and nobody has settled which comes first', above: true },
+  { text: 'decisions made in the managers’ meeting never reach the engineers', above: false },
+  { text: 'a reorganization keeps being rumoured, and nobody will confirm or deny it', above: true },
+  { text: 'new managers in the group were promoted with nobody to show them the job', above: false },
+  { text: 'promotions stall at the organization’s calibration with no feedback on why', above: true },
+];
+
+const ISSUE = 'everyday:';
+/** Whether a surfaced problem sits above the group's senior manager, out of their reach to settle. */
+const aboveSenior = (issue: string | undefined) => !!issue?.startsWith(ISSUE) && DIRECTOR_ISSUES[Number(issue.slice(ISSUE.length))]!.above;
+
+/** What a toured group's people raise, from the group as it is now: its most pressing trouble, else an everyday friction. */
+// @spec DIR-MOMENT-010
+function surfacedIssue(s: DirectorState, sim: SimState, g: string, troubled: ReadonlySet<string>): { key: string; text: string } {
+  const slipping = Object.values(sim.projects)
+    .filter((p) => p.teamId === g && p.status === 'active' && troubled.has(p.id))
+    .sort((a, b) => (a.id < b.id ? -1 : 1))[0];
+  if (slipping) return { key: `slipping:${slipping.id}`, text: `${slipping.name} has been slipping for weeks, and nobody upstream seems to know` };
+  const a = sim.teams[g]!.aggregate!;
+  if (band(a.stress) >= 3) return { key: 'stress', text: 'the group is stretched across more work than it can carry' };
+  if (band(a.attritionRisk) >= 2) return { key: 'attrition', text: 'people across the group have started looking around' };
+  if (band(a.motivation) <= 1) return { key: 'motivation', text: 'nobody can say any more where the group is headed' };
+  const i = (Math.floor(sim.week / T.weeksPerQuarter) + Math.max(0, s.groupIds.indexOf(g))) % DIRECTOR_ISSUES.length;
+  return { key: `${ISSUE}${i}`, text: DIRECTOR_ISSUES[i]!.text };
+}
+
 /** Bets, in the first quarter of each review period; then what listening tours surfaced; then groups in trouble. */
 function betsListeningAndTrouble(s: DirectorState, sim: SimState): Draft[] {
   const drafts: Draft[] = [];
@@ -98,11 +129,14 @@ function betsListeningAndTrouble(s: DirectorState, sim: SimState): Draft[] {
     const offers = betOffers(s, sim);
     drafts.push({ kind: 'bets', offers, title: 'Strategy bets', text: `Your executive has ${offers.length} bets on the table, and room to fund two. Each needs a group to carry it.`, choices: CHOICES.bets });
   }
+  const troubled = inTrouble(sim);
   for (const x of s.surfaced) {
     const lead = leaderOf(sim, x.groupId);
-    if (lead) drafts.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} raised something ${name(sim, lead)} hasn't brought to you.`, choices: CHOICES.surfaced });
+    if (!lead || !sim.teams[x.groupId]) continue;
+    const issue = surfacedIssue(s, sim, x.groupId, troubled);
+    const reach = aboveSenior(issue.key) ? ` It isn't something ${name(sim, lead)} can settle alone.` : '';
+    drafts.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, issue: issue.key, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} told you ${issue.text}. ${name(sim, lead)} hasn't brought it to you.${reach}`, choices: CHOICES.surfaced });
   }
-  const troubled = inTrouble(sim);
   for (const g of s.groupIds) {
     const a = sim.teams[g]?.aggregate;
     const lead = leaderOf(sim, g);
@@ -348,6 +382,17 @@ function chooseBets({ s, sim0, m, choiceId, log }: Ctx): Handled {
   return { ok: true, sim: r.sim, reaction: 'The bets are on. Your executive will be watching them.' };
 }
 
+/** A problem the listening tour surfaced: a group in trouble's answers, but coaching can't settle what sits above the senior manager. */
+// @spec DIR-MOMENT-011
+function chooseSurfaced(c: Ctx): Handled {
+  const { sim0, m, choiceId, log } = c;
+  if (choiceId !== 'coach' || !aboveSenior(m.issue)) return chooseTrouble(c);
+  const lead = m.personId!;
+  const grows = band(sim0.people[lead]!.skill) >= 1;
+  const sim = apply(sim0, grows ? [value('person', lead, 'skill', T.trouble.coachGrowth, 'director.trouble')] : [], log);
+  return { ok: true, sim, reaction: `You talk it through with ${name(sim0, lead)}. They see it, but it isn't theirs to fix, and it's still there.` };
+}
+
 function chooseTrouble({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const g = m.groupId!;
   const lead = m.personId!;
@@ -423,7 +468,7 @@ const HANDLERS: Record<DirectorMoment['kind'], (ctx: Ctx) => Handled> = {
   newSenior: chooseNewSenior,
   headcount: chooseHeadcount,
   bets: chooseBets,
-  surfaced: chooseTrouble,
+  surfaced: chooseSurfaced,
   trouble: chooseTrouble,
   peerAsk: choosePeerAsk,
   orgDesign: chooseOrgDesign,

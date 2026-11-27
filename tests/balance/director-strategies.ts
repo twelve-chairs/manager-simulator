@@ -64,6 +64,8 @@ function soundChoice(seen: DirectorSeen, m: DirectorMomentSeen): string {
     const peer = seen.view.upward.find((u) => u.id === m.personId);
     return peer && peer.trust >= 3 ? 'negotiate' : 'agree';
   }
+  // A problem above the senior manager is the director's to take: coaching them through it changes nothing.
+  if (m.kind === 'surfaced' && m.text.includes('can settle alone')) return 'decide';
   return prefer(m, ['spread', 'coach', 'straight', 'promote', 'letGo', 'splitPromote', 'merge', 'keep']);
 }
 

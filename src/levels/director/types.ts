@@ -60,6 +60,8 @@ export interface DirectorMoment {
   heads?: number;
   /** Strategy bets: what is on offer. */
   offers?: BetOffer[];
+  /** A problem the listening tour surfaced: which one, so its answer knows whether it sits above the senior manager. */
+  issue?: string;
 }
 
 export type DirectorGoalKind = 'landBet' | 'zeroRegretted' | 'unstrainGroup' | 'peerTrust';

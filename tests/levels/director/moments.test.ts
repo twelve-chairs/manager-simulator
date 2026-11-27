@@ -5,6 +5,7 @@ import {
   beginQuarter,
   chooseDirector,
   endQuarter,
+  DIRECTOR_ISSUES,
   headcountGiven,
   leaderOf,
   type DirectorMoment,
@@ -82,6 +83,67 @@ describe('a quarter’s moments', () => {
     const replaced = ok(chooseDirector(level, sim, trouble.id, 'replace')).sim;
     expect(replaced.people[lead]!.status).toBe('departed');
     expect(leaderOf(replaced, g)).toBeNull();
+  });
+
+  /** A group the tour visited, healthy and with no projects, so its people raise an everyday friction; its lead at the skill given. */
+  const toured = (week: number, skill = 30) => {
+    const d = director(4);
+    const g = d.level.groupIds[1]!;
+    const lead = leaderOf(d.sim, g)!;
+    const a = d.sim.teams[g]!.aggregate!;
+    let sim = fx(at(d.sim, week), [
+      { type: 'value', target: { kind: 'team', id: g }, field: 'stress', amount: 10 - a.stress },
+      { type: 'value', target: { kind: 'team', id: g }, field: 'motivation', amount: 80 - a.motivation },
+      { type: 'value', target: { kind: 'team', id: g }, field: 'attritionRisk', amount: -a.attritionRisk },
+      { type: 'value', target: { kind: 'person', id: lead }, field: 'skill', amount: skill - d.sim.people[lead]!.skill },
+    ]);
+    sim = structuredClone(sim);
+    for (const p of Object.values(sim.projects)) if (p.teamId === g) delete sim.projects[p.id];
+    const level = beginQuarter({ ...d.level, surfaced: [{ groupId: g, week }] }, sim);
+    return { g, lead, sim, level, moment: level.moments.find((m) => m.kind === 'surfaced')! };
+  };
+
+  // @spec DIR-MOMENT-010
+  it('names what the toured group raised: its most pressing trouble, else an everyday friction, some beyond its senior manager', () => {
+    const d = director(4);
+    const g = d.level.groupIds[1]!;
+    const strained = fx(d.sim, [{ type: 'value', target: { kind: 'team', id: g }, field: 'stress', amount: 100 }]);
+    const lead = leaderOf(strained, g)!;
+    const tense = beginQuarter({ ...d.level, surfaced: [{ groupId: g, week: strained.week }] }, strained).moments.find((m) => m.kind === 'surfaced')!;
+    expect(tense.choices.map((c) => c.id)).toEqual(['coach', 'decide', 'replace']);
+    expect(tense.text).toMatch(/^On your listening tour, people in .+ told you /);
+    expect(tense.text).toContain(strained.people[lead]!.name);
+    expect(tense.text).not.toMatch(/raised something/);
+
+    const seen = new Set<string>();
+    let above = 0;
+    for (let q = 0; q < DIRECTOR_ISSUES.length; q++) {
+      const { moment } = toured(q * T.weeksPerQuarter);
+      const issue = DIRECTOR_ISSUES.find((i) => moment.text.includes(i.text))!;
+      expect(issue, moment.text).toBeDefined();
+      seen.add(issue.text);
+      expect(moment.text.includes('can settle alone')).toBe(issue.above);
+      if (issue.above) above++;
+    }
+    expect(seen.size).toBe(DIRECTOR_ISSUES.length);
+    expect(above).toBe(4);
+  });
+
+  // @spec DIR-MOMENT-011
+  it('settles a friction beyond the senior manager only when the player takes the decision', () => {
+    const quarters = DIRECTOR_ISSUES.map((_, q) => toured(q * T.weeksPerQuarter));
+    const isAbove = (m: DirectorMoment) => m.text.includes('can settle alone');
+    const high = quarters.find((x) => isAbove(x.moment))!;
+    const coached = ok(chooseDirector(high.level, high.sim, high.moment.id, 'coach'));
+    expect(coached.sim.teams[high.g]!.aggregate!.stress).toBe(high.sim.teams[high.g]!.aggregate!.stress);
+    expect(coached.sim.people[high.lead]!.skill).toBe(30 + T.trouble.coachGrowth);
+    expect(coached.reaction).toMatch(/isn't theirs to fix/);
+    const decided = ok(chooseDirector(high.level, high.sim, high.moment.id, 'decide'));
+    expect(decided.sim.teams[high.g]!.aggregate!.stress).toBe(Math.max(0, 10 - T.trouble.decideFix));
+    const own = quarters.find((x) => !isAbove(x.moment))!;
+    const fixed = ok(chooseDirector(own.level, own.sim, own.moment.id, 'coach'));
+    expect(fixed.sim.teams[own.g]!.aggregate!.stress).toBe(10 - T.trouble.coachFix);
+    expect(fixed.reaction).not.toMatch(/isn't theirs/);
   });
 
   // @spec DIR-MOMENT-004

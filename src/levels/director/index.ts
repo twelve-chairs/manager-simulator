@@ -7,7 +7,7 @@ export { takeSurvey } from './survey';
 export { directorView, type DirectorMomentView, type BetView, type DirectorView, type GroupView, type OutsiderView, type SeniorManagerView } from './view';
 export { DIRECTOR_LEVEL, afterAdvanceDirector, assessDirector, directorScorecard, periodEndsThisQuarter, quartersPlayed, quitLastQuarter, reviewDue, type DirectorScorecard } from './review';
 export { endQuarter, setDirectorHabit } from './quarter';
-export { beginQuarter, chooseDirector, headcountGiven } from './moments';
+export { DIRECTOR_ISSUES, beginQuarter, chooseDirector, headcountGiven } from './moments';
 export { goalStatus, setGoals } from './goals';
 export { quarterRecap, type DirectorRecap } from './recap';
 export { directorLevel } from './contract';
