@@ -221,8 +221,8 @@ describe('calibration', () => {
     const [lenientTeam] = level.teamIds;
     const lenientManager = leader(sim, lenientTeam!);
     const l0: SeniorState = { ...level, leniency: Object.fromEntries(Object.keys(level.leniency).map((m) => [m, m === lenientManager ? 2 : 0])) };
-    // middling teams: mostly meets, a few exceeds; the lenient manager raises every head two ratings
-    const s0 = health(edit(sim, (x) => (x.week = level.startWeek + 20)), level.teamIds, 'middling');
+    // middling teams, mostly meets and a few exceeds, the lenient manager raising every head two ratings, beside a strong team rated honestly
+    const s0 = health(health(edit(sim, (x) => (x.week = level.startWeek + 20)), level.teamIds, 'middling'), [level.teamIds[1]!], 'strong');
     const l = beginMonth(l0, s0);
     const moment = l.moments.find((m) => m.kind === 'calibration')!;
     const settled = ok(chooseSenior(l, s0, moment.id, 'acceptAll'));
