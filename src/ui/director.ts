@@ -111,9 +111,9 @@ function headcount(ctx: ScreenContext, m: DirectorView['moments'][number]): Chil
     ctx.drafts.set(key, { counts: JSON.stringify(counts) });
     ctx.refresh();
   };
-  const row = (target: string, name: string) =>
+  const row = (target: string, name: string, field = 'bet') =>
     h('li', { 'data-target': target },
-      h('span', {}, name), ' ',
+      h('span', { 'data-field': field }, name), ' ',
       h('button', { 'data-step-down': target, onClick: set(target, -1), disabled: !(counts[target] ?? 0) }, '−'),
       h('strong', { 'data-field': 'count' }, counts[target] ?? 0),
       h('button', { 'data-step-up': target, onClick: set(target, 1), disabled: placed >= given }, '+'));
@@ -121,7 +121,7 @@ function headcount(ctx: ScreenContext, m: DirectorView['moments'][number]): Chil
     'div',
     { 'data-detail': 'headcount', class: 'placement' },
     h('p', {}, 'Heads given: ', h('strong', { 'data-field': 'heads-given' }, given), ' · still to place: ', h('strong', { 'data-field': 'heads-left' }, given - placed)),
-    h('ul', {}, v.groups.map((g) => row(`group:${g.id}`, g.name)), v.bets.map((b) => row(`bet:${b.projectId}`, `Behind ${b.name}`))),
+    h('ul', {}, v.groups.map((g) => row(`group:${g.id}`, `${g.name}: ${bandWord('stress', g.stress)}, ${plural(g.projects.length, 'project', 'projects')}`, 'group')), v.bets.map((b) => row(`bet:${b.projectId}`, `Behind ${b.name}`))),
     h('button', {
       'data-action': 'place-heads',
       class: 'primary',

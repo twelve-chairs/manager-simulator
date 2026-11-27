@@ -257,6 +257,25 @@ describe('headcount', () => {
     expect(trust(r.sim, level.executiveId)).toBe(trust(funded.sim, level.executiveId) - (heads - 3) * T.head.heldTrust);
   });
 
+  // @spec DIR-HEAD-005
+  it('names the most stretched group as the player last saw it, and gives it every head', () => {
+    const { level: l0, sim: s0 } = begun();
+    const [g0, g1] = l0.groupIds as [string, string];
+    // truly, g0 is the most stressed; the survey the player saw says g1
+    const sim = fx(s0, [{ type: 'value', target: { kind: 'team', id: g0 }, field: 'stress', amount: 100 }]);
+    const survey = structuredClone(l0.survey);
+    for (const g of l0.groupIds) survey.groups[g] = { ...sim.teams[g]!.aggregate!, stress: g === g1 ? 90 : 10 };
+    const level = beginQuarter({ ...l0, moments: [], survey, visited: null }, sim);
+    const hc = find(level, 'headcount');
+    const label = hc.choices.find((c) => c.id === 'neediest')!.label;
+    expect(label).toContain(sim.teams[g1]!.name);
+    expect(label).not.toContain(sim.teams[g0]!.name);
+    const before = sim.teams[g1]!.aggregate!.headcount;
+    const r = ok(chooseDirector(level, sim, hc.id, 'neediest'));
+    expect(r.sim.teams[g1]!.aggregate!.headcount).toBe(before + hc.heads!);
+    expect(r.sim.teams[g0]!.aggregate!.headcount).toBe(sim.teams[g0]!.aggregate!.headcount);
+  });
+
   // @spec DIR-HEAD-004
   it('rejects placing more heads than given, unknown groups or bets, or negative counts', () => {
     const { level, sim } = begun();

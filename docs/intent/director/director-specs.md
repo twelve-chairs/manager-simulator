@@ -65,6 +65,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-HEAD-001**: When headcount planning is produced, the director level shall give the player a number of new heads that rises with the executive's trust in the player and the player's reputation, as tuned.
 - [x] **DIR-HEAD-002**: When the player places headcount, the director level shall add each head placed in a group to it as an unrated head and raise its stress by a tuned onboarding amount, add each head placed behind a funded bet to its group and speed its project by a tuned amount, and count the rest as held back.
 - [x] **DIR-HEAD-003**: When headcount is held back, the director level shall lower the executive's trust by a tuned amount per head held back.
+- [x] **DIR-HEAD-005**: When headcount planning is produced, the director level shall name in the choice to give every head to the most stretched group the group with the highest stress band as the player last saw it (the survey, or the listening tour this quarter), ties broken by more of its projects behind schedule or overdue and then by group id; and choosing it shall place every head there.
 - [x] **DIR-HEAD-004**: If a placement places more heads than were given, names a group not in the organization or a bet not funded, or gives a negative count, then the director level shall reject it with an error and leave the state unchanged.
 
 ## Strategy bets

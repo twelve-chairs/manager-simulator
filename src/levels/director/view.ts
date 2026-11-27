@@ -87,6 +87,13 @@ export interface DirectorView {
 
 /** The player's view: senior managers as people, groups as last surveyed, and the room above. */
 // @spec DIR-VIS-001, DIR-VIS-002, DIR-VIS-003, DIR-VIS-004, DIR-VIS-006, DIR-VIS-007, DIR-ORG-003
+/** A group's mood as the player sees it: as it is now in a quarter the listening tour visited it, else as last surveyed. */
+export function seenMood(level: DirectorState, sim: SimState, g: string) {
+  const team = sim.teams[g]!.aggregate!;
+  const toured = level.visited?.groupId === g && level.visited.quarter === quarterOf(level, sim);
+  return { toured, mood: toured ? team : (level.survey.groups[g] ?? team) };
+}
+
 export function directorView(level: DirectorState, sim: SimState): DirectorView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
@@ -103,8 +110,7 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
       const p = sim.people[lead]!;
       seniorManagers.push({ id: p.id, name: p.name, personality: p.personality ?? null, groupId: g, restless: p.restlessSince !== null, performance: p.performance, motivation: band(p.motivation), stress: band(p.stress), skill: band(p.skill), want: want(p.id), memory: memoryOf(p.history) });
     }
-    const toured = level.visited?.groupId === g && level.visited.quarter === quarter;
-    const mood = toured ? team.aggregate : (level.survey.groups[g] ?? team.aggregate);
+    const { toured, mood } = seenMood(level, sim, g);
     groups.push({
       id: g,
       name: team.name,

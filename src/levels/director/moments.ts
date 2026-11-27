@@ -16,6 +16,7 @@ import { finalEvaluation, newLeader, placeMoments, restlessLeaders, stayAnswer, 
 import { quartersPlayed, remember } from './review';
 import { setGoals } from './goals';
 import { snapshotQuarter } from './recap';
+import { seenMood } from './view';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { Bet, BetOffer, DirectorMoment, DirectorState } from './types';
 
@@ -71,6 +72,17 @@ function betOffers(level: DirectorState, sim: SimState): BetOffer[] {
 
 type Draft = Omit<DirectorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
 
+/** The group with the highest stress band as the player last saw it, then the most projects in trouble, then by id. */
+// @spec DIR-HEAD-005
+function mostStretched(s: DirectorState, sim: SimState): string | undefined {
+  const troubled = inTrouble(sim);
+  const inTroubleOf = (g: string) => Object.values(sim.projects).filter((p) => p.teamId === g && p.status === 'active' && troubled.has(p.id)).length;
+  return s.groupIds
+    .filter((g) => sim.teams[g]?.aggregate)
+    .map((g) => ({ g, stress: band(seenMood(s, sim, g).mood.stress), troubled: inTroubleOf(g) }))
+    .sort((a, b) => b.stress - a.stress || b.troubled - a.troubled || (a.g < b.g ? -1 : 1))[0]?.g;
+}
+
 /** Final evaluations, groups with no senior manager and none on the way, and the quarter's headcount: the quarter's first week. */
 function firstDrafts(s: DirectorState, sim: SimState): Draft[] {
   const first: Draft[] = [];
@@ -87,7 +99,9 @@ function firstDrafts(s: DirectorState, sim: SimState): Draft[] {
     first.push({ kind: 'stay', personId: id, groupId: sim.people[id]!.teamId ?? undefined, ...stayDraft(sim, id) });
   }
   const heads = headcountGiven(s, sim);
-  first.push({ kind: 'headcount', heads, title: 'Headcount for the quarter', text: `Your executive has ${heads} new ${heads === 1 ? 'head' : 'heads'} for your organization this quarter. Where do they go?`, choices: CHOICES.headcount });
+  const stretched = mostStretched(s, sim);
+  const choices = CHOICES.headcount.map((c) => (c.id === 'neediest' && stretched ? { ...c, label: `Give them all to ${groupName(sim, stretched)}, the most stretched group as you last saw it` } : c));
+  first.push({ kind: 'headcount', heads, ...(stretched && { groupId: stretched }), title: 'Headcount for the quarter', text: `Your executive has ${heads} new ${heads === 1 ? 'head' : 'heads'} for your organization this quarter. Where do they go?`, choices });
   return first;
 }
 
@@ -350,7 +364,8 @@ function chooseNewSenior({ s, sim0, m, choiceId, log }: Ctx): Handled {
 }
 
 /** The placement a headcount choice stands for: the player's own, spread evenly, all to the most stressed group, or none. */
-function headcountPlan(s: DirectorState, sim: SimState, given: number, choiceId: string): Record<string, unknown> | null {
+function headcountPlan(s: DirectorState, sim: SimState, m: DirectorMoment, choiceId: string): Record<string, unknown> | null {
+  const given = m.heads ?? 0;
   const groups = s.groupIds.filter((g) => sim.teams[g]);
   if (choiceId.startsWith('place:')) return parse(choiceId.slice('place:'.length));
   if (choiceId === 'spread') {
@@ -359,14 +374,15 @@ function headcountPlan(s: DirectorState, sim: SimState, given: number, choiceId:
     return plan;
   }
   if (choiceId === 'neediest') {
-    const g = [...groups].sort((x, y) => sim.teams[y]!.aggregate!.stress - sim.teams[x]!.aggregate!.stress)[0]!;
-    return { [g]: given };
+    // The group the choice named, as the player saw the groups when the quarter began (DIR-HEAD-005).
+    const g = m.groupId && groups.includes(m.groupId) ? m.groupId : mostStretched(s, sim);
+    return g ? { [g]: given } : {};
   }
   return {};
 }
 
 function chooseHeadcount({ s, sim0, m, choiceId, log }: Ctx): Handled {
-  const plan = headcountPlan(s, sim0, m.heads ?? 0, choiceId);
+  const plan = headcountPlan(s, sim0, m, choiceId);
   if (!plan) return { ok: false, error: 'a placement must be JSON naming groups or bets' };
   const r = place(s, sim0, m, plan, log);
   if (!r.ok) return r;

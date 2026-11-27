@@ -119,6 +119,9 @@ describe('the director’s scenes', () => {
     const given = Number(text(root, '[data-field=heads-given]'));
     const groups = $$(root, '[data-step-up^="group:"]');
     expect(groups).toHaveLength(3);
+    // each group named with its stress as last seen and its projects
+    for (const row of $$(root, '[data-detail=headcount] [data-target^="group:"] [data-field=group]')) expect(row.textContent).toMatch(/^.+: (calm|steady|busy|strained|overwhelmed), \d+ projects?$/);
+    expect($$(root, '[data-detail=headcount] [data-field=group]')).toHaveLength(3);
     if (given > 0) {
       groups[0]!.click();
       expect(Number(text(root, '[data-field=heads-left]'))).toBe(given - 1);
