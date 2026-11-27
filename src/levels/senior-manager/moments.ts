@@ -117,11 +117,16 @@ function newWorkReaction(offer: 'launch' | 'handover' | 'own', choiceId: string,
 }
 
 /** How the player answered a problem last time, as the engineers' second telling puts it. */
-const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem', (manager: string) => string> = {
+const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem' | 'escalate', (manager: string) => string> = {
   coach: (manager) => `coached ${manager} through it`,
   stepIn: () => 'fixed it yourself',
   letThem: (manager) => `left it with ${manager}`,
+  escalate: () => 'took it to your own manager',
 };
+
+/** For a problem above the manager: taking it upward, which settles it at a cost in standing rather than energy. */
+// @spec SENIOR-HABIT-013
+const ESCALATE = { id: 'escalate', label: 'Take it to your own manager: it gets settled, at a cost in your standing rather than your energy' };
 
 /**
  * What engineers raise at a skip-level when nothing is badly wrong, and whose it is to settle: the team's manager's, or
@@ -204,7 +209,7 @@ function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<str
       text: again
         ? `At last month's skip-level, ${name(sim, t)}'s engineers told you again that ${issue.text.replace(/^that /, '')}. Last time you ${LAST_TIME[before.answer](manager)}, and it didn't hold.${reach}`
         : `At last month's skip-level, ${name(sim, t)}'s engineers told you ${issue.text}. ${manager} hasn't mentioned it to you.${reach}`,
-      choices: CHOICES.surfaced,
+      choices: aboveManager(issue.key) ? [...CHOICES.surfaced, ESCALATE] : CHOICES.surfaced,
     });
   }
   return drafts;
@@ -272,7 +277,11 @@ function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
     const detail = r.exceeds > 0 ? ('promote' as const) : ('letGo' as const);
     s.lastApproval[t] = sim.week;
     const what = detail === 'promote' ? 'promote one of their engineers' : 'let one of their engineers go';
-    drafts.push({ kind: 'approval', teamId: t, detail, title: `${managerName(s, sim, t)} asks for an approval`, text: `${managerName(s, sim, t)} wants to ${what}, and needs your sign-off.`, choices: CHOICES.approval });
+    // @spec SENIOR-MOMENT-020
+    const who = managerName(s, sim, t);
+    const held = s.evidenceHeld?.[m];
+    const lastTime = held === undefined ? '' : held ? ` Last time you asked ${who} for the evidence, they had the case ready.` : ` Last time you asked ${who} for the evidence, the case wasn't there.`;
+    drafts.push({ kind: 'approval', teamId: t, detail, title: `${who} asks for an approval`, text: `${who} wants to ${what}, and needs your sign-off.${lastTime}`, choices: CHOICES.approval });
   }
   return drafts;
 }
@@ -419,8 +428,8 @@ function pickReplaceManager({ s, sim, choiceId, effects, t }: Pick): Picked {
 // @spec SENIOR-HABIT-011
 function rememberIssue({ s, sim, moment, choiceId, t }: Pick, skill: number) {
   if (moment.kind !== 'surfaced' || !moment.issue) return;
-  const answer = choiceId as 'coach' | 'stepIn' | 'letThem';
-  const settled = answer === 'stepIn' || (!aboveManager(moment.issue) && ((answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2)));
+  const answer = choiceId as 'coach' | 'stepIn' | 'letThem' | 'escalate';
+  const settled = answer === 'stepIn' || answer === 'escalate' || (!aboveManager(moment.issue) && ((answer === 'coach' && skill >= 1) || (answer === 'letThem' && skill >= 2)));
   const record = s.issues[t] ?? {};
   record[moment.issue] = { week: sim.week, settled, answer };
   s.issues[t] = record;
@@ -431,6 +440,10 @@ function pickTrouble(c: Pick): Picked {
   const { sim, choiceId, effects, t, m, who } = c;
   const skill = m ? band(sim.people[m]!.skill) : 0;
   rememberIssue(c, skill);
+  if (choiceId === 'escalate') {
+    effects.push(team(t, 'stress', -T.stepInFix, 'senior.escalate'), player('reputation', -T.escalateReputation, 'senior.escalate'));
+    return { reaction: `You take it to your own manager, who settles it. It cost you a little standing to ask.` };
+  }
   if (choiceId === 'stepIn') {
     effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
     return { reaction: `You sort it out yourself. ${who} watches, and next time will come to you again.` };
@@ -507,6 +520,7 @@ function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): P
     return { reaction: `${who} takes the no back to their team.` };
   }
   if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
+  if (m) s.evidenceHeld = { ...s.evidenceHeld, [m]: !lenient };
   if (lenient) {
     later(`The ${what} ${who} asked for didn't go ahead: the case wasn't there yet.`);
     return { reaction: `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` };

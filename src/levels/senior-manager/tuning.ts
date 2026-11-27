@@ -60,6 +60,8 @@ export const SENIOR_TUNING = {
   /** Escalations: how much stepping in and coaching fix a team's stress, what they cost, and the skill coaching grows. */
   stepInFix: 15,
   stepInEnergy: 6,
+  /** Reputation it costs to take a problem above the manager to your own manager. */
+  escalateReputation: 3,
   coachFix: 8,
   coachEnergy: 1,
   coachGrowth: 3,

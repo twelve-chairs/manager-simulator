@@ -350,6 +350,37 @@ describe('a month’s moments', () => {
     expect(T.handoverDecline).toBeLessThan(T.declineWork);
   });
 
+  // @spec SENIOR-MOMENT-020
+  it('recalls in a manager’s next approval how the evidence went last time', () => {
+    const { level, sim } = calm(7);
+    const t = level.teamIds[1]!;
+    const m = leader(sim, t);
+    const who = sim.people[m]!.name;
+    const rated = edit(sim, (s) => {
+      const r = s.teams[t]!.aggregate!.ratings;
+      r.unrated -= 1;
+      r.exceeds += 1;
+    });
+    const textAfter = (leniency: number) => {
+      const l = beginMonth({ ...level, leniency: { ...level.leniency, [m]: leniency } }, rated);
+      const r = answer(l, rated, find(l, 'approval'), 'evidence');
+      const later = edit(r.sim, (s) => {
+        s.week += T.approvalCooldownWeeks + 1;
+        // another head rated exceeds, so there is someone to propose
+        const rr = s.teams[t]!.aggregate!.ratings;
+        const from = rr.unrated > 0 ? 'unrated' : 'meets';
+        rr[from] -= 1;
+        rr.exceeds += 1;
+      });
+      const next = beginMonth({ ...r.level, moments: [] }, later).moments.find((x) => x.kind === 'approval' && x.teamId === t)!;
+      return next.text;
+    };
+    expect(textAfter(0)).toContain(`Last time you asked ${who} for the evidence, they had the case ready.`);
+    expect(textAfter(2)).toContain(`Last time you asked ${who} for the evidence, the case wasn't there.`);
+    // a first request says nothing of a last time
+    expect(find(beginMonth(level, rated), 'approval').text).not.toMatch(/Last time/);
+  });
+
   // @spec SENIOR-RECAP-005
   it('says in the next month’s recap what came of an approval, in words matching what the answer did', () => {
     const { level, sim } = calm(7);
@@ -560,6 +591,18 @@ describe('skip-level problems that stay settled', () => {
     expect(again.title).toMatch(/again/);
     expect(again.text).toMatch(/again/);
     expect(again.text).toContain(`Last time you left it with ${r.sim.people[m]!.name}`);
+  });
+
+  // @spec SENIOR-HABIT-013
+  it('offers to take a problem above the manager upward, settling it for standing rather than energy', () => {
+    const above = answerFriction(4, true, 45, 'escalate');
+    expect(above.moment.choices.map((c) => c.id)).toEqual(['coach', 'stepIn', 'letThem', 'escalate']);
+    expect(above.settled).toBe(true);
+    expect(above.r.sim.player.reputation).toBe(Math.max(0, above.state.player.reputation - T.escalateReputation));
+    expect(above.r.sim.player.stress).toBe(above.state.player.stress);
+    expect(above.r.sim.teams[above.t]!.aggregate!.stress).toBe(Math.max(0, above.state.teams[above.t]!.aggregate!.stress - T.stepInFix));
+    // a problem the manager can settle has no such choice
+    expect(answerFriction(4, false, 45, 'coach').moment.choices.map((c) => c.id)).not.toContain('escalate');
   });
 
   // @spec SENIOR-HABIT-008, SENIOR-HABIT-012
