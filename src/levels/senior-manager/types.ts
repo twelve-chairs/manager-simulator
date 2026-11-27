@@ -147,6 +147,8 @@ export interface SeniorState {
   moments: SeniorMoment[];
   /** Per team id: the week its manager last asked for an approval. */
   lastApproval: Record<string, number>;
+  /** What came of each approval the player answered, by the week the next month's recap reports it. */
+  followUps?: { week: number; text: string }[];
   /** Pairs of teams whose dispute the player agreed or decided, and the week they settled it. */
   settledDisputes: { teams: [string, string]; week: number }[];
   /** Whether the group has been offered its fourth team. */

@@ -85,10 +85,13 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
   const keys = EVERYDAY_ISSUES.map((_, i) => `everyday:${i}`);
   const unsettled = keys.find((k) => record[k]?.settled === false);
   const start = (Math.floor(sim.week / T.weeksPerMonth) + Number(teamId.replace(/\D/g, '') || 0)) % EVERYDAY_ISSUES.length;
-  const fresh = keys.map((_, i) => keys[(start + i) % keys.length]!).find((k) => {
+  const inTurn = keys.map((_, i) => keys[(start + i) % keys.length]!).filter((k) => {
     const r = record[k];
     return !(r?.settled && sim.week - r.week < T.issueSettledWeeks);
   });
+  // A friction any of the group's teams raised lately rests, so the skip-levels don't all bring the same one.
+  const raisedLately = (k: string) => Object.values(level.issues).some((rec) => rec[k] !== undefined && sim.week - rec[k].week < T.issueRestWeeks);
+  const fresh = inTurn.find((k) => !raisedLately(k)) ?? inTurn[0];
   const key = unsettled ?? fresh;
   return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]!.text };
 }
@@ -136,6 +139,12 @@ export const EVERYDAY_ISSUES: readonly { text: string; above: boolean }[] = [
   { text: 'the newest engineers say nobody has time to answer their questions', above: false },
   { text: 'retrospectives keep naming the same problems, and nothing changes', above: false },
   { text: 'a promotion promised last year has gone quiet somewhere above their manager', above: true },
+  { text: 'tests fail at random often enough that people rerun them until they pass', above: false },
+  { text: 'two engineers have barely spoken since a design argument a month ago', above: false },
+  { text: 'nobody knows how on-call pay works since the policy changed upstairs', above: true },
+  { text: 'a hiring freeze above the team has left its open role empty for months', above: true },
+  { text: 'estimates get made before anyone has looked at the code, and planning keeps missing', above: false },
+  { text: 'a dashboard the whole company uses is theirs, and nobody has time to keep it working', above: false },
 ];
 
 /** Whether a surfaced problem sits above the team's manager, out of their reach to settle. */
@@ -479,17 +488,26 @@ function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): P
     else effects.push(team(t, 'headcount', -1, 'senior.approval'));
   };
   const lenient = m ? (s.leniency[m] ?? 0) > 0 : false;
+  // @spec SENIOR-RECAP-005
+  const later = (text: string) => (s.followUps = [...(s.followUps ?? []).filter((f) => f.week >= sim.week), { week: sim.week + T.weeksPerMonth, text }]);
+  const what = moment.detail === 'promote' ? 'promotion' : 'exit';
   if (choiceId === 'approve') {
     apply();
     if (lenient) effects.push(team(t, 'motivation', -T.approvalDip, 'senior.approval'));
+    later(lenient ? `${name(sim, t)} still wonders what the ${what} you signed for ${who} took.` : `The ${what} you signed for ${who} has settled in, and ${name(sim, t)} took it well.`);
     return { reaction: lenient ? `You sign it. Some of ${name(sim, t)} wonder what it took.` : 'You sign it.' };
   }
   if (choiceId !== 'evidence') {
     if (m) effects.push(person(m, 'trust', -T.refuseTrust, 'senior.approval'));
+    later(`${who} hasn't raised the ${what} again, and trusts you a little less for the no.`);
     return { reaction: `${who} takes the no back to their team.` };
   }
   if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
-  if (lenient) return { reaction: `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` };
+  if (lenient) {
+    later(`The ${what} ${who} asked for didn't go ahead: the case wasn't there yet.`);
+    return { reaction: `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` };
+  }
+  later(`${who} had the case for the ${what} all along; being asked for it cost a little of their trust in you.`);
   apply();
   const evidence = moment.detail === 'promote' ? 'a half-year rated exceeds, and a design the team still builds on' : "two low ratings in a row, and a plan that was followed but didn't take";
   return { reaction: `${who} brings the evidence: ${evidence}. It holds up, and you sign it.` };

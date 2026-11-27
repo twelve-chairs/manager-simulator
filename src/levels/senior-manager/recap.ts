@@ -32,6 +32,8 @@ export interface SeniorRecap {
     slipped: string[];
     /** New projects the player's manager gave to teams with room. */
     assigned: { teamId: string; name: string; project: string }[];
+    /** What came of last month's approvals. */
+    followUps: string[];
   };
   routine: { habits: string[]; goals: { text: string; progress: string }[] };
 }
@@ -74,5 +76,6 @@ export function monthRecap(level: SeniorState, sim: SimState, start: MonthStart)
     ...(level.listenedTo.length ? [`You held a skip-level with ${level.listenedTo.map((t) => sim.teams[t]!.name).join(', ')}.`] : []),
     ...(level.backfills.length ? [`${level.backfills.length} ${level.backfills.length === 1 ? 'role is' : 'roles are'} waiting to be filled.`] : []),
   ];
-  return { changes: { managers, teams, heads, slipped, assigned: [] }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
+  const followUps = (level.followUps ?? []).filter((f) => f.week === start.week).map((f) => f.text);
+  return { changes: { managers, teams, heads, slipped, assigned: [], followUps }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
 }

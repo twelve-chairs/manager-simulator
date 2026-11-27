@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SENIOR_TUNING, beginMonth, chooseSenior, endMonth, seniorView, type SeniorMoment, type SeniorState } from '../../../src/levels/senior-manager';
+import { SENIOR_TUNING, beginMonth, chooseSenior, endMonth, seniorView, type SeniorMoment, type SeniorRecap, type SeniorState } from '../../../src/levels/senior-manager';
 import type { SimState } from '../../../src/sim';
 import { EVERYDAY_ISSUES } from '../../../src/levels/senior-manager/moments';
 import { senior } from './fixtures';
@@ -342,6 +342,36 @@ describe('a month’s moments', () => {
     expect(T.handoverDecline).toBeLessThan(T.declineWork);
   });
 
+  // @spec SENIOR-RECAP-005
+  it('says in the next month’s recap what came of an approval, in words matching what the answer did', () => {
+    const { level, sim } = calm(7);
+    const t = level.teamIds[1]!;
+    const m = leader(sim, t);
+    const who = sim.people[m]!.name;
+    const rated = edit(sim, (s) => {
+      const r = s.teams[t]!.aggregate!.ratings;
+      r.unrated -= 1;
+      r.exceeds += 1;
+    });
+    const nextMonth = (leniency: number, choice: string) => {
+      const l = beginMonth({ ...level, leniency: { ...level.leniency, [m]: leniency } }, rated);
+      const r = answer(l, rated, find(l, 'approval'), choice);
+      const ended = endMonth(r.level, r.sim);
+      if (!ended.ok) throw new Error(ended.error);
+      // nothing yet in the month it was answered
+      expect((ended.recap as SeniorRecap).changes.followUps).toEqual([]);
+      const later = edit(ended.sim, (s) => (s.week += T.weeksPerMonth));
+      const after = endMonth(beginMonth(ended.level, later), later);
+      if (!after.ok) throw new Error(after.error);
+      return (after.recap as SeniorRecap).changes.followUps;
+    };
+    expect(nextMonth(0, 'approve')).toEqual([`The promotion you signed for ${who} has settled in, and ${sim.teams[t]!.name} took it well.`]);
+    expect(nextMonth(2, 'approve')[0]).toMatch(/still wonders what the promotion/);
+    expect(nextMonth(0, 'evidence')[0]).toMatch(/had the case for the promotion all along; being asked for it cost a little of their trust/);
+    expect(nextMonth(2, 'evidence')[0]).toMatch(/didn't go ahead/);
+    expect(nextMonth(0, 'refuse')[0]).toMatch(/trusts you a little less/);
+  });
+
   // @spec SENIOR-MOMENT-008
   it('brings an approval from a team’s ratings: approving applies it, asking for evidence applies it only for a strict manager', () => {
     const { level, sim } = calm(7);
@@ -468,6 +498,22 @@ describe('skip-level problems that stay settled', () => {
     expect(surfacedFor({ ...level, issues: { [t]: all } }, later, t)).toBeDefined();
   });
 
+  // @spec SENIOR-HABIT-008
+  it('rests a friction another team raised lately, unless nothing else is left to raise', () => {
+    const { level, sim } = calm(4);
+    const [t0, t1] = level.teamIds as [string, string];
+    const first = surfacedFor(level, sim, t1)!;
+    const elsewhere = { [t0]: { [first.issue!]: { week: sim.week - 1, settled: false, answer: 'coach' as const } } };
+    expect(surfacedFor({ ...level, issues: elsewhere }, sim, t1)!.issue).not.toBe(first.issue);
+    // half a year on, it can come back
+    const later = edit(sim, (s) => (s.week += T.issueRestWeeks + 1));
+    const old = { [t0]: { [first.issue!]: { week: sim.week - 1, settled: false, answer: 'coach' as const } } };
+    expect(surfacedFor({ ...level, issues: old }, later, t1)).toBeDefined();
+    // the only friction left for this team is raised regardless
+    const allButOne = Object.fromEntries(EVERYDAY_ISSUES.map((_, i) => `everyday:${i}`).filter((k) => k !== first.issue).map((k) => [k, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
+    expect(surfacedFor({ ...level, issues: { ...elsewhere, [t1]: allButOne } }, sim, t1)!.issue).toBe(first.issue);
+  });
+
   /** Records of every friction but those of one owner, settled lately: what is left to raise is that owner's. */
   const onlyOpen = (above: boolean, week: number) =>
     Object.fromEntries(EVERYDAY_ISSUES.flatMap((x, i) => (x.above === above ? [] : [[`everyday:${i}`, { week: week - 1, settled: true, answer: 'stepIn' as const }]])));
@@ -508,8 +554,8 @@ describe('skip-level problems that stay settled', () => {
 
   // @spec SENIOR-HABIT-008, SENIOR-HABIT-012
   it('says when a friction is above the manager, settles it only by stepping in, and eases nothing when coached or left', () => {
-    expect(EVERYDAY_ISSUES).toHaveLength(10);
-    expect(EVERYDAY_ISSUES.filter((x) => x.above)).toHaveLength(4);
+    expect(EVERYDAY_ISSUES).toHaveLength(16);
+    expect(EVERYDAY_ISSUES.filter((x) => x.above)).toHaveLength(6);
     const mine = answerFriction(4, false, 45, 'coach');
     expect(mine.moment.text).not.toMatch(/can settle alone/);
 
