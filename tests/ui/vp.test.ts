@@ -147,6 +147,12 @@ describe('the VP’s moments', () => {
     for (const c of [shown.changes].flat(3)) if (c instanceof Node) box.append(c);
     expect(text(box, '[data-part=recap-cut] li')).toBe('7 heads cut.');
     expect(text(box, '[data-part=recap-priority] li')).toBe('Atlas landed.');
+    // a division that lost people, by name, with how many you'd have kept
+    const d = (r.level as VpState).divisionIds[0]!;
+    (r.level as VpState).headsLost = [{ week: r.sim.week - T.weeksPerQuarter, divisionId: d, count: 1, regretted: 1 }];
+    const lost = document.createElement('div');
+    for (const c of [vpRenderer.recap(r, { changes, routine: { habits: [], goals: [] } }).changes].flat(3)) if (c instanceof Node) lost.append(c);
+    expect(text(lost, '[data-part=recap-left] li')).toBe(`${r.sim.teams[d]!.name} lost 1 engineer, one you'd have kept.`);
   });
 });
 

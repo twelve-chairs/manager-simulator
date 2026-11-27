@@ -3,7 +3,7 @@ import type { SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { goalStatus } from './goals';
 import { DIRECTOR_TUNING as T } from './tuning';
-import { knownRatings, regrettedSince } from '../org';
+import { headsLostSince, knownRatings, regrettedSince } from '../org';
 import type { DirectorState } from './types';
 
 const WEEKS = T.weeksPerQuarter;
@@ -45,22 +45,14 @@ export function afterAdvanceDirector(level: DirectorState, sim: SimState): { lev
 
 /** Records each group's heads lost while the simulation advanced, from the counts the level last saw, and how many it would have kept. */
 function recordHeadsLost(s: DirectorState, sim: SimState) {
-  for (const g of s.groupIds) {
-    const was = s.knownRatings[g];
-    const now = sim.teams[g]?.aggregate;
-    if (!was || !now) continue;
-    const lost = Object.values(was).reduce((n, x) => n + x, 0) - now.headcount;
-    if (lost <= 0) continue;
-    const kept = regrettedSince({ [g]: was }, [g], sim);
-    s.headsLost.push({ week: sim.week - WEEKS, groupId: g, count: lost, regretted: Math.min(kept, lost) });
-  }
+  for (const x of headsLostSince(s.knownRatings, s.groupIds, sim)) s.headsLost.push({ week: sim.week - WEEKS, groupId: x.unitId, count: x.count, regretted: x.regretted });
 }
 
 /** The player's groups that lost heads while the simulation advanced the quarter just played: how many, and how many they would have kept. */
 // @spec DIR-RECAP-004
 export function headsLostLastQuarter(level: DirectorState, sim: SimState): { groupId: string; name: string; count: number; regretted: number }[] {
   const played = sim.week - WEEKS;
-  return (level.headsLost ?? [])
+  return level.headsLost
     .filter((x) => x.week === played)
     .map((x) => ({ groupId: x.groupId, name: sim.teams[x.groupId]?.name ?? x.groupId, count: x.count, regretted: x.regretted }));
 }

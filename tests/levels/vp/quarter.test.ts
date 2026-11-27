@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { band, LINE_TUNING, lineManagerLevel } from '../../../src/levels/line-manager';
 import { seniorManagerLevel } from '../../../src/levels/senior-manager';
 import { directorLevel } from '../../../src/levels/director';
-import { leaderOf, sustained } from '../../../src/levels/org';
+import { knownRatings, leaderOf, sustained } from '../../../src/levels/org';
 import {
   VP_LEVEL,
   VP_TUNING as T,
   afterAdvanceVp,
+  headsLostLastQuarter,
   assessVp,
   beginQuarter,
   chooseVp,
@@ -489,6 +490,25 @@ describe('directors who quit', () => {
     after.people[lead]!.history.push({ week: sim.week - 2, cause: { kind: 'rule', ruleId: 'x' }, note: 'Wanted a bigger remit' });
     expect(quitLastQuarter(level, after)).toEqual([{ personId: lead, name: sim.people[lead]!.name, lowMotivationWeeks: 6, highStressWeeks: 0, lowTrust: false, lastMemory: 'Wanted a bigger remit' }]);
     expect(quitLastQuarter(level, { ...after, week: end + T.weeksPerQuarter })).toEqual([]);
+  });
+
+  // @spec VP-RECAP-003
+  it('reports each division that lost heads in the quarter just played, and how many were rated meets or better', () => {
+    const { level: l0, sim } = vp(3);
+    const level = { ...structuredClone(l0), knownRatings: knownRatings(l0.divisionIds, sim) };
+    const [d1, d2] = level.divisionIds as [string, string];
+    const after = structuredClone(sim);
+    after.week = after.week + T.weeksPerQuarter;
+    const a = after.teams[d1]!.aggregate!;
+    const keep = a.ratings.meets > 0 ? 'meets' : a.ratings.exceeds > 0 ? 'exceeds' : 'outstanding';
+    const other = a.ratings.unrated > 0 ? 'unrated' : a.ratings.partial > 0 ? 'partial' : 'below';
+    a.headcount = a.headcount - 2;
+    a.ratings[keep] = a.ratings[keep] - 1;
+    a.ratings[other] = a.ratings[other] - 1;
+    const advanced = afterAdvanceVp(level, after).level;
+    expect(headsLostLastQuarter(advanced, after)).toEqual([{ divisionId: d1, name: sim.teams[d1]!.name, count: 2, regretted: 1 }]);
+    expect(headsLostLastQuarter(advanced, after).some((x) => x.divisionId === d2)).toBe(false);
+    expect(headsLostLastQuarter(advanced, { ...after, week: after.week + T.weeksPerQuarter })).toEqual([]);
   });
 });
 

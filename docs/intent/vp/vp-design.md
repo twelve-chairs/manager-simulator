@@ -81,7 +81,7 @@ At the start of each review period, the CEO sets two or three goals for it, draw
 
 ## The Recap
 
-Each quarter ends with a recap, folded as the earlier levels' are: what changed first (directors whose bands moved, a new survey's results, heads who left or joined, heads cut, the company priority's progress, how the leadership team's trust moved), and the quarter's moments, the habits' routine and the goals folded into *The whole quarter*.
+Each quarter ends with a recap, folded as the earlier levels' are: what changed first (directors whose bands moved, a new survey's results, heads who left or joined, heads cut, who left: each director who quit, with what led to it, and each division that lost heads during the quarter, with how many of them the player would have kept, asked of the level after the quarter's advance; the company priority's progress, how the leadership team's trust moved), and the quarter's moments, the habits' routine and the goals folded into *The whole quarter*.
 
 ## Scorecard, Reviews and the End of the Level
 

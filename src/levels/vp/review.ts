@@ -1,5 +1,5 @@
 import { LINE_TUNING, quitsIn, type Quit } from '../line-manager';
-import { knownRatings, regrettedSince } from '../org';
+import { headsLostSince, knownRatings, regrettedSince } from '../org';
 import type { SimState } from '../../sim';
 import type { Assessment, Measure } from '../../review';
 import { goalStatus } from './goals';
@@ -34,8 +34,18 @@ export function afterAdvanceVp(level: VpState, sim: SimState): { level: VpState;
   for (const p of Object.values(sim.projects)) if (p.status === 'completed' && s.divisionIds.includes(p.teamId) && s.completions[p.id] === undefined) s.completions[p.id] = sim.week - WEEKS;
   const regretted = regrettedSince(s.knownRatings, s.divisionIds, sim);
   if (regretted > 0) s.regretted.push({ week: sim.week - WEEKS, count: regretted });
+  for (const x of headsLostSince(s.knownRatings, s.divisionIds, sim)) s.headsLost.push({ week: sim.week - WEEKS, divisionId: x.unitId, count: x.count, regretted: x.regretted });
   s.knownRatings = knownRatings(s.divisionIds, sim);
   return { level: s, burnedOut: s.burnoutQuarters >= T.burnoutQuarters };
+}
+
+/** The function's divisions that lost heads while the simulation advanced the quarter just played: how many, and how many they would have kept. */
+// @spec VP-RECAP-003
+export function headsLostLastQuarter(level: VpState, sim: SimState): { divisionId: string; name: string; count: number; regretted: number }[] {
+  const played = sim.week - WEEKS;
+  return level.headsLost
+    .filter((x) => x.week === played)
+    .map((x) => ({ divisionId: x.divisionId, name: sim.teams[x.divisionId]?.name ?? x.divisionId, count: x.count, regretted: x.regretted }));
 }
 
 /** The directors of the function's divisions who quit in the quarter just played, with what led to it and their last memory. */

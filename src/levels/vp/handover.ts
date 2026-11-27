@@ -60,6 +60,7 @@ function emptyState(director: DirectorState, week: number): VpState {
     periodStart: week,
     knownRatings: {},
     regretted: [],
+    headsLost: [],
     quarterStart: null,
     joined: [],
     letGo: [],

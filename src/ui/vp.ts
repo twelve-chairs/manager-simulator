@@ -1,4 +1,4 @@
-import { quitLastQuarter, type VpRecap, type VpState, type VpView } from '../levels/vp';
+import { headsLostLastQuarter, quitLastQuarter, type VpRecap, type VpState, type VpView } from '../levels/vp';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
@@ -18,7 +18,7 @@ import {
   trustChips,
   unitCard,
 } from './org';
-import { headsChangeLine, quitLine, shareWord } from './text';
+import { headsChangeLine, headsLostLine, quitLine, shareWord } from './text';
 import type { Chip, LevelRenderer, MomentDetails, ScreenContext } from './app';
 
 /** The VP's How to play topics. */
@@ -141,11 +141,12 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const r = value as VpRecap;
   const c = r.changes;
   const quits = quitLastQuarter(run.level as VpState, run.sim);
-  const quiet = !(c.directors.length || c.survey || c.heads.length || c.cut || quits.length || c.priority.length || c.leadership.length);
+  const lost = headsLostLastQuarter(run.level as VpState, run.sim);
+  const quiet = !(c.directors.length || c.survey || c.heads.length || c.cut || quits.length || lost.length || c.priority.length || c.leadership.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet quarter.') : null,
-      recapPart('recap-left', 'Who left', quits.map((q) => h('li', { 'data-director': q.personId }, quitLine(q)))),
+      recapPart('recap-left', 'Who left', [...quits.map((q) => h('li', { 'data-director': q.personId }, quitLine(q))), ...lost.map((x) => h('li', { 'data-division': x.divisionId }, headsLostLine(x)))]),
       recapPart('recap-directors', 'Your directors', c.directors.map((m) => h('li', { 'data-director': m.id }, leaderLine(m)))),
       recapPart('recap-survey', c.survey ? `The survey, quarter ${c.survey.quarter}` : 'The survey', (c.survey?.divisions ?? []).map((g) => h('li', { 'data-division': g.id }, `${g.name}: ${bandWord('motivation', g.motivation)} and ${bandWord('stress', g.stress)}.`))),
       recapPart('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),

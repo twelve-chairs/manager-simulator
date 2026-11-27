@@ -138,6 +138,8 @@ export interface VpState {
   knownRatings: Record<string, RatingCounts>;
   /** Heads rated meets or better that left, by the week they left. */
   regretted: { week: number; count: number }[];
+  /** Per division: heads lost while the simulation advanced a quarter, by the week the quarter began, and how many were rated meets or better. */
+  headsLost: { week: number; divisionId: string; count: number; regretted: number }[];
   /** What the player could see as the quarter began. */
   quarterStart: VpQuarterStart | null;
   /** Directors who joined after the handover, and those the player let go, for the career summary. */

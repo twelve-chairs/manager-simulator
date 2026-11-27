@@ -110,6 +110,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 ## Recap
 
 - [x] **VP-RECAP-001**: When a quarter ends, the VP level shall return a recap of what changed (each director whose band changed or who gained a memory note other than from a habit, a new survey's results, heads who left or joined, heads cut, the company priority's progress, landing or failure, and changes in the CEO's and peers' trust) and of the routine (what each habit did, and each goal's progress).
+- [x] **VP-RECAP-003**: When asked after an advance which of the function's divisions lost heads in the quarter just played, the VP level shall report each division whose headcount fell while the simulation advanced, with its name, how many heads it lost, and how many of them were rated meets or better.
 - [x] **VP-RECAP-002**: When asked after an advance which directors quit in the quarter just played, the VP level shall report each director of its divisions who quit that quarter, with the weeks their motivation had been below the low line and their stress above the high line, whether their trust band was guarded or below, and the note of their most recent remembered history entry, if any.
 
 ## Reviews and the end of the level

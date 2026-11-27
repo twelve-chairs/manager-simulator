@@ -227,6 +227,17 @@ export function knownRatings(unitIds: string[], sim: SimState): Record<string, R
   return known;
 }
 
+/** Each unit whose headcount fell since the counts were taken, by how many, and how many of those were rated meets or above. */
+export function headsLostSince(known: Record<string, RatingCounts>, unitIds: string[], sim: SimState): { unitId: string; count: number; regretted: number }[] {
+  return unitIds.flatMap((g) => {
+    const was = known[g];
+    const now = sim.teams[g]?.aggregate;
+    if (!was || !now) return [];
+    const count = Object.values(was).reduce((n, x) => n + x, 0) - now.headcount;
+    return count > 0 ? [{ unitId: g, count, regretted: Math.min(count, regrettedSince({ [g]: was }, [g], sim)) }] : [];
+  });
+}
+
 /** Heads at meets or above lost since the counts were taken: only attrition changes them while the simulation advances. */
 export function regrettedSince(known: Record<string, RatingCounts>, unitIds: string[], sim: SimState): number {
   let regretted = 0;

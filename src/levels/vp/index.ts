@@ -7,5 +7,5 @@ export { beginQuarter, chooseVp, cutEffects, hardNews, makeCut, plannedHeads, sp
 export { endQuarter } from './quarter';
 export { goalStatus, goalViews, setGoals } from './goals';
 export { quarterRecap, type VpRecap } from './recap';
-export { VP_LEVEL, afterAdvanceVp, assessVp, periodEndsThisQuarter, quartersPlayed, quitLastQuarter, reviewDue, vpScorecard, type VpScorecard } from './review';
+export { VP_LEVEL, afterAdvanceVp, assessVp, headsLostLastQuarter, periodEndsThisQuarter, quartersPlayed, quitLastQuarter, reviewDue, vpScorecard, type VpScorecard } from './review';
 export { vpLevel } from './contract';

@@ -268,7 +268,7 @@ The VP level keeps the shell (header, scene, recap, review, ended) and brings it
 
 **Change chips** compare the VP view before and after a choice: a director's motivation, stress or management skill, a division's headcount, the CEO's or a peer's trust, the company priority's schedule, and the player's energy and reputation.
 
-**The recap** shows what changed (directors, a new survey's results, heads that left or joined, heads cut, the company priority landing, failing or slipping, and who on the leadership team trusts you more or less) and folds the routine into *The whole quarter*.
+**The recap** shows what changed (directors, a new survey's results, heads that left or joined, heads cut, who left: directors who quit and each division that lost heads, with how many of them you'd have kept, the company priority landing, failing or slipping, and who on the leadership team trusts you more or less) and folds the routine into *The whole quarter*.
 
 **The review** names the VP measures: company priorities landed, projects shipped on time, people you'd have kept who left, the divisions' motivation and stress at the survey, your CEO's confidence, your peers' confidence and your reputation; goals by their text.
 
