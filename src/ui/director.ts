@@ -234,6 +234,18 @@ const MEASURE_NAMES: Record<string, string> = {
   reputation: 'Your reputation',
 };
 
+/** What moves each of the level's review measures, said beside one that held the rating back. */
+// @spec UI-REVIEW-003
+const MEASURE_LEVERS: Record<string, string> = {
+  betsLanded: "fund a bet on a group with room, and put heads behind it; a strained group carries one slowly, and a peer who trusts you speeds it",
+  projectsOnTime: "groups deliver what they can carry; heads placed where the work is, and calm groups, speed it",
+  regrettedAttrition: "groups lose people as their stress and motivation slide; the recap's Who left names the groups",
+  motivation: "groups drift toward what their senior managers sustain, and time with your organization lifts them",
+  stress: "groups drift toward what their senior managers sustain; new heads add onboarding stress for a quarter",
+  executiveConfidence: "telling the quarterly review straight, landing bets and time with the room above build it; heads held back, a failed bet or spin found out cost it",
+  reputation: "bets landing raise it and bets failing lower it; leading the quarterly review with the wins earns some now and costs more if a problem surfaces",
+};
+
 function measureValue(_view: unknown, id: string, value: number): string | undefined {
   return id === 'betsLanded' ? shareWord(value, 'all') : sharedMeasureValue(id, value, ['executiveConfidence']);
 }
@@ -267,5 +279,6 @@ export const directorRenderer: LevelRenderer = {
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as DirectorView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
+  measureLever: (id) => MEASURE_LEVERS[id],
   career,
 };

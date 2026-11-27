@@ -171,6 +171,19 @@ const MEASURE_NAMES: Record<string, string> = {
   reputation: 'Your reputation',
 };
 
+/** What moves each of the level's review measures, said beside one that held the rating back. */
+// @spec UI-REVIEW-003
+const MEASURE_LEVERS: Record<string, string> = {
+  prioritiesLanded: "carry the company priority: reviewing your directors' plans closely speeds it, and asking for more than you deliver is remembered",
+  projectsOnTime: "divisions deliver what they can carry; a calm division carries more",
+  regrettedAttrition: "divisions lose people as their stress and motivation slide; the recap's Who left names the divisions",
+  motivation: "divisions drift toward what their directors sustain",
+  stress: "divisions drift toward what their directors sustain, and cuts land on the divisions that take them",
+  ceoConfidence: "landing the company priority, settling disputes on what the company needs and putting the leadership team first build it",
+  peerConfidence: "putting the leadership team first and giving peers what they ask for at planning build it; asking for more yourself costs it",
+  reputation: "the company priority landing or failing moves it most",
+};
+
 const measureValue = (_view: unknown, id: string, value: number): string | undefined => (id === 'prioritiesLanded' ? shareWord(value, 'all') : sharedMeasureValue(id, value, ['ceoConfidence', 'peerConfidence']));
 
 // @spec UI-VP-010
@@ -201,5 +214,6 @@ export const vpRenderer: LevelRenderer = {
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as VpView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
+  measureLever: (id) => MEASURE_LEVERS[id],
   career,
 };

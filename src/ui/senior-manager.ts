@@ -326,6 +326,20 @@ const MEASURE_NAMES: Record<string, string> = {
   reputation: 'Your reputation',
 };
 
+/** What moves each of the level's review measures, said beside one that held the rating back. */
+// @spec UI-REVIEW-003
+const MEASURE_LEVERS: Record<string, string> = {
+  completedOnTime: "teams deliver what they can carry: give new work to a team with room, and answer a manager who escalates a slipping project",
+  onScheduleShare: "teams deliver what they can carry: give new work to a team with room, and answer a manager who escalates a slipping project",
+  regrettedAttrition: "teams lose people as their stress and motivation slide; a stay conversation keeps a restless manager",
+  motivation: "each team drifts toward what its manager sustains, so a stronger manager keeps a more motivated team",
+  stress: "each team drifts toward what its manager sustains, and stepping in on an escalation eases it at once",
+  managerGrowth: "coaching them, in oversight, through escalations and by getting two of them to agree a plan, raises their skill; stepping in doesn't",
+  healthHeld: "a team holds up when its manager can sustain it: grow the weaker managers, and keep extra work off a strained team",
+  calibrationQuality: "settle each team's ratings on what it delivered; a lenient manager's proposal sits above it",
+  reputation: "projects on track raise it each week, and projects in trouble lower it",
+};
+
 function measureValue(_view: unknown, id: string, value: number): string | undefined {
   const share = (all: string) => shareWord(value, all);
   if (id.startsWith('goal:')) return value >= 1 ? 'met' : 'missed';
@@ -381,5 +395,6 @@ export const seniorManagerRenderer: LevelRenderer = {
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as SeniorView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
+  measureLever: (id) => MEASURE_LEVERS[id],
   career,
 };

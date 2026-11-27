@@ -118,6 +118,8 @@ export interface LevelRenderer {
   measureName(view: unknown, id: string): string | undefined;
   /** A measure's value in words on the review screen, when the level knows the measure. */
   measureValue(view: unknown, id: string, value: number): string | undefined;
+  /** What moves one of the level's measures, for the review to say beside a measure that held the rating back. */
+  measureLever(id: string): string | undefined;
   /** The level's lines of the career summary at the end of a run. */
   career(view: unknown): Child;
   /** The level's turn: a week, a month or a quarter. */
@@ -197,17 +199,22 @@ function heldBackLine(ids: string[], name: (id: string) => string): string {
   return `What kept this from exceeds: ${listed(ids.map(name))}.`;
 }
 
-/** The standing's words: margins, the way to promotion, what held the rating back and the plan's next step. */
-// @spec UI-REVIEW-002
-function standingLines(s: Standing, name: (id: string) => string): Child[] {
+/** The standing's words: margins, the way to promotion, what held the rating back and what moves it, and the plan's next step. */
+// @spec UI-REVIEW-002, UI-REVIEW-003
+function standingLines(s: Standing, name: (id: string) => string, lever: (id: string) => string | undefined): Child[] {
   const p = s.promotion;
   const toward = towardPromotionLine(p);
   const held = s.heldBack ? heldBackLine(s.heldBack, name) : null;
+  const levers = (s.heldBack ?? []).flatMap((id) => {
+    const what = lever(id);
+    return what ? [h('li', { 'data-lever': id }, `${name(id)}: ${what}.`)] : [];
+  });
   return [
     s.marginUp ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step better would have made it ${s.marginUp}.`) : null,
     s.marginDown ? h('p', { class: 'margin', 'data-field': 'margin' }, `One measure a step worse would have made it ${s.marginDown}.`) : null,
     toward ? h('p', { class: 'standing', 'data-field': 'promotion' }, toward) : null,
     held ? h('p', { class: 'standing', 'data-field': 'held-back' }, held) : null,
+    levers.length ? h('ul', { class: 'standing', 'data-field': 'levers' }, levers) : null,
     s.plan ? h('p', { class: 'standing plan', 'data-field': 'plan' }, PLAN_NEXT[s.plan]) : null,
   ];
 }
@@ -809,7 +816,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
       h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' ', h('small', { class: 'numbers', 'data-field': 'score' }, `score ${review.score.toFixed(2)}, from −1 to 1`)),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
-      standingLines(review.standing, (id) => renderer.measureName(ctx.view, id) ?? id),
+      standingLines(review.standing, (id) => renderer.measureName(ctx.view, id) ?? id, (id) => renderer.measureLever(id)),
       h(
         'table',
         { class: 'measures' },

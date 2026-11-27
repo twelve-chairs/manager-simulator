@@ -4,6 +4,10 @@ import { band, lineManagerLevel, type LineState, type View } from '../../src/lev
 import { newRun, type AnyLevel, type Dependencies, type Run } from '../../src/loop';
 import { BAND_WORDS } from '../../src/ui/bands';
 import { emphasis } from '../../src/ui/text';
+import { lineManagerRenderer } from '../../src/ui/line-manager';
+import { seniorManagerRenderer } from '../../src/ui/senior-manager';
+import { directorRenderer } from '../../src/ui/director';
+import { vpRenderer } from '../../src/ui/vp';
 import { current, waitUntil } from '../loop/fixtures';
 import { $, $$, CONTENT, DEPS, click, endWeeks, level, makeApp, run, select, step, text } from './fixtures';
 import { sit } from '../situations/fixtures';
@@ -905,7 +909,7 @@ describe('review and end', () => {
     expect($$(root, '[data-measure] [data-field=target]')).toHaveLength(0);
   });
 
-  // @spec UI-REVIEW-001, UI-REVIEW-002
+  // @spec UI-REVIEW-001, UI-REVIEW-002, UI-REVIEW-003
   it('says in words where the player stands, with the score in small print', () => {
     const r = structuredClone(endWeeks(run(), 13));
     const shown = (standing: NonNullable<typeof r.review>['standing']) => {
@@ -933,6 +937,18 @@ describe('review and end', () => {
     expect(heldBack(['stress'])).toBe('What kept this from exceeds: Team stress.');
     expect(heldBack(['stress', 'regrettedQuits', 'oneOnOneShare'])).toBe('What kept this from exceeds: Team stress, People who quit and 1:1s held.');
     expect(heldBack([])).toBe('Every measure was on target or better; exceeds takes more of them above target.');
+    // each measure that held it back, with what moves it; a goal has none
+    const levers = (ids: string[]) => $$(makeApp({ run: { ...r, review: { ...r.review!, rating: 'meets', standing: { promotion: { kind: 'twoInARow', reviewsLeft: 2 }, heldBack: ids } } } }).root, '[data-field=levers] li').map((li) => li.textContent);
+    expect(levers(['stress', 'oneOnOneShare'])).toEqual([`Team stress: ${lineManagerRenderer.measureLever('stress')}.`, `1:1s held: ${lineManagerRenderer.measureLever('oneOnOneShare')}.`]);
+    expect(levers(['goal:g1'])).toEqual([]);
+    // every level names what moves each of its own measures, and reputation
+    const MEASURES = {
+      line: [lineManagerRenderer, ['completedOnTime', 'onScheduleShare', 'regrettedQuits', 'motivation', 'stress', 'oneOnOneShare', 'reputation']],
+      senior: [seniorManagerRenderer, ['completedOnTime', 'onScheduleShare', 'regrettedAttrition', 'motivation', 'stress', 'managerGrowth', 'healthHeld', 'calibrationQuality', 'reputation']],
+      director: [directorRenderer, ['betsLanded', 'projectsOnTime', 'regrettedAttrition', 'motivation', 'stress', 'executiveConfidence', 'reputation']],
+      vp: [vpRenderer, ['prioritiesLanded', 'projectsOnTime', 'regrettedAttrition', 'motivation', 'stress', 'ceoConfidence', 'peerConfidence', 'reputation']],
+    } as const;
+    for (const [lvl, [renderer, ids]] of Object.entries(MEASURES)) for (const id of ids) expect(renderer.measureLever(id), `${lvl}: ${id}`).toBeTruthy();
     expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).not.toBeNull();
     expect(makeApp({ run: { ...r, review: { ...r.review!, standing: { promotion: { kind: 'twoInARow', reviewsLeft: 2 } } } } }).root.querySelector('[data-field=held-back]')).toBeNull();
   });

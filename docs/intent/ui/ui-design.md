@@ -182,6 +182,8 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 
 **The recap** shows what changed (managers, teams as shown, heads that left or joined, projects that slipped) and folds the routine (the habits' lines and the goals' progress) into *The whole month*, as the line manager's folds *The whole week*.
 
+Under what kept a rating from exceeds, the review says for each of those measures what moves it, in a line of the level's own words ("How much your managers grew: coaching them, in oversight, through escalations and by getting two of them to agree a plan, raises their skill; stepping in doesn't."), since a measure named alone tells the player where they fell short but not which of their habits and answers to change.
+
 **The review** names the senior measures: projects shipped on time, projects on schedule, people you'd have kept who left, the teams' motivation and stress, how much your managers grew, the teams that held up, calibration quality and your reputation; goals by their text.
 
 **The ended screen** says why the run ended at the level it ended at: "You stayed a senior manager. Three years went by without the promotion.", or burned out, managed out, or completed, as at the line manager. The career summary covers the whole run: the weeks played, each review's rating, the line manager's part, and the senior manager's part (the months played, the managers who joined and who were let go).

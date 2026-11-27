@@ -220,6 +220,18 @@ const MEASURE_NAMES: Record<string, string> = {
   reputation: 'Your reputation',
 };
 
+/** What moves each of the level's review measures, said beside one that held the rating back. */
+// @spec UI-REVIEW-003
+const MEASURE_LEVERS: Record<string, string> = {
+  completedOnTime: "projects move with the engineers working on them, and slip when risk and tech debt bring setbacks; the projects panel shows each deadline",
+  onScheduleShare: "projects move with the engineers working on them, and slip when risk and tech debt bring setbacks; the projects panel shows each deadline",
+  regrettedQuits: "people turn restless after long spells of low motivation or high stress, and giving a restless engineer what they want keeps them; the watch line warns first",
+  motivation: "serving what each engineer wants lifts it, and you learn their wants at 1:1s",
+  stress: "night pages, routine work and setbacks raise it; a breather brings one engineer down at a time",
+  oneOnOneShare: "the 1:1s habit sets how many are held",
+  reputation: "projects on track raise it each week, and projects in trouble lower it",
+};
+
 /** The engineer a hand-off or interview choice names, if it names one. */
 function engineerOf(choiceId: string): string | undefined {
   for (const prefix of ['give:', 'ask:']) if (choiceId.startsWith(prefix)) return choiceId.slice(prefix.length);
@@ -326,5 +338,6 @@ export const lineManagerRenderer: LevelRenderer = {
   },
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as View).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
+  measureLever: (id) => MEASURE_LEVERS[id],
   career,
 };
