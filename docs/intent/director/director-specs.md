@@ -78,7 +78,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## The quarterly review
 
-- [x] **DIR-QBR-001**: When the quarterly review is presented, the director level shall offer to tell it straight, lead with the wins, or promise more next quarter, and show what the quarter held: projects and bets on schedule and in trouble, and the groups as last seen.
+- [x] **DIR-QBR-001**: When the quarterly review is presented, the director level shall offer to tell it straight, lead with the wins, or promise more next quarter, and show what the quarter held, as it stands when the review is shown rather than when the quarter began: projects and bets on schedule and in trouble, and the groups as last seen.
 - [x] **DIR-QBR-002**: When the player tells it straight, the director level shall raise the executive's trust by a tuned amount and lower the player's reputation by a tuned amount for each project or bet in trouble.
 - [x] **DIR-QBR-003**: When the player leads with the wins, the director level shall raise the player's reputation by a tuned amount and record each project or bet in trouble as left out; when the next quarter ends with a left-out project or bet still in trouble or failed, it shall lower the executive's trust and the player's reputation by tuned amounts larger than telling it straight would have cost, and clear it.
 - [x] **DIR-QBR-004**: When the player promises more, the director level shall raise the player's reputation by a tuned amount and multiply the stakes of every funded bet by a tuned factor.

@@ -1,5 +1,6 @@
 import { band, NAMES } from '../line-manager';
 import { applyLogged, finalEvaluation, knownRatings, leaderOf, newLeader, nextId, pick, placeMoments, projectNames, random, randomInt, restlessLeaders, stayAnswer, stayDraft, unusedName } from '../org';
+import { allHandsText } from './view';
 import type { ChangeLogEntry, Effect, SimState } from '../../sim';
 import { generateDirector, quarterOf } from './core';
 import { setGoals } from './goals';
@@ -105,10 +106,7 @@ function laterDrafts(s: VpState, sim: SimState): Draft[] {
 /** The all-hands, which closes the quarter, with what the quarter held. */
 // @spec VP-HANDS-001
 function allHandsDraft(s: VpState, sim: SimState): Draft {
-  const pr = s.priority ? sim.projects[s.priority.projectId] : undefined;
-  const priority = pr ? ` The company priority, ${pr.name}, is ${Math.round((100 * pr.progress) / pr.scope)}% done.` : '';
-  const cuts = s.cut.waves.length ? ` ${plural(s.cut.waves.reduce((a, b) => a + b, 0), 'more head goes', 'more heads go')} in the cuts still to come.` : '';
-  return { kind: 'allHands', title: 'The all-hands', text: `The whole function gathers for the end of the quarter.${priority}${cuts}`, choices: CHOICES.allHands };
+  return { kind: 'allHands', title: 'The all-hands', text: allHandsText(s, sim), choices: CHOICES.allHands };
 }
 
 /** Makes the quarter's moments, in the order they play. */

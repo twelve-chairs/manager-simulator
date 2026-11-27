@@ -91,7 +91,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 ## The all-hands
 
-- [x] **VP-HANDS-001**: When the all-hands is produced, the VP level shall offer to tell the function what is hard and the plan, celebrate the wins, or keep it short, and show what the quarter held: the company priority's progress, cuts made or due, and the divisions as last surveyed.
+- [x] **VP-HANDS-001**: When the all-hands is produced, the VP level shall offer to tell the function what is hard and the plan, celebrate the wins, or keep it short, and show what the quarter held, as it stands when the all-hands is shown rather than when the quarter began: the company priority's progress, cuts made or due, and the divisions as last surveyed.
 - [x] **VP-HANDS-002**: When the player tells the function what is hard, the VP level shall raise every division's motivation by a tuned amount if the quarter held hard news (a cut, a failed priority, or a division whose stress is *strained* or worse) and record the function as told.
 - [x] **VP-HANDS-003**: When the player celebrates the wins, the VP level shall raise every division's motivation by a tuned amount and record the function as not told; when hard news lands in a later quarter of the same year while the function is recorded as not told, it shall lower every division's motivation by a tuned amount larger than the celebration raised it, and record the function as told.
 - [x] **VP-HANDS-004**: When the player keeps it short, the VP level shall change no one's motivation and leave what the function was last told as it is.

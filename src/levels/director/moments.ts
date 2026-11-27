@@ -16,7 +16,7 @@ import { finalEvaluation, newLeader, placeMoments, restlessLeaders, stayAnswer, 
 import { quartersPlayed, remember } from './review';
 import { setGoals } from './goals';
 import { snapshotQuarter } from './recap';
-import { seenMood } from './view';
+import { reviewText, seenMood } from './view';
 import { DIRECTOR_TUNING as T } from './tuning';
 import type { Bet, BetOffer, DirectorMoment, DirectorState } from './types';
 
@@ -184,15 +184,7 @@ function orgDesignDrafts(s: DirectorState, sim: SimState): Draft[] {
 
 /** The quarterly review with the executive, which closes the quarter. */
 function reviewDraft(s: DirectorState, sim: SimState): Draft {
-  const held = quarterHeld(s, sim);
-  const onSchedule = held.active.length - held.troubled.length;
-  const projects = onSchedule === 1 ? 'one project' : `${onSchedule} projects`;
-  return {
-    kind: 'review',
-    title: 'The quarterly review',
-    text: `You present the quarter to your executive: ${projects} on schedule and ${held.troubled.length} in trouble.`,
-    choices: CHOICES.review,
-  };
+  return { kind: 'review', title: 'The quarterly review', text: reviewText(s, sim), choices: CHOICES.review };
 }
 
 /** Makes the quarter's moments, in the order they play. */

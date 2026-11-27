@@ -4,6 +4,7 @@ import {
   afterAdvanceDirector,
   beginQuarter,
   chooseDirector,
+  directorView,
   endQuarter,
   DIRECTOR_ISSUES,
   headcountGiven,
@@ -363,6 +364,17 @@ describe('the quarterly review', () => {
     const m = find(beginQuarter({ ...level, moments: [] }, sim), 'review');
     expect(m.choices.map((c) => c.id)).toEqual(['straight', 'wins', 'promise']);
     expect(m.text).toMatch(/in trouble/);
+  });
+
+  // @spec DIR-QBR-001
+  it('presents the quarter as it stands when the review is shown, counting a bet funded during it', () => {
+    const { level: l0, sim } = begun();
+    const level = beginQuarter({ ...l0, moments: [] }, sim);
+    const before = directorView(level, sim).moments.find((x) => x.kind === 'review')!.text;
+    const funded = choose(level, sim, 'bets', `fund:${JSON.stringify({ [find(level, 'bets').offers![0]!.id]: level.groupIds[0] })}`);
+    const after = directorView(funded.level, funded.sim).moments.find((x) => x.kind === 'review')!.text;
+    const count = (t: string) => Number(/(\d+|one) projects? on schedule/.exec(t)![1]!.replace('one', '1'));
+    expect(count(after)).toBe(count(before) + 1);
   });
 
   // @spec DIR-QBR-002

@@ -4,6 +4,17 @@ import { behindScheduleProjects, byId, overdueProjects, scheduleOf, type Rating,
 import { VP_TUNING as T } from './tuning';
 import type { VpMoment, VpState } from './types';
 
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** What the all-hands tells the function: the company priority's progress and the cuts still to come, as they stand now. */
+// @spec VP-HANDS-001
+export function allHandsText(s: VpState, sim: SimState): string {
+  const pr = s.priority ? sim.projects[s.priority.projectId] : undefined;
+  const priority = pr ? ` The company priority, ${pr.name}, is ${Math.round((100 * pr.progress) / pr.scope)}% done.` : '';
+  const cuts = s.cut.waves.length ? ` ${plural(s.cut.waves.reduce((a, b) => a + b, 0), 'more head goes', 'more heads go')} in the cuts still to come.` : '';
+  return `The whole function gathers for the end of the quarter.${priority}${cuts}`;
+}
+
 export interface DirectorCard {
   id: string;
   name: string;
@@ -120,7 +131,8 @@ export function vpView(level: VpState, sim: SimState, goals: VpView['goals'] = [
     id: m.id,
     kind: m.kind,
     title: m.title,
-    text: m.text,
+    // The all-hands closes the quarter: what it tells the function is the quarter as it stands then.
+    text: m.kind === 'allHands' ? allHandsText(level, sim) : m.text,
     choices: m.choices,
     ...(m.divisionId && { divisionId: m.divisionId }),
     ...(m.personId && { personId: m.personId }),

@@ -94,6 +94,16 @@ export function seenMood(level: DirectorState, sim: SimState, g: string) {
   return { toured, mood: toured ? team : (level.survey.groups[g] ?? team) };
 }
 
+/** What the quarterly review presents: the organization's projects and bets on schedule and in trouble, as they stand now. */
+// @spec DIR-QBR-001
+export function reviewText(level: DirectorState, sim: SimState): string {
+  const troubled = new Set([...overdueProjects(sim), ...behindScheduleProjects(sim)].map((p) => p.id));
+  const active = Object.values(sim.projects).filter((p) => p.status === 'active' && level.groupIds.includes(p.teamId));
+  const inTrouble = active.filter((p) => troubled.has(p.id)).length;
+  const onSchedule = active.length - inTrouble;
+  return `You present the quarter to your executive: ${onSchedule === 1 ? 'one project' : `${onSchedule} projects`} on schedule and ${inTrouble} in trouble.`;
+}
+
 export function directorView(level: DirectorState, sim: SimState): DirectorView {
   const overdue = new Set(overdueProjects(sim).map((p) => p.id));
   const behind = new Set(behindScheduleProjects(sim).map((p) => p.id));
@@ -140,7 +150,8 @@ export function directorView(level: DirectorState, sim: SimState): DirectorView 
     id: m.id,
     kind: m.kind,
     title: m.title,
-    text: m.text,
+    // The review comes at the quarter's end: what it presents is the quarter as it stands then.
+    text: m.kind === 'review' ? reviewText(level, sim) : m.text,
     choices: m.choices,
     ...(m.groupId && { groupId: m.groupId }),
     ...(m.personId && { personId: m.personId }),
