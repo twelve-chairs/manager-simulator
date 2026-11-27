@@ -308,6 +308,10 @@ describe('the senior manager renderer', () => {
     const e = document.createElement('div');
     for (const c of [drained.changes].flat(3)) if (c instanceof Node) e.append(c);
     expect(text(e, '[data-part=recap-energy] li')).toMatch(/^Your standing habits took more energy/);
+    const open = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [], stillOpen: [{ teamId: 't1', team: 'Platform', text: 'a hiring freeze above the team has left its open role empty for months', month: 3, above: 'Samir' }] }, routine: { habits: [], goals: [] } });
+    const o = document.createElement('div');
+    for (const c of [open.changes].flat(3)) if (c instanceof Node) o.append(c);
+    expect(text(o, '[data-part=recap-open] li')).toBe('Platform: a hiring freeze above the team has left its open role empty for months, raised in month 3. It sits above Samir.');
     expect(e.querySelector('[data-part=recap-quiet]')).toBeNull();
     expect(text(n, '[data-part=recap-followups] li')).toBe("Farah hasn't raised the promotion again, and trusts you a little less for the no.");
     expect(n.querySelector('[data-part=recap-quiet]')).toBeNull();

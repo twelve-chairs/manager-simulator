@@ -1,5 +1,6 @@
 import { TUNING as SIM_TUNING, behindScheduleProjects, overdueProjects, scheduleOf, type SimState } from '../../sim';
 import { leadOf } from './core';
+import { EVERYDAY_ISSUES } from './moments';
 import { SENIOR_TUNING as T } from './tuning';
 import { goalStatus } from './goals';
 import type { MonthStart, SeniorState } from './types';
@@ -40,6 +41,8 @@ export interface SeniorRecap {
     recovered: { name: string; team: string }[];
     /** When the standing habits took more energy than a quiet month gives back: the habits' energy line. */
     energy?: string;
+    /** Frictions a skip-level raised lately that the player's answer left unsettled. */
+    stillOpen?: { teamId: string; team: string; text: string; month: number; above: string | null }[];
   };
   routine: { habits: string[]; goals: { text: string; progress: string }[] };
 }
@@ -60,6 +63,23 @@ export function habitEnergy(s: SeniorState, sim: SimState): { habit: 'oversight'
     { habit: 'oneOnOnes' as const, energy: oneOnOnes },
     { habit: 'skipLevel' as const, energy: skipLevel },
   ].filter((x) => x.energy > 0).sort((a, b) => b.energy - a.energy);
+}
+
+/** Everyday frictions a skip-level raised lately and the player's answer left unsettled, most recent first. */
+// @spec SENIOR-RECAP-007
+function stillOpen(level: SeniorState, sim: SimState): NonNullable<SeniorRecap['changes']['stillOpen']> {
+  const out: NonNullable<SeniorRecap['changes']['stillOpen']> = [];
+  for (const [teamId, records] of Object.entries(level.issues)) {
+    if (!level.teamIds.includes(teamId) || !sim.teams[teamId]) continue;
+    for (const [key, r] of Object.entries(records)) {
+      if (r.settled || !key.startsWith('everyday:') || sim.week - r.week >= T.issueRestWeeks) continue;
+      const issue = EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))];
+      if (!issue) continue;
+      const manager = leadOf(level, sim, teamId);
+      out.push({ teamId, team: sim.teams[teamId].name, text: issue.text, month: Math.floor((r.week - level.startWeek) / T.weeksPerMonth) + 1, above: issue.above && manager ? sim.people[manager]!.name : null });
+    }
+  }
+  return out.sort((a, b) => b.month - a.month || (a.teamId < b.teamId ? -1 : 1));
 }
 
 const HABIT_WORDS = { oversight: 'oversight', oneOnOnes: '1:1s', skipLevel: 'skip-levels' } as const;
@@ -118,5 +138,5 @@ export function monthRecap(level: SeniorState, sim: SimState, start: MonthStart)
     ...(level.backfills.length ? [`${level.backfills.length} ${level.backfills.length === 1 ? 'role is' : 'roles are'} waiting to be filled.`] : []),
   ];
   const followUps = (level.followUps ?? []).filter((f) => f.week === start.week).map((f) => f.text);
-  return { changes: { managers, teams, heads, slipped, assigned: [], followUps, recovered, ...(energy?.over && { energy: energy.line }) }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
+  return { changes: { managers, teams, heads, slipped, assigned: [], followUps, recovered, stillOpen: stillOpen(level, sim), ...(energy?.over && { energy: energy.line }) }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
 }

@@ -282,6 +282,9 @@ function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
     const held = s.evidenceHeld?.[m];
     const lastTime = held === undefined ? '' : held ? ` Last time you asked ${who} for the evidence, they had the case ready.` : ` Last time you asked ${who} for the evidence, the case wasn't there.`;
     drafts.push({ kind: 'approval', teamId: t, detail, title: `${who} asks for an approval`, text: `${who} wants to ${what}, and needs your sign-off.${lastTime}`, choices: CHOICES.approval });
+    // @spec SENIOR-MOMENT-021
+    // One a month across the group: the other teams' requests wait for a later month.
+    break;
   }
   return drafts;
 }

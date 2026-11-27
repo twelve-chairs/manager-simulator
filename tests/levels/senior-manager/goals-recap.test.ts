@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { assessSenior, beginMonth, chooseSenior, endMonth, seniorView, takeOver, type SeniorState } from '../../../src/levels/senior-manager';
 import type { SimState } from '../../../src/sim';
+import { EVERYDAY_ISSUES } from '../../../src/levels/senior-manager/moments';
 import { promotedLine, senior } from './fixtures';
 
 const edit = (sim: SimState, change: (s: SimState) => void) => {
@@ -55,6 +56,24 @@ describe('the period’s goals', () => {
 });
 
 describe('the month’s recap', () => {
+  // @spec SENIOR-RECAP-007
+  it('lists frictions raised lately and left unsettled, saying when one sits above the manager', () => {
+    const { level, sim } = senior(5);
+    const [t0, t1] = level.teamIds as [string, string];
+    const aboveKey = `everyday:${EVERYDAY_ISSUES.findIndex((x) => x.above)}`;
+    const ownKey = `everyday:${EVERYDAY_ISSUES.findIndex((x) => !x.above)}`;
+    const issues = {
+      [t0]: { [aboveKey]: { week: sim.week - 4, settled: false, answer: 'coach' as const } },
+      [t1]: { [ownKey]: { week: sim.week - 8, settled: true, answer: 'stepIn' as const } },
+    };
+    const r = endMonth(beginMonth({ ...level, issues }, sim), sim);
+    if (!r.ok) throw new Error(r.error);
+    const open = (r.recap as { changes: { stillOpen: { teamId: string; text: string; above: string | null }[] } }).changes.stillOpen;
+    expect(open).toHaveLength(1);
+    expect(open[0]).toMatchObject({ teamId: t0, text: EVERYDAY_ISSUES[Number(aboveKey.slice(9))]!.text });
+    expect(open[0]!.above).toBeTruthy();
+  });
+
   // @spec SENIOR-RECAP-006
   it('says how the standing habits’ energy compares with what a quiet month gives back, and puts it among what changed when it is more', () => {
     const { level, sim } = senior(5);

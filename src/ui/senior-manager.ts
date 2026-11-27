@@ -309,6 +309,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
       part('recap-managers', 'Your managers', c.managers.map((m) => h('li', { 'data-manager': m.id }, h('strong', {}, m.changes.length ? `${m.name}: ${m.changes.join(' and ')}.` : `${m.name}.`), m.notes.length ? ` ${m.notes.join('. ')}.` : ''))),
       part('recap-teams', 'Your teams', c.teams.map((t) => h('li', { 'data-team': t.id }, `${t.name}: ${t.changes.join(' and ')}.`))),
       part('recap-followups', 'What came of it', followUps.map((line) => h('li', {}, line))),
+      part('recap-open', 'Still open', (c.stillOpen ?? []).map((x) => h('li', { 'data-team': x.teamId }, `${x.team}: ${x.text}, raised in month ${x.month}.${x.above ? ` It sits above ${x.above}.` : ''}`))),
       part('recap-energy', 'Your energy', c.energy ? [h('li', {}, c.energy)] : []),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),
       part('recap-slipped', 'What slipped', c.slipped.map((line) => h('li', {}, `${line}.`))),

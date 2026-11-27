@@ -350,6 +350,28 @@ describe('a month’s moments', () => {
     expect(T.handoverDecline).toBeLessThan(T.declineWork);
   });
 
+  // @spec SENIOR-MOMENT-021
+  it('brings at most one approval a month across the group', () => {
+    const { level, sim } = calm(7);
+    // every team has someone to propose
+    const rated = edit(sim, (s) => {
+      for (const t of level.teamIds) {
+        const r = s.teams[t]!.aggregate!.ratings;
+        const from = r.unrated > 0 ? 'unrated' : 'meets';
+        r[from] -= 1;
+        r.exceeds += 1;
+      }
+    });
+    const first = beginMonth(level, rated);
+    expect(first.moments.filter((m) => m.kind === 'approval')).toHaveLength(1);
+    // the next month, another team's turn
+    const next = beginMonth({ ...first, moments: [] }, edit(rated, (s) => (s.week += T.weeksPerMonth)));
+    const a = first.moments.find((m) => m.kind === 'approval')!;
+    const b = next.moments.filter((m) => m.kind === 'approval');
+    expect(b).toHaveLength(1);
+    expect(b[0]!.teamId).not.toBe(a.teamId);
+  });
+
   // @spec SENIOR-MOMENT-020
   it('recalls in a manager’s next approval how the evidence went last time', () => {
     const { level, sim } = calm(7);
