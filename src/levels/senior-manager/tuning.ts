@@ -41,7 +41,7 @@ export const SENIOR_TUNING = {
   /** Weeks a surfaced problem the player settled stays settled for that team before it can be raised again. */
   issueSettledWeeks: 26,
   /** Weeks a friction one team raised rests before another team's skip-level raises it. */
-  issueRestWeeks: 26,
+  issueRestWeeks: 78,
   /** Drift: the share of the way a team moves each month toward what its manager sustains, and how much faster hands-off under a struggling one. */
   driftShare: 0.25,
   handsOffDrift: 1.6,

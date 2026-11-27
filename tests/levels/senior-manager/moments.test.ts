@@ -519,7 +519,7 @@ describe('skip-level problems that stay settled', () => {
   const surfacedFor = (level: SeniorState, sim: SimState, t: string) => beginMonth({ ...level, surfaced: [{ teamId: t, week: sim.week - 4 }] }, sim).moments.find((m) => m.kind === 'surfaced');
 
   // @spec SENIOR-HABIT-008, SENIOR-HABIT-011
-  it('does not raise a settled friction again for half a year, and has nothing to raise once all are settled', () => {
+  it('does not raise a settled friction again for a while, and has nothing to raise once all are settled', () => {
     const { level, sim } = calm(4);
     const t = level.teamIds[1]!;
     const first = surfacedFor(level, sim, t)!;
@@ -534,25 +534,25 @@ describe('skip-level problems that stay settled', () => {
     // every friction settled lately: nothing new to raise
     const all = Object.fromEntries(EVERYDAY_ISSUES.map((_, i) => [`everyday:${i}`, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
     expect(surfacedFor({ ...level, issues: { [t]: all } }, sim, t)).toBeUndefined();
-    // half a year on, a settled friction can come back
-    const later = edit(sim, (s) => (s.week += T.issueSettledWeeks + 1));
+    // once the rest is over, a settled friction can come back
+    const later = edit(sim, (s) => (s.week += Math.max(T.issueSettledWeeks, T.issueRestWeeks) + 1));
     expect(surfacedFor({ ...level, issues: { [t]: all } }, later, t)).toBeDefined();
   });
 
   // @spec SENIOR-HABIT-008
-  it('rests a friction another team raised lately, unless nothing else is left to raise', () => {
+  it('rests a friction another team raised lately, and raises nothing when every friction left was heard lately', () => {
     const { level, sim } = calm(4);
     const [t0, t1] = level.teamIds as [string, string];
     const first = surfacedFor(level, sim, t1)!;
     const elsewhere = { [t0]: { [first.issue!]: { week: sim.week - 1, settled: false, answer: 'coach' as const } } };
     expect(surfacedFor({ ...level, issues: elsewhere }, sim, t1)!.issue).not.toBe(first.issue);
-    // half a year on, it can come back
+    // once its rest is over, it can come back
     const later = edit(sim, (s) => (s.week += T.issueRestWeeks + 1));
     const old = { [t0]: { [first.issue!]: { week: sim.week - 1, settled: false, answer: 'coach' as const } } };
     expect(surfacedFor({ ...level, issues: old }, later, t1)).toBeDefined();
-    // the only friction left for this team is raised regardless
+    // the only friction left for this team, heard from another team lately, is not raised: the skip-level brings nothing
     const allButOne = Object.fromEntries(EVERYDAY_ISSUES.map((_, i) => `everyday:${i}`).filter((k) => k !== first.issue).map((k) => [k, { week: sim.week - 1, settled: true, answer: 'stepIn' as const }]));
-    expect(surfacedFor({ ...level, issues: { ...elsewhere, [t1]: allButOne } }, sim, t1)!.issue).toBe(first.issue);
+    expect(surfacedFor({ ...level, issues: { ...elsewhere, [t1]: allButOne } }, sim, t1)).toBeUndefined();
   });
 
   /** Records of every friction but those of one owner, settled lately: what is left to raise is that owner's. */

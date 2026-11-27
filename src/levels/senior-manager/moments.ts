@@ -91,7 +91,7 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
   });
   // A friction any of the group's teams raised lately rests, so the skip-levels don't all bring the same one.
   const raisedLately = (k: string) => Object.values(level.issues).some((rec) => rec[k] !== undefined && sim.week - rec[k].week < T.issueRestWeeks);
-  const fresh = inTurn.find((k) => !raisedLately(k)) ?? inTurn[0];
+  const fresh = inTurn.find((k) => !raisedLately(k));
   const key = unsettled ?? fresh;
   return key === undefined ? undefined : { key, text: EVERYDAY_ISSUES[Number(key.slice('everyday:'.length))]!.text };
 }
