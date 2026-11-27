@@ -83,6 +83,7 @@ export function takeOver(senior: SeniorState, seniorSim: SimState, choice: strin
     periodStart: seniorSim.week,
     knownRatings: {},
     regretted: [],
+    headsLost: [],
     funded: [],
     betResults: [],
     quarterStart: null,

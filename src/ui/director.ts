@@ -1,9 +1,9 @@
 import { draftObject } from './drafts';
-import { quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
+import { headsLostLastQuarter, quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
 import type { Run } from '../loop';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
-import { headsChangeLine, quitLine, shareWord } from './text';
+import { headsChangeLine, headsLostLine, quitLine, shareWord } from './text';
 import {
   SCHEDULE_WORDS,
   careerLines,
@@ -205,11 +205,12 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const c = r.changes;
   const moved = c.moved ?? [];
   const quits = quitLastQuarter(run.level as DirectorState, run.sim);
-  const quiet = !(c.seniorManagers.length || c.survey || c.heads.length || moved.length || quits.length || c.bets.length || c.upward.length);
+  const lost = headsLostLastQuarter(run.level as DirectorState, run.sim);
+  const quiet = !(c.seniorManagers.length || c.survey || c.heads.length || moved.length || quits.length || lost.length || c.bets.length || c.upward.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet quarter.') : null,
-      part('recap-left', 'Who left', quits.map((q) => h('li', { 'data-senior-manager': q.personId }, quitLine(q)))),
+      part('recap-left', 'Who left', [...quits.map((q) => h('li', { 'data-senior-manager': q.personId }, quitLine(q))), ...lost.map((x) => h('li', { 'data-group': x.groupId }, headsLostLine(x)))]),
       part('recap-senior-managers', 'Your senior managers', c.seniorManagers.map((m) => h('li', { 'data-senior-manager': m.id }, leaderLine(m)))),
       part('recap-survey', c.survey ? `The survey, quarter ${c.survey.quarter}` : 'The survey', (c.survey?.groups ?? []).map((g) => h('li', { 'data-group': g.id }, `${g.name}: ${bandWord('motivation', g.motivation)} and ${bandWord('stress', g.stress)}.`))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),

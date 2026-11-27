@@ -138,6 +138,8 @@ export interface DirectorState {
   knownRatings: Record<string, RatingCounts>;
   /** Heads rated meets or better that left, by the week they left. */
   regretted: { week: number; count: number }[];
+  /** Per group: heads lost while the simulation advanced a quarter, by the week the quarter began, and how many were rated meets or better. */
+  headsLost: { week: number; groupId: string; count: number; regretted: number }[];
   /** Bets funded and how they ended, by week. */
   funded: { week: number; projectId: string }[];
   betResults: { week: number; projectId: string; landed: boolean }[];

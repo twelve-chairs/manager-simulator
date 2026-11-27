@@ -85,7 +85,7 @@ At the start of each review period, the executive sets two or three goals for it
 
 ## The Recap
 
-Each quarter ends with a recap, folded as the earlier levels' are: what changed first (senior managers whose bands moved, a new survey's results, heads who left or joined, bets that moved, how the room above took the quarter), and the quarter's moments, the habits' routine and the goals folded into *The whole quarter*.
+Each quarter ends with a recap, folded as the earlier levels' are: what changed first (senior managers whose bands moved, a new survey's results, heads who left or joined, who left: each senior manager who quit, with what led to it, and each group that lost heads during the quarter, with how many of them the player would have kept, asked of the level after the quarter's advance since losses happen during it; bets that moved, how the room above took the quarter), and the quarter's moments, the habits' routine and the goals folded into *The whole quarter*.
 
 ## Scorecard, Reviews and the End of the Level
 

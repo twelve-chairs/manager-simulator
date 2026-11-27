@@ -38,8 +38,31 @@ export function afterAdvanceDirector(level: DirectorState, sim: SimState): { lev
   // Only attrition changes rating counts while the simulation advances, so a fall at meets or above is regretted.
   const regretted = regrettedSince(s.knownRatings, s.groupIds, sim);
   if (regretted > 0) s.regretted.push({ week: sim.week - WEEKS, count: regretted });
+  recordHeadsLost(s, sim);
   remember(s, sim);
   return { level: s, burnedOut: s.burnoutQuarters >= T.burnoutQuarters };
+}
+
+/** Records each group's heads lost while the simulation advanced, from the counts the level last saw, and how many it would have kept. */
+function recordHeadsLost(s: DirectorState, sim: SimState) {
+  for (const g of s.groupIds) {
+    const was = s.knownRatings[g];
+    const now = sim.teams[g]?.aggregate;
+    if (!was || !now) continue;
+    const lost = Object.values(was).reduce((n, x) => n + x, 0) - now.headcount;
+    if (lost <= 0) continue;
+    const kept = regrettedSince({ [g]: was }, [g], sim);
+    s.headsLost.push({ week: sim.week - WEEKS, groupId: g, count: lost, regretted: Math.min(kept, lost) });
+  }
+}
+
+/** The player's groups that lost heads while the simulation advanced the quarter just played: how many, and how many they would have kept. */
+// @spec DIR-RECAP-004
+export function headsLostLastQuarter(level: DirectorState, sim: SimState): { groupId: string; name: string; count: number; regretted: number }[] {
+  const played = sim.week - WEEKS;
+  return (level.headsLost ?? [])
+    .filter((x) => x.week === played)
+    .map((x) => ({ groupId: x.groupId, name: sim.teams[x.groupId]?.name ?? x.groupId, count: x.count, regretted: x.regretted }));
 }
 
 /** The senior managers of the player's groups who quit in the quarter just played, with what led to it and their last memory. */

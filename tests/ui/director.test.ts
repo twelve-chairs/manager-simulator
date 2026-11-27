@@ -199,6 +199,12 @@ describe('the director’s recap, review and end', () => {
     for (const c of [shown.changes].flat(3)) if (c instanceof Node) box.append(c);
     expect(text(box, '[data-part=recap-moved] li')).toBe('Platform split: 14 moved to Search.');
     expect(text(box, '[data-part=recap-left] li')).toMatch(new RegExp(`^${lead.name} quit, after 5 weeks of low motivation`));
+    // a group that lost people, by name, with how many you'd have kept
+    const g = (r.level as DirectorState).groupIds[0]!;
+    (r.level as DirectorState).headsLost = [{ week: r.sim.week - T.weeksPerQuarter, groupId: g, count: 3, regretted: 2 }];
+    const lost = document.createElement('div');
+    for (const c of [directorRenderer.recap(r, { changes, routine: { habits: [], goals: [] } }).changes].flat(3)) if (c instanceof Node) lost.append(c);
+    expect($$(lost, '[data-part=recap-left] li').map((li) => li.textContent)).toContain(`${r.sim.teams[g]!.name} lost 3 engineers, 2 of them ones you'd have kept.`);
   });
 
   // @spec UI-DIR-012, UI-DIR-013

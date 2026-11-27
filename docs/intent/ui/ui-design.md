@@ -226,7 +226,7 @@ The director level keeps the shell (header, scene, recap, review, ended) and bri
 
 **Change chips** compare the director view before and after a choice: a senior manager's motivation, stress or management skill, a group's headcount, the executive's or a peer's trust, a bet's schedule, and the player's energy and reputation.
 
-**The recap** shows what changed (senior managers, a new survey's results, heads that left or joined, bets that landed, failed or slipped, and who above trusts you more or less) and folds the routine into *The whole quarter*.
+**The recap** shows what changed (senior managers, a new survey's results, heads that left or joined, who left: senior managers who quit and each group that lost heads, with how many of them you'd have kept, so a loss the review counts against you has a group's name on it; bets that landed, failed or slipped, and who above trusts you more or less) and folds the routine into *The whole quarter*.
 
 **The review** names the director measures: bets landed, projects shipped on time, people you'd have kept who left, the groups' motivation and stress at the survey, your executive's confidence and your reputation; goals by their text.
 

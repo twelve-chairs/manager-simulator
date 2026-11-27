@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { band } from '../../../src/levels/line-manager';
 import {
   DIRECTOR_TUNING as T,
+  afterAdvanceDirector,
   assessDirector,
   beginQuarter,
   chooseDirector,
@@ -9,12 +10,14 @@ import {
   directorScorecard,
   directorView,
   goalStatus,
+  headsLostLastQuarter,
   leaderOf,
   quitLastQuarter,
   reviewDue,
   type DirectorRecap,
 } from '../../../src/levels/director';
 import { advance, applyEffects, type SimState } from '../../../src/sim';
+import { knownRatings } from '../../../src/levels/org';
 import { director, promotedSenior } from './fixtures';
 
 const RULE = { kind: 'rule', ruleId: 'test' } as const;
@@ -113,6 +116,26 @@ describe('senior managers who quit', () => {
     after.people[lead]!.history.push({ week: sim.week - 2, cause: { kind: 'rule', ruleId: 'x' }, note: 'Missed engineering' });
     expect(quitLastQuarter(level, after)).toEqual([{ personId: lead, name: sim.people[lead]!.name, lowMotivationWeeks: 6, highStressWeeks: 0, lowTrust: false, lastMemory: 'Missed engineering' }]);
     expect(quitLastQuarter(level, { ...after, week: end + T.weeksPerQuarter })).toEqual([]);
+  });
+
+  // @spec DIR-RECAP-004
+  it('reports each group that lost heads in the quarter just played, and how many were rated meets or better', () => {
+    const { level: l0, sim } = director(3);
+    const level = structuredClone(l0);
+    level.knownRatings = knownRatings(level.groupIds, sim);
+    const [g1, g2] = level.groupIds as [string, string];
+    const after = structuredClone(sim);
+    after.week += T.weeksPerQuarter;
+    const a = after.teams[g1]!.aggregate!;
+    const keep = a.ratings.meets > 0 ? 'meets' : a.ratings.exceeds > 0 ? 'exceeds' : 'outstanding';
+    const other = a.ratings.unrated > 0 ? 'unrated' : a.ratings.partial > 0 ? 'partial' : 'below';
+    a.headcount = a.headcount - 2;
+    a.ratings[keep] = a.ratings[keep] - 1;
+    a.ratings[other] = a.ratings[other] - 1;
+    const advanced = afterAdvanceDirector(level, after).level;
+    expect(headsLostLastQuarter(advanced, after)).toEqual([{ groupId: g1, name: sim.teams[g1]!.name, count: 2, regretted: 1 }]);
+    expect(headsLostLastQuarter(advanced, after).some((x) => x.groupId === g2)).toBe(false);
+    expect(headsLostLastQuarter(advanced, { ...after, week: after.week + T.weeksPerQuarter })).toEqual([]);
   });
 });
 

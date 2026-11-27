@@ -5,7 +5,7 @@ export { leaderOf, quarterOf } from './core';
 export { foldGroup, handoverChoices, takeOver, type HandoverChoice } from './handover';
 export { takeSurvey } from './survey';
 export { directorView, type DirectorMomentView, type BetView, type DirectorView, type GroupView, type OutsiderView, type SeniorManagerView } from './view';
-export { DIRECTOR_LEVEL, afterAdvanceDirector, assessDirector, directorScorecard, periodEndsThisQuarter, quartersPlayed, quitLastQuarter, reviewDue, type DirectorScorecard } from './review';
+export { DIRECTOR_LEVEL, afterAdvanceDirector, assessDirector, directorScorecard, headsLostLastQuarter, periodEndsThisQuarter, quartersPlayed, quitLastQuarter, reviewDue, type DirectorScorecard } from './review';
 export { endQuarter, setDirectorHabit } from './quarter';
 export { DIRECTOR_ISSUES, beginQuarter, chooseDirector, headcountGiven } from './moments';
 export { goalStatus, setGoals } from './goals';
