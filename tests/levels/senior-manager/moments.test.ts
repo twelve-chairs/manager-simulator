@@ -109,8 +109,13 @@ describe('a month’s moments', () => {
     expect(e).toMatchObject({ teamId: t, status: 'open' });
     expect(e.choices.map((c) => c.id)).toEqual(['coach', 'stepIn', 'letThem']);
     // twelve weeks on with no progress, every project is behind schedule
-    const behind = beginMonth(level, edit(sim, (s) => (s.week += 12)));
+    const later = edit(sim, (s) => (s.week += 12));
+    const behind = beginMonth(level, later);
     expect(kinds(behind)).toContain('escalation');
+    // and an escalation about a project behind names it, with its progress and deadline
+    const slipping = behind.moments.filter((m) => m.kind === 'escalation').find((m) => / is slipping: /.test(m.text))!;
+    const p = Object.values(later.projects).find((x) => slipping.text.includes(`${x.name} is slipping`))!;
+    expect(slipping.text).toContain(`${p.name} is slipping: ${p.progress} of ${p.scope} done, due week ${p.deadlineWeek + 1}.`);
   });
 
   // @spec SENIOR-MOMENT-004

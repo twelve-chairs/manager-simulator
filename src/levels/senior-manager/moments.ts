@@ -215,7 +215,8 @@ function escalationReason(sim: SimState, t: string, behind: ReadonlySet<string>)
   const a = sim.teams[t]!.aggregate!;
   if (band(a.stress) >= 3) return 'their team is stretched thin';
   if (band(a.attritionRisk) >= 3) return 'they think people are about to leave';
-  return activeProjects(sim, t).some((p) => behind.has(p.id)) ? 'a project is slipping' : undefined;
+  const slipping = activeProjects(sim, t).find((p) => behind.has(p.id));
+  return slipping ? `${slipping.name} is slipping: ${slipping.progress} of ${slipping.scope} done, due week ${slipping.deadlineWeek + 1}` : undefined;
 }
 
 /** Escalations from teams under strain, at risk of losing people, or with a project behind; then a staffing request from the most strained team while another is calm. */

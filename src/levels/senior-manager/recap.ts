@@ -34,6 +34,8 @@ export interface SeniorRecap {
     assigned: { teamId: string; name: string; project: string }[];
     /** What came of last month's approvals. */
     followUps: string[];
+    /** Projects behind or overdue when the month began that are on schedule again, with their team. */
+    recovered: { name: string; team: string }[];
   };
   routine: { habits: string[]; goals: { text: string; progress: string }[] };
 }
@@ -67,6 +69,10 @@ export function monthRecap(level: SeniorState, sim: SimState, start: MonthStart)
   const slipped = Object.entries(now)
     .filter(([id, schedule]) => schedule !== 'onSchedule' && start.projects[id] !== schedule && start.projects[id] !== 'overdue')
     .map(([id, schedule]) => `${sim.projects[id]!.name} is ${schedule === 'overdue' ? 'overdue' : 'behind'}`);
+  // @spec SENIOR-RECAP-001
+  const recovered = Object.entries(now)
+    .filter(([id, schedule]) => schedule === 'onSchedule' && start.projects[id] !== undefined && start.projects[id] !== 'onSchedule')
+    .map(([id]) => ({ name: sim.projects[id]!.name, team: sim.teams[sim.projects[id]!.teamId]?.name ?? '' }));
   const h = level.habits;
   const oversight = Object.values(h.oversight);
   const count = (o: string) => oversight.filter((x) => x === o).length;
@@ -77,5 +83,5 @@ export function monthRecap(level: SeniorState, sim: SimState, start: MonthStart)
     ...(level.backfills.length ? [`${level.backfills.length} ${level.backfills.length === 1 ? 'role is' : 'roles are'} waiting to be filled.`] : []),
   ];
   const followUps = (level.followUps ?? []).filter((f) => f.week === start.week).map((f) => f.text);
-  return { changes: { managers, teams, heads, slipped, assigned: [], followUps }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
+  return { changes: { managers, teams, heads, slipped, assigned: [], followUps, recovered }, routine: { habits, goals: level.goals.map((g) => goalStatus(g, level, sim)).map(({ text, progress }) => ({ text, progress })) } };
 }

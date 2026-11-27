@@ -56,6 +56,29 @@ describe('the period’s goals', () => {
 
 describe('the month’s recap', () => {
   // @spec SENIOR-RECAP-001
+  it('reports a project behind when the month began that is on schedule again', () => {
+    const { level, sim } = senior(5);
+    const t = level.teamIds[0]!;
+    const p = Object.values(sim.projects).find((x) => x.teamId === t && x.status === 'active')!;
+    // behind as the month begins: nothing done, well into its time
+    const behind = edit(sim, (s) => {
+      s.week = s.projects[p.id]!.startWeek + Math.floor((s.projects[p.id]!.deadlineWeek - s.projects[p.id]!.startWeek) / 2);
+      s.projects[p.id]!.progress = 0;
+    });
+    const begun = beginMonth(level, behind);
+    // caught up by the month's end
+    const caught = edit(behind, (s) => (s.projects[p.id]!.progress = s.projects[p.id]!.scope - 1));
+    const r = endMonth(begun, caught);
+    if (!r.ok) throw new Error(r.error);
+    const recap = r.recap as { changes: { recovered: { name: string; team: string }[] } };
+    expect(recap.changes.recovered).toContainEqual({ name: p.name, team: sim.teams[t]!.name });
+    // a project on schedule all month is not reported
+    const steady = endMonth(beginMonth(level, sim), sim);
+    if (!steady.ok) throw new Error(steady.error);
+    expect((steady.recap as { changes: { recovered: unknown[] } }).changes.recovered.some((x) => (x as { name: string }).name === p.name)).toBe(false);
+  });
+
+  // @spec SENIOR-RECAP-001
   it('tells what changed with the managers and teams, and the routine of habits and goals', () => {
     const { level, sim } = senior(5);
     const t = level.teamIds[1]!;

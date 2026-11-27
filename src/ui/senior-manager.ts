@@ -293,7 +293,8 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
   const quits = quitLastMonth(run.level as SeniorState, run.sim);
   const lost = headsLostLastMonth(run.level as SeniorState, run.sim);
   const followUps = c.followUps ?? [];
-  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || c.assigned.length || followUps.length || shipped.length || quits.length || lost.length);
+  const recovered = c.recovered ?? [];
+  const quiet = !(c.managers.length || c.teams.length || c.heads.length || c.slipped.length || recovered.length || c.assigned.length || followUps.length || shipped.length || quits.length || lost.length);
   return {
     changes: [
       quiet ? h('p', { 'data-part': 'recap-quiet', class: 'quiet' }, 'A quiet month.') : null,
@@ -304,6 +305,7 @@ function recap(run: Run, value: unknown): { changes: Child; routine: Child } {
       part('recap-followups', 'What came of it', followUps.map((line) => h('li', {}, line))),
       part('recap-heads', 'People', c.heads.map((x) => h('li', {}, headsChangeLine(x)))),
       part('recap-slipped', 'What slipped', c.slipped.map((line) => h('li', {}, `${line}.`))),
+      part('recap-recovered', 'Back on schedule', recovered.map((p) => h('li', {}, `${p.name} is back on schedule (${p.team}).`))),
       part('recap-assigned', 'New work', c.assigned.map((x) => h('li', { 'data-team': x.teamId }, `Your manager gave ${x.project} to ${x.name}.`))),
     ],
     routine: [part('recap-habits', 'Your habits', r.routine.habits.map((line) => h('li', {}, line))), part('recap-goals', 'Goals', r.routine.goals.map((g) => h('li', {}, `${g.text}: ${g.progress}`)))],

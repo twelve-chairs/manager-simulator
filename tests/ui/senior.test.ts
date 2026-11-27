@@ -293,6 +293,13 @@ describe('the senior manager renderer', () => {
     for (const c of [withWork.changes].flat(3)) if (c instanceof Node) w.append(c);
     expect(text(w, '[data-part=recap-assigned] li')).toBe('Your manager gave Ledger sync to Search.');
     expect(w.querySelector('[data-part=recap-quiet]')).toBeNull();
+    // a project back on schedule, and what came of last month's approvals
+    const withNews = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [], recovered: [{ name: 'Rate limiter', team: 'Onboarding' }], followUps: ["Farah hasn't raised the promotion again, and trusts you a little less for the no."] }, routine: { habits: [], goals: [] } });
+    const n = document.createElement('div');
+    for (const c of [withNews.changes].flat(3)) if (c instanceof Node) n.append(c);
+    expect(text(n, '[data-part=recap-recovered] li')).toBe('Rate limiter is back on schedule (Onboarding).');
+    expect(text(n, '[data-part=recap-followups] li')).toBe("Farah hasn't raised the promotion again, and trusts you a little less for the no.");
+    expect(n.querySelector('[data-part=recap-quiet]')).toBeNull();
     // and the shell titles the disclosure for a month
     const later = endWeeks(run, 1, both('continue'));
     const { root } = makeApp({ run: later, deps: both('continue') });

@@ -96,7 +96,7 @@ At the start of each review period, the player's manager sets two or three goals
 
 ## The Recap
 
-Each month ends with a recap, folded as the first level's is: what changed first (managers whose bands moved or who gained a memory note, team health that changed as reported, heads who left or joined, each manager who quit with what led to it and the last thing between you as the first level words it, projects that shipped in the month and whether by their deadline, asked of the level after the month's advance since projects and quits happen during it, what slipped), and the month's moments, the habits' routine and the goals folded into a disclosure, *The whole month*.
+Each month ends with a recap, folded as the first level's is: what changed first (managers whose bands moved or who gained a memory note, team health that changed as reported, heads who left or joined, each manager who quit with what led to it and the last thing between you as the first level words it, projects that shipped in the month and whether by their deadline, projects back on schedule, so an escalation the player answered shows whether it held, asked of the level after the month's advance since projects and quits happen during it, what slipped), and the month's moments, the habits' routine and the goals folded into a disclosure, *The whole month*.
 
 ## Scorecard, Reviews and the End of the Level
 
