@@ -118,6 +118,8 @@ What changed, shown at once:
 
 When none of these has anything to show, the recap says "A quiet week." in their place.
 
+At every level, after the level's own part, **Your promises** lists what the player has promised someone and not yet kept: a clean-up after the deadline, that a manager will hear first about a reorg, what a stay conversation offered a restless leader. Each line names the person, the promise and how long ago it was made, and the turn a promise is kept or broken the line says so instead, once. A promise is a note in the person's history that the game's table of promises names, with the notes that keep or break it and the weeks after which, unanswered, it drops off the list; a stay conversation's promise breaks when that leader turns restless again. Playtesters kept their own lists of promises they had made, and wanted the game to remind them; a promise the player forgets is a consequence they cannot trace back. Promises already answered and people who have left are not listed, and a turn with only open promises still counts as quiet.
+
 The line manager's part ends with its **watch line**, when the level reports one: the one thing most likely to go wrong next, under the label "Watch", set apart from the lines above it so that it reads as a look ahead rather than one more thing that happened. It comes after "A quiet week." when the week was otherwise quiet, since a quiet week can still be heading somewhere.
 
 Below them, a disclosure, **The whole week**, closed until the player opens it, holds:
@@ -360,6 +362,7 @@ The page tells link previews and search engines what the game is, in its static 
 | Trust at the handover | In words, the bands of trust | Hidden, as at the line manager; as a number | Choosing who leads your team is a judgement about people the player knows; trust is what makes a promoted engineer a developing manager, so hiding it would make the choice a guess. |
 | Calibration controls | Counts per rating beside the delivery, with a control per rating to move a head | Dragging heads between columns; one slider per team | Counts beside counts make the gap readable at a glance; per-rating controls work on a keyboard and at phone width. |
 | Invalid content | Dropped; listed on the page only in the development build | Always listed; failing to start | Players should not see authoring errors; authors should. The build already fails on invalid content, so this only matters for a bundle edited by hand. |
+| Where promises are remembered | Notes already in people's history, named by a table of promises | A promise field the simulation keeps; promises declared in each situation's content | The notes already record each promise where it was made, and the follow-up situations already read them; a table that names them adds no state and no content schema. A test checks that every note the table names is one the content or a level writes. |
 
 ## Open Questions & Future Decisions
 

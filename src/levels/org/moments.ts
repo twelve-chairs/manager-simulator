@@ -1,4 +1,5 @@
 import type { ChangeLogEntry, Effect, NewPerson, SimState, Want } from '../../sim';
+import { STAY_PROMISES } from '../promises';
 import { randomInt, rule, type Rng } from './core';
 import { applyLogged } from './units';
 
@@ -138,7 +139,8 @@ export function stayAnswer(sim: SimState, id: string, choiceId: string, t: StayT
   return {
     effects: [
       { type: 'value', target, field: 'motivation', amount: t.motivation, cause, wantTags: { serves: [p.want] } },
-      { type: 'value', target, field: 'trust', amount: t.trust, cause },
+      // The promise is remembered, so the recap can say whether it holds (UI-PROMISE-001).
+      { type: 'value', target, field: 'trust', amount: t.trust, cause, historyNote: `Was promised ${STAY_PROMISES[p.want]}` },
       { type: 'value', target: { kind: 'player' }, field: 'stress', amount: t.energy, cause },
     ],
     reaction: `${p.name} hears it, and believes you. They stay.`,

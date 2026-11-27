@@ -552,6 +552,17 @@ describe('the scene', () => {
     expect(text(root, '[data-action=close-recap]')).toBe('Start week 2');
     click(root, '[data-action=close-recap]');
     expect(scene(root)).toBe('moment');
+    // @spec UI-PROMISE-001, UI-PROMISE-002
+    // what the player promised and hasn't kept, and a promise kept this turn, which makes the week not quiet
+    const promised = structuredClone(r);
+    const [a, b] = Object.values(promised.sim.people).filter((p) => p.status === 'active' && p.role === 'engineer');
+    a!.history.push({ week: promised.sim.week - 3, cause: { kind: 'rule', ruleId: 't' }, note: 'Was promised a clean-up after the deadline' });
+    b!.history.push({ week: promised.sim.week - 5, cause: { kind: 'rule', ruleId: 't' }, note: 'Was promised a clean-up after the deadline' }, { week: promised.sim.week - 1, cause: { kind: 'rule', ruleId: 't' }, note: 'Led a clean-up of the code' });
+    const shown = makeApp({ run: promised }).root;
+    expect(text(shown, '[data-part=recap-promises] h3')).toBe('Your promises');
+    expect(text(shown, '[data-promise=open]')).toBe(`${a!.name}: a clean-up after the deadline, promised 3 weeks ago.`);
+    expect(text(shown, '[data-promise=kept]')).toBe(`Kept: a clean-up after the deadline, to ${b!.name}.`);
+    expect(shown.querySelector('[data-part=recap-quiet]')).toBeNull();
     // a reload after a moment of the new week has been played does not bring the recap back
     r = step(r, { kind: 'wait' });
     expect(scene(makeApp({ run: r }).root)).toBe('moment');

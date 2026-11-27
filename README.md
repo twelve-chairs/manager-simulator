@@ -127,6 +127,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `src/levels/senior-manager/` | Senior manager career level: the handover from a promoted line manager, managers and teams, habits, the month's moments, calibration, managers' plans, goals, recaps and reviews |
 | `src/levels/director/` | Director career level: the handover from a promoted senior manager, groups and senior managers, the executive and peers, headcount, strategy bets, the quarterly review, goals, recaps and reviews |
 | `src/levels/vp/` | VP career level, the top of the ladder: the handover from a promoted director, divisions and directors, the CEO and peer VPs, annual planning, the company priority, leadership disputes, cuts, the all-hands, goals, recaps and reviews |
+| `src/levels/promises.ts` | The promises the player can make people, named by the history notes that make, keep and break them, for the recap's Your promises list |
 | `src/levels/org/` | Mechanics shared by the levels that run an organization of aggregate units: generating leaders and outsiders, folding units at a handover, the engagement survey, drift, calibration, rating leaders and regretted attrition |
 | `src/loop/` | Turn loop |
 | `src/review/` | Performance review |

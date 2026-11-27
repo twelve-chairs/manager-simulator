@@ -1,4 +1,5 @@
 import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Dependencies, type Run, type WeekMoment } from '../loop';
+import { promisesAt } from '../levels/promises';
 import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '../save';
 import type { ContentError, Situation } from '../situations';
 import type { Standing, TowardPromotion } from '../review';
@@ -768,10 +769,13 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     if (!run.lastWeek) return null;
     const outcome = (m: WeekMoment) => (m.status === 'answered' ? (m.text ?? '') : (MOMENT_OUTCOMES[m.status] ?? ''));
     const part = renderer.recap(run, run.lastWeek.recap);
+    const promises = promisesPart(run, renderer);
+    // A promise kept or broken is something that changed, so the turn is not quiet.
+    const changes = promises.answered ? [part.changes].flat(3).filter((c) => !(c instanceof HTMLElement && c.dataset.part === 'recap-quiet')) : part.changes;
     return h(
       'div',
       { 'data-part': 'recap', class: 'recap' },
-      h('div', { 'data-part': 'recap-changes' }, part.changes),
+      h('div', { 'data-part': 'recap-changes' }, changes, promises.part),
       h(
         'details',
         {
@@ -789,6 +793,19 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         part.routine,
       ),
     );
+  }
+
+  /** What the player has promised people and not yet kept, and what was kept or broken in the turn just played. */
+  // @spec UI-PROMISE-001, UI-PROMISE-002
+  function promisesPart(run: Run, renderer: LevelRenderer): { part: Child; answered: boolean } {
+    const p = promisesAt(run.sim, run.sim.week - STEP[renderer.turn]);
+    const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;
+    const items = [
+      ...p.kept.map((x) => h('li', { 'data-promise': 'kept', 'data-person': x.personId }, `Kept: ${x.promise}, to ${x.name}.`)),
+      ...p.broken.map((x) => h('li', { 'data-promise': 'broken', 'data-person': x.personId }, `Broken: ${x.promise}, to ${x.name}${x.restless ? ', who is restless again' : ''}.`)),
+      ...p.open.map((x) => h('li', { 'data-promise': 'open', 'data-person': x.personId }, `${x.name}: ${x.promise}, promised ${weeks(x.weeksAgo)} ago.`)),
+    ];
+    return { part: items.length ? h('div', { 'data-part': 'recap-promises' }, h('h3', {}, 'Your promises'), h('ul', {}, items)) : null, answered: p.kept.length + p.broken.length > 0 };
   }
 
   /** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
