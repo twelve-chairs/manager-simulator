@@ -497,8 +497,9 @@ function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): P
   if (choiceId === 'approve') {
     apply();
     if (lenient) effects.push(team(t, 'motivation', -T.approvalDip, 'senior.approval'));
-    later(lenient ? `${name(sim, t)} still wonders what the ${what} you signed for ${who} took.` : `The ${what} you signed for ${who} has settled in, and ${name(sim, t)} took it well.`);
-    return { reaction: lenient ? `You sign it. Some of ${name(sim, t)} wonder what it took.` : 'You sign it.' };
+    else if (m) effects.push(person(m, 'trust', T.approveTrust, 'senior.approval'));
+    later(lenient ? `${name(sim, t)} still wonders what the ${what} you signed for ${who} took.` : `The ${what} you signed for ${who} has settled in, ${name(sim, t)} took it well, and ${who} trusts you more for backing them.`);
+    return { reaction: lenient ? `You sign it. Some of ${name(sim, t)} wonder what it took.` : `You sign it. ${who} notices you backed their judgement.` };
   }
   if (choiceId !== 'evidence') {
     if (m) effects.push(person(m, 'trust', -T.refuseTrust, 'senior.approval'));

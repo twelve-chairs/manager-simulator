@@ -87,6 +87,8 @@ export const SENIOR_TUNING = {
   /** Approvals: the motivation an unearned promotion costs the team, the trust asking for evidence and refusing cost, and the weeks between a team's proposals. */
   approvalDip: 5,
   evidenceTrust: 2,
+  /** Trust a strict manager gains when the player approves their case without asking for the evidence. */
+  approveTrust: 3,
   refuseTrust: 4,
   approvalCooldownWeeks: 26,
   /** Restructuring: the month it is offered from, and the skill a team loses when its strongest is promoted out. */

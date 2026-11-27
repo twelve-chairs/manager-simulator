@@ -373,7 +373,7 @@ describe('a month’s moments', () => {
       if (!after.ok) throw new Error(after.error);
       return (after.recap as SeniorRecap).changes.followUps;
     };
-    expect(nextMonth(0, 'approve')).toEqual([`The promotion you signed for ${who} has settled in, and ${sim.teams[t]!.name} took it well.`]);
+    expect(nextMonth(0, 'approve')).toEqual([`The promotion you signed for ${who} has settled in, ${sim.teams[t]!.name} took it well, and ${who} trusts you more for backing them.`]);
     expect(nextMonth(2, 'approve')[0]).toMatch(/still wonders what the promotion/);
     expect(nextMonth(0, 'evidence')[0]).toMatch(/had the case for the promotion all along; being asked for it cost a little of their trust/);
     expect(nextMonth(2, 'evidence')[0]).toMatch(/didn't go ahead/);
@@ -400,6 +400,8 @@ describe('a month’s moments', () => {
     const fair = go(0, 'approve');
     expect(fair.teams[t]!.aggregate!.ratings.outstanding).toBe(rated.teams[t]!.aggregate!.ratings.outstanding + 1);
     expect(fair.teams[t]!.aggregate!.motivation).toBe(rated.teams[t]!.aggregate!.motivation);
+    // backing a strict manager's judgement earns a little of their trust
+    expect(fair.people[m]!.trust).toBe(Math.min(100, rated.people[m]!.trust + T.approveTrust));
     const lenient = go(2, 'approve');
     expect(lenient.teams[t]!.aggregate!.ratings.outstanding).toBe(rated.teams[t]!.aggregate!.ratings.outstanding + 1);
     expect(lenient.teams[t]!.aggregate!.motivation).toBe(rated.teams[t]!.aggregate!.motivation - T.approvalDip);
