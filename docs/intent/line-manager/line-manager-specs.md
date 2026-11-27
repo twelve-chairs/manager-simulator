@@ -102,6 +102,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-MOMENT-011**: The line manager situations `scope-creep`, `conference-talk` and `review-friction` shall each be marked `once` and have a follow-up, its id being that situation's id followed by `-later`, that binds as its people only the people who were in the first situation, and only from 13 weeks after the first was presented, whichever choice was made.
 - [x] **LINE-MOMENT-012**: The `scope-creep` situation shall name an engineer on its project's team as the one who would build the request, and each of its choices shall leave that engineer a history entry.
 - [x] **LINE-MOMENT-013**: The line manager situations `flight-risk-1on1` and `improvement-plan` shall bind as their person only someone who does not remember being in them, and each shall have a follow-up, its id being that situation's id followed by `-later`, whose person role holds only for someone who remembers being in the first, from 13 weeks after it, whichever choice was made, and otherwise on the first's own conditions, and for someone who does not remember being in the follow-up.
+- [x] **LINE-MOMENT-014**: The line manager situation `remote-out-of-loop` shall not be presented once the player has resolved it, earlier in the run, by moving the team's decisions into writing.
 
 ## Project check-ins
 

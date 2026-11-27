@@ -4,6 +4,8 @@ title: Out of the loop
 levels: [line-manager]
 priority: normal
 cooldownWeeks: 13
+# Once the team's decisions are written down, nobody finds out about them after the fact (LINE-MOMENT-014).
+when: { presented: remote-out-of-loop, choice: write-first, atMost: 0 }
 waitDebrief: "Being left out of decisions is quiet. Nothing happens until someone who stopped hearing about things stops caring about them."
 roles:
   - name: engineer

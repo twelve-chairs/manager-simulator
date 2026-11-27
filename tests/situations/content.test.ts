@@ -691,3 +691,17 @@ describe('written situations', () => {
     }
   });
 });
+
+describe('a process the player fixed', () => {
+  // @spec LINE-MOMENT-014
+  it('stops presenting Out of the loop once the team moved its decisions into writing, and not after a private check-in', () => {
+    const sit = realContent().find((x) => x.id === 'remote-out-of-loop')!;
+    const sim = patch(fresh(), (x) => (x.week = 40));
+    const after = (choiceId: string) =>
+      evaluateCondition(sit.when!, { sim, bindings: {}, engine: { ...engine(), debriefs: [{ week: 3, situationId: 'remote-out-of-loop', bindings: {}, status: 'resolved' as const, choiceId }] } });
+    expect(evaluateCondition(sit.when!, { sim, bindings: {}, engine: engine() })).toBe(true);
+    expect(after('private')).toBe(true);
+    expect(after('speak-up')).toBe(true);
+    expect(after('write-first')).toBe(false);
+  });
+});
