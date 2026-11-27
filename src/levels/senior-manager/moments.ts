@@ -291,7 +291,9 @@ function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
   if (!strained && sim.week - s.lastNewWorkOffer < T.newWorkOfferWeeks) return [];
   s.lastNewWorkOffer = sim.week;
   const team = name(sim, idle);
-  const offer = (['launch', 'handover', 'own'] as const)[monthOf(s, sim) % 3]!;
+  // Offers take turns by count: they come a set number of weeks apart, so turns by month could land on one kind every time.
+  const offer = (['launch', 'handover', 'own'] as const)[(s.newWorkOffers ?? 0) % 3]!;
+  s.newWorkOffers = (s.newWorkOffers ?? 0) + 1;
   const OFFER_TEXT = {
     launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
     handover: { title: 'New work for the group: a handover', text: `Another group wants to hand yours a system it can no longer keep up, old code and heavy tech debt. ${team} has nothing on. Nobody will mind much if you say no.` },

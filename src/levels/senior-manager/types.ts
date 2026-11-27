@@ -125,6 +125,8 @@ export interface SeniorState {
   surfaced: { teamId: string; week: number }[];
   /** The week new work for the group was last offered; far in the past before the first. */
   lastNewWorkOffer: number;
+  /** How many offers of new work the level has made, so their kinds take turns. */
+  newWorkOffers?: number;
   /** The week the player last argued for an exception to the curve; far in the past when they never have. */
   lastArgued: number;
   /** Each team's surfaced problems the player has answered, by problem: when, how, and whether the answer settled it. */

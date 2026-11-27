@@ -298,7 +298,7 @@ describe('a month’s moments', () => {
   });
 
   // @spec SENIOR-MOMENT-015, SENIOR-MOMENT-016
-  it('makes each month’s offer a launch, a handover or the idle team’s own project, each taken and declined at its own cost', () => {
+  it('makes successive offers a launch, a handover and the idle team’s own project in turn, each taken and declined at its own cost', () => {
     const { level, sim } = calm(6);
     const t = level.teamIds[2]!;
     const idleAt = (months: number) =>
@@ -309,9 +309,12 @@ describe('a month’s moments', () => {
           else Object.assign(p, { startWeek: s.week - 4, deadlineWeek: s.week + 40, progress: p.scope / 2 });
         }
       });
-    const offers = [3, 4, 5].map((months) => {
-      const state = idleAt(months);
-      const l = beginMonth(level, state);
+    // offers in succession, as far apart as offers come: each a different kind
+    let carried = level;
+    const offers = [0, 1, 2].map((i) => {
+      const state = idleAt(3 + (i * T.newWorkOfferWeeks) / T.weeksPerMonth);
+      const l = beginMonth(carried, state);
+      carried = { ...l, moments: [] };
       return { state, l, w: find(l, 'newWork') };
     });
     const titles = offers.map((o) => o.w.title);
