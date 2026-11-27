@@ -1,6 +1,7 @@
 import { draftObject } from './drafts';
-import { headsLostLastQuarter, quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
+import { DIRECTOR_TUNING, headsLostLastQuarter, quitLastQuarter, type DirectorRecap, type DirectorState, type DirectorView } from '../levels/director';
 import type { Run } from '../loop';
+import { band } from '../levels/line-manager';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { headsChangeLine, headsLostLine, quitLine, shareWord } from './text';
@@ -49,7 +50,10 @@ const HABITS = {
 
 const viewOf = (ctx: ScreenContext) => ctx.view as DirectorView;
 /** A bet's stakes in words, not numbers. */
-const stakes = (landing: number, failing: number) => `lands: ${landing >= 10 ? 'a big win' : 'a win'}; fails: ${failing >= 12 ? 'a hard knock' : 'a knock'}`;
+/** What landing and failing a bet do, in words: reputation and the executive's trust, a lot or some. */
+const stakes = (landing: number, failing: number) => `If it lands, your reputation and your executive's trust rise ${landing >= 10 ? 'a lot' : 'some'}; if it fails, both fall ${failing >= 12 ? 'a lot' : 'some'}.`;
+/** The trust band at which a peer speeds a bet that touches their organization. */
+const PEER_HELPS_BAND = band(DIRECTOR_TUNING.bets.peerTrust);
 
 /** The habit controls, sending a habit change at once. */
 // @spec UI-DIR-006
@@ -139,7 +143,13 @@ function bets(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
   const v = viewOf(ctx);
   const key = `bets:${m.id}`;
   const picks = draftObject<string>(ctx.drafts.get(key)?.picks);
-  const peers = new Map(v.upward.map((u) => [u.id, u.name]));
+  const peers = new Map(v.upward.map((u) => [u.id, u]));
+  // @spec UI-DIR-008
+  const touches = (peerId: string) => {
+    const p = peers.get(peerId);
+    const who = p?.name ?? 'a peer';
+    return ` · touches ${who}'s organization: ${who} ${p && p.trust >= PEER_HELPS_BAND ? 'trusts you enough to speed it' : "doesn't trust you enough yet to speed it"}`;
+  };
   return h(
     'div',
     { 'data-detail': 'bets', class: 'bets' },
@@ -147,7 +157,7 @@ function bets(ctx: ScreenContext, m: DirectorView['moments'][number]): Child {
     (m.offers ?? []).map((o) =>
       h('div', { 'data-offer': o.id, class: 'offer' },
         h('strong', { 'data-field': 'name' }, o.name),
-        h('p', {}, `About ${o.scope} units of work, due in ${o.deadlineWeeks} weeks`, o.peerId ? ` · touches ${peers.get(o.peerId) ?? 'a peer'}'s organization` : ''),
+        h('p', {}, `About ${o.scope} units of work, due in ${o.deadlineWeeks} weeks`, o.peerId ? touches(o.peerId) : ''),
         h('p', {}, h('small', { 'data-field': 'stakes' }, stakes(o.landing, o.failing))),
         h('label', {}, 'Carried by ',
           h('select', {

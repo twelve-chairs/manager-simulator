@@ -145,7 +145,10 @@ describe('the director’s scenes', () => {
     expect(showing(root, 'bets')).toBe(true);
     const offers = $$(root, '[data-offer]');
     expect(offers.length).toBeGreaterThanOrEqual(2);
-    expect(text(offers[0]!, '[data-field=stakes]')).toMatch(/lands|fails/);
+    expect(text(offers[0]!, '[data-field=stakes]')).toMatch(/^If it lands, your reputation and your executive's trust rise (a lot|some); if it fails, both fall (a lot|some)\.$/);
+    // a bet that touches a peer says whether that peer trusts you enough to speed it
+    const touching = offers.map((o) => o.textContent ?? '').filter((t) => t.includes('touches '));
+    for (const t of touching) expect(t).toMatch(/touches (.+)'s organization: \1 (trusts you enough to speed it|doesn't trust you enough yet to speed it)/);
     // what a group can carry: its stress as last seen and its projects, and what speeds or slows a bet
     expect(text(root, '[data-part=bet-capacity]')).toMatch(/strained group carries a bet slowly/);
     const option = (($$(root, '[data-offer] select')[0] as unknown as HTMLSelectElement).options[1]!.textContent ?? '');
