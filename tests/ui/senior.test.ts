@@ -139,6 +139,9 @@ describe('the senior manager’s week screen', () => {
     expect(text(root, '[data-part=curve] [data-curve-room]')).toBe(String(moment.curve));
     expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop));
     expect(text(root, '[data-part=curve]')).toMatch(/^Top ratings \(exceeds and outstanding\)/);
+    // and beside what the teams would hold set to what they delivered
+    const deliveredTop = moment.calibration!.reduce((n, c) => n + topOf(c.delivered), 0);
+    expect(text(root, '[data-part=curve] [data-curve-delivered]')).toBe(String(deliveredTop));
     const top = (['outstanding', 'exceeds', 'meets', 'partial'] as const).find((r) => entry.proposed[r] > 0)!;
     const lower = { outstanding: 'exceeds', exceeds: 'meets', meets: 'partial', partial: 'below' }[top];
     // no move is offered out of an empty rating
@@ -157,6 +160,13 @@ describe('the senior manager’s week screen', () => {
     if (state.screen !== 'run') throw new Error('expected a run');
     expect(state.run.sim.teams[teams[0]!]!.aggregate!.ratings[lower as 'meets']).toBe(entry.proposed[lower as 'meets'] + 1);
     expect({ ...state.run.sim.teams[teams[1]!]!.aggregate!.ratings, unrated: 0 }).toEqual({ ...second.delivered, unrated: 0 });
+    // one control sets every team to what it delivered
+    const again = makeApp({ run, deps: both('continue') }).root;
+    if (scene(again) === 'recap') click(again, '[data-action=close-recap]');
+    if (scene(again) === 'opening') click(again, '[data-action=start-week]');
+    click(again, '[data-action=set-all-delivered]');
+    expect(text(again, '[data-part=curve] [data-curve-held]')).toBe(String(deliveredTop));
+    for (const c of moment.calibration!) for (const r of ['below', 'partial', 'meets', 'exceeds', 'outstanding'] as const) expect(text(again, `[data-calibration="${c.teamId}"] [data-proposed=${r}]`)).toBe(String(c.delivered[r]));
   });
 });
 

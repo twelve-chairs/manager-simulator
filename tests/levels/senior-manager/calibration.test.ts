@@ -84,7 +84,20 @@ describe('calibration', () => {
       if (lenient === 0) expect(c.proposed).toEqual(c.delivered);
     }
     // and the group's curve: the most top ratings it may hold
-    expect(moment.curve).toBe(Math.floor(T.curveShare * groupHeads(s, level.teamIds)));
+    const deliveredTop = moment.calibration!.reduce((n, c) => n + c.delivered.exceeds + c.delivered.outstanding, 0);
+    expect(moment.curve).toBe(Math.max(Math.floor(T.curveShare * groupHeads(s, level.teamIds)), deliveredTop - T.curveMaxShortfall));
+  });
+
+  // @spec SENIOR-CAL-001
+  it('stretches the curve for an exceptionally strong group to a few heads short of what it delivered', () => {
+    const { moment } = calibrationAt('strong');
+    const deliveredTop = moment.calibration!.reduce((n, c) => n + c.delivered.exceeds + c.delivered.outstanding, 0);
+    expect(deliveredTop - moment.curve!).toBe(T.curveMaxShortfall);
+    // a middling group's curve is its share of heads, with room to spare
+    const middling = calibrationAt('middling');
+    const middlingTop = middling.moment.calibration!.reduce((n, c) => n + c.delivered.exceeds + c.delivered.outstanding, 0);
+    expect(middling.moment.curve).toBe(Math.floor(T.curveShare * groupHeads(middling.sim, middling.level.teamIds)));
+    expect(middlingTop).toBeLessThanOrEqual(middling.moment.curve!);
   });
 
   // @spec SENIOR-CAL-002, SENIOR-CAL-004

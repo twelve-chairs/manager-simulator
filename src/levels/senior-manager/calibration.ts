@@ -77,11 +77,16 @@ function reRates(sim: SimState, teamId: string, target: RatingCounts): Effect[] 
 const TOP: Rating[] = ['exceeds', 'outstanding'];
 const topOf = (c: RatingCounts) => TOP.reduce((n, r) => n + c[r], 0);
 
-/** The most top ratings the group may hold: its curve's share of the heads across its teams, rounded down. */
+/**
+ * The most top ratings the group may hold: its curve's share of the heads across its teams, rounded down; for an
+ * exceptionally strong group, stretched to `curveMaxShortfall` short of the top ratings its teams delivered.
+ */
 // @spec SENIOR-CAL-001
 export function curveOf(level: SeniorState, sim: SimState): number {
-  const heads = level.teamIds.reduce((n, id) => n + (sim.teams[id]?.aggregate?.headcount ?? 0), 0);
-  return Math.floor(T.curveShare * heads);
+  const teams = level.teamIds.filter((id) => sim.teams[id]?.aggregate);
+  const heads = teams.reduce((n, id) => n + sim.teams[id]!.aggregate!.headcount, 0);
+  const delivered = teams.reduce((n, id) => n + topOf(deliveredRatings(sim, id)), 0);
+  return Math.max(Math.floor(T.curveShare * heads), delivered - T.curveMaxShortfall);
 }
 
 /** The choices once calibration is settled over the curve. */

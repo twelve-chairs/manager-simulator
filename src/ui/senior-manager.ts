@@ -175,6 +175,11 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
     const shown = shownOf(entry);
     return n + shown.exceeds + shown.outstanding;
   }, 0);
+  const deliveredTop = moment.calibration!.reduce((n, entry) => n + entry.delivered.exceeds + entry.delivered.outstanding, 0);
+  const setAllDelivered = () => {
+    for (const entry of moment.calibration!) moves[entry.teamId] = movesToDelivered(entry.proposed, entry.delivered);
+    save();
+  };
   return [
     moment.curve !== undefined
       ? h(
@@ -184,9 +189,12 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
           h('strong', { 'data-curve-held': '' }, String(held)),
           ' as the moves stand, of ',
           h('strong', { 'data-curve-room': '' }, String(moment.curve)),
-          ' the curve allows.',
+          ' the curve allows. Set to what they delivered, your teams would hold ',
+          h('strong', { 'data-curve-delivered': '' }, String(deliveredTop)),
+          '.',
         )
       : null,
+    h('button', { 'data-action': 'set-all-delivered', onClick: setAllDelivered }, 'Set every team to what it delivered'),
     moment.calibration!.map((entry) => {
       const shown = shownOf(entry);
       const move = (from: Rating, to: Rating) => () => {
