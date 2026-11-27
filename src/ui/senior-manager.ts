@@ -163,6 +163,7 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
     ctx.refresh();
   };
   const names = new Map(v.teams.map((t) => [t.id, t.name]));
+  const teamOf = new Map(v.teams.map((t) => [t.id, t]));
   const shownOf = (entry: CalibrationEntry) => {
     const shown = { ...entry.proposed };
     for (const m of moves[entry.teamId] ?? []) {
@@ -194,6 +195,7 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
           '.',
         )
       : null,
+    h('p', { 'data-part': 'cut-cost', class: 'help' }, 'A head rated below what it delivered costs its team motivation, more on a small team, and its manager trust. A team already likely to lose people can least afford it.'),
     h('button', { 'data-action': 'set-all-delivered', onClick: setAllDelivered }, 'Set every team to what it delivered'),
     moment.calibration!.map((entry) => {
       const shown = shownOf(entry);
@@ -207,6 +209,10 @@ function calibration(ctx: ScreenContext, moment: SeniorView['moments'][number]):
         'div',
         { 'data-calibration': entry.teamId, class: 'calibration' },
         h('h3', {}, names.get(entry.teamId) ?? entry.teamId),
+        // Who can bear a cut: the team's size and its risk of losing people, as its panel shows it.
+        teamOf.get(entry.teamId)
+          ? h('p', { 'data-field': 'bears' }, `${teamOf.get(entry.teamId)!.headcount} people · risk of losing people ${bandWord('risk', teamOf.get(entry.teamId)!.attritionRisk)}`)
+          : null,
         // One move undoes the manager's inflation, at the same cost as moving each head.
         h('button', { 'data-set-delivered': entry.teamId, onClick: () => { moves[entry.teamId] = movesToDelivered(entry.proposed, entry.delivered); save(); } }, 'Set to what it delivered'),
         h(

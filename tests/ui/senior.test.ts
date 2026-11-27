@@ -139,6 +139,12 @@ describe('the senior manager’s week screen', () => {
     expect(text(root, '[data-part=curve] [data-curve-room]')).toBe(String(moment.curve));
     expect(text(root, '[data-part=curve] [data-curve-held]')).toBe(String(proposedTop));
     expect(text(root, '[data-part=curve]')).toMatch(/^Top ratings \(exceeds and outstanding\)/);
+    // who can bear a cut: each team's size and risk of losing people, and what a cut costs
+    for (const t of level(run).teamIds) {
+      const tv = seniorView(level(run), run.sim).teams.find((x) => x.id === t)!;
+      expect(text(root, `[data-calibration="${t}"] [data-field=bears]`)).toBe(`${tv.headcount} people · risk of losing people ${BAND_WORDS.risk[tv.attritionRisk]}`);
+    }
+    expect(text(root, '[data-part=cut-cost]')).toMatch(/more on a small team/);
     // and beside what the teams would hold set to what they delivered
     const deliveredTop = moment.calibration!.reduce((n, c) => n + topOf(c.delivered), 0);
     expect(text(root, '[data-part=curve] [data-curve-delivered]')).toBe(String(deliveredTop));
