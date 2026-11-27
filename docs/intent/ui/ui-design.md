@@ -184,7 +184,7 @@ The senior manager level keeps the shell (header, scene, recap, review, ended) a
 
 **The recap** shows what changed (managers, teams as shown, heads that left or joined, projects that slipped) and folds the routine (the habits' lines and the goals' progress) into *The whole month*, as the line manager's folds *The whole week*.
 
-Under what kept a rating from exceeds, the review says for each of those measures what moves it, in a line of the level's own words ("How much your managers grew: coaching them, in oversight, through escalations and by getting two of them to agree a plan, raises their skill; stepping in doesn't."), since a measure named alone tells the player where they fell short but not which of their habits and answers to change.
+Under what kept a rating from exceeds, the review says for each of those measures what moves it, in a line of the level's own words ("How much your managers grew: coaching them, in oversight, through escalations and by getting two of them to agree a plan, raises their skill; stepping in doesn't."), since a measure named alone tells the player where they fell short but not which of their habits and answers to change. For people lost, the line names what lowers a unit's risk of losing them, not only that it rose: that risk follows the unit's motivation, twice as much as its stress, and a player who sees the risk climb for quarters needs to know which lever reaches it. The director's groups panel says the same in its help line.
 
 **The review** names the senior measures: projects shipped on time, projects on schedule, people you'd have kept who left, the teams' motivation and stress, how much your managers grew, the teams that held up, calibration quality and your reputation; goals by their text.
 

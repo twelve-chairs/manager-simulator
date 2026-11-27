@@ -107,6 +107,8 @@ describe('the director’s week screen', () => {
     const { root } = makeApp({ run: director(3), deps: all() });
     expect($$(root, '[data-panel=help] [data-topic]').map((t) => t.dataset.topic)).toEqual(DIRECTOR_HELP_TOPICS.map((t) => t.id));
     for (const panel of ['senior-managers', 'upward', 'bets', 'habits']) expect(text(root, `[data-panel=${panel}] [data-part=help]`).length).toBeGreaterThan(10);
+    // what drives a group's risk of losing people
+    expect(text(root, '[data-panel=senior-managers] [data-part=help]')).toMatch(/risk of losing people rises as its motivation falls and its stress climbs/);
   });
 });
 

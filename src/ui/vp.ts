@@ -176,7 +176,7 @@ const MEASURE_NAMES: Record<string, string> = {
 const MEASURE_LEVERS: Record<string, string> = {
   prioritiesLanded: "carry the company priority: reviewing your directors' plans closely speeds it, and asking for more than you deliver is remembered",
   projectsOnTime: "divisions deliver what they can carry; a calm division carries more",
-  regrettedAttrition: "divisions lose people as their stress and motivation slide; the recap's Who left names the divisions",
+  regrettedAttrition: "a division's risk of losing people follows its mood, low motivation twice as much as high stress, and a division drifts toward what its director sustains, so a stronger director keeps more of its people; the recap's Who left names the divisions",
   motivation: "divisions drift toward what their directors sustain",
   stress: "divisions drift toward what their directors sustain, and cuts land on the divisions that take them",
   ceoConfidence: "landing the company priority, settling disputes on what the company needs and putting the leadership team first build it",

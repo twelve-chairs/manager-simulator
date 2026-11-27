@@ -960,6 +960,9 @@ describe('review and end', () => {
       vp: [vpRenderer, ['prioritiesLanded', 'projectsOnTime', 'regrettedAttrition', 'motivation', 'stress', 'ceoConfidence', 'peerConfidence', 'reputation']],
     } as const;
     for (const [lvl, [renderer, ids]] of Object.entries(MEASURES)) for (const id of ids) expect(renderer.measureLever(id), `${lvl}: ${id}`).toBeTruthy();
+    // people lost: what lowers the risk, not only that it rose
+    expect(directorRenderer.measureLever('regrettedAttrition')).toMatch(/time with your organization lifts motivation/);
+    expect(vpRenderer.measureLever('regrettedAttrition')).toMatch(/stronger director/);
     expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).not.toBeNull();
     expect(makeApp({ run: { ...r, review: { ...r.review!, standing: { promotion: { kind: 'twoInARow', reviewsLeft: 2 } } } } }).root.querySelector('[data-field=held-back]')).toBeNull();
   });

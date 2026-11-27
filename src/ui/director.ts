@@ -36,7 +36,7 @@ export const DIRECTOR_HELP_TOPICS = [
 ] as const;
 
 const PANEL_HELP = {
-  seniorManagers: 'Each group’s mood is from the last survey, unless your listening tour saw it this quarter.',
+  seniorManagers: 'Each group’s mood is from the last survey, unless your listening tour saw it this quarter. A group’s risk of losing people rises as its motivation falls and its stress climbs.',
   upward: 'How much your executive and peers trust you shapes your headcount and your bets.',
   bets: 'A bet lands if its project ships by its deadline.',
   habits: 'Changes apply from this quarter’s end, and to moments from next quarter.',
@@ -249,7 +249,7 @@ const MEASURE_NAMES: Record<string, string> = {
 const MEASURE_LEVERS: Record<string, string> = {
   betsLanded: "fund a bet on a group with room, and put heads behind it; a strained group carries one slowly, and a peer who trusts you speeds it",
   projectsOnTime: "groups deliver what they can carry; heads placed where the work is, and calm groups, speed it",
-  regrettedAttrition: "groups lose people as their stress and motivation slide; the recap's Who left names the groups",
+  regrettedAttrition: "a group's risk of losing people follows its mood, low motivation twice as much as high stress: time with your organization lifts motivation, a stronger senior manager steadies both, and coaching or taking the decision on a group in trouble eases its stress; the recap's Who left names the groups",
   motivation: "groups drift toward what their senior managers sustain, and time with your organization lifts them",
   stress: "groups drift toward what their senior managers sustain; new heads add onboarding stress for a quarter",
   executiveConfidence: "telling the quarterly review straight, landing bets and time with the room above build it; heads held back, a failed bet or spin found out cost it",
