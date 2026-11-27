@@ -347,4 +347,31 @@ describe('ceremonies and growth focus', () => {
         expect(onCallEngineer(level, s)).toBe(a);
     expect(onCallEngineer(habit(level, s, 'breather', a), s)).not.toBe(a);
   });
+
+  // @spec LINE-HABIT-021
+  it('says in the recap how a breather is going: a few weeks to show, then the weeks running and how their stress moved', () => {
+    const { level, sim } = quietRun(1);
+    const a = engineers(sim)[0]!;
+    const line = (r: { recap: { habits: string[] } }) => r.recap.habits.find((l) => l.includes('had a breather'))!;
+    let s = patch(sim, (st) => (st.people[a]!.stress = 70));
+    let l = habit(level, s, 'breather', a);
+    let w = nextWeek(l, s);
+    expect(line(w)).toMatch(/takes a few weeks to show/);
+    // the next week, still strained as it was
+    l = w.level;
+    s = patch(w.sim, (st) => (st.people[a]!.stress = 70));
+    w = nextWeek(l, s);
+    expect(line(w)).toMatch(/2 weeks running/);
+    expect(line(w)).toMatch(/still strained/);
+    // a week later, eased into busy
+    l = w.level;
+    s = patch(w.sim, (st) => (st.people[a]!.stress = 50));
+    w = nextWeek(l, s);
+    expect(line(w)).toMatch(/3 weeks running/);
+    expect(line(w)).toMatch(/eased from strained to busy/);
+    // moved to someone else, it starts over
+    const b = engineers(sim)[1]!;
+    const moved = nextWeek(habit(w.level, w.sim, 'breather', b), w.sim);
+    expect(moved.recap.habits.find((x) => x.includes('had a breather'))).toMatch(/takes a few weeks to show/);
+  });
 });

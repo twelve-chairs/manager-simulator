@@ -101,6 +101,8 @@ export interface LineState {
   items: WorkItem[];
   moments: LevelMoment[];
   vacancies: Vacancy[];
+  /** The engineer whose breather is running, the week it began and their stress then, so the recap can say how it is going. */
+  breatherFrom?: { id: string; week: number; stress: number } | null;
   /** Person id to the want the player learned at a 1:1, and the week. */
   learnedWants: Record<string, { want: Want; week: number }>;
   /** Project id to the week it completed. */

@@ -1,5 +1,6 @@
 import type { Effect, SimState } from '../../sim';
-import { action, isEngineer, listOf, nameOf, personEffect, playerEffect, projectEffect, teamEngineers, teamProjects } from './core';
+import { action, band, isEngineer, listOf, nameOf, personEffect, playerEffect, projectEffect, teamEngineers, teamProjects } from './core';
+import { STRESS_WORDS } from './goals';
 import { HABIT_CAUSE, LINE_TUNING } from './tuning';
 import type { HabitId, Habits, LevelResult, LineState } from './types';
 
@@ -48,6 +49,25 @@ export function fallBack(s: LineState, sim: SimState): string[] {
     s.habits.breather = NOBODY.breather;
   }
   return changes;
+}
+
+/**
+ * The recap's line for a breather: a week's recovery rarely moves a band, so it says it takes a few weeks to show, and
+ * later how many weeks it has run and how the engineer's stress has moved since it began. Mutates `s`.
+ */
+// @spec LINE-HABIT-021
+function breatherLine(s: LineState, sim: SimState, id: string): string {
+  const stress = sim.people[id]!.stress;
+  if (s.breatherFrom?.id !== id) s.breatherFrom = { id, week: sim.week, stress };
+  const from = s.breatherFrom;
+  const name = nameOf(sim, id);
+  const head = `${name} had a breather`;
+  const body = 'no routine work or night pages, and time to recover. The projects moved a little slower for it.';
+  if (from.week === sim.week) return `${head}: ${body} It takes a few weeks to show.`;
+  const was = STRESS_WORDS[band(from.stress)]!;
+  const now = STRESS_WORDS[band(stress)]!;
+  const moved = band(stress) < band(from.stress) ? `Their stress has eased from ${was} to ${now}.` : band(stress) > band(from.stress) ? `Their stress has risen from ${was} to ${now} even so.` : `Their stress is still ${now}, as it was when it began.`;
+  return `${head}, ${sim.week - from.week + 1} weeks running: ${body} ${moved}`;
 }
 
 /** The engineer the breather habit names, while they are on the team. */
@@ -109,7 +129,7 @@ export function habitEffects(s: LineState, sim: SimState): { effects: Effect[]; 
     const breather = action(HABIT_CAUSE.breather);
     effects.push(personEffect(resting, 'stress', -t.breatherRecovery, breather, { note: 'A breather' }));
     for (const id of teamProjects(s, sim)) effects.push(projectEffect(id, 'progress', -t.breatherProgress, breather));
-    recap.push(`${nameOf(sim, resting)} had a breather: no routine work or night pages, and time to recover. The projects moved a little slower for it.`);
-  }
+    recap.push(breatherLine(s, sim, resting));
+  } else s.breatherFrom = null;
   return { effects, recap };
 }
