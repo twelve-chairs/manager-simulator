@@ -18,7 +18,7 @@ export interface VpSurvey {
   divisions: Record<string, SurveyEntry>;
 }
 
-export type VpMomentKind = 'finalEvaluation' | 'newDirector' | 'planning' | 'priority' | 'cuts' | 'dispute' | 'odds' | 'allHands';
+export type VpMomentKind = 'finalEvaluation' | 'newDirector' | 'planning' | 'priority' | 'cuts' | 'dispute' | 'odds' | 'allHands' | 'stay';
 
 export interface VpMoment {
   id: string;

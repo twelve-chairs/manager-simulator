@@ -39,6 +39,7 @@ export const SENIOR_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Calibration', /^Calibration$/],
   ['Skip-level problem', /^What .+ told you$/],
   ['Final evaluation', /^Final evaluation: /],
+  ['Stay conversation', /^A stay conversation: /],
 ];
 /** The director's own moments, by kind, recognised in the same way. */
 export const DIRECTOR_TITLES: readonly (readonly [string, RegExp])[] = [
@@ -51,6 +52,7 @@ export const DIRECTOR_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Peer ask', / needs something$/],
   ['Org design', / is small$| has grown large$/],
   ['Quarterly review', /^The quarterly review$/],
+  ['Stay conversation', /^A stay conversation: /],
 ];
 
 export const VP_TITLES: readonly (readonly [string, RegExp])[] = [
@@ -62,6 +64,7 @@ export const VP_TITLES: readonly (readonly [string, RegExp])[] = [
   ['Leadership dispute', / disagrees$/],
   ['Directors at odds', /^Two directors at odds$/],
   ['All-hands', /^The all-hands$/],
+  ['Stay conversation', /^A stay conversation: /],
 ];
 
 /** The career level a screen belongs to, as the playtests tell them apart. */

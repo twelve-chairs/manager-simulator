@@ -33,7 +33,8 @@ export type SeniorMomentKind =
   | 'dispute'
   | 'approval'
   | 'newWork'
-  | 'restructuring';
+  | 'restructuring'
+  | 'stay';
 
 /** One team in the calibration moment: what it delivered, what its manager proposes, and what the player settled on. */
 export interface CalibrationEntry {

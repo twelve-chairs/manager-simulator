@@ -12,7 +12,7 @@ import {
   type SimState,
 } from '../../sim';
 import { generateSeniorManager, leaderOf, nextId, pick, randomInt, unusedName } from './core';
-import { finalEvaluation, newLeader, placeMoments } from '../org';
+import { finalEvaluation, newLeader, placeMoments, restlessLeaders, stayAnswer, stayDraft } from '../org';
 import { quartersPlayed, remember } from './review';
 import { setGoals } from './goals';
 import { snapshotQuarter } from './recap';
@@ -22,7 +22,7 @@ import type { Bet, BetOffer, DirectorMoment, DirectorState } from './types';
 type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
 type Choose = Result<{ level: DirectorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;
 
-const CHOICES: Record<DirectorMoment['kind'] | 'orgSplit', { id: string; label: string }[]> = {
+const CHOICES: Record<Exclude<DirectorMoment['kind'], 'stay'> | 'orgSplit', { id: string; label: string }[]> = {
   finalEvaluation: [{ id: 'letGo', label: 'Let them go' }, { id: 'oneMore', label: 'Give them one more period' }],
   newSenior: [{ id: 'promote', label: 'Promote one of the group’s managers' }, { id: 'hire', label: 'Hire from outside' }],
   headcount: [{ id: 'spread', label: 'Spread them across the groups' }, { id: 'neediest', label: 'Give them all to the most stretched group' }, { id: 'hold', label: 'Hold them back' }],
@@ -80,6 +80,11 @@ function firstDrafts(s: DirectorState, sim: SimState): Draft[] {
   }
   for (const g of s.groupIds) {
     if (sim.teams[g] && leaderOf(sim, g) === null && s.arriving[g] === undefined) first.push({ kind: 'newSenior', groupId: g, title: `${groupName(sim, g)} needs a senior manager`, text: `${groupName(sim, g)} has no senior manager. Who leads it now?`, choices: CHOICES.newSenior });
+  }
+  // @spec DIR-MOMENT-008
+  for (const id of restlessLeaders(sim, s.groupIds.map((g) => (sim.teams[g] ? leaderOf(sim, g) : null)))) {
+    s.learnedWants[id] = true;
+    first.push({ kind: 'stay', personId: id, groupId: sim.people[id]!.teamId ?? undefined, ...stayDraft(sim, id) });
   }
   const heads = headcountGiven(s, sim);
   first.push({ kind: 'headcount', heads, title: 'Headcount for the quarter', text: `Your executive has ${heads} new ${heads === 1 ? 'head' : 'heads'} for your organization this quarter. Where do they go?`, choices: CHOICES.headcount });
@@ -406,6 +411,13 @@ function chooseReview({ s, sim0, choiceId, log }: Ctx): Handled {
   return { ok: true, sim, reaction: 'Your executive writes the new numbers down.' };
 }
 
+/** A stay conversation: keep the senior manager by giving them what they want, or wish them well. */
+// @spec DIR-MOMENT-009
+function chooseStay({ sim0, m, choiceId, log }: Ctx): Handled {
+  const r = stayAnswer(sim0, m.personId!, choiceId, T.stay, 'director.stay');
+  return { ok: true, sim: apply(sim0, r.effects, log), reaction: r.reaction };
+}
+
 const HANDLERS: Record<DirectorMoment['kind'], (ctx: Ctx) => Handled> = {
   finalEvaluation: chooseFinalEvaluation,
   newSenior: chooseNewSenior,
@@ -416,6 +428,7 @@ const HANDLERS: Record<DirectorMoment['kind'], (ctx: Ctx) => Handled> = {
   peerAsk: choosePeerAsk,
   orgDesign: chooseOrgDesign,
   review: chooseReview,
+  stay: chooseStay,
 };
 
 /** Applies the player's choice for one of the quarter's open moments. */

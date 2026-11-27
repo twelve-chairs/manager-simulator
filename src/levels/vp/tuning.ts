@@ -29,6 +29,8 @@ export const VP_TUNING = {
   burnoutQuarters: 2,
   /** The most moments a quarter holds. */
   momentCap: 8,
+  /** A stay conversation: the energy giving a restless leader what they want costs, and the motivation and trust it gives them. */
+  stay: { energy: 4, motivation: 8, trust: 4 },
   /** Drift, as at the director level: the share of the way a division moves in a quarter toward what its director sustains. */
   drift: {
     driftShare: 0.5,

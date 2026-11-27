@@ -1,4 +1,4 @@
-import type { ChangeLogEntry, Effect, NewPerson, SimState } from '../../sim';
+import type { ChangeLogEntry, Effect, NewPerson, SimState, Want } from '../../sim';
 import { randomInt, rule, type Rng } from './core';
 import { applyLogged } from './units';
 
@@ -82,4 +82,65 @@ export function newLeader(
   s.leniency[promoted.id] = randomInt(s, [0, 2]);
   s.joined.push(promoted.id);
   return { ok: true, sim, reaction: '', promoted };
+}
+
+/** What a restless leader says would keep them, in their own terms. */
+export const STAY_WANT_WORDS: Record<Want, string> = {
+  growth: 'room to grow, a bigger remit than the one they have',
+  recognition: 'to be seen for what they do, by people above you',
+  stability: 'a steadier stretch, without the next upheaval',
+  autonomy: 'room to run things their own way',
+};
+
+/** Giving a restless leader what they want, as the stay conversation offers it. */
+export const STAY_OFFERS: Record<Want, string> = {
+  growth: 'Give them a stretch: a bigger remit, with you behind them',
+  recognition: 'Put their work in front of your own manager, by name',
+  stability: 'Promise them a steadier stretch, and keep it',
+  autonomy: 'Hand them a call you have been keeping for yourself',
+};
+
+/** The leaders among these who are active and restless: their notice is running. */
+export const restlessLeaders = (sim: SimState, ids: readonly (string | null)[]): string[] =>
+  ids.filter((id): id is string => id !== null && sim.people[id]?.status === 'active' && sim.people[id].restlessSince !== null);
+
+/** A stay conversation with a restless leader: what would keep them, and the two answers. */
+export function stayDraft(sim: SimState, id: string): { title: string; text: string; choices: { id: string; label: string }[] } {
+  const p = sim.people[id]!;
+  return {
+    title: `A stay conversation: ${p.name}`,
+    text: `${p.name} has gone quiet, and you hear they have been talking to another company. You ask what would make them stay. They want ${STAY_WANT_WORDS[p.want]}.`,
+    choices: [
+      { id: 'keep', label: STAY_OFFERS[p.want] },
+      { id: 'release', label: 'Wish them well, and plan for them leaving' },
+    ],
+  };
+}
+
+/** What the stay conversation costs and gives at a level. */
+export interface StayTuning {
+  energy: number;
+  motivation: number;
+  trust: number;
+}
+
+/**
+ * Answers a stay conversation. Keeping them serves their want, which settles them, and costs the player energy; wishing
+ * them well changes nothing, and they leave when their notice runs. Once they have gone, neither changes anything.
+ */
+export function stayAnswer(sim: SimState, id: string, choiceId: string, t: StayTuning, actionId: string): { effects: Effect[]; reaction: string } {
+  const p = sim.people[id]!;
+  // Someone the quarter already took away, by a choice or a situation, is past keeping.
+  if (p.status !== 'active') return { effects: [], reaction: `${p.name} has already gone.` };
+  if (choiceId !== 'keep') return { effects: [], reaction: `${p.name} thanks you for being straight. They will be gone within weeks.` };
+  const cause = { kind: 'action', actionId } as const;
+  const target = { kind: 'person', id } as const;
+  return {
+    effects: [
+      { type: 'value', target, field: 'motivation', amount: t.motivation, cause, wantTags: { serves: [p.want] } },
+      { type: 'value', target, field: 'trust', amount: t.trust, cause },
+      { type: 'value', target: { kind: 'player' }, field: 'stress', amount: t.energy, cause },
+    ],
+    reaction: `${p.name} hears it, and believes you. They stay.`,
+  };
 }

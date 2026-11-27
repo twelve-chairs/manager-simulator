@@ -1,5 +1,5 @@
 import { band, NAMES } from '../line-manager';
-import { applyLogged, finalEvaluation, knownRatings, leaderOf, newLeader, nextId, pick, placeMoments, projectNames, random, randomInt, unusedName } from '../org';
+import { applyLogged, finalEvaluation, knownRatings, leaderOf, newLeader, nextId, pick, placeMoments, projectNames, random, randomInt, restlessLeaders, stayAnswer, stayDraft, unusedName } from '../org';
 import type { ChangeLogEntry, Effect, SimState } from '../../sim';
 import { generateDirector, quarterOf } from './core';
 import { setGoals } from './goals';
@@ -11,7 +11,7 @@ type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
 export type Choose = Result<{ level: VpState; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;
 type Draft = Omit<VpMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
 
-const CHOICES: Record<VpMoment['kind'], { id: string; label: string }[]> = {
+const CHOICES: Record<Exclude<VpMoment['kind'], 'stay'>, { id: string; label: string }[]> = {
   finalEvaluation: [{ id: 'letGo', label: 'Let them go' }, { id: 'oneMore', label: 'Give them one more period' }],
   newDirector: [{ id: 'promote', label: 'Promote one of the division’s senior managers' }, { id: 'hire', label: 'Hire from outside' }],
   planning: [{ id: 'plan', label: 'Ask for what the plan needs' }, { id: 'more', label: 'Ask for more than it needs' }, { id: 'give', label: 'Give part of your share to a peer’s priority' }],
@@ -48,6 +48,11 @@ function firstDrafts(s: VpState, sim: SimState): Draft[] {
   }
   for (const g of s.divisionIds) {
     if (sim.teams[g] && leaderOf(sim, g) === null && s.arriving[g] === undefined) first.push({ kind: 'newDirector', divisionId: g, title: `${divisionName(sim, g)} needs a director`, text: `${divisionName(sim, g)} has no director. Who leads it now?`, choices: CHOICES.newDirector });
+  }
+  // @spec VP-MOMENT-006
+  for (const id of restlessLeaders(sim, s.divisionIds.map((g) => (sim.teams[g] ? leaderOf(sim, g) : null)))) {
+    s.learnedWants[id] = true;
+    first.push({ kind: 'stay', personId: id, divisionId: sim.people[id]!.teamId ?? undefined, ...stayDraft(sim, id) });
   }
   if (opensYear(s, sim)) {
     const planned = plannedHeads(s, sim);
@@ -313,6 +318,13 @@ function chooseAllHands({ s, sim0, choiceId, log }: Ctx): Handled {
   return { ok: true, sim: apply(sim0, hard ? divisions.map((g) => value('team', g, 'motivation', h.truthMotivation, 'vp.allHands')) : [], log), reaction: hard ? 'You tell them what is hard. They trust the plan more for it.' : 'You tell them how things stand. No surprises.' };
 }
 
+/** A stay conversation: keep the director by giving them what they want, or wish them well. */
+// @spec VP-MOMENT-007
+function chooseStay({ sim0, m, choiceId, log }: Ctx): Handled {
+  const r = stayAnswer(sim0, m.personId!, choiceId, T.stay, 'vp.stay');
+  return { ok: true, sim: apply(sim0, r.effects, log), reaction: r.reaction };
+}
+
 const HANDLERS: Record<VpMoment['kind'], (ctx: Ctx) => Handled> = {
   finalEvaluation: chooseFinalEvaluation,
   newDirector: chooseNewDirector,
@@ -322,6 +334,7 @@ const HANDLERS: Record<VpMoment['kind'], (ctx: Ctx) => Handled> = {
   dispute: chooseDispute,
   odds: chooseOdds,
   allHands: chooseAllHands,
+  stay: chooseStay,
 };
 
 /** Applies the player's choice for one of the quarter's open moments, and reveals the wants of the people in it. */

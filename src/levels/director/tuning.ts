@@ -43,6 +43,8 @@ export const DIRECTOR_TUNING = {
   seniorStressShare: 0.4,
   /** The most moments a quarter holds. */
   momentCap: 8,
+  /** A stay conversation: the energy giving a restless leader what they want costs, and the motivation and trust it gives them. */
+  stay: { energy: 4, motivation: 8, trust: 4 },
   /** Headcount: heads given at neutral standing, per point of the executive's trust and of reputation above 50, the most given, onboarding stress per head, a bet's progress per head, and the executive's trust lost per head held back. */
   head: { base: 3, perTrust: 0.06, perReputation: 0.04, max: 8, onboardingStress: 2, betSpeed: 15, heldTrust: 2 },
   /** Bets: how many are offered, their scope per week to their deadline, weeks to deadline and stakes, weeks overdue before one fails, progress lost under a strained group, progress a trusting peer adds and the trust that takes, and how far promising more raises stakes. */

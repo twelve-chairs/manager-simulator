@@ -1,6 +1,7 @@
 import { NAMES, band } from '../line-manager';
 import { addTeam, applyEffects, behindScheduleProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { generateManager, leadOf, nextId, randomInt, rule, unusedName } from './core';
+import { restlessLeaders, stayAnswer, stayDraft } from '../org';
 import { acceptRemaining, calibrationEntries, curveOf, overCurveLine, settleCurve } from './calibration';
 import { snapshotMonth } from './recap';
 import { monthOf, periodEndsThisMonth, remember } from './review';
@@ -11,7 +12,7 @@ const T = SENIOR_TUNING;
 type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
 type Draft = Omit<SeniorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
 
-const CHOICES: Record<SeniorMomentKind, { id: string; label: string }[]> = {
+const CHOICES: Record<Exclude<SeniorMomentKind, 'stay'>, { id: string; label: string }[]> = {
   finalEvaluation: [
     { id: 'letGo', label: 'Let them go' },
     { id: 'oneMorePeriod', label: 'Give them one more period' },
@@ -154,6 +155,15 @@ function leadershipDrafts(s: SeniorState, sim: SimState): Draft[] {
   return drafts;
 }
 
+/** A stay conversation with each restless manager, who says what would keep them: the player now knows their want. */
+// @spec SENIOR-MOMENT-018
+function stayDrafts(s: SeniorState, sim: SimState): Draft[] {
+  return restlessLeaders(sim, s.teamIds.map((t) => leadOf(s, sim, t))).map((id) => {
+    s.learnedWants[id] = true;
+    return { kind: 'stay', teamId: sim.people[id]!.teamId!, managerId: id, ...stayDraft(sim, id) };
+  });
+}
+
 /** Problems skip-level listening surfaced last month, told again with how the player answered when they come back unsettled. */
 function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<string>, behind: ReadonlySet<string>): Draft[] {
   const drafts: Draft[] = [];
@@ -290,6 +300,7 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   const drafts: Draft[] = [
     ...finalEvaluationDrafts(s, sim),
     ...leadershipDrafts(s, sim),
+    ...stayDrafts(s, sim),
     ...surfacedDrafts(s, sim, surfaced, behind),
     ...escalationDrafts(s, sim, surfaced, behind),
     ...disputeDrafts(s, sim),
@@ -509,6 +520,14 @@ function pickRestructuring({ s, sim, choiceId }: Pick): Picked {
   return { next, reaction: `One of ${name(sim, source)}'s strongest engineers steps up to lead the new team.` };
 }
 
+/** A stay conversation: keep the manager by giving them what they want, or wish them well. */
+// @spec SENIOR-MOMENT-019
+function pickStay({ sim, moment, choiceId, effects }: Pick): Picked {
+  const r = stayAnswer(sim, moment.managerId!, choiceId, T.stay, 'senior.stay');
+  effects.push(...r.effects);
+  return { reaction: r.reaction };
+}
+
 const PICKS: Record<Exclude<SeniorMomentKind, 'calibration'>, (c: Pick) => Picked> = {
   finalEvaluation: pickFinalEvaluation,
   replaceManager: pickReplaceManager,
@@ -519,6 +538,7 @@ const PICKS: Record<Exclude<SeniorMomentKind, 'calibration'>, (c: Pick) => Picke
   approval: pickApproval,
   newWork: pickNewWork,
   restructuring: pickRestructuring,
+  stay: pickStay,
 };
 
 type Chosen = Result<{ level: SeniorState; sim: SimState; log: ChangeLogEntry[]; reaction: string }>;

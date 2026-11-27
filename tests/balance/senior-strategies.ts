@@ -58,14 +58,14 @@ export const seniorHero: SeniorStrategy = {
   name: 'hero',
   naive: true,
   habits: (seen) => habits(seen, 'close'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'argue', 'hire', 'oneMorePeriod', 'decline']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'argue', 'hire', 'oneMorePeriod', 'decline', 'keep']),
 };
 
 export const seniorDelegator: SeniorStrategy = {
   name: 'delegator',
   naive: true,
   habits: (seen) => habits(seen, 'handsOff'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'trim', 'hire', 'oneMorePeriod']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'trim', 'hire', 'oneMorePeriod', 'release']),
 };
 
 export const seniorContrarian: SeniorStrategy = {
@@ -75,7 +75,7 @@ export const seniorContrarian: SeniorStrategy = {
     if (m.source === 'situation') return last(m);
     if (overCurve(m)) return 'argue';
     if (m.kind === 'calibration') return markDown(m);
-    return prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo']);
+    return prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo', 'release']);
   },
 };
 
@@ -85,7 +85,7 @@ function soundChoice(_seen: SeniorSeen, m: SeniorMoment): string {
   if (m.source === 'situation') return better(m);
   if (overCurve(m)) return 'trim';
   if (m.kind === 'calibration') return settleOnEvidence(m);
-  return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo']);
+  return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo', 'keep']);
 }
 
 export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null, { newWork: 'assign' }), choose: soundChoice };

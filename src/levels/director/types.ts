@@ -28,7 +28,7 @@ export interface Survey {
   groups: Record<string, SurveyEntry>;
 }
 
-export type DirectorMomentKind = 'finalEvaluation' | 'newSenior' | 'headcount' | 'bets' | 'surfaced' | 'trouble' | 'peerAsk' | 'orgDesign' | 'review';
+export type DirectorMomentKind = 'finalEvaluation' | 'newSenior' | 'headcount' | 'bets' | 'surfaced' | 'trouble' | 'peerAsk' | 'orgDesign' | 'review' | 'stay';
 
 /** A strategy bet the executive offers: a project with a stake on landing and on failing. */
 export interface BetOffer {

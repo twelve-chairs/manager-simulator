@@ -66,13 +66,13 @@ The senior manager level is measured the same way, on its own. Each run starts t
 
 A strategy sees what the player sees (the senior manager's view: managers, teams as their managers report them, the month's moments and their choices) and acts through the same commands.
 
-| Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring | Situations |
-|---|---|---|---|---|---|---|---|
-| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand, and the room trims to the curve) | Lets them wait | Lets them wait |
-| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal; over the curve, argues for an exception | Hires from outside; gives one more period | Picks the first offered choice |
-| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal; over the curve, lets the room trim | Hires from outside; gives one more period | Picks the first offered choice |
-| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal; over the curve, argues for an exception | Hires from outside; lets a manager go | Picks the last offered choice |
-| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered; over the curve, lets the room trim | Promotes from the team; lets a manager on a failed plan go | Picks the situation's better choice from the better-choice table |
+| Strategy | Habits | Escalations and surfaced problems | Staffing, disputes, new work | Approvals | Calibration | Replacing managers, final evaluations, restructuring | Stay conversations | Situations |
+|---|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets them wait | Lets them wait | Lets them wait | Lets it wait (proposals stand, and the room trims to the curve) | Lets them wait | Lets them wait | Lets them wait |
+| **Hero** | Close oversight of every manager | Steps in | Decides disputes; takes on new work spread across the teams; declines a move | Approves | Accepts every proposal; over the curve, argues for an exception | Hires from outside; gives one more period | Gives them what they want | Picks the first offered choice |
+| **Delegator** | Hands-off oversight of every manager | Lets the manager handle it | Lets disputes run; gives new work to the team with room; moves a head | Approves | Accepts every proposal; over the curve, lets the room trim | Hires from outside; gives one more period | Wishes them well | Picks the first offered choice |
+| **Contrarian** | Defaults | Lets the manager handle it | Declines; decides disputes | Refuses | Marks every team down a rating from its proposal; over the curve, argues for an exception | Hires from outside; lets a manager go | Wishes them well | Picks the last offered choice |
+| **Sound practice** | Defaults (coaching oversight, fortnightly 1:1s) | Coaches | Moves a head; gets managers to agree; gives new work to the team with room | Asks for the evidence | Settles on the evidence: every head at what its team delivered; over the curve, lets the room trim | Promotes from the team; lets a manager on a failed plan go | Gives them what they want | Picks the situation's better choice from the better-choice table |
 
 A sixth strategy, **sound practice with skip-levels**, plays as sound practice with monthly skip-level listening. Like sound practice with other habits at the line manager, it is reported and checked against nothing.
 
@@ -88,13 +88,13 @@ The director level is measured the same way, on its own. Each run starts the lev
 
 A strategy sees what the player sees (the director's view: senior managers, groups as last surveyed, the executive and peers, the bets, the quarter's moments and their choices) and acts through the same commands.
 
-| Strategy | Habits | Headcount | Bets | Groups in trouble, surfaced problems | Peers' asks | Quarterly review | New senior managers, final evaluations, org design | Situations |
-|---|---|---|---|---|---|---|---|---|
-| **Idle** | Defaults | Lets it wait (held back) | Lets them wait (none funded) | Lets them wait | Lets them wait | Lets it wait (told straight) | Lets them wait | Lets them wait |
-| **Hero** | Time upward | All to the most stretched group | Funds two, on the first groups | Takes the decision | Agrees | Promises more | Hires from outside; gives one more period; leaves the shape | Picks the first offered choice |
-| **Delegator** | Time with the organization, fortnightly staff meetings | Spreads them | Funds none | Coaches | Agrees | Leads with the wins | Promotes from the group; gives one more period; leaves the shape | Picks the first offered choice |
-| **Contrarian** | Defaults | Holds them back | Funds none | Replaces the senior manager | Refuses | Leads with the wins | Hires from outside; lets them go; leaves the shape | Picks the last offered choice |
-| **Sound practice** | Defaults (balanced time, weekly staff meetings) | Spreads them | Funds one, the offer with the least work per week to its deadline, on the group with the lowest stress | Coaches | Negotiates with a peer who trusts the player, agrees otherwise | Tells it straight | Promotes from the group; lets a senior manager on a failed plan go; splits a large group and merges a small one | Picks the situation's better choice from the better-choice table |
+| Strategy | Habits | Headcount | Bets | Groups in trouble, surfaced problems | Peers' asks | Quarterly review | New senior managers, final evaluations, org design | Stay conversations | Situations |
+|---|---|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets it wait (held back) | Lets them wait (none funded) | Lets them wait | Lets them wait | Lets it wait (told straight) | Lets them wait | Lets them wait | Lets them wait |
+| **Hero** | Time upward | All to the most stretched group | Funds two, on the first groups | Takes the decision | Agrees | Promises more | Hires from outside; gives one more period; leaves the shape | Gives them what they want | Picks the first offered choice |
+| **Delegator** | Time with the organization, fortnightly staff meetings | Spreads them | Funds none | Coaches | Agrees | Leads with the wins | Promotes from the group; gives one more period; leaves the shape | Wishes them well | Picks the first offered choice |
+| **Contrarian** | Defaults | Holds them back | Funds none | Replaces the senior manager | Refuses | Leads with the wins | Hires from outside; lets them go; leaves the shape | Wishes them well | Picks the last offered choice |
+| **Sound practice** | Defaults (balanced time, weekly staff meetings) | Spreads them | Funds one, the offer with the least work per week to its deadline, on the group with the lowest stress | Coaches | Negotiates with a peer who trusts the player, agrees otherwise | Tells it straight | Promotes from the group; lets a senior manager on a failed plan go; splits a large group and merges a small one | Gives them what they want | Picks the situation's better choice from the better-choice table |
 
 A sixth strategy, **sound practice with a listening tour**, plays as sound practice with the quarterly listening tour, and is reported and checked against nothing.
 
@@ -108,13 +108,13 @@ The VP level is measured the same way, on its own. Each run starts the level dir
 
 A strategy sees what the player sees (the VP's view: directors, divisions as last surveyed, the leadership team, the year's plan, the quarter's moments and their choices) and acts through the same commands.
 
-| Strategy | Habits | Annual planning | Company priority | Leadership disputes | Directors at odds | Cuts | All-hands | New directors, final evaluations | Situations |
-|---|---|---|---|---|---|---|---|---|---|
-| **Idle** | Defaults | Lets it wait (asks for the plan) | Lets it wait (spread) | Lets them wait | Lets them wait | Lets them wait (across) | Lets it wait (short) | Lets them wait | Lets them wait |
-| **Hero** | The function first; reviews plans closely | Asks for more | Puts the first division on it | Sides with the function | Decides it | Cuts across | Celebrates | Hires from outside; gives one more period | Picks the first offered choice |
-| **Delegator** | Defaults | Asks for the plan | Spreads it | Settles it for the company | Has them settle it together | Cuts across | Keeps it short | Promotes from the division; gives one more period | Picks the first offered choice |
-| **Contrarian** | The function first | Asks for more | Pushes back | Sides with the function | Leaves it | Cuts in waves | Celebrates | Hires from outside; lets them go | Picks the last offered choice |
-| **Sound practice** | The leadership team first; sets direction and steps back | Asks for the plan | Puts the calmest division on it | Brokers a trade with a peer who trusts the player, settles it for the company otherwise | Has them settle it together | Cuts once | Tells them what is hard | Promotes from the division; lets a director on a failed plan go | Picks the situation's better choice from the better-choice table |
+| Strategy | Habits | Annual planning | Company priority | Leadership disputes | Directors at odds | Cuts | All-hands | New directors, final evaluations | Stay conversations | Situations |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Idle** | Defaults | Lets it wait (asks for the plan) | Lets it wait (spread) | Lets them wait | Lets them wait | Lets them wait (across) | Lets it wait (short) | Lets them wait | Lets them wait | Lets them wait |
+| **Hero** | The function first; reviews plans closely | Asks for more | Puts the first division on it | Sides with the function | Decides it | Cuts across | Celebrates | Hires from outside; gives one more period | Gives them what they want | Picks the first offered choice |
+| **Delegator** | Defaults | Asks for the plan | Spreads it | Settles it for the company | Has them settle it together | Cuts across | Keeps it short | Promotes from the division; gives one more period | Wishes them well | Picks the first offered choice |
+| **Contrarian** | The function first | Asks for more | Pushes back | Sides with the function | Leaves it | Cuts in waves | Celebrates | Hires from outside; lets them go | Wishes them well | Picks the last offered choice |
+| **Sound practice** | The leadership team first; sets direction and steps back | Asks for the plan | Puts the calmest division on it | Brokers a trade with a peer who trusts the player, settles it for the company otherwise | Has them settle it together | Cuts once | Tells them what is hard | Promotes from the division; lets a director on a failed plan go | Gives them what they want | Picks the situation's better choice from the better-choice table |
 
 A sixth strategy, **sound practice with close review**, plays as sound practice with plans reviewed closely, and is reported and checked against nothing.
 

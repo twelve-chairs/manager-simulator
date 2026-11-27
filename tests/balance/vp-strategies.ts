@@ -32,21 +32,21 @@ export const vpHero: VpStrategy = {
   habits: (seen) => habits(seen, { firstTeam: 'function', directors: 'review' }),
   choose: (_seen, m) => {
     if (m.source === 'situation') return first(m);
-    return m.kind === 'priority' ? firstDivision(m) : prefer(m, ['more', 'function', 'decide', 'across', 'celebrate', 'hire', 'oneMore']);
+    return m.kind === 'priority' ? firstDivision(m) : prefer(m, ['more', 'function', 'decide', 'across', 'celebrate', 'hire', 'oneMore', 'keep']);
   },
 };
 
 export const vpDelegator: VpStrategy = {
   name: 'delegator',
   naive: true,
-  choose: (_seen, m) => (m.source === 'situation' ? first(m) : prefer(m, ['plan', 'spread', 'company', 'together', 'across', 'short', 'promote', 'oneMore'])),
+  choose: (_seen, m) => (m.source === 'situation' ? first(m) : prefer(m, ['plan', 'spread', 'company', 'together', 'across', 'short', 'promote', 'oneMore', 'release'])),
 };
 
 export const vpContrarian: VpStrategy = {
   name: 'contrarian',
   naive: true,
   habits: (seen) => habits(seen, { firstTeam: 'function' }),
-  choose: (_seen, m) => (m.source === 'situation' ? last(m) : prefer(m, ['more', 'push', 'function', 'leave', 'waves', 'celebrate', 'hire', 'letGo'])),
+  choose: (_seen, m) => (m.source === 'situation' ? last(m) : prefer(m, ['more', 'push', 'function', 'leave', 'waves', 'celebrate', 'hire', 'letGo', 'release'])),
 };
 
 /** Sound practice at the VP: the rules in the balance design. */
@@ -56,7 +56,7 @@ function soundChoice(seen: VpSeen, m: VpMomentSeen): string {
   if (m.kind === 'priority') return calmestDivision(seen, m);
   // A trade works with a peer who trusts you; otherwise settle it on what the company needs.
   if (m.kind === 'dispute') return (seen.view.leadership.find((u) => u.id === m.personId)?.trust ?? 0) >= 3 ? 'trade' : 'company';
-  return prefer(m, ['plan', 'together', 'once', 'truth', 'promote', 'letGo']);
+  return prefer(m, ['plan', 'together', 'once', 'truth', 'promote', 'letGo', 'keep']);
 }
 
 const SOUND_HABITS = { firstTeam: 'leadership', directors: 'stepBack' } as const;

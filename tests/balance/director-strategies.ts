@@ -32,7 +32,7 @@ export const directorHero: DirectorStrategy = {
       const groups = seen.view.groups.map((g) => g.id);
       return `fund:${JSON.stringify(Object.fromEntries((m.offers ?? []).slice(0, 2).map((o, i) => [o.id, groups[i % groups.length]])))}`;
     }
-    return prefer(m, ['neediest', 'decide', 'agree', 'promise', 'hire', 'oneMore', 'leave']);
+    return prefer(m, ['neediest', 'decide', 'agree', 'promise', 'hire', 'oneMore', 'leave', 'keep']);
   },
 };
 
@@ -40,13 +40,13 @@ export const directorDelegator: DirectorStrategy = {
   name: 'delegator',
   naive: true,
   habits: (seen) => habits(seen, { time: 'organization', staffMeeting: 'fortnightly' }),
-  choose: (_seen, m) => (m.source === 'situation' ? first(m) : prefer(m, ['spread', 'none', 'coach', 'agree', 'wins', 'promote', 'oneMore', 'leave'])),
+  choose: (_seen, m) => (m.source === 'situation' ? first(m) : prefer(m, ['spread', 'none', 'coach', 'agree', 'wins', 'promote', 'oneMore', 'leave', 'release'])),
 };
 
 export const directorContrarian: DirectorStrategy = {
   name: 'contrarian',
   naive: true,
-  choose: (_seen, m) => (m.source === 'situation' ? last(m) : prefer(m, ['hold', 'none', 'replace', 'refuse', 'wins', 'hire', 'letGo', 'leave'])),
+  choose: (_seen, m) => (m.source === 'situation' ? last(m) : prefer(m, ['hold', 'none', 'replace', 'refuse', 'wins', 'hire', 'letGo', 'leave', 'release'])),
 };
 
 /** Sound practice at the director: the rules in the balance design. */
@@ -64,7 +64,7 @@ function soundChoice(seen: DirectorSeen, m: DirectorMomentSeen): string {
     const peer = seen.view.upward.find((u) => u.id === m.personId);
     return peer && peer.trust >= 3 ? 'negotiate' : 'agree';
   }
-  return prefer(m, ['spread', 'coach', 'straight', 'promote', 'letGo', 'splitPromote', 'merge']);
+  return prefer(m, ['spread', 'coach', 'straight', 'promote', 'letGo', 'splitPromote', 'merge', 'keep']);
 }
 
 export const directorSound: DirectorStrategy = { name: 'sound', naive: false, choose: soundChoice };

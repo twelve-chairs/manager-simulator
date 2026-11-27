@@ -48,6 +48,8 @@ export const SENIOR_TUNING = {
   managerStressShare: 0.25,
   /** Moments: the most a month holds, and the risk at or above which a project counts as at risk for a dispute. */
   momentCap: 5,
+  /** A stay conversation: the energy giving a restless leader what they want costs, and the motivation and trust it gives them. */
+  stay: { energy: 3, motivation: 8, trust: 4 },
   atRiskProject: 40,
   /** Escalations: how much stepping in and coaching fix a team's stress, what they cost, and the skill coaching grows. */
   stepInFix: 15,
