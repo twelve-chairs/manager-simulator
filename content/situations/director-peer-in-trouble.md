@@ -3,7 +3,7 @@ id: director-peer-in-trouble
 title: A peer in trouble
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A peer in trouble you didn't answer will remember who did."
 roles:
   - name: peer

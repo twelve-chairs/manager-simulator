@@ -3,7 +3,7 @@ id: vp-peer-poaching
 title: A peer recruits from your division
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A transfer nobody talks about still happens; it just happens without the people it affects in the room."
 roles:
   - name: peer

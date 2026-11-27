@@ -3,7 +3,7 @@ id: director-org-chart-tug
 title: Two senior managers, one org chart
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A dispute over the org chart left open keeps two senior managers lobbying you instead of leading."
 roles:
   - name: lead

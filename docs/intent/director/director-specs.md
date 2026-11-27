@@ -59,6 +59,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **DIR-MOMENT-010**: When a quarter begins after the listening tour visited a group that still has a senior manager, the director level shall produce a moment whose text names what the group's people raised: a project of the group behind schedule; else stress strained or worse; else attrition risk moderate or worse; else motivation low or worse; else one of eight everyday frictions, chosen by quarter and group, four of which are beyond what the senior manager can settle alone and are named so in the text; and offer to coach them through it, take the decision yourself, or replace them.
 - [x] **DIR-MOMENT-011**: When the player answers a problem the listening tour surfaced, the director level shall apply it as a group in trouble's answer, except that coaching the senior manager through a friction beyond what they can settle alone shall not ease the group's stress, still raising their skill as coaching does, and its reaction shall say the problem was not theirs to fix.
 - [x] **DIR-MOMENT-007**: The situation content tagged for the director level shall contain no effect that lowers an aggregate team's headcount.
+- [x] **DIR-MOMENT-012**: Each situation tagged for the director level shall be marked `once` or have a `cooldownWeeks` of at least 104, so that none comes back more than twice in the level's three years.
 
 ## Headcount
 

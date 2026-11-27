@@ -69,7 +69,7 @@ A quarter is a run of moments across its thirteen weeks. The level makes them fr
 - **A new director**: the quarter after a division is left without one, promote one of its senior managers or hire from outside, as at the director level.
 - **The all-hands**, at the end of every quarter: the player speaks to the whole function. Tell them what is hard and the plan; celebrate the wins; or keep it short. Telling them what is hard steadies every division's motivation in a hard quarter and records the function as told; celebrating raises motivation now, and when hard news lands later in the year (a cut, a failed priority, a division in trouble) the function's motivation falls further than it would have; keeping it short does neither.
 
-Authored situations add written drama on top, tagged for this level and written about directors, divisions, the CEO and the peers: culture and belonging at scale, the function's reputation, hiring brands, executive politics. As at the director level, their effects never lower a division's headcount, which the level counts as attrition.
+Authored situations add written drama on top, tagged for this level and written about directors, divisions, the CEO and the peers: culture and belonging at scale, the function's reputation, hiring brands, executive politics. As at the director level, their effects never lower a division's headcount, which the level counts as attrition. As there, each comes back no sooner than two years on.
 
 ## Directors' Plans
 

@@ -3,7 +3,7 @@ id: vp-board-demo
 title: A demo for the board
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A demo nobody prepared for still happens; the board just sees whatever the division had to hand that morning."
 roles:
   - name: ceo

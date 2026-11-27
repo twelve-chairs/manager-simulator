@@ -3,7 +3,7 @@ id: director-flat-all-hands
 title: The all-hands that fell flat
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "An all-hands people sit through without hearing from each other tells them the organization is a set of numbers."
 roles:
   - name: lead

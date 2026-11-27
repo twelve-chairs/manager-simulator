@@ -219,6 +219,11 @@ describe('a quarter’s moments', () => {
     expect(trust(answered.sim, level.executiveId) - trust(r.sim, level.executiveId)).toBe(given * T.head.heldTrust);
   });
 
+  // @spec DIR-MOMENT-012
+  it('brings each director situation back no sooner than two years on', () => {
+    for (const s of realContent().filter((x) => x.levels.includes('director'))) expect(s.once === true || (s.cooldownWeeks ?? 0) >= 104, s.id).toBe(true);
+  });
+
   // @spec DIR-MOMENT-007
   it('has no director situation that lowers a group’s headcount', () => {
     for (const s of realContent().filter((x) => x.levels.includes('director'))) {

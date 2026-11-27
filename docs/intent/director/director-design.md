@@ -73,7 +73,7 @@ A quarter is a run of moments across its thirteen weeks, more than a month holds
 - **A stay conversation**: a senior manager is restless, as at the second level: in the quarter's first week, they say what would keep them, and the player now knows their want. Give it to them, at a cost in energy, which settles them; or wish them well, and they leave when their notice runs. Letting it wait is the same as wishing them well.
 - **A new senior manager**: the quarter after a group is left without one, promote one of its line managers or hire from outside, as at the second level.
 
-Authored situations add written drama on top, tagged for this level and written about senior managers, groups, the executive and the peers: culture and belonging, seating and space, specialty groups and volunteering, marketing the organization, executive politics. As at the second level, their effects never lower a group's headcount, which the level counts as attrition.
+Authored situations add written drama on top, tagged for this level and written about senior managers, groups, the executive and the peers: culture and belonging, seating and space, specialty groups and volunteering, marketing the organization, executive politics. As at the second level, their effects never lower a group's headcount, which the level counts as attrition. Each comes back no sooner than two years on, so none is seen more than twice in the level's three years: a situation met every year reads as a card replayed, and the player answers it the same way each time.
 
 ## Senior Managers' Plans
 

@@ -3,7 +3,7 @@ id: vp-ceo-side-channel
 title: The CEO goes around you
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "When the CEO goes around you and nothing is said, the shortcut becomes the way things are done."
 roles:
   - name: ceo

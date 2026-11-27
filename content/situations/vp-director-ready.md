@@ -3,7 +3,7 @@ id: vp-director-ready
 title: A director ready for more
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A director's ambition you don't answer finds an answer somewhere else."
 roles:
   - name: lead

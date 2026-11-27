@@ -3,7 +3,7 @@ id: vp-reorg-rumor
 title: A reorg rumour
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A rumour nobody answers is answered anyway, by whoever is most worried."
 roles:
   - name: lead

@@ -3,7 +3,7 @@ id: director-specialty-group
 title: The specialty group asks for time
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A group of people who want to make the organization better, left without an answer, usually stops asking."
 roles:
   - name: lead

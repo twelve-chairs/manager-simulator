@@ -55,6 +55,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 - [x] **VP-MOMENT-006**: When a quarter begins and a director leading one of the function's divisions is restless, the VP level shall produce a stay conversation about them in the quarter's first week, after final evaluations and divisions needing a director and before annual planning, whose text says what they want from the job, record that want as known, and offer to give them it, in a label naming that want, or to wish them well.
 - [x] **VP-MOMENT-007**: When the player gives a restless director what they want in a stay conversation, the VP level shall raise their motivation by the stay motivation, tagged as serving their want, and their trust by the stay trust, adding to their history the note that they were promised what they want, and raise the player's stress by the stay energy; wishing them well, or letting the conversation wait, shall change nothing; and once the director has left, neither answer shall change anything.
 - [x] **VP-MOMENT-005**: The situation content tagged for the VP level shall contain no effect that lowers an aggregate team's headcount.
+- [x] **VP-MOMENT-008**: Each situation tagged for the VP level shall be marked `once` or have a `cooldownWeeks` of at least 104, so that none comes back more than twice in the level's three years.
 
 ## Annual planning
 

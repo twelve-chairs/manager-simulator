@@ -3,7 +3,7 @@ id: director-peer-takes-credit
 title: A peer takes credit
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "Credit you let go without a word is credit your senior manager's group learns not to expect."
 roles:
   - name: peer

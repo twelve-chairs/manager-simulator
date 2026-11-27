@@ -94,6 +94,11 @@ describe('a quarter’s moments', () => {
 });
 
 describe('VP situations', () => {
+  // @spec VP-MOMENT-008
+  it('brings each VP situation back no sooner than two years on', () => {
+    for (const s of realContent().filter((x) => x.levels.includes('vp'))) expect(s.once === true || (s.cooldownWeeks ?? 0) >= 104, s.id).toBe(true);
+  });
+
   // @spec VP-MOMENT-005
   it('has VP situations, and none that lowers a division’s headcount', () => {
     const situations = realContent().filter((x) => x.levels.includes('vp'));

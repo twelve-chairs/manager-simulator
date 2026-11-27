@@ -3,7 +3,7 @@ id: director-open-plan-move
 title: The open-plan move
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "A move decided for a group without asking it lands as something done to them, whatever the floor plan says."
 roles:
   - name: lead

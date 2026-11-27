@@ -3,7 +3,7 @@ id: director-belonging-survey
 title: A belonging survey surprise
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "Survey results that go unanswered tell people the survey was the point, not them."
 roles:
   - name: lead

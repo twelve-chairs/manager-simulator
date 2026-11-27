@@ -3,7 +3,7 @@ id: director-executive-pet-project
 title: The executive's pet project
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "An executive's request left unanswered gets answered for you, usually with the most stretched group's time."
 roles:
   - name: executive

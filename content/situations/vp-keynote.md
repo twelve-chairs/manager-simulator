@@ -3,7 +3,7 @@ id: vp-keynote
 title: A conference keynote
 levels: [vp]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "An invitation left unanswered goes to someone else's function, and so do the people it would have drawn."
 roles:
   - name: lead

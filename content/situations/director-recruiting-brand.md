@@ -3,7 +3,7 @@ id: director-recruiting-brand
 title: The recruiting brand
 levels: [director]
 priority: normal
-cooldownWeeks: 52
+cooldownWeeks: 104
 waitDebrief: "An invitation to show the organization, left to lapse, goes to an organization that answered."
 roles:
   - name: lead
