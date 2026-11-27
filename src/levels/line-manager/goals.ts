@@ -1,7 +1,10 @@
 import { behindScheduleProjects, overdueProjects, type SimState } from '../../sim';
-import { isEngineer, nameOf, pick, random, teamEngineers, teamProjects } from './core';
+import { band, isEngineer, nameOf, pick, random, teamEngineers, teamProjects } from './core';
 import { LINE_TUNING } from './tuning';
 import type { Goal, GoalKind, LineState } from './types';
+
+/** The stress bands' words, as the UI shows them (UI-BAND-001), so a goal says the team's stress as its panel does. */
+export const STRESS_WORDS = ['calm', 'steady', 'busy', 'strained', 'overwhelmed'] as const;
 
 const average = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
@@ -102,10 +105,15 @@ function growSomeone(goal: Goal, level: LineState, sim: SimState): GoalStatus {
   return { text: `Help ${name} grow`, progress: growthWords(gained, goal.target!), achieved: gained >= goal.target!, dropped: false };
 }
 
+/** Stress shows only as a band, so the goal says the team's stress in the band's word, and the band it needs. */
+// @spec LINE-GOAL-005
 function lowerStress(goal: Goal, level: LineState, sim: SimState): GoalStatus {
   const stress = average(teamEngineers(level, sim).map((id) => sim.people[id]!.stress));
-  const achieved = stress <= goal.target!;
-  return { text: 'Bring the team’s stress down', progress: achieved ? 'The team is calmer' : 'Still stretched', achieved, dropped: false };
+  // Below the line, so the team is in the band the goal names when it is met.
+  const achieved = stress < goal.target!;
+  const now = STRESS_WORDS[band(stress)]!;
+  const needs = STRESS_WORDS[band(goal.target!) - 1]!;
+  return { text: 'Bring the team’s stress down', progress: achieved ? `Done: the team is ${now}` : `Not yet: the team is ${now}, and this needs it ${needs}`, achieved, dropped: false };
 }
 
 const STATUS_OF: Record<GoalKind, StatusOf> = { shipOnTime, onSchedule, keepEveryone, growSomeone, lowerStress };

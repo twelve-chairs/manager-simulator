@@ -142,4 +142,21 @@ describe('purity and determinism', () => {
   it('names no project after a team', () => {
     for (const project of NAMES.projects) for (const team of NAMES.teams) expect(project.toLowerCase(), project).not.toContain(team.toLowerCase());
   });
+
+  // @spec LINE-GOAL-005
+  it('tells the stress goal in the band words the team panel uses', async () => {
+    const { BAND_WORDS } = await import('../../../src/ui/bands');
+    const { STRESS_WORDS } = await import('../../../src/levels/line-manager/goals');
+    expect([...STRESS_WORDS]).toEqual([...BAND_WORDS.stress]);
+    const { level, sim } = run(3);
+    const goal = { id: 'g-stress', kind: 'lowerStress' as const, periodStart: 0, target: LINE_TUNING.goals.teamStress };
+    const at = (stress: number) => {
+      const s = structuredClone(sim);
+      for (const p of Object.values(s.people)) if (p.teamId === level.teamId && p.role === 'engineer') p.stress = stress;
+      return view({ ...level, goals: [goal] }, s).goals[0]!;
+    };
+    expect(at(65)).toMatchObject({ text: 'Bring the team’s stress down', progress: 'Not yet: the team is strained, and this needs it steady' });
+    expect(at(LINE_TUNING.goals.teamStress).progress).toBe('Not yet: the team is busy, and this needs it steady');
+    expect(at(30).progress).toBe('Done: the team is steady');
+  });
 });

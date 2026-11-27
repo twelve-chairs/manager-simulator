@@ -125,6 +125,7 @@ Design: [line-manager-design.md](line-manager-design.md)
 - [x] **LINE-GOAL-002**: When the player's view is requested, the line manager level shall show each goal's progress toward its target, with any week number in it shown counting from 1 (game week *w* as week *w* + 1), and the on-schedule goal's progress as "No projects running" when the team has no active projects.
 - [x] **LINE-GOAL-003**: When the level is assessed for a review, the line manager level shall add each of the period's goals as a measure that is above target when achieved and below target when missed (a ship-by-deadline goal achieved only if the project completed by the deadline the goal recorded), leaving out a goal about an engineer who is no longer on the team and saying so in the recap.
 - [x] **LINE-GOAL-004**: The line manager level shall count the on-schedule goal as achieved when every active project is on schedule, or, with no active project, only when the team ended no more than half the review period's weeks idle.
+- [x] **LINE-GOAL-005**: The line manager level shall count the goal to bring the team's stress down as achieved when the team's average stress is below the goal's line, and show its progress in the stress band's words: "Done: the team is {band}" when achieved, and otherwise "Not yet: the team is {band}, and this needs it {the band below the line}".
 
 ## Recap
 
