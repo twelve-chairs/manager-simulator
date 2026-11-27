@@ -84,7 +84,14 @@ function laterDrafts(s: VpState, sim: SimState): Draft[] {
   if (peers.length && s.lastDispute !== sim.week && random(s) < T.dispute.chance) {
     const peer = pick(s, peers);
     s.lastDispute = sim.week;
-    drafts.push({ kind: 'dispute', personId: peer, title: `${name(sim, peer)} disagrees`, text: `At the leadership meeting, ${name(sim, peer)} and you want different things from a dependency your function owns.`, choices: CHOICES.dispute });
+    // @spec VP-LT-003
+    const who = name(sim, peer);
+    const choices = [
+      { id: 'company', label: `Settle it on what the company needs: your CEO backs you, and ${who} loses the point` },
+      { id: 'function', label: 'Side with your function: your directors back you, and your peers notice' },
+      { id: 'trade', label: `Broker a trade: it works only if ${who} trusts you` },
+    ];
+    drafts.push({ kind: 'dispute', personId: peer, title: `${who} disagrees`, text: `At the leadership meeting, ${who} and you want different things from a dependency your function owns.`, choices });
   }
   // @spec VP-ODDS-001
   const busy = led(s, sim).filter((g) => Object.values(sim.projects).some((p) => p.teamId === g && p.status === 'active'));
@@ -272,14 +279,14 @@ function chooseCuts({ s, sim0, m, choiceId, log }: Ctx): Handled {
 function chooseDispute({ s, sim0, m, choiceId, log }: Ctx): Handled {
   const d = T.dispute;
   const peer = m.personId!;
-  if (choiceId === 'company') return { ok: true, sim: apply(sim0, [value('person', s.ceoId, 'trust', d.ceoTrust, 'vp.dispute'), value('person', peer, 'trust', -d.loserTrust, 'vp.dispute')], log), reaction: 'You settle it on what the company needs. Your CEO nods.' };
+  if (choiceId === 'company') return { ok: true, sim: apply(sim0, [value('person', s.ceoId, 'trust', d.ceoTrust, 'vp.dispute'), value('person', peer, 'trust', -d.loserTrust, 'vp.dispute')], log), reaction: `You settle it on what the company needs. Your CEO nods; ${name(sim0, peer)} loses the point, and trusts you a little less for it.` };
   if (choiceId === 'function') {
     const leads = led(s, sim0).map((g) => leaderOf(sim0, g)!);
     const effects = [...leads.map((id) => value('person', id, 'trust', d.functionTrust, 'vp.dispute')), ...s.peerIds.filter((id) => sim0.people[id]?.status === 'active').map((id) => value('person', id, 'trust', -d.peersTrust, 'vp.dispute'))];
-    return { ok: true, sim: apply(sim0, effects, log), reaction: 'Your directors hear you fought for them. The peers hear it too.' };
+    return { ok: true, sim: apply(sim0, effects, log), reaction: 'Your directors hear you fought for them. Your peers hear it too, and trust you less for it.' };
   }
   const works = (sim0.people[peer]?.trust ?? 0) >= d.tradeAt || s.habits.firstTeam === 'leadership';
-  return { ok: true, sim: apply(sim0, [value('person', peer, 'trust', works ? d.tradeTrust : -d.tradeTrust, 'vp.dispute'), player('stress', d.tradeEnergy, 'vp.dispute')], log), reaction: works ? `You and ${name(sim0, peer)} find a trade.` : `${name(sim0, peer)} doesn't trust the trade.` };
+  return { ok: true, sim: apply(sim0, [value('person', peer, 'trust', works ? d.tradeTrust : -d.tradeTrust, 'vp.dispute'), player('stress', d.tradeEnergy, 'vp.dispute')], log), reaction: works ? `You and ${name(sim0, peer)} find a trade.` : `${name(sim0, peer)} doesn't trust you enough to trade, and hears it as a no.` };
 }
 
 /** Two directors at odds: settled together, decided by the player, or left. */

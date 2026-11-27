@@ -75,6 +75,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 
 - [x] **VP-LT-001**: When no dispute has been produced this quarter, the VP level shall be able to produce a leadership dispute naming a peer, offering to settle it on what the company needs, side with the function, or broker a trade.
 - [x] **VP-LT-002**: When the player settles it on what the company needs, the VP level shall raise the CEO's trust by a tuned amount and lower the named peer's trust by a smaller tuned amount; when the player sides with the function, it shall raise each director's trust by a tuned amount and lower each peer's trust by a tuned amount; when the player brokers a trade, it shall raise the named peer's trust by a tuned amount if their trust is at least a tuned level, or with the leadership team first, and lower it otherwise, at a tuned energy cost.
+- [x] **VP-LT-003**: When a leadership dispute is presented, its choices shall say who each answer wins over and who it costs: settling on what the company needs wins the CEO and costs the named peer, siding with the function wins the directors and costs the peers, and a trade works only with a peer who trusts the player; and each reaction shall say whose trust it cost, naming the peer.
 
 ## Cuts
 

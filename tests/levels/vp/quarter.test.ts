@@ -254,6 +254,29 @@ describe('the leadership team and the directors', () => {
     expect(ok(chooseVp(l, sim, 'm1', 'trade')).sim.player.stress).toBeGreaterThan(sim.player.stress);
   });
 
+  // @spec VP-LT-003
+  it('says who each answer to a dispute wins over and costs, and whose trust it cost', () => {
+    const { level, sim } = vp(6);
+    const peer = level.peerIds[0]!;
+    const who = sim.people[peer]!.name;
+    const drafted = (() => {
+      for (let seed = 0; seed < 60; seed++) {
+        const begun = beginQuarter({ ...level, rngState: seed + 1, lastDispute: -1 }, sim);
+        const d = begun.moments.find((m) => m.kind === 'dispute');
+        if (d) return d;
+      }
+      throw new Error('no dispute drawn');
+    })();
+    const named = sim.people[drafted.personId!]!.name;
+    expect(drafted.choices.find((c) => c.id === 'company')!.label).toContain(`${named} loses the point`);
+    expect(drafted.choices.find((c) => c.id === 'trade')!.label).toContain(`only if ${named} trusts you`);
+    const l = withMoment(level, { kind: 'dispute', personId: peer }, ['company', 'function', 'trade']);
+    expect(ok(chooseVp(l, sim, 'm1', 'company')).reaction).toContain(`${who} loses the point, and trusts you a little less`);
+    expect(ok(chooseVp(l, sim, 'm1', 'function')).reaction).toMatch(/peers hear it too, and trust you less/);
+    const wary = set(sim, [{ type: 'value', target: { kind: 'person', id: peer }, field: 'trust', amount: -100, cause: RULE }]);
+    expect(ok(chooseVp(l, wary, 'm1', 'trade')).reaction).toBe(`${who} doesn't trust you enough to trade, and hears it as a no.`);
+  });
+
   // @spec VP-ODDS-001
   it('grows both directors when they settle it together, costs the loser’s trust when decided, and slows both when left', () => {
     const { level, sim } = vp(6);
