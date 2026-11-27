@@ -166,15 +166,17 @@ const OUTCOMES = {
 const VERDICTS = { above: 'above target', at: 'on target', below: 'below target' } as const;
 
 /** Where the player stands toward promotion, in words; nothing once the review promotes or ends the run. */
-const TOWARD_PROMOTION: Record<Exclude<TowardPromotion['kind'], 'notOpenYet' | 'promoted' | 'ended'>, string> = {
-  oneMore: "One more review rated exceeds or better and you'll be promoted.",
-  twoInARow: 'Promotion takes two reviews in a row rated exceeds or better.',
-  outOfTime: "There aren't enough reviews left at this level for a promotion.",
+const COUNTS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+const TOWARD_PROMOTION: Record<'oneMore' | 'twoInARow' | 'outOfTime', (reviewsLeft: number) => string> = {
+  oneMore: (left) => `One more review rated exceeds or better and you'll be promoted.${left === 1 ? " It's your last review at this level." : ''}`,
+  twoInARow: (left) => `Promotion takes two reviews in a row rated exceeds or better, and ${COUNTS[left] ?? left} are left at this level.`,
+  outOfTime: () => "There aren't enough reviews left at this level for a promotion.",
 };
 /** Where the player stands toward promotion, as the review screen and the header say it. */
 function towardPromotionLine(p: TowardPromotion): string | null {
   if (p.kind === 'notOpenYet') return `Promotion opens in ${p.reviews} reviews, then takes two in a row rated exceeds or better.`;
-  return p.kind === 'promoted' || p.kind === 'ended' ? null : TOWARD_PROMOTION[p.kind];
+  if (p.kind === 'promoted' || p.kind === 'ended') return null;
+  return TOWARD_PROMOTION[p.kind]('reviewsLeft' in p ? p.reviewsLeft : 0);
 }
 
 /** What each kind of handover choice costs the team the player leaves as a line manager. */

@@ -35,7 +35,9 @@ export type ReviewOutcome = 'continue' | 'promote' | 'managedOut' | 'stayed';
 
 /** What the next reviews can do toward promotion. */
 export type TowardPromotion =
-  | { kind: 'promoted' | 'ended' | 'outOfTime' | 'oneMore' | 'twoInARow' }
+  | { kind: 'promoted' | 'ended' | 'outOfTime' }
+  /** With the reviews the level has left after this one. */
+  | { kind: 'oneMore' | 'twoInARow'; reviewsLeft: number }
   | { kind: 'notOpenYet'; reviews: number };
 
 /** Where the player stands: how near the rating came to the ones either side, toward promotion, and on a plan. */

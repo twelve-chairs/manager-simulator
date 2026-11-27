@@ -204,9 +204,10 @@ describe('standing', () => {
     expect(toward(rated(neutral(), ['partial', 'partial']), assessment(PARTIAL))).toEqual({ kind: 'ended' });
     expect(toward(neutral(), assessment(EXCEEDS, false, { reviewsUntilPromotion: 2 }))).toEqual({ kind: 'notOpenYet', reviews: 2 });
     expect(toward(neutral(), assessment(['at'], true, { reviewsLeft: 1 }))).toEqual({ kind: 'outOfTime' });
-    expect(toward(neutral(), assessment(EXCEEDS, false, { reviewsUntilPromotion: 1 }))).toEqual({ kind: 'oneMore' });
-    expect(toward(neutral(), assessment(EXCEEDS, true, { reviewsLeft: 1 }))).toEqual({ kind: 'oneMore' });
-    expect(toward(neutral(), assessment(['at'], true))).toEqual({ kind: 'twoInARow' });
+    expect(toward(neutral(), assessment(EXCEEDS, false, { reviewsUntilPromotion: 1 }))).toEqual({ kind: 'oneMore', reviewsLeft: 4 });
+    expect(toward(neutral(), assessment(EXCEEDS, true, { reviewsLeft: 1 }))).toEqual({ kind: 'oneMore', reviewsLeft: 1 });
+    expect(toward(neutral(), assessment(['at'], true))).toEqual({ kind: 'twoInARow', reviewsLeft: 4 });
+    expect(toward(neutral(), assessment(['at'], true, { reviewsLeft: 2 }))).toEqual({ kind: 'twoInARow', reviewsLeft: 2 });
   });
 
   // @spec REVIEW-STAND-004

@@ -56,6 +56,8 @@ With the outcome, the review returns the player's **standing**: how near the rat
   - *out of time*, when two more ratings of *exceeds* or better are needed and the level has fewer than two reviews left;
   - *one more*, when this rating is *exceeds* or better and the next review can promote: one more such rating promotes;
   - *two in a row*, otherwise: promotion takes two ratings in a row of *exceeds* or better.
+
+  *One more* and *two in a row* also carry how many reviews the level has left, so a player sees the window narrowing before it closes rather than learning at *out of time* that it already has.
 - **What held it back.** When the rating is below *exceeds* and the run goes on, or this was the level's last review and it ended without a promotion, the measures scored below target. From the first review on, a player needs to know which part of the job kept the rating down while they can still change it, not only once promotion is in reach; the margin says how close they came, not where. When no measure was below target, the standing says so, since *exceeds* then takes more of them above it.
 - **Plan.** When the rating leaves the player on a coaching plan, one more low rating puts them on an improvement plan; on an improvement plan, one more low rating and they are managed out.
 

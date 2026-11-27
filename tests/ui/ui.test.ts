@@ -272,8 +272,9 @@ describe('the header while the recap shows', () => {
     const promotion = (toward: Run['towardPromotion']) => makeApp({ run: { ...r, towardPromotion: toward } }).root.querySelector<HTMLElement>('header.status [data-field=promotion]')?.textContent ?? null;
     expect(promotion(null)).toBe('Promotion opens at your third review, then takes two reviews in a row rated exceeds or better.');
     expect(promotion({ kind: 'notOpenYet', reviews: 2 })).toBe('Promotion opens in 2 reviews, then takes two in a row rated exceeds or better.');
-    expect(promotion({ kind: 'oneMore' })).toBe("One more review rated exceeds or better and you'll be promoted.");
-    expect(promotion({ kind: 'twoInARow' })).toBe('Promotion takes two reviews in a row rated exceeds or better.');
+    expect(promotion({ kind: 'oneMore', reviewsLeft: 3 })).toBe("One more review rated exceeds or better and you'll be promoted.");
+    expect(promotion({ kind: 'oneMore', reviewsLeft: 1 })).toBe("One more review rated exceeds or better and you'll be promoted. It's your last review at this level.");
+    expect(promotion({ kind: 'twoInARow', reviewsLeft: 3 })).toBe('Promotion takes two reviews in a row rated exceeds or better, and three are left at this level.');
     expect(promotion({ kind: 'outOfTime' })).toBe("There aren't enough reviews left at this level for a promotion.");
     expect(promotion({ kind: 'ended' })).toBeNull();
   });
@@ -912,27 +913,28 @@ describe('review and end', () => {
       const field = (f: string) => root.querySelector(`[data-field=${f}]`)?.textContent ?? null;
       return { margins: $$(root, '[data-field=margin]').map((m) => m.textContent), promotion: field('promotion'), plan: field('plan'), score: field('score') };
     };
-    expect(shown({ marginUp: 'outstanding', marginDown: 'meets', promotion: { kind: 'oneMore' } })).toEqual({
+    expect(shown({ marginUp: 'outstanding', marginDown: 'meets', promotion: { kind: 'oneMore', reviewsLeft: 2 } })).toEqual({
       margins: ['One measure a step better would have made it outstanding.', 'One measure a step worse would have made it meets.'],
       promotion: "One more review rated exceeds or better and you'll be promoted.",
       plan: null,
       score: 'score 0.50, from −1 to 1',
     });
-    expect(shown({ promotion: { kind: 'twoInARow' } }).promotion).toBe('Promotion takes two reviews in a row rated exceeds or better.');
+    expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).toBe('Promotion takes two reviews in a row rated exceeds or better, and two are left at this level.');
+    expect(shown({ promotion: { kind: 'oneMore', reviewsLeft: 1 } }).promotion).toBe("One more review rated exceeds or better and you'll be promoted. It's your last review at this level.");
     expect(shown({ promotion: { kind: 'notOpenYet', reviews: 2 } }).promotion).toBe('Promotion opens in 2 reviews, then takes two in a row rated exceeds or better.');
     expect(shown({ promotion: { kind: 'outOfTime' } }).promotion).toBe("There aren't enough reviews left at this level for a promotion.");
     expect(shown({ promotion: { kind: 'promoted' } }).promotion).toBeNull();
     expect(shown({ promotion: { kind: 'ended' } }).promotion).toBeNull();
-    expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'coaching' }).plan).toBe('One more review rated partial or below puts you on an improvement plan.');
-    expect(shown({ promotion: { kind: 'twoInARow' }, plan: 'pip' }).plan).toBe("One more review rated partial or below and you'll be managed out.");
-    expect(shown({ promotion: { kind: 'twoInARow' } }).margins).toEqual([]);
+    expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 }, plan: 'coaching' }).plan).toBe('One more review rated partial or below puts you on an improvement plan.');
+    expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 }, plan: 'pip' }).plan).toBe("One more review rated partial or below and you'll be managed out.");
+    expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).margins).toEqual([]);
     // what held it back, named as the measures table names them
-    const heldBack = (ids: string[]) => makeApp({ run: { ...r, review: { ...r.review!, rating: 'meets', standing: { promotion: { kind: 'twoInARow' }, heldBack: ids } } } }).root.querySelector('[data-field=held-back]')?.textContent ?? null;
+    const heldBack = (ids: string[]) => makeApp({ run: { ...r, review: { ...r.review!, rating: 'meets', standing: { promotion: { kind: 'twoInARow', reviewsLeft: 2 }, heldBack: ids } } } }).root.querySelector('[data-field=held-back]')?.textContent ?? null;
     expect(heldBack(['stress'])).toBe('What kept this from exceeds: Team stress.');
     expect(heldBack(['stress', 'regrettedQuits', 'oneOnOneShare'])).toBe('What kept this from exceeds: Team stress, People who quit and 1:1s held.');
     expect(heldBack([])).toBe('Every measure was on target or better; exceeds takes more of them above target.');
-    expect(shown({ promotion: { kind: 'twoInARow' } }).promotion).not.toBeNull();
-    expect(makeApp({ run: { ...r, review: { ...r.review!, standing: { promotion: { kind: 'twoInARow' } } } } }).root.querySelector('[data-field=held-back]')).toBeNull();
+    expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).not.toBeNull();
+    expect(makeApp({ run: { ...r, review: { ...r.review!, standing: { promotion: { kind: 'twoInARow', reviewsLeft: 2 } } } } }).root.querySelector('[data-field=held-back]')).toBeNull();
   });
 
   // @spec UI-REVIEW-001

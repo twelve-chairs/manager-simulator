@@ -44,7 +44,7 @@ function towardPromotion(outcome: ReviewOutcome, rating: Rating, a: Assessment):
   if (outcome === 'managedOut' || outcome === 'stayed') return { kind: 'ended' };
   if (a.reviewsUntilPromotion > 1) return { kind: 'notOpenYet', reviews: a.reviewsUntilPromotion };
   if (!exceedsOrBetter(rating) && a.reviewsLeft < 2) return { kind: 'outOfTime' };
-  return { kind: exceedsOrBetter(rating) ? 'oneMore' : 'twoInARow' };
+  return { kind: exceedsOrBetter(rating) ? 'oneMore' : 'twoInARow', reviewsLeft: a.reviewsLeft };
 }
 
 /** Whether the standing says what held the rating back: below exceeds, at any review the run goes on from or ends at. */
