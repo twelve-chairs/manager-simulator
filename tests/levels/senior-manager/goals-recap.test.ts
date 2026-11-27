@@ -55,6 +55,23 @@ describe('the period’s goals', () => {
 });
 
 describe('the month’s recap', () => {
+  // @spec SENIOR-RECAP-006
+  it('says how the standing habits’ energy compares with what a quiet month gives back, and puts it among what changed when it is more', () => {
+    const { level, sim } = senior(5);
+    const recapOf = (l: SeniorState) => {
+      const r = endMonth(beginMonth(l, sim), sim);
+      if (!r.ok) throw new Error(r.error);
+      return r.recap as { changes: { energy?: string }; routine: { habits: string[] } };
+    };
+    const light = recapOf({ ...level, habits: { ...level.habits, oneOnOnes: 'monthly', skipLevel: 'none', oversight: Object.fromEntries(Object.keys(level.habits.oversight).map((m) => [m, 'handsOff'])) } });
+    expect(light.routine.habits.some((l) => /less energy than a quiet month gives back: 1:1s\./.test(l))).toBe(true);
+    expect(light.changes.energy).toBeUndefined();
+    const heavy = recapOf({ ...level, habits: { ...level.habits, oneOnOnes: 'weekly', skipLevel: 'monthly', oversight: Object.fromEntries(Object.keys(level.habits.oversight).map((m) => [m, 'close'])) } });
+    const line = heavy.routine.habits.find((l) => /standing habits took/.test(l))!;
+    expect(line).toMatch(/more energy than a quiet month gives back: (1:1s|oversight), (1:1s|oversight) and skip-levels, the most first\./);
+    expect(heavy.changes.energy).toBe(line);
+  });
+
   // @spec SENIOR-RECAP-001
   it('reports a project behind when the month began that is on schedule again', () => {
     const { level, sim } = senior(5);

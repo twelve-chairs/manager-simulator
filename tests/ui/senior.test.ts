@@ -304,6 +304,11 @@ describe('the senior manager renderer', () => {
     const n = document.createElement('div');
     for (const c of [withNews.changes].flat(3)) if (c instanceof Node) n.append(c);
     expect(text(n, '[data-part=recap-recovered] li')).toBe('Rate limiter is back on schedule (Onboarding).');
+    const drained = seniorManagerRenderer.recap(run, { changes: { managers: [], teams: [], heads: [], slipped: [], assigned: [], energy: 'Your standing habits took more energy than a quiet month gives back: oversight, 1:1s and skip-levels, the most first.' }, routine: { habits: [], goals: [] } });
+    const e = document.createElement('div');
+    for (const c of [drained.changes].flat(3)) if (c instanceof Node) e.append(c);
+    expect(text(e, '[data-part=recap-energy] li')).toMatch(/^Your standing habits took more energy/);
+    expect(e.querySelector('[data-part=recap-quiet]')).toBeNull();
     expect(text(n, '[data-part=recap-followups] li')).toBe("Farah hasn't raised the promotion again, and trusts you a little less for the no.");
     expect(n.querySelector('[data-part=recap-quiet]')).toBeNull();
     // and the shell titles the disclosure for a month

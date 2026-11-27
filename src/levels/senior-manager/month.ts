@@ -12,7 +12,6 @@ import type { Oversight, SeniorHabits, SeniorState } from './types';
 const T = SENIOR_TUNING;
 const OVERSIGHT: ReadonlySet<string> = new Set<Oversight>(['handsOff', 'coaching', 'close']);
 const OPTIONS = { oneOnOnes: ['weekly', 'fortnightly', 'monthly'], backfill: ['fast', 'holdTheBar'], skipLevel: ['none', 'monthly'], newWork: ['ask', 'assign'] } as const;
-const ONE_ON_ONES_A_MONTH = { weekly: 4, fortnightly: 2, monthly: 1 } as const;
 
 export type SeniorHabitCommand =
   | { habit: 'oversight'; managerId: string; value: Oversight }
@@ -101,7 +100,7 @@ function oversightEffects(s: SeniorState, sim: SimState, managers: Lead[]): Effe
       if (sim.people[id]!.want === 'autonomy') effects.push(person(id, 'motivation', -T.closeAutonomyMotivation, 'senior.oversight'));
       if (months >= T.closeTrustMonths) effects.push(person(id, 'trust', -T.closeTrust, 'senior.oversight'));
     } else s.closeMonths[id] = 0;
-    const n = ONE_ON_ONES_A_MONTH[s.habits.oneOnOnes];
+    const n = T.oneOnOnesAMonth[s.habits.oneOnOnes];
     effects.push(person(id, 'trust', n * T.oneOnOneTrust, 'senior.oneOnOnes'), player(n * T.oneOnOneEnergy, 'senior.oneOnOnes'));
     s.learnedWants[id] = true;
   }

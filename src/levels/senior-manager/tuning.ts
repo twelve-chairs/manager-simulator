@@ -17,6 +17,10 @@ export const SENIOR_TUNING = {
 
   /** Oversight: energy each month per manager, and the skill coaching grows. */
   coachingEnergy: 1,
+  /** 1:1s held a month at each setting. */
+  oneOnOnesAMonth: { weekly: 4, fortnightly: 2, monthly: 1 },
+  /** How far the standing habits' monthly energy may sit from what a quiet month gives back and still read as about as much. */
+  habitEnergyMargin: 2,
   closeEnergy: 3,
   coachingGrowth: 2,
   /** Close oversight: motivation a manager who wants autonomy loses each month, and trust after this many months. */
