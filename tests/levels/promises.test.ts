@@ -21,7 +21,7 @@ describe('promises', () => {
     const { sim: s0 } = run(1);
     const id = engineers(s0)[0]!;
     const sim = withNotes(s0, id, [{ week: 3, note: CLEAN_UP.made }], 10);
-    expect(promisesAt(sim, 9).open).toEqual([{ personId: id, name: sim.people[id]!.name, promise: CLEAN_UP.promise, weeksAgo: 7 }]);
+    expect(promisesAt(sim, 9).open).toEqual([{ personId: id, name: sim.people[id]!.name, promise: CLEAN_UP.promise, kindId: 'clean-up', weeksAgo: 7 }]);
     expect(promisesAt({ ...sim, week: 3 + CLEAN_UP.lapseWeeks + 1 }, 3 + CLEAN_UP.lapseWeeks).open).toEqual([]);
     // someone who has left is not listed
     const gone = structuredClone(sim);

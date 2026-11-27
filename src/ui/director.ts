@@ -246,6 +246,15 @@ const MEASURE_NAMES: Record<string, string> = {
 
 /** What moves each of the level's review measures, said beside one that held the rating back. */
 // @spec UI-REVIEW-003
+/** What keeps a stay conversation's promise at this level: the habit or state that serves the want it promised. */
+// @spec UI-PROMISE-004
+const PROMISE_KEEPS: Record<string, string> = {
+  "stay:growth": "your time is not spent upward",
+  "stay:autonomy": "your time is not all with your organization",
+  "stay:recognition": "your staff meeting is weekly",
+  "stay:stability": "their group stays below strained",
+};
+
 const MEASURE_LEVERS: Record<string, string> = {
   betsLanded: "fund a bet on a group with room, and put heads behind it; a strained group carries one slowly, and a peer who trusts you speeds it",
   projectsOnTime: "groups deliver what they can carry; heads placed where the work is, and calm groups, speed it",
@@ -290,5 +299,6 @@ export const directorRenderer: LevelRenderer = {
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as DirectorView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
   measureLever: (id) => MEASURE_LEVERS[id],
+  promiseKeeps: (kindId) => PROMISE_KEEPS[kindId],
   career,
 };

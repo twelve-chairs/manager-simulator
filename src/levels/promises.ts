@@ -35,6 +35,8 @@ export interface PromiseLine {
   personId: string;
   name: string;
   promise: string;
+  /** The kind of promise, as the table of promises names it. */
+  kindId: string;
 }
 
 /**
@@ -53,7 +55,7 @@ export function promisesAt(sim: SimState, since: number): { open: (PromiseLine &
       const made = p.history.filter((h) => h.note === kind.made).at(-1);
       if (!made) continue;
       const after = p.history.filter((h) => h.week >= made.week && h !== made && h.note !== undefined);
-      const line = { personId: p.id, name: p.name, promise: kind.promise };
+      const line = { personId: p.id, name: p.name, promise: kind.promise, kindId: kind.id };
       const keptBy = after.find((h) => kind.kept.includes(h.note!));
       const brokenBy = after.find((h) => kind.broken.includes(h.note!));
       const restless = kind.breaksWhenRestless === true && p.restlessSince !== null && p.restlessSince > made.week;

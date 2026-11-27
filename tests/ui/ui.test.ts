@@ -532,7 +532,7 @@ describe('the scene', () => {
     expect(text(root, '[data-chip="person:newcomer:joined"]')).toContain('Newcomer');
   });
 
-  // @spec UI-WEEK-004, UI-WEEK-009
+  // @spec UI-WEEK-004, UI-WEEK-009, UI-PROMISE-001, UI-PROMISE-002, UI-PROMISE-004
   it('opens a new week on last week’s recap, read from the run, until a moment is played', () => {
     expect(scene(makeApp({ run: playing() }).root)).toBe('moment');
     let r = answerAndEnd(playing());
@@ -552,7 +552,6 @@ describe('the scene', () => {
     expect(text(root, '[data-action=close-recap]')).toBe('Start week 2');
     click(root, '[data-action=close-recap]');
     expect(scene(root)).toBe('moment');
-    // @spec UI-PROMISE-001, UI-PROMISE-002
     // what the player promised and hasn't kept, and a promise kept this turn, which makes the week not quiet
     const promised = structuredClone(r);
     const [a, b] = Object.values(promised.sim.people).filter((p) => p.status === 'active' && p.role === 'engineer');
@@ -563,6 +562,9 @@ describe('the scene', () => {
     expect(text(shown, '[data-promise=open]')).toBe(`${a!.name}: a clean-up after the deadline, promised 3 weeks ago.`);
     expect(text(shown, '[data-promise=kept]')).toBe(`Kept: a clean-up after the deadline, to ${b!.name}.`);
     expect(shown.querySelector('[data-part=recap-quiet]')).toBeNull();
+    // a stay promise says what keeps it at the level: at the senior manager, autonomy holds under hands-off oversight
+    expect(seniorManagerRenderer.promiseKeeps!('stay:autonomy')).toBe('you leave them hands-off in oversight');
+    for (const r of [seniorManagerRenderer, directorRenderer, vpRenderer]) for (const want of ['growth', 'autonomy', 'recognition', 'stability']) expect(r.promiseKeeps!(`stay:${want}`)).toBeTruthy();
     // a reload after a moment of the new week has been played does not bring the recap back
     r = step(r, { kind: 'wait' });
     expect(scene(makeApp({ run: r }).root)).toBe('moment');

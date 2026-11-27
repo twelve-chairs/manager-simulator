@@ -335,6 +335,15 @@ const MEASURE_NAMES: Record<string, string> = {
 
 /** What moves each of the level's review measures, said beside one that held the rating back. */
 // @spec UI-REVIEW-003
+/** What keeps a stay conversation's promise at this level: the habit or state that serves the want it promised. */
+// @spec UI-PROMISE-004
+const PROMISE_KEEPS: Record<string, string> = {
+  "stay:growth": "you coach them in oversight",
+  "stay:autonomy": "you leave them hands-off in oversight",
+  "stay:recognition": "your 1:1s with your managers are at least fortnightly",
+  "stay:stability": "their team stays below strained",
+};
+
 const MEASURE_LEVERS: Record<string, string> = {
   completedOnTime: "teams deliver what they can carry: give new work to a team with room, and answer a manager who escalates a slipping project",
   onScheduleShare: "teams deliver what they can carry: give new work to a team with room, and answer a manager who escalates a slipping project",
@@ -403,5 +412,6 @@ export const seniorManagerRenderer: LevelRenderer = {
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as SeniorView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
   measureLever: (id) => MEASURE_LEVERS[id],
+  promiseKeeps: (kindId) => PROMISE_KEEPS[kindId],
   career,
 };

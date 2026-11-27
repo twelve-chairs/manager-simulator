@@ -173,6 +173,15 @@ const MEASURE_NAMES: Record<string, string> = {
 
 /** What moves each of the level's review measures, said beside one that held the rating back. */
 // @spec UI-REVIEW-003
+/** What keeps a stay conversation's promise at this level: the habit or state that serves the want it promised. */
+// @spec UI-PROMISE-004
+const PROMISE_KEEPS: Record<string, string> = {
+  "stay:growth": "you set direction and step back from your directors",
+  "stay:autonomy": "you set direction and step back from your directors",
+  "stay:recognition": "your function comes first, or your all-hands speaks to its work",
+  "stay:stability": "their division stays below strained",
+};
+
 const MEASURE_LEVERS: Record<string, string> = {
   prioritiesLanded: "carry the company priority: reviewing your directors' plans closely speeds it, and asking for more than you deliver is remembered",
   projectsOnTime: "divisions deliver what they can carry; a calm division carries more",
@@ -215,5 +224,6 @@ export const vpRenderer: LevelRenderer = {
   measureName: (view, id) => MEASURE_NAMES[id] ?? (view as VpView).goals.find((g) => `goal:${g.id}` === id)?.text,
   measureValue,
   measureLever: (id) => MEASURE_LEVERS[id],
+  promiseKeeps: (kindId) => PROMISE_KEEPS[kindId],
   career,
 };

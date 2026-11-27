@@ -119,6 +119,8 @@ export interface LevelRenderer {
   measureName(view: unknown, id: string): string | undefined;
   /** A measure's value in words on the review screen, when the level knows the measure. */
   measureValue(view: unknown, id: string, value: number): string | undefined;
+  /** What keeps a kind of promise at this level (a stay conversation's, by the want it serves), for the recap's promise line. */
+  promiseKeeps?(kindId: string): string | undefined;
   /** What moves one of the level's measures, for the review to say beside a measure that held the rating back. */
   measureLever(id: string): string | undefined;
   /** The level's lines of the career summary at the end of a run. */
@@ -803,7 +805,11 @@ export function createApp(root: HTMLElement, options: AppOptions) {
     const items = [
       ...p.kept.map((x) => h('li', { 'data-promise': 'kept', 'data-person': x.personId }, `Kept: ${x.promise}, to ${x.name}.`)),
       ...p.broken.map((x) => h('li', { 'data-promise': 'broken', 'data-person': x.personId }, `Broken: ${x.promise}, to ${x.name}${x.restless ? ', who is restless again' : ''}.`)),
-      ...p.open.map((x) => h('li', { 'data-promise': 'open', 'data-person': x.personId }, `${x.name}: ${x.promise}, promised ${weeks(x.weeksAgo)} ago.`)),
+      // @spec UI-PROMISE-004
+      ...p.open.map((x) => {
+        const keeps = renderer.promiseKeeps?.(x.kindId);
+        return h('li', { 'data-promise': 'open', 'data-person': x.personId }, `${x.name}: ${x.promise}, promised ${weeks(x.weeksAgo)} ago.${keeps ? ` It holds while ${keeps}.` : ''}`);
+      }),
     ];
     return { part: items.length ? h('div', { 'data-part': 'recap-promises' }, h('h3', {}, 'Your promises'), h('ul', {}, items)) : null, answered: p.kept.length + p.broken.length > 0 };
   }
