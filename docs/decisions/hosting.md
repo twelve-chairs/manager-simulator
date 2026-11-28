@@ -50,6 +50,8 @@ Amplify serves the files, with custom headers from a file in the repository.
 
 `www.manager-simulator.io` is the game's address; the bare domain redirects to it, so links to either reach the same page and the same saved run. The domain sends no mail, and says so in DNS (a null MX, SPF and DMARC that reject everything), so nobody can send mail as it. A CAA record lets only Amazon issue its certificates.
 
+HSTS is sent for two years with subdomains included, but the domain is not on the browsers' preload list. Preloading only protects a first visit, and the game holds nothing worth intercepting there: no accounts, no data sent anywhere. In exchange it would bind every future subdomain to HTTPS, with removal taking months to reach browsers.
+
 Committing obligates:
 - a CloudFormation stack in `infra/` for the bucket, distribution, headers, redirect, certificate, DNS records and deploy role;
 - the deploy workflow publishing the build to the bucket from `main`;
