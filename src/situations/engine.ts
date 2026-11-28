@@ -118,8 +118,8 @@ export function selectSituations(
   s.open = [];
 
   const presented: Presentation[] = [];
-  // Written as not-above-zero so a limit that is not a number (NaN) also selects nothing.
-  if (!(limit > 0)) return { engine: s, presented };
+  // A limit that is not a number (NaN) also selects nothing.
+  if (Number.isNaN(limit) || limit <= 0) return { engine: s, presented };
 
   const eligible = situations.filter((x) => isEligible(s, sim, x, level, timing));
   const boundPeople = new Set<string>();

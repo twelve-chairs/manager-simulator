@@ -92,7 +92,9 @@ function habitEnergyLine(level: SeniorState, sim: SimState): { line: string; ove
   const total = costs.reduce((n, c) => n + c.energy, 0);
   const back = SIM_TUNING.playerStressRecoveryPerWeek * T.weeksPerMonth;
   const margin = T.habitEnergyMargin;
-  const compare = total > back + margin ? 'more energy than a quiet month gives back' : total < back - margin ? 'less energy than a quiet month gives back' : 'about as much energy as a quiet month gives back';
+  let compare = 'about as much energy as a quiet month gives back';
+  if (total > back + margin) compare = 'more energy than a quiet month gives back';
+  else if (total < back - margin) compare = 'less energy than a quiet month gives back';
   const line = `Your standing habits took ${compare}: ${listed(costs.map((c) => HABIT_WORDS[c.habit]))}${costs.length > 1 ? ', the most first' : ''}.`;
   return { line, over: total > back + margin };
 }

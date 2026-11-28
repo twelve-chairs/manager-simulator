@@ -448,24 +448,14 @@ describe('reviews', () => {
     expect(replay(1, CONTENT, deps(), run.commands)).toEqual(run);
   });
 
-  // @spec LOOP-REV-002
-  it('ends the run when the player is managed out', () => {
-    const d = deps(stubReview('managedOut').review);
+  // @spec LOOP-REV-002, LOOP-REV-003, LOOP-REV-004
+  it.each([
+    { outcome: 'managedOut', ending: 'managedOut', when: 'when the player is managed out' },
+    { outcome: 'stayed', ending: 'stayed', when: 'as stayed after the level’s last review' },
+    { outcome: 'promote', ending: 'completed', when: 'as completed on promotion past the highest level' },
+  ] as const)('ends the run $when', ({ outcome, ending }) => {
+    const d = deps(stubReview(outcome).review);
     const run = step(endWeeks(start(1, d), 13, d), { kind: 'acknowledge' }, d);
-    expect(run).toMatchObject({ phase: 'ended', ending: 'managedOut' });
-  });
-
-  // @spec LOOP-REV-004
-  it('ends the run as stayed after the level’s last review', () => {
-    const d = deps(stubReview('stayed').review);
-    const run = step(endWeeks(start(1, d), 13, d), { kind: 'acknowledge' }, d);
-    expect(run).toMatchObject({ phase: 'ended', ending: 'stayed' });
-  });
-
-  // @spec LOOP-REV-003
-  it('ends the run as completed on promotion past the highest level', () => {
-    const d = deps(stubReview('promote').review);
-    const run = step(endWeeks(start(1, d), 13, d), { kind: 'acknowledge' }, d);
-    expect(run).toMatchObject({ phase: 'ended', ending: 'completed' });
+    expect(run).toMatchObject({ phase: 'ended', ending });
   });
 });

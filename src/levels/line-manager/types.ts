@@ -222,9 +222,6 @@ export interface WeekResult {
   recap: Recap;
 }
 
-/** A coarse reading of a 0–100 value: 0 is the lowest band. */
-export type Band = number;
-
 export interface View {
   people: {
     id: string;
@@ -233,9 +230,9 @@ export interface View {
     tenureWeeks: number;
     personality: string | undefined;
     performance: PerformanceLevel;
-    motivation: Band;
-    stress: Band;
-    skill: Band;
+    motivation: number;
+    stress: number;
+    skill: number;
     want: Want | 'unknown';
     /** Their three latest history notes, newest first. */
     memory: string[];
@@ -253,19 +250,19 @@ export interface View {
     scope: number;
     deadlineWeek: number;
     schedule: 'onSchedule' | 'behind' | 'overdue';
-    risk: Band;
-    techDebt: Band;
+    risk: number;
+    techDebt: number;
   }[];
   player: {
-    energy: Band;
-    reputation: Band;
+    energy: number;
+    reputation: number;
     /** Burnout: whether stress is at the threshold now, the weeks in a row ended there, and how many end the run. */
     edge: { at: boolean; weeks: number; limit: number };
   };
   habits: Habits;
   vacancies: Vacancy[];
   goals: { id: string; text: string; progress: string }[];
-  moments: (Omit<LevelMoment, 'week'> & { title: string; text: string; difficulty?: Band })[];
+  moments: (Omit<LevelMoment, 'week'> & { title: string; text: string; difficulty?: number })[];
   /** The run so far, for the end of the run. */
   career: {
     shippedOnTime: number;

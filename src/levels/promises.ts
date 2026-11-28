@@ -39,6 +39,19 @@ export interface PromiseLine {
   kindId: string;
 }
 
+/** When a promise was last made to someone, and what answered it since: kept, broken, or their turning restless again. */
+function promiseState(p: SimState['people'][string], kind: PromiseKind): { made: number; answered: { week: number; kept: boolean; restless: boolean } | null } | null {
+  const made = p.history.findLast((h) => h.note === kind.made);
+  if (!made) return null;
+  const after = p.history.filter((h) => h.week >= made.week && h !== made && h.note !== undefined);
+  const keptBy = after.find((h) => kind.kept.includes(h.note!));
+  if (keptBy) return { made: made.week, answered: { week: keptBy.week, kept: true, restless: false } };
+  const brokenBy = after.find((h) => kind.broken.includes(h.note!));
+  if (brokenBy) return { made: made.week, answered: { week: brokenBy.week, kept: false, restless: false } };
+  if (kind.breaksWhenRestless === true && p.restlessSince !== null && p.restlessSince > made.week) return { made: made.week, answered: { week: p.restlessSince, kept: false, restless: true } };
+  return { made: made.week, answered: null };
+}
+
 /**
  * The player's promises as a turn that began at `since` ends: those still open, most recent first, with how long ago
  * each was made, and those kept or broken during the turn.
@@ -51,23 +64,15 @@ export function promisesAt(sim: SimState, since: number): { open: (PromiseLine &
   for (const p of Object.values(sim.people)) {
     if (p.status !== 'active') continue;
     for (const kind of PROMISES) {
-      // The latest time this promise was made to them, and what answered it since.
-      const made = p.history.filter((h) => h.note === kind.made).at(-1);
-      if (!made) continue;
-      const after = p.history.filter((h) => h.week >= made.week && h !== made && h.note !== undefined);
+      const state = promiseState(p, kind);
+      if (!state) continue;
       const line = { personId: p.id, name: p.name, promise: kind.promise, kindId: kind.id };
-      const keptBy = after.find((h) => kind.kept.includes(h.note!));
-      const brokenBy = after.find((h) => kind.broken.includes(h.note!));
-      const restless = kind.breaksWhenRestless === true && p.restlessSince !== null && p.restlessSince > made.week;
-      if (keptBy || brokenBy || restless) {
-        const when = keptBy?.week ?? brokenBy?.week ?? p.restlessSince!;
-        if (when >= since) {
-          if (keptBy) kept.push(line);
-          else broken.push({ ...line, restless: !brokenBy && restless });
-        }
-        continue;
+      if (state.answered === null) {
+        if (sim.week - state.made <= kind.lapseWeeks) open.push({ ...line, weeksAgo: sim.week - state.made });
+      } else if (state.answered.week >= since) {
+        if (state.answered.kept) kept.push(line);
+        else broken.push({ ...line, restless: state.answered.restless });
       }
-      if (sim.week - made.week <= kind.lapseWeeks) open.push({ ...line, weeksAgo: sim.week - made.week });
     }
   }
   open.sort((a, b) => a.weeksAgo - b.weeksAgo || (a.personId < b.personId ? -1 : 1));

@@ -101,7 +101,8 @@ export function reviewText(level: DirectorState, sim: SimState): string {
   const active = Object.values(sim.projects).filter((p) => p.status === 'active' && level.groupIds.includes(p.teamId));
   const inTrouble = active.filter((p) => troubled.has(p.id)).length;
   const onSchedule = active.length - inTrouble;
-  return `You present the quarter to your executive: ${onSchedule === 1 ? 'one project' : `${onSchedule} projects`} on schedule and ${inTrouble} in trouble.`;
+  const projects = onSchedule === 1 ? 'one project' : `${onSchedule} projects`;
+  return `You present the quarter to your executive: ${projects} on schedule and ${inTrouble} in trouble.`;
 }
 
 export function directorView(level: DirectorState, sim: SimState): DirectorView {

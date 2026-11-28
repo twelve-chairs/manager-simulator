@@ -100,7 +100,7 @@ export interface MomentDetails {
   title: string;
   text: string;
   /** Anything the level shows under the text, such as the work's difficulty. */
-  detail?: Child;
+  detail?: Exclude<Child, undefined>;
   choices: { id: string; label: string; note?: string }[];
 }
 
@@ -244,6 +244,41 @@ function endingLine(run: Run, renderer: LevelRenderer, view: unknown): string {
   if (run.ending === 'stayed') return renderer.stayed.ending;
   if (run.ending === 'burnout') return `You burned out. ${capital(NUMBER_WORDS[renderer.status(view).edge?.limit ?? 4] ?? 'Too many')} ${renderer.turn}s at the edge was too long.`;
   return run.ending ? ENDINGS[run.ending] : '';
+}
+
+/** For an open promise: what keeps it, at this level. */
+const holdsWhile = (keeps: string | undefined) => (keeps ? ` It holds while ${keeps}.` : '');
+
+/** What the player has promised people and not yet kept, and what was kept or broken in the turn just played. */
+// @spec UI-PROMISE-001, UI-PROMISE-002
+function promisesPart(run: Run, renderer: LevelRenderer): { part: Child; answered: boolean } {
+  const p = promisesAt(run.sim, run.sim.week - STEP[renderer.turn]);
+  const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;
+  const items = [
+    ...p.kept.map((x) => h('li', { 'data-promise': 'kept', 'data-person': x.personId }, `Kept: ${x.promise}, to ${x.name}.`)),
+    ...p.broken.map((x) => h('li', { 'data-promise': 'broken', 'data-person': x.personId }, `Broken: ${x.promise}, to ${x.name}${x.restless ? ', who is restless again' : ''}.`)),
+    // @spec UI-PROMISE-004
+    ...p.open.map((x) => {
+      const keeps = renderer.promiseKeeps?.(x.kindId);
+      return h('li', { 'data-promise': 'open', 'data-person': x.personId }, `${x.name}: ${x.promise}, promised ${weeks(x.weeksAgo)} ago.${holdsWhile(keeps)}`);
+    }),
+  ];
+  return { part: items.length ? h('div', { 'data-part': 'recap-promises' }, h('h3', {}, 'Your promises'), h('ul', {}, items)) : null, answered: p.kept.length + p.broken.length > 0 };
+}
+
+/** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
+// @spec UI-HELP-001
+function help(ctx: ScreenContext, renderer: LevelRenderer, open?: boolean) {
+  const chosen = ctx.drafts.get('help')?.open;
+  // Open in the level's first three turns.
+  const turnsIn = (ctx.run.sim.week - ctx.run.levelStartWeek) / STEP[renderer.turn];
+  const isOpen = open ?? (chosen === undefined ? turnsIn <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
+  return h(
+    'details',
+    { 'data-panel': 'help', class: 'help', open: isOpen, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
+    h('summary', {}, 'How to play'),
+    renderer.help.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
+  );
 }
 
 /** Mounts the game in `root` and redraws it from the run after every command. */
@@ -794,38 +829,6 @@ export function createApp(root: HTMLElement, options: AppOptions) {
         h('ul', { 'data-part': 'recap-moments' }, run.lastWeek.moments.map((m) => h('li', { 'data-moment': m.id }, h('strong', {}, `${when(m, renderer.turn)} · ${m.title}: `), outcome(m)))),
         part.routine,
       ),
-    );
-  }
-
-  /** What the player has promised people and not yet kept, and what was kept or broken in the turn just played. */
-  // @spec UI-PROMISE-001, UI-PROMISE-002
-  function promisesPart(run: Run, renderer: LevelRenderer): { part: Child; answered: boolean } {
-    const p = promisesAt(run.sim, run.sim.week - STEP[renderer.turn]);
-    const weeks = (n: number) => `${n} ${n === 1 ? 'week' : 'weeks'}`;
-    const items = [
-      ...p.kept.map((x) => h('li', { 'data-promise': 'kept', 'data-person': x.personId }, `Kept: ${x.promise}, to ${x.name}.`)),
-      ...p.broken.map((x) => h('li', { 'data-promise': 'broken', 'data-person': x.personId }, `Broken: ${x.promise}, to ${x.name}${x.restless ? ', who is restless again' : ''}.`)),
-      // @spec UI-PROMISE-004
-      ...p.open.map((x) => {
-        const keeps = renderer.promiseKeeps?.(x.kindId);
-        return h('li', { 'data-promise': 'open', 'data-person': x.personId }, `${x.name}: ${x.promise}, promised ${weeks(x.weeksAgo)} ago.${keeps ? ` It holds while ${keeps}.` : ''}`);
-      }),
-    ];
-    return { part: items.length ? h('div', { 'data-part': 'recap-promises' }, h('h3', {}, 'Your promises'), h('ul', {}, items)) : null, answered: p.kept.length + p.broken.length > 0 };
-  }
-
-  /** How to play, open in the first weeks; once the player opens or closes it, their choice holds across redraws. */
-  // @spec UI-HELP-001
-  function help(ctx: ScreenContext, renderer: LevelRenderer, open?: boolean) {
-    const chosen = ctx.drafts.get('help')?.open;
-    // Open in the level's first three turns.
-    const turnsIn = (ctx.run.sim.week - ctx.run.levelStartWeek) / STEP[renderer.turn];
-    const isOpen = open ?? (chosen === undefined ? turnsIn <= HELP_OPEN_THROUGH_WEEK : chosen === 'true');
-    return h(
-      'details',
-      { 'data-panel': 'help', class: 'help', open: isOpen, onToggle: (e: Event) => ctx.drafts.set('help', { open: String((e.target as HTMLDetailsElement).open) }) },
-      h('summary', {}, 'How to play'),
-      renderer.help.map((t) => h('p', { 'data-topic': t.id }, h('strong', {}, `${t.title}. `), t.text)),
     );
   }
 

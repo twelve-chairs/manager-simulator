@@ -66,7 +66,9 @@ function breatherLine(s: LineState, sim: SimState, id: string): string {
   if (from.week === sim.week) return `${head}: ${body} It takes a few weeks to show.`;
   const was = STRESS_WORDS[band(from.stress)]!;
   const now = STRESS_WORDS[band(stress)]!;
-  const moved = band(stress) < band(from.stress) ? `Their stress has eased from ${was} to ${now}.` : band(stress) > band(from.stress) ? `Their stress has risen from ${was} to ${now} even so.` : `Their stress is still ${now}, as it was when it began.`;
+  let moved = `Their stress is still ${now}, as it was when it began.`;
+  if (band(stress) < band(from.stress)) moved = `Their stress has eased from ${was} to ${now}.`;
+  else if (band(stress) > band(from.stress)) moved = `Their stress has risen from ${was} to ${now} even so.`;
   return `${head}, ${sim.week - from.week + 1} weeks running: ${body} ${moved}`;
 }
 

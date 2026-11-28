@@ -104,6 +104,19 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
 
 /** What giving and declining each kind of new work gains or costs, as its choices say it. */
 // @spec SENIOR-MOMENT-015
+/** How many projects a team has on, in words. */
+function projectsOn(n: number): string {
+  if (n === 0) return 'nothing on';
+  if (n === 1) return 'one project on';
+  return `${n} projects on`;
+}
+
+/** What an approval recalls of the last time the player asked this manager for evidence. */
+function evidenceRecall(who: string, held: boolean | undefined): string {
+  if (held === undefined) return '';
+  return held ? ` Last time you asked ${who} for the evidence, they had the case ready.` : ` Last time you asked ${who} for the evidence, the case wasn't there.`;
+}
+
 const SKILL_WORDS = ['a weak team', 'a developing team', 'a capable team', 'a strong team', 'an expert team'] as const;
 const OFFER_LABELS = {
   launch: { give: (team: string) => `Give the launch to ${team}: your standing rises, and ${team} carries it`, decline: () => 'Decline the launch: your manager will notice, and your standing drops' },
@@ -286,7 +299,7 @@ function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
     // @spec SENIOR-MOMENT-020
     const who = managerName(s, sim, t);
     const held = s.evidenceHeld?.[m];
-    const lastTime = held === undefined ? '' : held ? ` Last time you asked ${who} for the evidence, they had the case ready.` : ` Last time you asked ${who} for the evidence, the case wasn't there.`;
+    const lastTime = evidenceRecall(who, held);
     drafts.push({ kind: 'approval', teamId: t, detail, title: `${who} asks for an approval`, text: `${who} wants to ${what}, and needs your sign-off.${lastTime}`, choices: CHOICES.approval, commit: () => (s.lastApproval[t] = sim.week) });
     // @spec SENIOR-MOMENT-021
     // One a month across the group: the other teams' requests wait for a later month.
@@ -315,7 +328,7 @@ function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
   const others = offer === 'own' ? [] : s.teamIds.filter((x) => x !== idle).sort((x, y) => activeProjects(sim, x).length - activeProjects(sim, y).length || sim.teams[x]!.aggregate!.stress - sim.teams[y]!.aggregate!.stress).slice(0, T.newWorkOtherTeams);
   const load = (t: string) => {
     const n = activeProjects(sim, t).length;
-    return `${n === 0 ? 'nothing on' : n === 1 ? 'one project on' : `${n} projects on`}, ${STRESS_WORDS[band(sim.teams[t]!.aggregate!.stress)]}, ${SKILL_WORDS[band(sim.teams[t]!.aggregate!.skill)]}`;
+    return `${projectsOn(n)}, ${STRESS_WORDS[band(sim.teams[t]!.aggregate!.stress)]}, ${SKILL_WORDS[band(sim.teams[t]!.aggregate!.skill)]}`;
   };
   const OFFER_TEXT = {
     launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
@@ -543,8 +556,18 @@ function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): P
     later(`${who} hasn't raised the ${what} again, and trusts you a little less for the no.`);
     return { reaction: `${who} takes the no back to their team.` };
   }
-  if (m) effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
-  if (m) s.evidenceHeld = { ...s.evidenceHeld, [m]: !lenient };
+  return askForEvidence({ s, sim, moment, choiceId, effects, t, m, who }, { lenient, what, later, apply });
+}
+
+/** Asking for the evidence: a strict manager has the case and it goes ahead; a lenient one's doesn't. */
+function askForEvidence(
+  { s, moment, effects, m, who }: Pick,
+  { lenient, what, later, apply }: { lenient: boolean; what: string; later: (text: string) => void; apply: () => void },
+): Picked {
+  if (m) {
+    effects.push(person(m, 'trust', -T.evidenceTrust, 'senior.approval'));
+    s.evidenceHeld = { ...s.evidenceHeld, [m]: !lenient };
+  }
   if (lenient) {
     later(`The ${what} ${who} asked for didn't go ahead: the case wasn't there yet.`);
     return { reaction: `${who} comes back with less than they thought they had: a good month, not a case. It doesn't go ahead.` };

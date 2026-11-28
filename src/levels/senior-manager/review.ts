@@ -154,7 +154,7 @@ export function seniorScorecard(level: SeniorState, sim: SimState): SeniorScorec
       healthHeld: level.teamIds.length ? held / level.teamIds.length : 1,
     },
     calibration: (() => {
-      const last = level.calibrations.filter((c) => inPeriod(c.week, week)).at(-1);
+      const last = level.calibrations.findLast((c) => inPeriod(c.week, week));
       return last ? Math.max(0, 1 - last.gap) : null;
     })(),
   };
