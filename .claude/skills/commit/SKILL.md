@@ -48,8 +48,16 @@ has made wrong or incomplete:
   moved
 - Links that now point at something renamed or deleted
 
-If nothing in the README is affected, say so explicitly in your report rather
-than skipping the step silently.
+**Check the GitHub repository description too.** It is the line beside the repo
+on GitHub and in search results, and it says what the game is, including how far
+the career ladder goes. Read it with
+`gh repo view --json description --jq .description`; when the change makes it
+wrong (a career level added or removed, the game described differently in the
+README's opening), update it with `gh repo edit --description "<text>"`, keeping
+it in step with the README's tagline.
+
+If nothing in the README or the description is affected, say so explicitly in
+your report rather than skipping the step silently.
 
 Keep the division of labour: the README says **what the project is and how to
 run it**; `docs/high-level-design.md` and `docs/intent/` say **what it should do
@@ -168,7 +176,7 @@ Both run after the push, so no earlier step can see what they find.
 
    ```bash
    sha=$(git rev-parse HEAD)
-   id=$(gh run list --workflow "Deploy to GitHub Pages" --commit "$sha" --json databaseId --jq '.[0].databaseId')
+   id=$(gh run list --workflow deploy.yml --commit "$sha" --json databaseId --jq '.[0].databaseId')
    gh run watch "$id" --exit-status; echo "deploy exit: $?"
    ```
 

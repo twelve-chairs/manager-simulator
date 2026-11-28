@@ -8,9 +8,7 @@ A game about the career of a software engineering manager, where the people reme
 
 [![Play now](https://img.shields.io/badge/%E2%96%B6%20play%20now-in%20your%20browser-d98e04?style=for-the-badge)](https://www.manager-simulator.io/)
 
-[![Deploy](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml)
-[![Status: early development](https://img.shields.io/badge/status-early%20development-orange)](#status)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/twelve-chairs/manager-simulator/badge)](https://scorecard.dev/viewer/?uri=github.com/twelve-chairs/manager-simulator)
+[![Deploy to AWS](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/deploy.yml)
 [![CodeQL](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/codeql.yml)
 [![Dependabot](https://github.com/twelve-chairs/manager-simulator/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/twelve-chairs/manager-simulator/actions/workflows/dependabot/dependabot-updates)
 [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=twelve-chairs_manager-simulator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=twelve-chairs_manager-simulator)
@@ -150,7 +148,7 @@ Every push to `main` is typechecked, linted, unit- and end-to-end tested, built 
 | `redirect/` | The page the old GitHub Pages address serves, sending visitors to www.manager-simulator.io |
 | `infra/site.yml` | The hosting stack: the S3 bucket, CloudFront distribution and security headers, the bare-domain redirect, certificate, DNS records and the deploy's role |
 | `.github/workflows/codeql.yml` | CodeQL code scanning |
-| `.github/workflows/scorecard.yml` | OpenSSF Scorecard, which publishes the score behind the README badge |
+| `.github/workflows/scorecard.yml` | OpenSSF Scorecard, which grades the supply-chain practices and publishes the score |
 | `.github/dependabot.yml` | Weekly dependency and action updates |
 | `vite.config.ts` | Build configuration, including the plugin that compiles situations into the page |
 | `docs/high-level-design.md` | Project-level design |

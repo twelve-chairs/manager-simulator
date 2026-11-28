@@ -2,7 +2,7 @@
 # to main only publishes it to www.manager-simulator.io (S3 and CloudFront, infra/site.yml). GitHub Pages, the game's
 # old address, serves only a page sending visitors there (UI-HOST-007).
 # Actions are pinned to commit SHAs (tags noted beside them), and each job gets only the permissions it needs.
-name: Deploy to GitHub Pages
+name: Deploy to AWS
 
 on:
   push:
