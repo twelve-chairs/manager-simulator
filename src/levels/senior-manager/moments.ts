@@ -1,4 +1,5 @@
 import { NAMES, band } from '../line-manager';
+import { STRESS_WORDS } from '../line-manager/goals';
 import { addTeam, applyEffects, behindScheduleProjects, type ChangeLogEntry, type Effect, type SimState } from '../../sim';
 import { generateManager, leadOf, nextId, randomInt, rule, unusedName } from './core';
 import { restlessLeaders, stayAnswer, stayDraft } from '../org';
@@ -10,7 +11,12 @@ import type { SeniorMoment, SeniorMomentKind, SeniorState } from './types';
 
 const T = SENIOR_TUNING;
 type Result<X> = ({ ok: true } & X) | { ok: false; error: string };
-type Draft = Omit<SeniorMoment, 'id' | 'week' | 'day' | 'time' | 'status'>;
+/** A moment before it is placed in the month, with what making it records, applied only if the month keeps it. */
+type Draft = Omit<SeniorMoment, 'id' | 'week' | 'day' | 'time' | 'status'> & { commit?: () => void };
+
+/** The everyday kinds a month holds only a few of; the rest (decisions about people, calibration, escalations) always come. */
+// @spec SENIOR-MOMENT-022
+const EVERYDAY_KINDS: ReadonlySet<SeniorMomentKind> = new Set(['surfaced', 'staffing', 'dispute', 'approval', 'newWork']);
 
 const CHOICES: Record<Exclude<SeniorMomentKind, 'stay'>, { id: string; label: string }[]> = {
   finalEvaluation: [
@@ -98,6 +104,7 @@ function surfacedIssue(level: SeniorState, sim: SimState, teamId: string, behind
 
 /** What giving and declining each kind of new work gains or costs, as its choices say it. */
 // @spec SENIOR-MOMENT-015
+const SKILL_WORDS = ['a weak team', 'a developing team', 'a capable team', 'a strong team', 'an expert team'] as const;
 const OFFER_LABELS = {
   launch: { give: (team: string) => `Give the launch to ${team}: your standing rises, and ${team} carries it`, decline: () => 'Decline the launch: your manager will notice, and your standing drops' },
   handover: { give: (team: string) => `Give the handover to ${team}: they inherit old code and its tech debt`, decline: () => 'Decline the handover: it costs you a little standing' },
@@ -275,13 +282,12 @@ function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
     const r = sim.teams[t]!.aggregate!.ratings;
     if (r.exceeds <= 0 && r.below <= 0) continue;
     const detail = r.exceeds > 0 ? ('promote' as const) : ('letGo' as const);
-    s.lastApproval[t] = sim.week;
     const what = detail === 'promote' ? 'promote one of their engineers' : 'let one of their engineers go';
     // @spec SENIOR-MOMENT-020
     const who = managerName(s, sim, t);
     const held = s.evidenceHeld?.[m];
     const lastTime = held === undefined ? '' : held ? ` Last time you asked ${who} for the evidence, they had the case ready.` : ` Last time you asked ${who} for the evidence, the case wasn't there.`;
-    drafts.push({ kind: 'approval', teamId: t, detail, title: `${who} asks for an approval`, text: `${who} wants to ${what}, and needs your sign-off.${lastTime}`, choices: CHOICES.approval });
+    drafts.push({ kind: 'approval', teamId: t, detail, title: `${who} asks for an approval`, text: `${who} wants to ${what}, and needs your sign-off.${lastTime}`, choices: CHOICES.approval, commit: () => (s.lastApproval[t] = sim.week) });
     // @spec SENIOR-MOMENT-021
     // One a month across the group: the other teams' requests wait for a later month.
     break;
@@ -301,11 +307,16 @@ function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
   // Deciding each offer, a team with room gets one a quarter; a strained team's is always the player's call.
   const strained = band(sim.teams[idle]!.aggregate!.stress) >= T.strainedBand;
   if (!strained && sim.week - s.lastNewWorkOffer < T.newWorkOfferWeeks) return [];
-  s.lastNewWorkOffer = sim.week;
   const team = name(sim, idle);
   // Offers take turns by count: they come a set number of weeks apart, so turns by month could land on one kind every time.
   const offer = (['launch', 'handover', 'own'] as const)[(s.newWorkOffers ?? 0) % 3]!;
-  s.newWorkOffers = (s.newWorkOffers ?? 0) + 1;
+  // @spec SENIOR-MOMENT-023
+  // A launch or a handover could go to any team: the others are offered too, least loaded first, each with its load.
+  const others = offer === 'own' ? [] : s.teamIds.filter((x) => x !== idle).sort((x, y) => activeProjects(sim, x).length - activeProjects(sim, y).length || sim.teams[x]!.aggregate!.stress - sim.teams[y]!.aggregate!.stress).slice(0, T.newWorkOtherTeams);
+  const load = (t: string) => {
+    const n = activeProjects(sim, t).length;
+    return `${n === 0 ? 'nothing on' : n === 1 ? 'one project on' : `${n} projects on`}, ${STRESS_WORDS[band(sim.teams[t]!.aggregate!.stress)]}, ${SKILL_WORDS[band(sim.teams[t]!.aggregate!.skill)]}`;
+  };
   const OFFER_TEXT = {
     launch: { title: 'New work for the group: a launch', text: `Your manager has a launch for the group, one the whole company will see. ${team} has nothing on. Taking it lifts your standing; turning it down will be noticed.` },
     handover: { title: 'New work for the group: a handover', text: `Another group wants to hand yours a system it can no longer keep up, old code and heavy tech debt. ${team} has nothing on. Nobody will mind much if you say no.` },
@@ -318,8 +329,13 @@ function newWorkDrafts(s: SeniorState, sim: SimState): Draft[] {
       offer,
       title: OFFER_TEXT[offer].title,
       text: OFFER_TEXT[offer].text,
+      commit: () => {
+        s.lastNewWorkOffer = sim.week;
+        s.newWorkOffers = (s.newWorkOffers ?? 0) + 1;
+      },
       choices: [
-        { id: 'give', label: OFFER_LABELS[offer].give(team) },
+        { id: 'give', label: offer === 'own' ? OFFER_LABELS[offer].give(team) : `${OFFER_LABELS[offer].give(team)} (${load(idle)})` },
+        ...others.map((o) => ({ id: `giveTo:${o}`, label: `${OFFER_LABELS[offer].give(name(sim, o))} (${load(o)})` })),
         { id: 'giveAlways', label: `Give it to ${team}, and from now on let your manager give new work straight to a team with room (you still decide when that team is strained)` },
         { id: 'decline', label: OFFER_LABELS[offer].decline(team) },
         ...CHOICES.newWork.filter((c) => c.id !== 'give' && c.id !== 'decline'),
@@ -347,12 +363,17 @@ export function beginMonth(level: SeniorState, sim: SimState): SeniorState {
   if (!s.restructured && s.teamIds.length === 3 && monthOf(s, sim) >= T.restructureMonth) {
     drafts.push({ kind: 'restructuring', title: 'A fourth team', text: 'Your manager wants your group to take on a fourth team. It needs a manager.', choices: CHOICES.restructuring });
   }
-  const kept = drafts.slice(0, T.momentCap);
+  // @spec SENIOR-MOMENT-022
+  // A month holds only a few everyday moments; the rest wait, their state untouched, to come again when it holds room.
+  let everyday = 0;
+  const kept = drafts.filter((d) => !EVERYDAY_KINDS.has(d.kind) || ++everyday <= T.everydayCap).slice(0, T.momentCap);
+  for (const d of kept) d.commit?.();
   s.moments = kept.map((d, i) => {
     // Spread through the month's twenty working days, in order.
     const slot = Math.floor((i * 20) / kept.length);
     s.counters.moment += 1;
-    return { ...d, id: `sm${s.counters.moment}`, week: Math.floor(slot / 5), day: slot % 5, time: i % 2 ? 'afternoon' : 'morning', status: 'open' };
+    const { commit: _commit, ...moment } = d;
+    return { ...moment, id: `sm${s.counters.moment}`, week: Math.floor(slot / 5), day: slot % 5, time: i % 2 ? 'afternoon' : 'morning', status: 'open' };
   });
   s.monthStart = snapshotMonth(s, sim);
   return s;
@@ -536,12 +557,13 @@ function pickApproval({ s, sim, moment, choiceId, effects, t, m, who }: Pick): P
 
 /** Takes the new work on: starts the project, then the offer's and the choice's side effects. */
 function startNewWork({ s, sim, choiceId, effects, t }: Pick, offer: 'launch' | 'handover' | 'own') {
+  const skill = sim.teams[t]!.aggregate!.skill;
   const pr = nextId(s, 'project', 'pr', sim.projects);
   // Drawn even for a handover, whose debt is fixed, so every offer draws the same numbers in the same order.
   const techDebt = randomInt(s, 10, 40);
   effects.push({
     type: 'startProject',
-    project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: randomInt(s, 10, 40), techDebt: offer === 'handover' ? T.handoverTechDebt : techDebt, deadlineWeek: sim.week + randomInt(s, 20, 32) },
+    project: { id: pr, name: unusedName(s, NAMES.projects, Object.values(sim.projects).map((p) => p.name)), teamId: t, scope: randomInt(s, 80, 140), risk: Math.max(0, randomInt(s, 10, 40) + (offer === 'launch' ? Math.round((T.launchSkillPivot - skill) * T.launchSkillRisk) : 0)), techDebt: offer === 'handover' ? T.handoverTechDebt : techDebt, deadlineWeek: sim.week + randomInt(s, 20, 32) },
     cause: { kind: 'action', actionId: 'senior.newWork' },
   });
   if (offer === 'launch') effects.push(player('reputation', T.launchReputation, 'senior.newWork'));
@@ -551,7 +573,10 @@ function startNewWork({ s, sim, choiceId, effects, t }: Pick, offer: 'launch' | 
 }
 
 // @spec SENIOR-MOMENT-016
-function pickNewWork(c: Pick): Picked {
+function pickNewWork(given: Pick): Picked {
+  // @spec SENIOR-MOMENT-023
+  const to = given.choiceId.startsWith('giveTo:') ? given.choiceId.slice('giveTo:'.length) : null;
+  const c = to ? { ...given, t: to, choiceId: 'give', who: managerName(given.s, given.sim, to) } : given;
   const { sim, moment, choiceId, effects, t, who } = c;
   const offer = moment.offer ?? 'launch';
   if (choiceId === 'decline') {

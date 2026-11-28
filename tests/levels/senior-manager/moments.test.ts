@@ -259,7 +259,7 @@ describe('a month’s moments', () => {
     const l = beginMonth(level, idle);
     const w = find(l, 'newWork');
     expect(w).toMatchObject({ teamId: t });
-    expect(w.choices.map((x) => x.id)).toEqual(['give', 'giveAlways', 'decline', 'spread']);
+    expect(w.choices.map((x) => x.id).filter((id) => !id.startsWith('giveTo:'))).toEqual(['give', 'giveAlways', 'decline', 'spread']);
     expect(w.choices[0]!.label).toContain(idle.teams[t]!.name);
     const always = answer(l, idle, w, 'giveAlways');
     expect(Object.values(always.sim.projects).filter((p) => p.teamId === t && p.status === 'active')).toHaveLength(1);
@@ -270,6 +270,69 @@ describe('a month’s moments', () => {
     for (const id of level.teamIds) expect(spread.teams[id]!.aggregate!.stress).toBe(idle.teams[id]!.aggregate!.stress + T.spreadStress);
     // declining costs reputation, by how much depending on the kind of offer (SENIOR-MOMENT-016)
     expect(answer(l, idle, w, 'decline').sim.player.reputation).toBeLessThan(idle.player.reputation);
+  });
+
+  // @spec SENIOR-MOMENT-023
+  it('offers a launch to other teams too, each with its load, and a stronger team carries it at less risk', () => {
+    const { level, sim } = calm(6);
+    const t = level.teamIds[2]!;
+    const idle = edit(sim, (s) => {
+      for (const p of Object.values(s.projects)) if (p.teamId === t) p.status = 'cancelled';
+    });
+    const l = beginMonth({ ...level, newWorkOffers: 0 }, idle);
+    const w = find(l, 'newWork');
+    expect(w.offer).toBe('launch');
+    const others = w.choices.filter((c) => c.id.startsWith('giveTo:'));
+    expect(others.map((c) => c.id.slice('giveTo:'.length)).sort()).toEqual(level.teamIds.filter((x) => x !== t).slice(0, T.newWorkOtherTeams).sort());
+    for (const c of [w.choices[0]!, ...others]) expect(c.label).toMatch(/(nothing on|projects? on), (calm|steady|busy|strained|overwhelmed), an? \w+ team\)$/);
+    // given to another team, the project is theirs
+    const o = others[0]!.id.slice('giveTo:'.length);
+    const before = Object.keys(idle.projects);
+    const r = answer(l, idle, w, others[0]!.id);
+    const started = Object.values(r.sim.projects).filter((p) => !before.includes(p.id));
+    expect(started).toHaveLength(1);
+    expect(started[0]!.teamId).toBe(o);
+    expect(r.sim.player.reputation).toBe(Math.min(100, idle.player.reputation + T.launchReputation));
+    // the same draw on a strong team carries less risk than on a weak one
+    const risk = (skill: number) => {
+      const set = edit(idle, (s) => (s.teams[t]!.aggregate!.skill = skill));
+      const g = answer(l, set, w, 'give').sim;
+      return Object.values(g.projects).find((p) => !before.includes(p.id))!.risk;
+    };
+    expect(risk(80)).toBeLessThan(risk(20));
+    // the idle team's own project is theirs alone
+    const own = beginMonth({ ...level, newWorkOffers: 2 }, idle);
+    expect(find(own, 'newWork').choices.some((c) => c.id.startsWith('giveTo:'))).toBe(false);
+  });
+
+  // @spec SENIOR-MOMENT-022
+  it('holds a month to a few everyday moments, and one held back keeps its turn', () => {
+    const { level, sim } = calm(7);
+    const [a, b, c] = level.teamIds as [string, string, string];
+    // a skip-level problem, an approval and new work all due at once
+    const busy = edit(sim, (s) => {
+      const r = s.teams[b]!.aggregate!.ratings;
+      r.unrated -= 1;
+      r.exceeds += 1;
+      for (const p of Object.values(s.projects)) if (p.teamId === c) p.status = 'cancelled';
+    });
+    const start = { ...level, surfaced: [{ teamId: a, week: sim.week - 1 }], newWorkOffers: 0 };
+    const l = beginMonth(start, busy);
+    const everyday = kinds(l).filter((k) => ['surfaced', 'staffing', 'dispute', 'approval', 'newWork'].includes(k));
+    expect(everyday).toEqual(['surfaced', 'approval']);
+    // the new work held back did not use its turn or its quarter: it comes next month, still a launch
+    expect(l.newWorkOffers ?? 0).toBe(0);
+    expect(l.lastNewWorkOffer).toBe(start.lastNewWorkOffer);
+    const next = beginMonth({ ...l, moments: [], surfaced: [] }, edit(busy, (s) => (s.week += T.weeksPerMonth)));
+    expect(find(next, 'newWork').offer).toBe('launch');
+    // an approval held back keeps its cooldown untouched
+    const crowded = beginMonth({ ...start, surfaced: [{ teamId: a, week: sim.week - 1 }], settledDisputes: [] }, edit(busy, (s) => {
+      for (const p of Object.values(s.projects)) if (p.teamId === a) Object.assign(p, { status: 'active', risk: 60 });
+      for (const p of Object.values(s.projects)) if (p.teamId === b) Object.assign(p, { status: 'active', risk: 60 });
+    }));
+    expect(kinds(crowded).filter((k) => k !== 'escalation')).toEqual(['surfaced', 'dispute']);
+    expect(crowded.lastApproval[b]).toBe(start.lastApproval[b]);
+    expect(l.lastApproval[b]).toBe(busy.week);
   });
 
   // @spec SENIOR-MOMENT-017

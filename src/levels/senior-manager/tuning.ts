@@ -54,6 +54,8 @@ export const SENIOR_TUNING = {
   managerStressShare: 0.25,
   /** Moments: the most a month holds, and the risk at or above which a project counts as at risk for a dispute. */
   momentCap: 5,
+  /** The most everyday moments (skip-level problems, staffing, disputes, approvals, new work) a month holds; the rest wait. */
+  everydayCap: 2,
   /** A stay conversation: the energy giving a restless leader what they want costs, and the motivation and trust it gives them. */
   stay: { energy: 3, motivation: 8, trust: 4 },
   atRiskProject: 40,
@@ -83,6 +85,11 @@ export const SENIOR_TUNING = {
   declineWork: 8,
   /** While the player decides each offer of new work, the weeks between offers for a team with room. */
   newWorkOfferWeeks: 12,
+  /** How many teams besides the idle one a launch or handover is offered to. */
+  newWorkOtherTeams: 2,
+  /** A launch's risk: the team skill at which it carries its drawn risk, and the risk each point of skill below that adds (above it, takes away). */
+  launchSkillPivot: 50,
+  launchSkillRisk: 0.5,
   /** New work that differs: a launch's reputation taken and declined; a handover's tech debt and decline; the idle team's own project's motivation, taken and declined. */
   launchReputation: 3,
   launchDecline: 10,
