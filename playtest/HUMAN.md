@@ -5,7 +5,7 @@ This is the script for one playtest session: one player, one facilitator, 30 to 
 ## Setup
 
 - **The game:** the live site, https://www.manager-simulator.io/, in a fresh browser profile, so no earlier run is loaded. A private window works too, but it forgets the run when it closes: export the save before closing it if there might be a later session.
-- **The version:** write down the version from the bottom of the start screen ("Version v0.2.12 (c9462d8)") before the player starts.
+- **The version:** write down the version from the bottom of the start screen (for example "Version v0.3.290 (7bdc568)") before the player starts.
 - **The player:** someone who hasn't played before. Note whether they manage people, have been managed, or neither; don't screen anyone out.
 - **Time:** let them play for up to 60 minutes. Stop earlier if they want to stop, and note when and why.
 - **Think aloud:** ask them to say what they're thinking as they play: what they expect a choice to do, and what they make of what happens.
@@ -14,10 +14,10 @@ This is the script for one playtest session: one player, one facilitator, 30 to 
 
 ## Later sessions
 
-Each career level takes about an hour to earn a promotion from: the earliest comes at the third review (week 39 as a line manager, month 18 as a senior manager), and many runs aren't promoted within an hour. *Promotion changes the job* needs a player who was, so a player who wants to go on plays a later session on the same run, on another day if they like: a second one to reach the senior manager, and a third to reach the director.
+Each career level takes about an hour to earn a promotion from: the earliest comes at the third review (week 39 as a line manager, month 18 as a senior manager), and many runs aren't promoted within an hour. *Promotion changes the job* needs a player who was, so a player who wants to go on plays a later session on the same run, on another day if they like: a second one to reach the senior manager, a third to reach the director, and a fourth to reach the VP.
 
 - **Keeping the run:** the game saves after every move in the browser it was played in. If a later session is somewhere else, or an earlier one was in a private window, use **Export save** at the end of a session and **Load a saved game** at the start of the next.
-- **How long:** until the next promotion and then a little time at the new level: about three months as a senior manager, through the first calibration if they get there, or about two quarters as a director, through the first quarterly review. Stop earlier if they want to.
+- **How long:** until the next promotion and then a little time at the new level: about three months as a senior manager, through the first calibration if they get there, about two quarters as a director, through the first quarterly review, or about two quarters as a VP, through the first all-hands. Stop earlier if they want to.
 - **What to record:** only *Promotion changes the job*, for the promotion the session reached, and anything new under the other headings, marked with the session it came from. *A promotion in the first session* is recorded from the first session alone.
 - **The rules are the same:** think aloud, no coaching.
 
@@ -62,6 +62,7 @@ The HLD: every choice gets a reaction at once, and people bring past choices up 
 - Moments when they notice someone remembers something ("she's still upset about..."), in a reaction or in the recap, where someone sometimes brings up something from an earlier week.
 - Choices they make without reading them.
 - Whether they open *The whole week* in the weekend recap, and what they were looking for when they did.
+- Whether they notice *Your promises* in the recap: what they promised someone, whether it was kept or broken, and what keeps it.
 
 **Ask afterwards**
 - Tell me about a choice that turned out to matter.
@@ -90,8 +91,9 @@ The HLD: playtesters asked "what changed when you were promoted?" name concrete 
 
 **Watch for**
 - How they react to the promotion, and how they choose who leads their old team or group.
-- At the senior manager, the first months: whether they notice that turns are now months, that they see their managers rather than their engineers, and that the teams are shown as their managers report them; and the first calibration: whether they understand what they are being asked to set, and what they set it by.
+- At the senior manager, the first months: whether they notice that turns are now months, that they see their managers rather than their engineers, and that the teams are shown as their managers report them; the first calibration: whether they understand what they are being asked to set, and what they set it by; whether they read *Still open* in the recap, the skip-level problems their answer left unsettled; and, when new work is offered to several teams, what they weigh between the idle team and a better fit.
 - At the director, the first quarters: whether they notice that turns are now quarters, that a group's mood comes from a survey taken twice a year, and that their executive and peers are people whose trust moves; how they place the quarter's headcount and choose bets; and at the quarterly review, whether they tell it straight, and why.
+- At the VP, the first quarters: whether they notice that their first team is now the leadership team (the CEO and two peer VPs), that their divisions are seen only through their directors, that headcount comes from a budget the leadership team divides, and that each quarter ends with an all-hands to the whole function; and whether they act for the function or the company when the two pull apart.
 - Habits from the level before they look for and don't find, and the new ones they try, including handing new work to a team with room.
 - Anything they say sounds like "the same thing with more people".
 
@@ -100,7 +102,7 @@ The HLD: playtesters asked "what changed when you were promoted?" name concrete 
 - What did you stop doing?
 - What did you have to learn that you didn't do before?
 - Did your old team, or group, feel different once someone else was leading it?
-- After the second promotion: what changed this time, and was it more or less of a change than the first?
+- After the second promotion or later: what changed this time, and was it more or less of a change than the one before?
 - If they weren't promoted: skip these and record "not reached".
 
 ### Skill can be learned
@@ -150,6 +152,13 @@ Promotion changes the job, to senior manager (session ___; or "not reached"):
 
 Promotion changes the job, to director (session ___; or "not reached"):
   Promoted at month:         Quarters played at the new level:
+  What they said changed:
+  What they stopped doing:
+  What they had to learn:
+  "The same thing with more people"? Their words:
+
+Promotion changes the job, to VP (session ___; or "not reached"):
+  Promoted at quarter:       Quarters played at the new level:
   What they said changed:
   What they stopped doing:
   What they had to learn:
