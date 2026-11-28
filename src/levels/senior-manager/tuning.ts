@@ -62,6 +62,10 @@ export const SENIOR_TUNING = {
   /** Escalations: how much stepping in and coaching fix a team's stress, what they cost, and the skill coaching grows. */
   stepInFix: 15,
   stepInEnergy: 6,
+  /** A project an escalation names as slipping: how near its deadline coaching can no longer pull it back, and the share of its scope stepping in recovers, or coaching and leaving it with a capable manager recover when there is time. */
+  urgentWeeks: 8,
+  stepInRecovery: 0.15,
+  coachRecovery: 0.1,
   /** Reputation it costs to take a problem above the manager to your own manager. */
   escalateReputation: 3,
   coachFix: 8,
@@ -104,6 +108,11 @@ export const SENIOR_TUNING = {
   approveTrust: 3,
   refuseTrust: 4,
   approvalCooldownWeeks: 26,
+  /** The fewest weeks between two approvals across the whole group: about one every other month. */
+  approvalGroupWeeks: 8,
+  /** Setting expectations before calibration: the energy it costs, and how many rating steps it takes off each manager's leniency for that calibration. */
+  prepEnergy: 4,
+  prepLeniency: 1,
   /** Restructuring: the month it is offered from, and the skill a team loses when its strongest is promoted out. */
   restructureMonth: 12,
   restructureSkill: 5,

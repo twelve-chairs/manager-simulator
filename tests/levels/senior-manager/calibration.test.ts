@@ -100,6 +100,27 @@ describe('calibration', () => {
     expect(middlingTop).toBeLessThanOrEqual(middling.moment.curve!);
   });
 
+  // @spec SENIOR-CAL-010
+  it('asks the month before calibration whether to set expectations, which brings the proposals a step closer to delivery', () => {
+    const { level, sim } = senior(1);
+    const before = edit(sim, (x) => (x.week = level.startWeek + 16));
+    const l = beginMonth({ ...level, leniency: Object.fromEntries(Object.keys(level.leniency).map((m) => [m, 2])) }, before);
+    const prep = l.moments.find((m) => m.kind === 'calibrationPrep')!;
+    expect(prep.choices.map((c) => c.id)).toEqual(['prepare', 'leave']);
+    // not in other months
+    expect(beginMonth(level, edit(sim, (x) => (x.week = level.startWeek + 12))).moments.map((m) => m.kind)).not.toContain('calibrationPrep');
+    const prepared = ok(chooseSenior(l, before, prep.id, 'prepare'));
+    expect(prepared.sim.player.stress).toBe(Math.min(100, before.player.stress + T.prepEnergy));
+    const at = edit(sim, (x) => (x.week = level.startWeek + 20));
+    const proposals = (st: SeniorState) => beginMonth({ ...st, moments: [] }, at).moments.find((m) => m.kind === 'calibration')!.calibration!;
+    const left = ok(chooseSenior(l, before, prep.id, 'leave'));
+    const meanOf = (es: ReturnType<typeof proposals>) => es.reduce((n, e) => n + mean(e.proposed), 0);
+    expect(meanOf(proposals(prepared.level))).toBeLessThan(meanOf(proposals(left.level)));
+    // a step off leniency 2 is what a manager of leniency 1 proposes
+    const one = proposals({ ...left.level, leniency: Object.fromEntries(Object.keys(level.leniency).map((m) => [m, 1])) });
+    expect(proposals(prepared.level).map((e) => e.proposed)).toEqual(one.map((e) => e.proposed));
+  });
+
   // @spec SENIOR-CAL-002, SENIOR-CAL-004
   it('applies a team’s calibrated ratings, pleasing a manager whose proposal stands and costing trust per head marked down', () => {
     const { level, sim, moment } = calibrationMonth(2, 1);

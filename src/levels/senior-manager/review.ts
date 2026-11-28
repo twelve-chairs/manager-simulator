@@ -24,6 +24,11 @@ export function reviewDue(level: SeniorState, sim: SimState): boolean {
   return weeks > 0 && weeks % PERIOD === 0;
 }
 
+/** Whether the month beginning now is the one before a review period's last, when calibration comes. */
+export function calibrationNextMonth(level: SeniorState, sim: SimState): boolean {
+  return (sim.week - level.startWeek + 2 * WEEKS) % PERIOD === 0;
+}
+
 /** Whether the month beginning now is the last of a review period. */
 export function periodEndsThisMonth(level: SeniorState, sim: SimState): boolean {
   return (sim.week - level.startWeek + WEEKS) % PERIOD === 0;

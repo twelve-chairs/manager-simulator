@@ -131,6 +131,7 @@ export function seniorView(level: SeniorState, sim: SimState): SeniorView {
   /** The managers a moment is about: a calibration's, nobody for a restructuring, or the leads of the teams it names. */
   const managersOf = (m: SeniorMoment): string[] => {
     if (m.kind === 'calibration') return m.calibration!.flatMap((c) => c.managerId ?? []);
+    if (m.kind === 'calibrationPrep') return level.teamIds.flatMap(leads);
     return m.kind === 'restructuring' ? [] : [...leads(m.teamId), ...leads(m.otherTeamId)];
   };
   const moments: MomentView[] = level.moments.map((m) => ({

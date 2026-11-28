@@ -22,7 +22,7 @@ const sitsAbove = (manager: string | null) => (manager ? ` It sits above ${manag
 
 export const SENIOR_HELP_TOPICS = [
   { id: 'how-to-play', title: 'How to play', text: 'Each month is a handful of moments. Your managers run the teams; you run your managers. Pick what you do, or let it wait. A recap ends the month.' },
-  { id: 'managers', title: 'Managers', text: 'Your managers act for you. Coach them and they grow; step in and you fix it yourself, at a cost, and they learn nothing.' },
+  { id: 'managers', title: 'Managers', text: 'Your managers act for you. Coaching grows them, and fixes a problem once they are developing, but takes time to show in a project’s schedule. Stepping in fixes it now, costs your energy, and teaches them nothing. Leaving it with them costs nothing, and works for a capable manager.' },
   { id: 'told', title: "What you're told", text: "Each team is shown as its manager tells it. A manager who struggles or doesn't trust you makes it sound better than it is. Close oversight and skip-levels show you the truth." },
   { id: 'calibration', title: 'Calibration', text: 'Before each review your managers propose their teams’ ratings. Compare them with what each team delivered, and move heads up or down. The group shares a curve with fewer top ratings than a strong group earns: decide whose people give one up, or argue for an exception with your reputation.' },
   { id: 'energy', title: 'Energy', text: 'Your energy falls with what you take on yourself and recovers in quieter months. Four months in a row at the edge and you burn out.' },
@@ -37,7 +37,7 @@ const PANEL_HELP = {
 const HABITS = {
   oneOnOnes: { label: '1:1s with your managers', options: { weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly' }, what: '1:1s build trust and reveal what each manager wants. More of them cost more of your energy.' },
   backfill: { label: 'When someone leaves', options: { fast: 'Backfill fast', holdTheBar: 'Hold the bar' }, what: 'Fast fills a gap in a month with a weaker hire; holding the bar takes two months and keeps the team strong.' },
-  newWork: { label: 'New work for an idle team', options: { ask: 'Decide each time', assign: 'Give it to a team with room' }, what: 'Giving it to a team with room saves you the decision; you still decide when the idle team is strained.' },
+  newWork: { label: 'New work for an idle team', options: { ask: 'Decide each time', assign: 'Give it to a team with room' }, what: 'Deciding each time, a launch, a handover or a team’s own project comes to you about once a quarter, and while you take them your manager sends ordinary work between. Giving it to a team with room saves the decision; you still decide when the idle team is strained.' },
   skipLevel: { label: 'Skip-level listening', options: { none: 'None', monthly: 'Monthly' }, what: 'Each month you listen to one team directly: you see how it really is, and hear what its manager hasn’t said.' },
 } as const;
 const OVERSIGHT = { handsOff: 'Hands-off', coaching: 'Coaching', close: 'Close' } as const;

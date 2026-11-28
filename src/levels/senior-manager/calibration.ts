@@ -51,7 +51,11 @@ export function calibrationEntries(level: SeniorState, sim: SimState): Calibrati
   return level.teamIds.map((teamId) => {
     const managerId = leadOf(level, sim, teamId);
     const delivered = deliveredRatings(sim, teamId);
-    return { teamId, managerId, delivered, proposed: propose(delivered, managerId ? (level.leniency[managerId] ?? 0) : 0), final: null };
+    // @spec SENIOR-CAL-010
+    // Expectations set the month before take a step off every manager's leniency for this calibration.
+    const prepared = level.calibrationPrepared !== undefined && sim.week - level.calibrationPrepared <= SENIOR_TUNING.weeksPerMonth;
+    const leniency = Math.max(0, (managerId ? (level.leniency[managerId] ?? 0) : 0) - (prepared ? SENIOR_TUNING.prepLeniency : 0));
+    return { teamId, managerId, delivered, proposed: propose(delivered, leniency), final: null };
   });
 }
 

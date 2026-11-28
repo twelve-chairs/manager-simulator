@@ -3,7 +3,7 @@ id: senior-first-hard-conversation
 title: Their first hard conversation
 levels: [senior-manager]
 priority: normal
-cooldownWeeks: 26
+cooldownWeeks: 52
 when: { value: review.weeksAway, atMost: 6 }
 waitDebrief: "A new manager left alone with their first hard conversation usually softens it until it says nothing."
 roles:

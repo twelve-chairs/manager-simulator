@@ -3,7 +3,7 @@ id: senior-protected-low-performer
 title: The protected low performer
 levels: [senior-manager]
 priority: normal
-cooldownWeeks: 26
+cooldownWeeks: 52
 waitDebrief: "A low performer protected by their manager is carried by the rest of the team, and the team keeps count."
 roles:
   - name: manager

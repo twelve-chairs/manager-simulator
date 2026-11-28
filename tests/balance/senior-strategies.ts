@@ -2,6 +2,7 @@ import { RATINGS, type Rating } from '../../src/sim';
 import type { Command } from '../../src/loop';
 import type { SeniorMoment, SeniorSeen, SeniorStrategy } from './senior';
 import { BETTER_CHOICES } from './strategies';
+import { SENIOR_TUNING } from '../../src/levels/senior-manager';
 
 type Counts = Record<Rating, number>;
 /** The first choice the moment offers from an order of preference, or its first choice. */
@@ -58,14 +59,14 @@ export const seniorHero: SeniorStrategy = {
   name: 'hero',
   naive: true,
   habits: (seen) => habits(seen, 'close'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'argue', 'hire', 'oneMorePeriod', 'decline', 'keep']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['stepIn', 'decide', 'spread', 'approve', 'acceptAll', 'argue', 'hire', 'oneMorePeriod', 'decline', 'keep', 'prepare']),
 };
 
 export const seniorDelegator: SeniorStrategy = {
   name: 'delegator',
   naive: true,
   habits: (seen) => habits(seen, 'handsOff'),
-  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'trim', 'hire', 'oneMorePeriod', 'release']),
+  choose: (_seen, m) => m.source === 'situation' ? first(m) : prefer(m, ['letThem', 'letRun', 'give', 'move', 'approve', 'acceptAll', 'trim', 'hire', 'oneMorePeriod', 'release', 'leave']),
 };
 
 export const seniorContrarian: SeniorStrategy = {
@@ -75,7 +76,7 @@ export const seniorContrarian: SeniorStrategy = {
     if (m.source === 'situation') return last(m);
     if (overCurve(m)) return 'argue';
     if (m.kind === 'calibration') return markDown(m);
-    return prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo', 'release']);
+    return prefer(m, ['decline', 'refuse', 'decide', 'letThem', 'hire', 'letGo', 'release', 'leave']);
   },
 };
 
@@ -87,11 +88,14 @@ function soundChoice(_seen: SeniorSeen, m: SeniorMoment): string {
   if (m.kind === 'calibration') return settleOnEvidence(m);
   // A problem above the manager is the player's to move: coaching them through it changes nothing.
   if (m.kind === 'surfaced' && m.text.includes("can settle alone")) return 'stepIn';
-  return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo', 'keep']);
+  // A slipping project due too soon for coaching to pull back: step in.
+  const left = /, in (\d+) weeks?\.$|, this week\.$/.exec(m.text);
+  if (m.kind === 'escalation' && left && Number(left[1] ?? 0) <= SENIOR_TUNING.urgentWeeks) return 'stepIn';
+  return prefer(m, ['coach', 'move', 'agree', 'give', 'evidence', 'promoteFromTeam', 'letGo', 'keep', 'prepare']);
 }
 
-export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null, { newWork: 'assign' }), choose: soundChoice };
+export const seniorSound: SeniorStrategy = { name: 'sound', naive: false, habits: (seen) => habits(seen, null), choose: soundChoice };
 
-export const seniorSoundSkip: SeniorStrategy = { name: 'sound-skip', naive: false, habits: (seen) => habits(seen, null, { skipLevel: 'monthly', newWork: 'assign' }), choose: soundChoice };
+export const seniorSoundSkip: SeniorStrategy = { name: 'sound-skip', naive: false, habits: (seen) => habits(seen, null, { skipLevel: 'monthly' }), choose: soundChoice };
 
 export const SENIOR_STRATEGIES: SeniorStrategy[] = [seniorIdle, seniorHero, seniorDelegator, seniorContrarian, seniorSound, seniorSoundSkip];

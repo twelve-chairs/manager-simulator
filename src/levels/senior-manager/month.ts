@@ -191,12 +191,20 @@ function managerRatings(s: SeniorState, sim: SimState): Effect[] {
   return ratings;
 }
 
-/** Under the habit, new work for idle teams with room, unless the player had it as a moment this month. */
-// @spec SENIOR-MOMENT-013
+/**
+ * New work for idle teams with room, unless the player had it as a moment this month: always under the habit of giving
+ * it to a team with room, and while the player decides each offer, between offers.
+ */
+// @spec SENIOR-MOMENT-013, SENIOR-MOMENT-026
 function assignNewWork(s: SeniorState, sim0: SimState, log: ChangeLogEntry[]): { sim: SimState; assigned: { teamId: string; name: string; project: string }[] } {
   let sim = sim0;
   const assigned: { teamId: string; name: string; project: string }[] = [];
-  if (s.habits.newWork !== 'assign' || s.moments.some((x) => x.kind === 'newWork')) return { sim, assigned };
+  // An offer let wait counts as one not taken.
+  if (s.moments.some((x) => x.kind === 'newWork' && x.status === 'waited')) s.newWorkTaken = false;
+  // Deciding each offer, ordinary work comes between offers only to a group whose last offer the player took; an idle
+  // team waits for an offer that is due.
+  const offerDue = sim.week + T.weeksPerMonth - s.lastNewWorkOffer >= T.newWorkOfferWeeks;
+  if ((s.habits.newWork !== 'assign' && (offerDue || !s.newWorkTaken)) || s.moments.some((x) => x.kind === 'newWork')) return { sim, assigned };
   for (const t of s.teamIds) {
     const idle = !Object.values(sim.projects).some((p) => p.teamId === t && p.status === 'active');
     if (!idle || band(sim.teams[t]!.aggregate!.stress) >= T.strainedBand) continue;

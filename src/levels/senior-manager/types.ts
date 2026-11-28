@@ -27,6 +27,7 @@ export type SeniorMomentKind =
   | 'finalEvaluation'
   | 'replaceManager'
   | 'calibration'
+  | 'calibrationPrep'
   | 'surfaced'
   | 'escalation'
   | 'staffing'
@@ -153,6 +154,10 @@ export interface SeniorState {
   evidenceHeld?: Record<string, boolean>;
   /** What came of each approval the player answered, by the week the next month's recap reports it. */
   followUps?: { week: number; text: string }[];
+  /** Whether the player took the last new work offered (gave it or spread it), so the manager keeps sending ordinary work between offers. */
+  newWorkTaken?: boolean;
+  /** The week the player last set expectations with the managers before a calibration. */
+  calibrationPrepared?: number;
   /** Pairs of teams whose dispute the player agreed or decided, and the week they settled it. */
   settledDisputes: { teams: [string, string]; week: number }[];
   /** Whether the group has been offered its fourth team. */

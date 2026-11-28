@@ -3,7 +3,7 @@ id: senior-running-hot
 title: Running hot
 levels: [senior-manager]
 priority: normal
-cooldownWeeks: 26
+cooldownWeeks: 52
 waitDebrief: "A manager running hot doesn't cool down on their own; they get quieter, and then they leave."
 roles:
   - name: manager

@@ -5,7 +5,7 @@ import { generateManager, leadOf, nextId, randomInt, rule, unusedName } from './
 import { restlessLeaders, stayAnswer, stayDraft } from '../org';
 import { acceptRemaining, calibrationEntries, curveOf, overCurveLine, settleCurve } from './calibration';
 import { snapshotMonth } from './recap';
-import { monthOf, periodEndsThisMonth, remember } from './review';
+import { calibrationNextMonth, monthOf, periodEndsThisMonth, remember } from './review';
 import { SENIOR_TUNING } from './tuning';
 import type { SeniorMoment, SeniorMomentKind, SeniorState } from './types';
 
@@ -28,6 +28,10 @@ const CHOICES: Record<Exclude<SeniorMomentKind, 'stay'>, { id: string; label: st
     { id: 'hire', label: 'Hire a manager from outside' },
   ],
   calibration: [{ id: 'acceptAll', label: 'Accept every proposal' }],
+  calibrationPrep: [
+    { id: 'prepare', label: 'Meet them first: rate on what each team delivered (costs you energy)' },
+    { id: 'leave', label: 'Leave it to them, and settle it at calibration' },
+  ],
   surfaced: [
     { id: 'coach', label: 'Raise it with the manager and coach them through it' },
     { id: 'stepIn', label: 'Fix it yourself' },
@@ -197,6 +201,10 @@ function leadershipDrafts(s: SeniorState, sim: SimState): Draft[] {
   if (periodEndsThisMonth(s, sim)) {
     drafts.push({ kind: 'calibration', title: 'Calibration', text: 'Your managers bring their proposed ratings for the period. Set each team’s beside what it delivered.', calibration: calibrationEntries(s, sim), curve: curveOf(s, sim), choices: CHOICES.calibration });
   }
+  // @spec SENIOR-CAL-010
+  if (calibrationNextMonth(s, sim)) {
+    drafts.push({ kind: 'calibrationPrep', title: 'Ratings are being drafted', text: 'Calibration is next month, and your managers are starting on their proposed ratings. Last time they proposed more top ratings than their teams delivered.', choices: CHOICES.calibrationPrep });
+  }
   return drafts;
 }
 
@@ -236,20 +244,28 @@ function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<str
 }
 
 /** Why a team's manager escalates: strain, people about to leave, or a project slipping; none when nothing is wrong. */
-function escalationReason(sim: SimState, t: string, behind: ReadonlySet<string>): string | undefined {
+function escalationReason(sim: SimState, t: string, behind: ReadonlySet<string>): { why: string; projectId?: string } | undefined {
   const a = sim.teams[t]!.aggregate!;
-  if (band(a.stress) >= 3) return 'their team is stretched thin';
-  if (band(a.attritionRisk) >= 3) return 'they think people are about to leave';
+  if (band(a.stress) >= 3) return { why: 'their team is stretched thin' };
+  if (band(a.attritionRisk) >= 3) return { why: 'they think people are about to leave' };
   const slipping = activeProjects(sim, t).find((p) => behind.has(p.id));
-  return slipping ? `${slipping.name} is slipping: ${slipping.progress} of ${slipping.scope} done, due week ${slipping.deadlineWeek + 1}` : undefined;
+  if (!slipping) return undefined;
+  const left = slipping.deadlineWeek - sim.week;
+  return { why: `${slipping.name} is slipping: ${slipping.progress} of ${slipping.scope} done, due week ${slipping.deadlineWeek + 1}, ${weeksLeft(left)}`, projectId: slipping.id };
+}
+
+/** How long until a deadline, in words. */
+function weeksLeft(n: number): string {
+  if (n <= 0) return 'this week';
+  return n === 1 ? 'in 1 week' : `in ${n} weeks`;
 }
 
 /** Escalations from teams under strain, at risk of losing people, or with a project behind; then a staffing request from the most strained team while another is calm. */
 function escalationDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<string>, behind: ReadonlySet<string>): Draft[] {
   const drafts: Draft[] = [];
   for (const t of s.teamIds.filter((x) => !surfaced.has(x))) {
-    const why = escalationReason(sim, t, behind);
-    if (why) drafts.push({ kind: 'escalation', teamId: t, title: `${managerName(s, sim, t)} needs help`, text: `${managerName(s, sim, t)} comes to you: ${why}.`, choices: CHOICES.escalation });
+    const reason = escalationReason(sim, t, behind);
+    if (reason) drafts.push({ kind: 'escalation', teamId: t, ...(reason.projectId && { projectId: reason.projectId }), title: `${managerName(s, sim, t)} needs help`, text: `${managerName(s, sim, t)} comes to you: ${reason.why}.`, choices: CHOICES.escalation });
   }
   const health = (t: string) => sim.teams[t]!.aggregate!;
   const byStress = [...s.teamIds].sort((x, y) => health(y).stress - health(x).stress);
@@ -288,6 +304,9 @@ function disputeDrafts(s: SeniorState, sim: SimState): Draft[] {
 /** Approvals, from the teams' own ratings, at most once every three months a team. */
 function approvalDrafts(s: SeniorState, sim: SimState): Draft[] {
   const drafts: Draft[] = [];
+  // @spec SENIOR-MOMENT-025
+  const lastAny = Math.max(-Infinity, ...Object.values(s.lastApproval));
+  if (sim.week - lastAny < T.approvalGroupWeeks) return drafts;
   for (const t of s.teamIds) {
     const m = leadOf(s, sim, t);
     const last = s.lastApproval[t];
@@ -477,6 +496,9 @@ function pickTrouble(c: Pick): Picked {
   const { sim, choiceId, effects, t, m, who } = c;
   const skill = m ? band(sim.people[m]!.skill) : 0;
   rememberIssue(c, skill);
+  // @spec SENIOR-MOMENT-024
+  const slip = c.moment.kind === 'escalation' && c.moment.projectId ? slipRecovery(c, skill) : null;
+  if (slip) return slip;
   if (choiceId === 'escalate') {
     effects.push(team(t, 'stress', -T.stepInFix, 'senior.escalate'), player('reputation', -T.escalateReputation, 'senior.escalate'));
     return { reaction: `You take it to your own manager, who settles it. It cost you a little standing to ask.` };
@@ -578,6 +600,33 @@ function askForEvidence(
   return { reaction: `${who} brings the evidence: ${evidence}. It holds up, and you sign it.` };
 }
 
+/**
+ * An escalation about a slipping project: stepping in pulls it back at once; coaching, or leaving it with a capable
+ * manager, does too when there is time before the deadline, and not when it is near.
+ */
+// @spec SENIOR-MOMENT-024
+function slipRecovery({ sim, moment, choiceId, effects, t, m, who }: Pick, skill: number): Picked {
+  const p = sim.projects[moment.projectId!]!;
+  const urgent = p.deadlineWeek - sim.week <= T.urgentWeeks;
+  const recover = (share: number, ruleId: string) => effects.push(project(p.id, 'progress', Math.round(p.scope * share), ruleId));
+  if (choiceId === 'stepIn') {
+    recover(T.stepInRecovery, 'senior.stepIn');
+    effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));
+    return { reaction: `You get into ${p.name} yourself, and it gains ground this month. ${who} watches, and learns nothing from it.` };
+  }
+  if (choiceId === 'coach') {
+    effects.push(player('stress', T.coachEnergy, 'senior.coach'));
+    if (m) effects.push(person(m, 'skill', T.coachGrowth, 'senior.coach'));
+    if (urgent) return { reaction: `You coach ${who} through it, and they learn from it, but ${p.name} is due too soon for that to pull it back.` };
+    if (skill < 1) return { reaction: `You talk it through with ${who}. They learn something, but ${p.name} keeps slipping.` };
+    recover(T.coachRecovery, 'senior.coach');
+    return { reaction: `You coach ${who} through it. There's time before the deadline, and ${p.name} starts to recover.` };
+  }
+  if (urgent || skill < 2) return { reaction: `You leave ${p.name} with ${who}. It keeps slipping.` };
+  recover(T.coachRecovery, 'senior.letThem');
+  return { reaction: `${who} replans ${p.name} without you, and it starts to recover.` };
+}
+
 /** Takes the new work on: starts the project, then the offer's and the choice's side effects. */
 function startNewWork({ s, sim, choiceId, effects, t }: Pick, offer: 'launch' | 'handover' | 'own') {
   const skill = sim.teams[t]!.aggregate!.skill;
@@ -602,6 +651,8 @@ function pickNewWork(given: Pick): Picked {
   const c = to ? { ...given, t: to, choiceId: 'give', who: managerName(given.s, given.sim, to) } : given;
   const { sim, moment, choiceId, effects, t, who } = c;
   const offer = moment.offer ?? 'launch';
+  // @spec SENIOR-MOMENT-026
+  c.s.newWorkTaken = choiceId !== 'decline';
   if (choiceId === 'decline') {
     const declineCost = { launch: T.launchDecline, handover: T.handoverDecline, own: T.declineWork }[offer];
     effects.push(player('reputation', -declineCost, 'senior.newWork'));
@@ -623,6 +674,15 @@ function pickRestructuring({ s, sim, choiceId }: Pick): Picked {
   return { next, reaction: `One of ${name(sim, source)}'s strongest engineers steps up to lead the new team.` };
 }
 
+/** Before calibration: set expectations with the managers, or leave the proposals to them. */
+// @spec SENIOR-CAL-010
+function pickCalibrationPrep({ s, sim, choiceId, effects }: Pick): Picked {
+  if (choiceId !== 'prepare') return { reaction: 'Your managers draft their proposals on their own.' };
+  s.calibrationPrepared = sim.week;
+  effects.push(player('stress', T.prepEnergy, 'senior.calibrationPrep'));
+  return { reaction: 'You sit down with each of them: rate on what the team delivered, not on what it hoped for. Their proposals will come in closer to it.' };
+}
+
 /** A stay conversation: keep the manager by giving them what they want, or wish them well. */
 // @spec SENIOR-MOMENT-019
 function pickStay({ sim, moment, choiceId, effects }: Pick): Picked {
@@ -641,6 +701,7 @@ const PICKS: Record<Exclude<SeniorMomentKind, 'calibration'>, (c: Pick) => Picke
   approval: pickApproval,
   newWork: pickNewWork,
   restructuring: pickRestructuring,
+  calibrationPrep: pickCalibrationPrep,
   stay: pickStay,
 };
 

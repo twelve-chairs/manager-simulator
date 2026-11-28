@@ -3,7 +3,7 @@ id: senior-skip-level-surprise
 title: What the skip-level heard
 levels: [senior-manager]
 priority: normal
-cooldownWeeks: 26
+cooldownWeeks: 52
 waitDebrief: "A problem you heard about from below and did nothing with tells the team that skip-levels are for show."
 roles:
   - name: manager

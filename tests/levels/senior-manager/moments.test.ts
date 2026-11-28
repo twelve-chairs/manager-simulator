@@ -57,6 +57,35 @@ describe('new work assigned', () => {
   });
 });
 
+describe('new work between offers', () => {
+  // @spec SENIOR-MOMENT-026
+  it('gives an idle team with room ordinary work between offers while the player decides each one, and holds it for an offer that is due', () => {
+    const { level, sim } = calm(6);
+    const t = level.teamIds[2]!;
+    const idle = edit(sim, (s) => {
+      for (const p of Object.values(s.projects)) if (p.teamId === t) p.status = 'cancelled';
+    });
+    const active = (x: SimState) => Object.values(x.projects).filter((p) => p.teamId === t && p.status === 'active');
+    // an offer was made last month: this month the team is given ordinary work, and the recap says so
+    const offered = { ...level, lastNewWorkOffer: idle.week - T.weeksPerMonth, newWorkTaken: true };
+    const begun = beginMonth(offered, idle);
+    expect(kinds(begun)).not.toContain('newWork');
+    const ended = endMonth(begun, idle);
+    if (!ended.ok) throw new Error(ended.error);
+    expect(active(ended.sim)).toHaveLength(1);
+    expect((ended.recap as { changes: { assigned: unknown[] } }).changes.assigned).toHaveLength(1);
+    // an offer due next month: the team waits for it
+    // last offer declined: no ordinary work until the player takes one
+    const declined = endMonth(beginMonth({ ...offered, newWorkTaken: false }, idle), idle);
+    if (!declined.ok) throw new Error(declined.error);
+    expect(active(declined.sim)).toHaveLength(0);
+    const due = { ...level, lastNewWorkOffer: idle.week + T.weeksPerMonth - T.newWorkOfferWeeks, newWorkTaken: true };
+    const waiting = endMonth({ ...beginMonth(due, idle), moments: [] }, idle);
+    if (!waiting.ok) throw new Error(waiting.error);
+    expect(active(waiting.sim)).toHaveLength(0);
+  });
+});
+
 describe('a month’s moments', () => {
   // @spec SENIOR-MOMENT-002
   // @spec SENIOR-HABIT-008
@@ -115,7 +144,8 @@ describe('a month’s moments', () => {
     // and an escalation about a project behind names it, with its progress and deadline
     const slipping = behind.moments.filter((m) => m.kind === 'escalation').find((m) => / is slipping: /.test(m.text))!;
     const p = Object.values(later.projects).find((x) => slipping.text.includes(`${x.name} is slipping`))!;
-    expect(slipping.text).toContain(`${p.name} is slipping: ${p.progress} of ${p.scope} done, due week ${p.deadlineWeek + 1}.`);
+    expect(slipping.text).toContain(`${p.name} is slipping: ${p.progress} of ${p.scope} done, due week ${p.deadlineWeek + 1}, in ${p.deadlineWeek - later.week} weeks.`);
+    expect(slipping.projectId).toBe(p.id);
   });
 
   // @spec SENIOR-MOMENT-004
@@ -335,6 +365,37 @@ describe('a month’s moments', () => {
     expect(l.lastApproval[b]).toBe(busy.week);
   });
 
+  // @spec SENIOR-MOMENT-024
+  it('lets stepping in pull a slipping project back at once, and coaching only while there is time before its deadline', () => {
+    const { level, sim } = calm(2);
+    const later = edit(sim, (s) => (s.week += 12));
+    const l = beginMonth(level, later);
+    const e = l.moments.filter((m) => m.kind === 'escalation').find((m) => m.projectId)!;
+    const p = later.projects[e.projectId!]!;
+    const progress = (r: { sim: SimState }) => r.sim.projects[p.id]!.progress;
+    const withDeadline = (weeks: number, skill: number) =>
+      edit(later, (s) => {
+        s.projects[p.id]!.deadlineWeek = s.week + weeks;
+        s.people[leader(s, e.teamId!)]!.skill = skill;
+      });
+    // stepping in recovers it whatever the deadline, at the player's energy
+    const near = withDeadline(T.urgentWeeks, 50);
+    const stepped = answer(l, near, e, 'stepIn');
+    expect(progress(stepped)).toBe(p.progress + Math.round(p.scope * T.stepInRecovery));
+    expect(stepped.sim.player.stress).toBeGreaterThan(near.player.stress);
+    // coaching a developing manager recovers it with time to spare, not when it is due soon
+    const far = withDeadline(T.urgentWeeks + 1, 50);
+    expect(progress(answer(l, far, e, 'coach'))).toBe(p.progress + Math.round(p.scope * T.coachRecovery));
+    const coachedNear = answer(l, near, e, 'coach');
+    expect(progress(coachedNear)).toBe(p.progress);
+    expect(coachedNear.reaction).toMatch(/too soon/);
+    // and the manager still grows from it
+    expect(coachedNear.sim.people[leader(near, e.teamId!)]!.skill).toBe(50 + T.coachGrowth);
+    // left with a capable manager, likewise only with time to spare
+    expect(progress(answer(l, withDeadline(T.urgentWeeks + 1, 70), e, 'letThem'))).toBe(p.progress + Math.round(p.scope * T.coachRecovery));
+    expect(progress(answer(l, withDeadline(T.urgentWeeks, 70), e, 'letThem'))).toBe(p.progress);
+  });
+
   // @spec SENIOR-MOMENT-017
   it('offers new work at most once a quarter while the player decides each offer, except for a strained team', () => {
     const { level, sim } = calm(6);
@@ -413,8 +474,8 @@ describe('a month’s moments', () => {
     expect(T.handoverDecline).toBeLessThan(T.declineWork);
   });
 
-  // @spec SENIOR-MOMENT-021
-  it('brings at most one approval a month across the group', () => {
+  // @spec SENIOR-MOMENT-021, SENIOR-MOMENT-025
+  it('brings at most one approval a month across the group, and none until the group spacing has passed', () => {
     const { level, sim } = calm(7);
     // every team has someone to propose
     const rated = edit(sim, (s) => {
@@ -428,8 +489,10 @@ describe('a month’s moments', () => {
     const first = beginMonth(level, rated);
     expect(first.moments.filter((m) => m.kind === 'approval')).toHaveLength(1);
     // the next month, another team's turn
-    const next = beginMonth({ ...first, moments: [] }, edit(rated, (s) => (s.week += T.weeksPerMonth)));
     const a = first.moments.find((m) => m.kind === 'approval')!;
+    // the month after: too soon for another anywhere in the group
+    expect(beginMonth({ ...first, moments: [] }, edit(rated, (s) => (s.week += T.weeksPerMonth))).moments.filter((m) => m.kind === 'approval')).toHaveLength(0);
+    const next = beginMonth({ ...first, moments: [] }, edit(rated, (s) => (s.week += T.approvalGroupWeeks)));
     const b = next.moments.filter((m) => m.kind === 'approval');
     expect(b).toHaveLength(1);
     expect(b[0]!.teamId).not.toBe(a.teamId);
