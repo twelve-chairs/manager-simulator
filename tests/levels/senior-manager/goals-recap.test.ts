@@ -43,6 +43,8 @@ describe('the period’s goals', () => {
       expect(g.text.length).toBeGreaterThan(0);
       expect(g.progress.length).toBeGreaterThan(0);
     }
+    // the keep-people goal counts this period, so it reads beside a review of the last one
+    for (const g of view.goals.filter((x) => x.text.includes("would want to keep"))) expect(g.progress).toMatch(/this period$/);
   });
 
   // @spec SENIOR-GOAL-003

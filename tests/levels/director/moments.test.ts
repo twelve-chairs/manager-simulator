@@ -123,17 +123,30 @@ describe('a quarter’s moments', () => {
       const issue = DIRECTOR_ISSUES.find((i) => moment.text.includes(i.text))!;
       expect(issue, moment.text).toBeDefined();
       seen.add(issue.text);
-      expect(moment.text.includes('can settle alone')).toBe(issue.above);
+      // whose it is, the player judges from the friction itself
+      expect(moment.text).not.toMatch(/can settle alone/);
       if (issue.above) above++;
     }
     expect(seen.size).toBe(DIRECTOR_ISSUES.length);
     expect(above).toBe(4);
   });
 
+  // @spec DIR-MOMENT-013
+  it('does not have a group that was just given heads say its headcount never arrived', () => {
+    const quarters = DIRECTOR_ISSUES.map((_, q) => q * T.weeksPerQuarter);
+    const week = quarters.find((w) => toured(w).moment.text.includes('headcount the group was promised'))!;
+    const { g, sim, level } = toured(week);
+    const given = beginQuarter({ ...level, moments: [], headsPlaced: { [g]: sim.week - T.weeksPerQuarter }, surfaced: [{ groupId: g, week: sim.week }] }, sim).moments.find((m) => m.kind === 'surfaced')!;
+    expect(given.text).not.toContain('headcount the group was promised');
+    // long enough ago, it can come up again
+    const long = beginQuarter({ ...level, moments: [], headsPlaced: { [g]: sim.week - T.headcountIssueRestWeeks - 1 }, surfaced: [{ groupId: g, week: sim.week }] }, sim).moments.find((m) => m.kind === 'surfaced')!;
+    expect(long.text).toContain('headcount the group was promised');
+  });
+
   // @spec DIR-MOMENT-011
   it('settles a friction beyond the senior manager only when the player takes the decision', () => {
     const quarters = DIRECTOR_ISSUES.map((_, q) => toured(q * T.weeksPerQuarter));
-    const isAbove = (m: DirectorMoment) => m.text.includes('can settle alone');
+    const isAbove = (m: DirectorMoment) => DIRECTOR_ISSUES.some((x) => x.above && m.text.includes(x.text));
     const high = quarters.find((x) => isAbove(x.moment))!;
     const coached = ok(chooseDirector(high.level, high.sim, high.moment.id, 'coach'));
     expect(coached.sim.teams[high.g]!.aggregate!.stress).toBe(high.sim.teams[high.g]!.aggregate!.stress);

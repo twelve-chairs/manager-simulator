@@ -1,6 +1,7 @@
 import type { Command } from '../../src/loop';
 import type { DirectorMomentSeen, DirectorSeen, DirectorStrategy } from './director';
 import { BETTER_CHOICES } from './strategies';
+import { DIRECTOR_ISSUES } from '../../src/levels/director/moments';
 
 const has = (m: DirectorMomentSeen, id: string) => m.choices.some((c) => c.id === id);
 const first = (m: DirectorMomentSeen) => m.choices[0]?.id ?? 'wait';
@@ -65,7 +66,7 @@ function soundChoice(seen: DirectorSeen, m: DirectorMomentSeen): string {
     return peer && peer.trust >= 3 ? 'negotiate' : 'agree';
   }
   // A problem above the senior manager is the director's to take: coaching them through it changes nothing.
-  if (m.kind === 'surfaced' && m.text.includes('can settle alone')) return 'decide';
+  if (m.kind === 'surfaced' && DIRECTOR_ISSUES.some((x) => x.above && m.text.includes(x.text))) return 'decide';
   return prefer(m, ['spread', 'coach', 'straight', 'promote', 'letGo', 'splitPromote', 'merge', 'keep']);
 }
 

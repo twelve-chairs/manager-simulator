@@ -106,7 +106,7 @@ The bands a value is shown in are the line manager level's five bands of a 0–1
 ## Goals
 
 - [x] **VP-GOAL-001**: When a review period begins, the VP level shall set two or three goals for it from the function's state, drawn from: land the half's company priority, keep regretted attrition to at most a tuned number, keep a named peer's trust at *trusting* or better, and bring a named division out of the *strained* band at the next survey.
-- [x] **VP-GOAL-002**: When the player's view is requested, the VP level shall show each goal with its progress.
+- [x] **VP-GOAL-002**: When the player's view is requested, the VP level shall show each goal with its progress, a goal about the people the player would want to keep saying that it counts this review period.
 - [x] **VP-GOAL-003**: When the level is assessed for a review, the VP level shall add each of the period's goals as a measure, scored as achieved or missed.
 
 ## Recap

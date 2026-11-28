@@ -2,7 +2,7 @@ import { apply, newRun, weeksToReview, type AnyLevel, type Command, type Depende
 import { promisesAt } from '../levels/promises';
 import { MAX_SAVE_BYTES, contentFingerprint, parseSave, restore, toSave } from '../save';
 import type { ContentError, Situation } from '../situations';
-import type { Standing, TowardPromotion } from '../review';
+import { REVIEW_TUNING, type Standing, type TowardPromotion } from '../review';
 import { bandWord } from './bands';
 import { h, type Child } from './dom';
 import { HELP_OPEN_THROUGH_WEEK } from './help';
@@ -244,6 +244,20 @@ function endingLine(run: Run, renderer: LevelRenderer, view: unknown): string {
   if (run.ending === 'stayed') return renderer.stayed.ending;
   if (run.ending === 'burnout') return `You burned out. ${capital(NUMBER_WORDS[renderer.status(view).edge?.limit ?? 4] ?? 'Too many')} ${renderer.turn}s at the edge was too long.`;
   return run.ending ? ENDINGS[run.ending] : '';
+}
+
+/** Where the rating's band of scores runs, so a score reads against the line it cleared. */
+// @spec UI-REVIEW-004
+function bandOf(rating: string): string {
+  const t = REVIEW_TUNING.thresholds;
+  const from: Record<string, number | undefined> = { outstanding: t.outstanding, exceeds: t.exceeds, meets: t.meets, partial: t.partial };
+  const to: Record<string, number | undefined> = { exceeds: t.outstanding, meets: t.exceeds, partial: t.meets, below: t.partial };
+  const f = from[rating], u = to[rating];
+  if (f === undefined && u === undefined) return '';
+  const n = (x: number) => x.toFixed(2).replace('-', '−');
+  if (u === undefined) return `; ${rating} is ${n(f!)} and up`;
+  if (f === undefined) return `; ${rating} is below ${n(u)}`;
+  return `; ${rating} runs from ${n(f)} to ${n(u)}`;
 }
 
 /** For an open promise: what keeps it, at this level. */
@@ -840,7 +854,7 @@ export function createApp(root: HTMLElement, options: AppOptions) {
       { 'data-screen': 'review', class: 'review' },
       h('h1', { 'data-part': 'heading', tabindex: -1 }, `${capital(renderer.turn)} ${turnOf(ctx.run, renderer, ctx.run.sim.week - STEP[renderer.turn])} review`),
       h('p', { class: 'outcome' }, h('strong', { 'data-field': 'outcome' }, review.outcome === 'stayed' ? renderer.stayed.outcome : OUTCOMES[review.outcome])),
-      h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' ', h('small', { class: 'numbers', 'data-field': 'score' }, `score ${review.score.toFixed(2)}, from −1 to 1`)),
+      h('p', {}, 'Rating: ', h('strong', { 'data-field': 'rating' }, review.rating), ' ', h('small', { class: 'numbers', 'data-field': 'score' }, `score ${review.score.toFixed(2)}, from −1 to 1${bandOf(review.rating)}`)),
       review.ceilingReason ? h('p', { class: 'ceiling', 'data-field': 'ceiling' }, review.ceilingReason) : null,
       standingLines(review.standing, (id) => renderer.measureName(ctx.view, id) ?? id, (id) => renderer.measureLever(id)),
       h(

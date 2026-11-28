@@ -124,6 +124,8 @@ export const DIRECTOR_ISSUES: readonly { text: string; above: boolean }[] = [
 ];
 
 const ISSUE = 'everyday:';
+/** The friction about headcount promised and never arrived. */
+const HEADCOUNT_ISSUE = DIRECTOR_ISSUES.findIndex((x) => x.text.startsWith('headcount the group was promised'));
 /** Whether a surfaced problem sits above the group's senior manager, out of their reach to settle. */
 const aboveSenior = (issue: string | undefined) => !!issue?.startsWith(ISSUE) && DIRECTOR_ISSUES[Number(issue.slice(ISSUE.length))]!.above;
 
@@ -138,7 +140,11 @@ function surfacedIssue(s: DirectorState, sim: SimState, g: string, troubled: Rea
   if (band(a.stress) >= 3) return { key: 'stress', text: 'the group is stretched across more work than it can carry' };
   if (band(a.attritionRisk) >= 2) return { key: 'attrition', text: 'people across the group have started looking around' };
   if (band(a.motivation) <= 1) return { key: 'motivation', text: 'nobody can say any more where the group is headed' };
-  const i = (Math.floor(sim.week / T.weeksPerQuarter) + Math.max(0, s.groupIds.indexOf(g))) % DIRECTOR_ISSUES.length;
+  let i = (Math.floor(sim.week / T.weeksPerQuarter) + Math.max(0, s.groupIds.indexOf(g))) % DIRECTOR_ISSUES.length;
+  // @spec DIR-MOMENT-013
+  // Headcount the group has just been given is not headcount that never arrived: raise the next friction instead.
+  const given = s.headsPlaced?.[g];
+  if (i === HEADCOUNT_ISSUE && given !== undefined && sim.week - given <= T.headcountIssueRestWeeks) i = (i + 1) % DIRECTOR_ISSUES.length;
   return { key: `${ISSUE}${i}`, text: DIRECTOR_ISSUES[i]!.text };
 }
 
@@ -154,8 +160,7 @@ function betsListeningAndTrouble(s: DirectorState, sim: SimState): Draft[] {
     const lead = leaderOf(sim, x.groupId);
     if (!lead || !sim.teams[x.groupId]) continue;
     const issue = surfacedIssue(s, sim, x.groupId, troubled);
-    const reach = aboveSenior(issue.key) ? ` It isn't something ${name(sim, lead)} can settle alone.` : '';
-    drafts.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, issue: issue.key, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} told you ${issue.text}. ${name(sim, lead)} hasn't brought it to you.${reach}`, choices: CHOICES.surfaced });
+    drafts.push({ kind: 'surfaced', groupId: x.groupId, personId: lead, issue: issue.key, title: `What ${groupName(sim, x.groupId)} told you`, text: `On your listening tour, people in ${groupName(sim, x.groupId)} told you ${issue.text}. ${name(sim, lead)} hasn't brought it to you.`, choices: CHOICES.surfaced });
   }
   for (const g of s.groupIds) {
     const a = sim.teams[g]?.aggregate;
@@ -258,6 +263,11 @@ function place(s: DirectorState, sim: SimState, m: DirectorMoment, plan: Record<
     effects.push(...at.effects);
   }
   if (placed > given) return { ok: false, error: `only ${given} heads were given, not ${placed}` };
+  // @spec DIR-MOMENT-013
+  for (const [key, n] of Object.entries(plan)) {
+    const g = key.startsWith('bet:') ? s.bets.find((b) => b.projectId === key.slice(4))?.groupId : key;
+    if (g && (n as number) > 0) s.headsPlaced = { ...s.headsPlaced, [g]: sim.week };
+  }
   if (placed < given) effects.push(value('person', s.executiveId, 'trust', -(given - placed) * T.head.heldTrust, 'director.headcount'));
   return { ok: true, sim: apply(sim, effects, log) };
 }

@@ -550,6 +550,7 @@ describe('goals, the scorecard and reviews', () => {
     expect(begun.goals.map((g) => g.kind)).toContain('fewRegretted');
     const view = vpLevel.view(begun, sim) as { goals: { text: string; progress: string }[] };
     expect(view.goals).toHaveLength(begun.goals.length);
+    for (const g of view.goals.filter((x) => x.text.includes("would want to keep"))) expect(g.progress).toMatch(/this period$/);
     const measures = assessVp(begun, sim).measures.map((m) => m.id);
     for (const g of begun.goals) expect(measures).toContain(`goal:${g.id}`);
   });

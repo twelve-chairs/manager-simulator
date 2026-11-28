@@ -43,6 +43,8 @@ export const DIRECTOR_TUNING = {
   seniorStressShare: 0.4,
   /** The most moments a quarter holds. */
   momentCap: 8,
+  /** Weeks after a group receives heads during which its people don't raise headcount that never arrived: two quarters. */
+  headcountIssueRestWeeks: 26,
   /** A stay conversation: the energy giving a restless leader what they want costs, and the motivation and trust it gives them. */
   stay: { energy: 4, motivation: 8, trust: 4 },
   /** Headcount: heads given at neutral standing, per point of the executive's trust and of reputation above 50, the most given, onboarding stress per head, a bet's progress per head, and the executive's trust lost per head held back. */

@@ -3,6 +3,7 @@ import type { Command } from '../../src/loop';
 import type { SeniorMoment, SeniorSeen, SeniorStrategy } from './senior';
 import { BETTER_CHOICES } from './strategies';
 import { SENIOR_TUNING } from '../../src/levels/senior-manager';
+import { EVERYDAY_ISSUES } from '../../src/levels/senior-manager/moments';
 
 type Counts = Record<Rating, number>;
 /** The first choice the moment offers from an order of preference, or its first choice. */
@@ -87,7 +88,7 @@ function soundChoice(_seen: SeniorSeen, m: SeniorMoment): string {
   if (overCurve(m)) return 'trim';
   if (m.kind === 'calibration') return settleOnEvidence(m);
   // A problem above the manager is the player's to move: coaching them through it changes nothing.
-  if (m.kind === 'surfaced' && m.text.includes("can settle alone")) return 'stepIn';
+  if (m.kind === 'surfaced' && EVERYDAY_ISSUES.some((x) => x.above && m.text.includes(x.text))) return 'stepIn';
   // A slipping project due too soon for coaching to pull back: step in.
   const left = /, in (\d+) weeks?\.$|, this week\.$/.exec(m.text);
   if (m.kind === 'escalation' && left && Number(left[1] ?? 0) <= SENIOR_TUNING.urgentWeeks) return 'stepIn';

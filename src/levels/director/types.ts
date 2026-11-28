@@ -149,6 +149,8 @@ export interface DirectorState {
   joined: string[];
   /** The week a peer last asked for something, so asks come at most every other quarter. */
   lastPeerAsk?: number;
+  /** The week each group last received heads, so its people don't say headcount never arrived. */
+  headsPlaced?: Record<string, number>;
   letGo: string[];
   counters: { person: number; team: number; project: number; moment: number; goal: number; bet: number };
 }

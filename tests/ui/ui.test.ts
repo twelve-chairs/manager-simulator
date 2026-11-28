@@ -922,8 +922,8 @@ describe('review and end', () => {
     expect($$(root, '[data-measure] [data-field=target]')).toHaveLength(0);
   });
 
-  // @spec UI-REVIEW-001, UI-REVIEW-002, UI-REVIEW-003
-  it('says in words where the player stands, with the score in small print', () => {
+  // @spec UI-REVIEW-001, UI-REVIEW-002, UI-REVIEW-003, UI-REVIEW-004
+  it('says in words where the player stands, with the score and its rating band in small print', () => {
     const r = structuredClone(endWeeks(run(), 13));
     const shown = (standing: NonNullable<typeof r.review>['standing']) => {
       const root = makeApp({ run: { ...r, review: { ...r.review!, rating: 'exceeds', score: 0.5, standing } } }).root;
@@ -934,7 +934,7 @@ describe('review and end', () => {
       margins: ['One measure a step better would have made it outstanding.', 'One measure a step worse would have made it meets.'],
       promotion: "One more review rated exceeds or better and you'll be promoted.",
       plan: null,
-      score: 'score 0.50, from −1 to 1',
+      score: 'score 0.50, from −1 to 1; exceeds runs from 0.45 to 0.65',
     });
     expect(shown({ promotion: { kind: 'twoInARow', reviewsLeft: 2 } }).promotion).toBe('Promotion takes two reviews in a row rated exceeds or better, and two are left at this level.');
     expect(shown({ promotion: { kind: 'oneMore', reviewsLeft: 1 } }).promotion).toBe("One more review rated exceeds or better and you'll be promoted. It's your last review at this level.");

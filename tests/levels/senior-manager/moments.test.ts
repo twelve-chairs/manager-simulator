@@ -719,6 +719,19 @@ describe('skip-level problems that stay settled', () => {
     return { r, moment, issue: moment.issue!, state, t, m, settled: r.level.issues[t]![moment.issue!]!.settled };
   }
 
+  // @spec SENIOR-HABIT-008
+  it('says a friction is above the manager when it comes back unsettled', () => {
+    const first = answerFriction(4, true, 45, 'coach');
+    const manager = first.state.people[first.m]!.name;
+    const later = edit(first.r.sim, (s) => {
+      s.week += 4 * T.weeksPerMonth;
+      for (const p of Object.values(s.projects)) Object.assign(p, { startWeek: s.week - 4, deadlineWeek: s.week + 40, progress: p.scope / 2 });
+    });
+    const again = beginMonth({ ...first.r.level, moments: [], surfaced: [{ teamId: first.t, week: later.week - 4 }] }, later).moments.find((x) => x.kind === 'surfaced')!;
+    expect(again.title).toMatch(/again/);
+    expect(again.text).toContain(`It isn't something ${manager} can settle alone.`);
+  });
+
   // @spec SENIOR-HABIT-011
   it('settles a problem only by an answer that fixed it, and brings an unsettled one back saying how it was answered', () => {
     const settles = (skill: number, choice: string) => answerFriction(4, false, skill, choice);
@@ -749,20 +762,23 @@ describe('skip-level problems that stay settled', () => {
     expect(above.r.sim.player.reputation).toBe(Math.max(0, above.state.player.reputation - T.escalateReputation));
     expect(above.r.sim.player.stress).toBe(above.state.player.stress);
     expect(above.r.sim.teams[above.t]!.aggregate!.stress).toBe(Math.max(0, above.state.teams[above.t]!.aggregate!.stress - T.stepInFix));
-    // a problem the manager can settle has no such choice
-    expect(answerFriction(4, false, 45, 'coach').moment.choices.map((c) => c.id)).not.toContain('escalate');
+    // one the manager could settle can go upward too, at a higher cost in standing
+    const theirs = answerFriction(4, false, 45, 'escalate');
+    expect(theirs.moment.choices.map((c) => c.id)).toContain('escalate');
+    expect(theirs.r.sim.player.reputation).toBe(Math.max(0, theirs.state.player.reputation - T.escalateNeedless));
+    expect(theirs.r.reaction).toMatch(/was .+'s to fix/);
   });
 
   // @spec SENIOR-HABIT-008, SENIOR-HABIT-012
-  it('says when a friction is above the manager, settles it only by stepping in, and eases nothing when coached or left', () => {
+  it('leaves whose a friction is to the player at first, settles one above the manager only by stepping in, and eases nothing when coached or left', () => {
     expect(EVERYDAY_ISSUES).toHaveLength(16);
     expect(EVERYDAY_ISSUES.filter((x) => x.above)).toHaveLength(6);
     const mine = answerFriction(4, false, 45, 'coach');
     expect(mine.moment.text).not.toMatch(/can settle alone/);
 
     const coached = answerFriction(4, true, 45, 'coach');
-    const manager = coached.state.people[coached.m]!.name;
-    expect(coached.moment.text).toContain(`It isn't something ${manager} can settle alone.`);
+    // the first telling leaves whose it is to the player
+    expect(coached.moment.text).not.toMatch(/can settle alone/);
     expect(coached.settled).toBe(false);
     expect(coached.r.reaction).toMatch(/isn't theirs to fix/);
     expect(coached.r.sim.teams[coached.t]!.aggregate!.stress).toBe(coached.state.teams[coached.t]!.aggregate!.stress);

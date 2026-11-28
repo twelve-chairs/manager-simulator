@@ -150,7 +150,7 @@ const LAST_TIME: Record<'coach' | 'stepIn' | 'letThem' | 'escalate', (manager: s
 
 /** For a problem above the manager: taking it upward, which settles it at a cost in standing rather than energy. */
 // @spec SENIOR-HABIT-013
-const ESCALATE = { id: 'escalate', label: 'Take it to your own manager: it gets settled, at a cost in your standing rather than your energy' };
+const ESCALATE = { id: 'escalate', label: 'Take it to your own manager: it gets settled, at a cost in your standing rather than your energy, more if it was the manager’s to fix' };
 
 /**
  * What engineers raise at a skip-level when nothing is badly wrong, and whose it is to settle: the team's manager's, or
@@ -228,7 +228,9 @@ function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<str
     const before = s.issues[t]?.[issue.key];
     const manager = managerName(s, sim, t);
     const again = before !== undefined && !before.settled;
-    const reach = aboveManager(issue.key) ? ` It isn't something ${manager} can settle alone.` : '';
+    // @spec SENIOR-HABIT-008
+    // Whose problem it is is the player's to judge the first time; said only when it comes back unsettled.
+    const reach = again && aboveManager(issue.key) ? ` It isn't something ${manager} can settle alone.` : '';
     drafts.push({
       kind: 'surfaced',
       teamId: t,
@@ -237,7 +239,7 @@ function surfacedDrafts(s: SeniorState, sim: SimState, surfaced: ReadonlySet<str
       text: again
         ? `At last month's skip-level, ${name(sim, t)}'s engineers told you again that ${issue.text.replace(/^that /, '')}. Last time you ${LAST_TIME[before.answer](manager)}, and it didn't hold.${reach}`
         : `At last month's skip-level, ${name(sim, t)}'s engineers told you ${issue.text}. ${manager} hasn't mentioned it to you.${reach}`,
-      choices: aboveManager(issue.key) ? [...CHOICES.surfaced, ESCALATE] : CHOICES.surfaced,
+      choices: issue.key.startsWith('everyday:') ? [...CHOICES.surfaced, ESCALATE] : CHOICES.surfaced,
     });
   }
   return drafts;
@@ -500,8 +502,11 @@ function pickTrouble(c: Pick): Picked {
   const slip = c.moment.kind === 'escalation' && c.moment.projectId ? slipRecovery(c, skill) : null;
   if (slip) return slip;
   if (choiceId === 'escalate') {
-    effects.push(team(t, 'stress', -T.stepInFix, 'senior.escalate'), player('reputation', -T.escalateReputation, 'senior.escalate'));
-    return { reaction: `You take it to your own manager, who settles it. It cost you a little standing to ask.` };
+    // @spec SENIOR-HABIT-013
+    // Taken upward when it was the manager's to settle, it costs more standing: your own manager asks why it reached them.
+    const theirs = c.moment.kind === 'surfaced' && !aboveManager(c.moment.issue);
+    effects.push(team(t, 'stress', -T.stepInFix, 'senior.escalate'), player('reputation', -(theirs ? T.escalateNeedless : T.escalateReputation), 'senior.escalate'));
+    return { reaction: theirs ? `Your own manager settles it, and asks why it came to them: it was ${who}'s to fix. It cost you standing.` : `You take it to your own manager, who settles it. It cost you a little standing to ask.` };
   }
   if (choiceId === 'stepIn') {
     effects.push(team(t, 'stress', -T.stepInFix, 'senior.stepIn'), player('stress', T.stepInEnergy, 'senior.stepIn'));

@@ -72,6 +72,7 @@ describe('goals', () => {
     const v = directorView(level, sim);
     expect(v.goals.map((g) => g.id)).toEqual(level.goals.map((g) => g.id));
     for (const g of v.goals) expect(g.progress).toBeTruthy();
+    for (const g of v.goals.filter((x) => x.text.includes("would want to keep"))) expect(g.progress).toMatch(/this period$/);
     const goals = assessDirector(level, { ...sim, week: sim.week + 26 }).measures.filter((m) => m.id.startsWith('goal:'));
     expect(goals).toHaveLength(level.goals.length);
     for (const m of goals) expect([0, 1]).toContain(m.value);

@@ -23,7 +23,7 @@ type GoalStatus = { text: string; progress: string; achieved: boolean };
 function regrettedStatus(goal: VpGoal, level: VpState): GoalStatus {
   const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
   const people = left === 1 ? 'person' : 'people';
-  return { text: `Lose no more than ${T.goalRegrettedMost} of the people you would want to keep`, progress: left ? `${left} ${people} you'd have kept left` : 'Nobody you would keep has left', achieved: left <= T.goalRegrettedMost };
+  return { text: `Lose no more than ${T.goalRegrettedMost} of the people you would want to keep`, progress: left ? `${left} ${people} you'd have kept left this period` : 'Nobody you would keep has left this period', achieved: left <= T.goalRegrettedMost };
 }
 
 function unstrainStatus(goal: VpGoal, level: VpState, sim: SimState): GoalStatus {

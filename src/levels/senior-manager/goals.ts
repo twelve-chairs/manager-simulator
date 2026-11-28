@@ -32,7 +32,7 @@ const people = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`;
 
 function regrettedStatus(goal: SeniorGoal, level: SeniorState): GoalStatus {
   const left = level.regretted.filter((r) => r.week >= goal.week).reduce((n, r) => n + r.count, 0);
-  return { text: 'Keep everyone you would want to keep', progress: left ? `${people(left)} you'd have kept left` : 'Nobody you would keep has left', achieved: left === 0 };
+  return { text: 'Keep everyone you would want to keep', progress: left ? `${people(left)} you'd have kept left this period` : 'Nobody you would keep has left this period', achieved: left === 0 };
 }
 
 function unstrainStatus(goal: SeniorGoal, sim: SimState): GoalStatus {

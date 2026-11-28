@@ -68,6 +68,8 @@ export const SENIOR_TUNING = {
   coachRecovery: 0.1,
   /** Reputation it costs to take a problem above the manager to your own manager. */
   escalateReputation: 3,
+  /** Reputation it costs instead when the problem was the manager's own to settle. */
+  escalateNeedless: 6,
   coachFix: 8,
   coachEnergy: 1,
   coachGrowth: 3,
